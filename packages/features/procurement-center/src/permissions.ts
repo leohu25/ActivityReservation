@@ -2,13 +2,7 @@
  * 采购中心功能权限目录 (Better Auth Access Control Statement)
  */
 export const procurementStatement = {
-  "procurement.order": [
-    "read",
-    "create",
-    "update",
-    "audit",
-    "export",
-  ],
+  "procurement.order": ["read", "create", "update", "audit", "export"],
 } as const;
 
 /**
