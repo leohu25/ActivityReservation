@@ -6,8 +6,8 @@
 
 ## 基本信息与目标 (Current Objective)
 
-- **目标特性 (Current Objective)**：初始化 Harness 工程基础设施 (`foundation-harness`)
-- **当前状态 (Status)**：进行中 (In Progress)
+- **目标特性 (Current Objective)**：Monorepo 骨架与 Next.js 官方脚手架初始化 (`foundation-monorepo`)
+- **当前状态 (Status)**：已完成 (Completed)
 - **当前分支/提交 (Branch / Commit)**：`main`
 - **最后更新 (Last Updated)**：2025-05-18
 
@@ -15,14 +15,11 @@
 
 ## 本次会话完成内容
 
-- [x] 读取分析架构全量文档与设计规范
-- [x] 建立全中文 AGENTS.md 宪法、CLAUDE.md、member.local.example.md
-- [x] 梳理并写入 feature_list.json 全局特性总账
-- [x] 建立 .harness/ 基础设施与采购中心沙盒文件
-- [x] 编写全中文 init.sh 与 scripts/verify.sh、scripts/status.sh（极简紧凑规范）
-- [x] 实现沙盒修改白名单物理拦截脚本 `scripts/check-boundary.mjs`
-- [x] 实现架构与权限安全红线静态扫描器 `scripts/check-redlines.mjs`
-- [x] 在 `init.sh` 中装载 Git `pre-commit` 钩子，门禁形成物理闭环
+- [x] 开辟 `foundation-monorepo` 特性沙盒 (`.harness/features/foundation-monorepo/`)
+- [x] 配置根目录 Monorepo 基座：`pnpm-workspace.yaml`, `turbo.json`, `package.json`, `tsconfig.base.json`
+- [x] 使用官方推荐脚手架 `create-next-app` 初始化 `apps/tenant` (Next.js 16.3 + Tailwind CSS 4)
+- [x] 初始化 6 个 packages 共享模块骨架 (`@chenrun/shared`, `foundation`, `db-control`, `db-tenant`, `ui`, `feature-procurement-center`)
+- [x] 成功打通 `pnpm check` (7/7 packages 0 错误) 与 Next.js `pnpm build` (生产构建成功)
 
 ---
 
@@ -30,27 +27,26 @@
 
 | 检查项 | 执行命令 | 结果 | 判定与说明 |
 | :--- | :--- | :--- | :--- |
-| 环境健全性自检 | `./init.sh` | PASS | Node 24 与 pnpm 11 就绪 |
+| 环境健全性自检 | `./init.sh` | PASS | Node 24, pnpm 11, 会话锚点就绪 |
 | 协同状态探测 | `./scripts/status.sh` | PASS | 状态正常，极简输出 |
-| Harness 门禁基线 | `./scripts/verify.sh` | PASS | 结构与门禁检查无异常 |
+| 全栈门禁核验 | `./scripts/verify.sh` | PASS | 沙盒边界、红线静态扫描、7/7 packages 类型检查全绿 |
+| 生产应用打包 | `pnpm build` | PASS | Turbopack 编译打包，静态页面生成成功 |
 
 ---
 
 ## 变更文件列表 (Files Changed)
 
-- `AGENTS.md`
-- `CLAUDE.md`
-- `init.sh`
+- `pnpm-workspace.yaml`
+- `turbo.json`
+- `package.json`
+- `pnpm-lock.yaml`
+- `tsconfig.base.json`
+- `apps/tenant/**`
+- `packages/**`
+- `.harness/features/foundation-monorepo/**`
 - `feature_list.json`
-- `member.local.example.md`
-- `member.local.md`
 - `progress.md`
 - `session-handoff.md`
-- `scripts/verify.sh`
-- `scripts/status.sh`
-- `scripts/check-boundary.mjs`
-- `scripts/check-redlines.mjs`
-- `.harness/**`
 
 ---
 
@@ -62,12 +58,13 @@
 
 ## 下一会话启动指引 (Next Session Startup)
 
-1. 确认根目录 `member.local.md` 存在并处于激活状态。
-2. 运行 `./init.sh` 确保基础环境通过。
-3. 执行第二步：使用 Next.js 官方推荐脚手架初始化 `apps/tenant` 并配置 Monorepo 骨架。
+1. 检查 `feature_list.json`，确认下一个未开始特性为 `foundation-tenant-auth`。
+2. 将 `member.local.md` 中的 `active_feature_id` 更新为 `foundation-tenant-auth`。
+3. 运行 `./init.sh` 确保基础环境通过。
+4. 推进第三步：采用 Better Auth + Organization 插件搭建认证与多租户底座，并建立 `saas_control` Control DB 映射模型。
 
 ---
 
 ## 推荐下一步行动 (Recommended Next Step)
 
-- 推进并初始化 Monorepo 骨架与 `apps/tenant` Next.js 16/15 App Router 工程。
+- 激活 `foundation-tenant-auth`，配置 Better Auth 与 Control DB Prisma 7 Schema，并编写 TenantDbManager 动态路由。

@@ -17,14 +17,14 @@
       "name": "Monorepo 骨架与 Next.js 官方脚手架初始化",
       "description": "基于 pnpm workspace + Turborepo 搭建模块化单体，使用官方推荐命令初始化 apps/tenant 主应用并集成 Tailwind CSS 与基础 packages 骨架",
       "dependencies": ["foundation-harness"],
-      "status": "not-started",
+      "status": "completed",
       "owner": "implementer",
-      "evidence": ""
+      "evidence": "官方 create-next-app 初始化 apps/tenant，配置 Turborepo + pnpm workspace，初始化 packages/ (shared, foundation, db-control, db-tenant, ui, procurement-center)，pnpm check (7/7 packages) 与 pnpm build 100% 通过"
     },
     {
       "id": "foundation-tenant-auth",
-      "name": "多租户与身份认证底座 (Tenant & Auth)",
-      "description": "基于 Control DB (saas_control) 建立 User、Session、Tenant、Membership、TenantDatabase 模型，实现租户动态上下文解析与双数据库路由隔离",
+      "name": "多租户与身份认证底座 (Better Auth & Tenant)",
+      "description": "基于 Better Auth + Organization 插件建立多租户与身份认证底座，配置 saas_control Control DB 并实现 TenantDatabase 动态路由与数据库物理隔离",
       "dependencies": ["foundation-monorepo"],
       "status": "not-started",
       "owner": "implementer",
@@ -32,8 +32,8 @@
     },
     {
       "id": "foundation-authorization",
-      "name": "授权核心与权限编译器 (Authorization & Compiler)",
-      "description": "实现 Code-as-Config 权限编译器，自动生成 P.* 与 F.* 强类型常量；建立 Role、UserRole、RolePermission 表，提供前端 <Can> 门禁与服务端 @RequirePermission",
+      "name": "授权核心与能力构建器 (Better Auth Roles & CASL Factory)",
+      "description": "集成 Better Auth Dynamic Access Control 与 CASL Ability Factory，支持动态角色与功能权限，打通 React <Can> 与服务端 @RequireAbility 契约",
       "dependencies": ["foundation-tenant-auth"],
       "status": "not-started",
       "owner": "implementer",
@@ -41,8 +41,8 @@
     },
     {
       "id": "foundation-advanced-authz",
-      "name": "高级权限引擎 (Data Scope & Field Policy & Audit)",
-      "description": "支持五种数据范围 (SELF, DEPT, DEPT_TREE, CUSTOM_DEPT, ALL) 注入与过滤；实现敏感字段脱敏策略 (HIDDEN, READONLY, EDITABLE) 与切面审计日志 @Audit",
+      "name": "数据与字段权限引擎 (@casl/prisma & Fields)",
+      "description": "基于 @casl/prisma 与 CASL Fields 实现五种数据范围 (SELF, DEPT, DEPT_TREE, CUSTOM, ALL) 查询下推过滤，与字段权限 (HIDDEN, READONLY, EDITABLE) 读写拦截",
       "dependencies": ["foundation-authorization"],
       "status": "not-started",
       "owner": "implementer",
