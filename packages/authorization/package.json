@@ -1,5 +1,5 @@
 {
-  "name": "@chenrun/foundation",
+  "name": "@chenrun/authorization",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,6 +12,7 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
+    "@chenrun/auth": "workspace:*",
     "@chenrun/shared": "workspace:*"
   },
   "devDependencies": {

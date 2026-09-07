@@ -26,8 +26,9 @@
 - [x] 在 `init.sh` 中自动配置 Git `pre-commit` 门禁钩子并打通全栈验证链
 - [x] 配置 Monorepo 根基座 `pnpm-workspace.yaml`、`turbo.json`、`tsconfig.base.json`
 - [x] 使用官方推荐脚手架 `create-next-app` 初始化 `apps/tenant` (Next.js 16.3 + Tailwind 4)
-- [x] 初始化 packages 基础模块骨架 (`@chenrun/shared`, `foundation`, `db-control`, `db-tenant`, `ui`, `procurement-center`)
-- [x] 全栈 7 个 packages 类型扫描 `pnpm check` 与 Next.js `pnpm build` 全部 100% 成功
+- [x] 初始化 packages 基础模块骨架，并将 packages/foundation 重构对齐为 packages/auth 与 packages/authorization
+- [x] 更新 AGENTS.md、ADR-003、.harness/context/ 与 scripts/check-redlines.mjs 对齐 Better Auth + CASL 规范
+- [x] 全栈 8 个 packages 类型扫描 `pnpm check` 与 Next.js `pnpm build` 全部 100% 成功
 
 ---
 

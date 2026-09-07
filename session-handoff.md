@@ -18,8 +18,9 @@
 - [x] 开辟 `foundation-monorepo` 特性沙盒 (`.harness/features/foundation-monorepo/`)
 - [x] 配置根目录 Monorepo 基座：`pnpm-workspace.yaml`, `turbo.json`, `package.json`, `tsconfig.base.json`
 - [x] 使用官方推荐脚手架 `create-next-app` 初始化 `apps/tenant` (Next.js 16.3 + Tailwind CSS 4)
-- [x] 初始化 6 个 packages 共享模块骨架 (`@chenrun/shared`, `foundation`, `db-control`, `db-tenant`, `ui`, `feature-procurement-center`)
-- [x] 成功打通 `pnpm check` (7/7 packages 0 错误) 与 Next.js `pnpm build` (生产构建成功)
+- [x] 初始化共享模块骨架并对齐为 `packages/auth` 与 `packages/authorization`
+- [x] 更新 AGENTS.md 宪法、ADR-003、.harness/context/ 与 scripts/check-redlines.mjs
+- [x] 成功打通 `pnpm check` (8/8 packages 0 错误) 与 Next.js `pnpm build` (生产构建成功)
 
 ---
 
@@ -29,7 +30,7 @@
 | :--- | :--- | :--- | :--- |
 | 环境健全性自检 | `./init.sh` | PASS | Node 24, pnpm 11, 会话锚点就绪 |
 | 协同状态探测 | `./scripts/status.sh` | PASS | 状态正常，极简输出 |
-| 全栈门禁核验 | `./scripts/verify.sh` | PASS | 沙盒边界、红线静态扫描、7/7 packages 类型检查全绿 |
+| 全栈门禁核验 | `./scripts/verify.sh` | PASS | 沙盒边界、红线静态扫描、8/8 packages 类型检查全绿 |
 | 生产应用打包 | `pnpm build` | PASS | Turbopack 编译打包，静态页面生成成功 |
 
 ---

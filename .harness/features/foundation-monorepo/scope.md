@@ -2,6 +2,8 @@
 
 ## 允许修改的文件与目录
 
+- `AGENTS.md`
+- `.harness/**`
 - `.gitignore`
 - `docs/**`
 - `pnpm-workspace.yaml`

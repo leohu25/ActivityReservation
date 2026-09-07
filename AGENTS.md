@@ -34,7 +34,7 @@
 
 1. **严禁跨特性越权修改**：只能在对应特性的 `scope.md` 白名单文件内修改代码。
 2. **严禁带病开发与虚假完成**：类型错误未清零、测试失败或门禁不通过，严禁宣称完成。
-3. **严禁手写硬编码权限字符串**：权限统一在 Feature 的 `permissions.ts` 中声明，业务与 UI 必须调用编译生成的 `P.*` 与 `F.*` 强类型常量。
+3. **严禁手写硬编码权限与绕过授权**：功能权限统一在模块的 Better Auth `statement` (Resource -> Actions) 与 CASL `Subject/Action` 中声明；服务端通过 `@RequireAbility` / CASL `can()` 强类型判定，前端通过 `<Can>` / `<Permission>` 门禁，严禁手写绕过授权体系的魔术字符串。
 4. **严禁绕过租户隔离**：PostgreSQL Database-per-Tenant 物理隔离，业务数据必须由 Tenant Context 动态路由，严禁客户端直拼连接串。
 5. **严禁破坏分层架构**：Next.js Server Components 直调 Application Service，严禁自发 HTTP 绕调内部 REST API。
 

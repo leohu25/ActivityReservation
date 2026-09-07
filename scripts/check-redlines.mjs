@@ -55,7 +55,7 @@ const violations = [];
 // 规则 1：严禁直接引用 process.env.DATABASE_URL (除 packages/db-control 允许连接 Control DB)
 const databaseUrlRegex = /process\.env\.DATABASE_URL/;
 
-// 规则 2：严禁手写硬编码权限字符串，例如 hasPermission("..."), <Can permission="..."
+// 规则 2：严禁手写旧版魔术权限字符串或绕过授权体系，例如 hasPermission("..."), <Can permission="..."
 const magicPermissionRegexes = [
   /hasPermission\s*\(\s*["'`][a-zA-Z0-9_-]+\.[a-zA-Z0-9_.-]+["'`]\s*\)/,
   /requirePermission\s*\(\s*["'`][a-zA-Z0-9_-]+\.[a-zA-Z0-9_.-]+["'`]\s*\)/,
@@ -92,7 +92,7 @@ for (const filePath of allFiles) {
         violations.push({
           file: relPath,
           line: idx + 1,
-          rule: "严禁裸写魔术权限字符串 (必须使用 P.* 或 F.* 强类型常量)",
+          rule: "严禁绕过授权体系或使用旧版裸写权限字符串 (必须使用 Better Auth statement 与 CASL Ability / @RequireAbility)",
           code: line.trim(),
         });
         break;
