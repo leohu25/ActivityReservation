@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "project": "chenrun-erp-nextjs",
+  "description": "基于 Next.js 16 + Turborepo + PostgreSQL Database-per-Tenant 的最小可扩展 SaaS 权限与业务底座",
+  "features": [
+    {
+      "id": "foundation-harness",
+      "name": "Harness 协作工程基础设施",
+      "description": "初始化工业级智能体与多人协同工程体系，包含最高宪法、自检门禁、分层上下文、单特性沙盒与生命周期闭环",
+      "dependencies": [],
+      "status": "completed",
+      "owner": "coordinator",
+      "evidence": "完成全中文宪法、100/100 满分 Harness 基础设施与极简高密度状态/门禁脚本"
+    },
+    {
+      "id": "foundation-monorepo",
+      "name": "Monorepo 骨架与 Next.js 官方脚手架初始化",
+      "description": "基于 pnpm workspace + Turborepo 搭建模块化单体，使用官方推荐命令初始化 apps/tenant 主应用并集成 Tailwind CSS 与基础 packages 骨架",
+      "dependencies": ["foundation-harness"],
+      "status": "not-started",
+      "owner": "implementer",
+      "evidence": ""
+    },
+    {
+      "id": "foundation-tenant-auth",
+      "name": "多租户与身份认证底座 (Tenant & Auth)",
+      "description": "基于 Control DB (saas_control) 建立 User、Session、Tenant、Membership、TenantDatabase 模型，实现租户动态上下文解析与双数据库路由隔离",
+      "dependencies": ["foundation-monorepo"],
+      "status": "not-started",
+      "owner": "implementer",
+      "evidence": ""
+    },
+    {
+      "id": "foundation-authorization",
+      "name": "授权核心与权限编译器 (Authorization & Compiler)",
+      "description": "实现 Code-as-Config 权限编译器，自动生成 P.* 与 F.* 强类型常量；建立 Role、UserRole、RolePermission 表，提供前端 <Can> 门禁与服务端 @RequirePermission",
+      "dependencies": ["foundation-tenant-auth"],
+      "status": "not-started",
+      "owner": "implementer",
+      "evidence": ""
+    },
+    {
+      "id": "foundation-advanced-authz",
+      "name": "高级权限引擎 (Data Scope & Field Policy & Audit)",
+      "description": "支持五种数据范围 (SELF, DEPT, DEPT_TREE, CUSTOM_DEPT, ALL) 注入与过滤；实现敏感字段脱敏策略 (HIDDEN, READONLY, EDITABLE) 与切面审计日志 @Audit",
+      "dependencies": ["foundation-authorization"],
+      "status": "not-started",
+      "owner": "implementer",
+      "evidence": ""
+    },
+    {
+      "id": "foundation-migration",
+      "name": "多租户数据库迁移引擎 (Tenant DB Migration CLI)",
+      "description": "提供 tooling/tenant-migrate 工具，对每个独立租户数据库进行幂等、可追溯、可重试的版本升级，记录 TenantMigration 账本",
+      "dependencies": ["foundation-advanced-authz"],
+      "status": "not-started",
+      "owner": "implementer",
+      "evidence": ""
+    },
+    {
+      "id": "procurement-center",
+      "name": "采购中心业务特性验收 (Procurement Center Feature)",
+      "description": "以最小采购订单为首个真实 Feature 落地 packages/features/procurement-center，闭环验证 RBAC、数据范围、敏感成本价字段、禁止自审业务规则与租户隔离",
+      "dependencies": ["foundation-migration"],
+      "status": "not-started",
+      "owner": "implementer",
+      "evidence": ""
+    }
+  ]
+}
