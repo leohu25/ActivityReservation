@@ -16,6 +16,7 @@
 - `feature_list.json`
 - `AGENTS.md`
 - `.harness/**`
+- `design-system/**`
 
 ## 严禁修改的内容 (受保护区域)
 

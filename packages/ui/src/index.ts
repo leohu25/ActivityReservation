@@ -3,6 +3,9 @@ export * from "./components/button";
 export * from "./components/card";
 export * from "./components/input";
 export * from "./components/badge";
+export * from "./components/MetricCard";
+export * from "./components/ProcessStepper";
+export * from "./components/ExceptionList";
 export * from "./components/layout/DashboardShell";
 export * from "./components/layout/TopHeader";
 export * from "./components/layout/Sidebar";
@@ -46,7 +49,7 @@ export function PermissionField({
       "span",
       {
         className:
-          "rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700",
+          "rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700",
       },
       "只读",
     );
@@ -59,7 +62,9 @@ export function PermissionField({
       { className: "flex items-center justify-between mb-1" },
       React.createElement(
         "label",
-        { className: "text-xs font-semibold text-zinc-700 dark:text-zinc-300" },
+        {
+          className: "text-xs font-semibold text-slate-700 dark:text-slate-300",
+        },
         label,
       ),
       badgeElement,
@@ -70,7 +75,7 @@ export function PermissionField({
   if (isValidElement(children)) {
     const existingClass = children.props.className || "";
     const readOnlyClass = isReadOnly
-      ? "bg-zinc-100/70 text-zinc-500 cursor-not-allowed dark:bg-zinc-800/50 dark:text-zinc-400"
+      ? "bg-slate-100/70 text-slate-500 cursor-not-allowed dark:bg-slate-800/50 dark:text-slate-400"
       : "";
     childElement = cloneElement(children, {
       disabled: isReadOnly || children.props.disabled,

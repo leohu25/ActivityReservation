@@ -50,6 +50,10 @@
 - **TypeScript 强类型与零 any 纪律 (Strict TypeScript & Zero Any Discipline)**：
   - 严禁滥用 `any`。所有函数参数、返回值、复杂结构必须提供精确类型定义或合理的泛型约束；
   - 必须使用 `unknown`、`never`、类型守卫 (Type Guard) 或精准接口替换随意声明的 `any`；必要底层库类型断言必须有明确的上下文或 `SAFETY:` 说明，做到编译期类型安全与可预测性。
+- **工业级现代轻量 UI/UX 设计规范 (Clean Crisp Modern Industrial Cockpit)**：
+  - 遵循 `.harness/context/design-system.md` 与 `design-system/chenrun-digital-erp/MASTER.md`；
+  - 视觉基调为通透清爽的数智工业风：极浅冷灰蓝背景 (`#F4F7FB`)，纯白浮动大圆角卡片 (`rounded-2xl`，微边框与极轻弥散阴影)，品牌主色为科技蓝 (`#1864F5`)；
+  - 严禁滥用 Emoji 作业务图标，统一使用 `lucide-react` 矢量图标；所有数据看板指标必须标配 `tabular-nums` 等宽排版；保障 4.5:1 对比度与平滑交互反馈。
 
 ---
 

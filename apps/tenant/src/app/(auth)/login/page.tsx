@@ -4,9 +4,19 @@ import React, { useState } from "react";
 import { signIn, signUp } from "@chenrun/auth/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  Input,
+  Button,
+} from "@chenrun/ui";
+import { ShieldCheck, ArrowLeft, Loader2 } from "lucide-react";
 
 /**
- * 登录与注册独立路由页面
+ * 登录与注册独立路由页面 (遵循现代轻量数智风与 shadcn/ui)
  */
 export default function LoginPage() {
   const router = useRouter();
@@ -53,97 +63,115 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950 p-6">
-      <div className="w-full max-w-md rounded-3xl bg-white p-10 shadow-xl dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-        <div className="text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white font-bold text-lg shadow-md shadow-blue-500/20">
+    <div className="flex min-h-screen items-center justify-center bg-[#F4F7FB] p-6 dark:bg-slate-950 font-sans">
+      <Card className="w-full max-w-md border-slate-200/80 bg-white p-2 shadow-lg shadow-slate-200/50 dark:border-slate-800 dark:bg-slate-900 dark:shadow-none">
+        <CardHeader className="text-center pb-4">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 text-white font-black text-lg shadow-md shadow-blue-500/25 ring-1 ring-blue-500/20">
             CR
           </div>
-          <h2 className="mt-4 text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-            {isRegister ? "注册新账号" : "SaaS 租户用户登录"}
-          </h2>
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            晨润 ERP 统一身份与组织访问入口
-          </p>
-        </div>
+          <CardTitle className="mt-3 text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+            {isRegister ? "注册企业新账号" : "宸润数智 ERP 租户登录"}
+          </CardTitle>
+          <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
+            全链路数字化供应链与精益制造统一入口
+          </CardDescription>
+        </CardHeader>
 
-        {error && (
-          <div className="mt-6 rounded-xl bg-red-50 p-3.5 text-xs text-red-600 dark:bg-red-950/50 dark:text-red-400 border border-red-200 dark:border-red-900">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          {isRegister && (
-            <div>
-              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                用户姓名 / 昵称
-              </label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="例如：张三"
-                className="mt-1 block w-full rounded-xl border border-zinc-300 px-3.5 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-              />
+        <CardContent>
+          {error && (
+            <div className="mb-4 rounded-xl bg-rose-50 p-3 text-xs font-semibold text-rose-600 border border-rose-200/80 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/60">
+              {error}
             </div>
           )}
 
-          <div>
-            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-              邮箱地址
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="user@example.com"
-              className="mt-1 block w-full rounded-xl border border-zinc-300 px-3.5 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-            />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isRegister && (
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  用户姓名 / 称谓
+                </label>
+                <Input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="例如：王建国"
+                  className="rounded-lg"
+                />
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                企业工作邮箱
+              </label>
+              <Input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="operator@chenrun.com"
+                className="rounded-lg font-mono text-xs"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                账户登录密码
+              </label>
+              <Input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="rounded-lg"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-10 rounded-lg font-bold shadow-md shadow-blue-600/20"
+            >
+              {loading && <Loader2 className="size-4 animate-spin mr-1" />}
+              <span>
+                {loading
+                  ? "验证安全凭据..."
+                  : isRegister
+                    ? "立即完成注册"
+                    : "安全登录系统"}
+              </span>
+            </Button>
+          </form>
+
+          <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4 text-xs dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => {
+                setIsRegister(!isRegister);
+                setError(null);
+              }}
+              className="font-semibold text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400"
+            >
+              {isRegister ? "已有企业账号？点此登录" : "没有账号？点此快速注册"}
+            </button>
+
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+            >
+              <ArrowLeft className="size-3" />
+              <span>返回主页</span>
+            </Link>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-              账户密码
-            </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="mt-1 block w-full rounded-xl border border-zinc-300 px-3.5 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-            />
+          <div className="mt-4 flex items-center justify-center gap-1.5 text-[10px] text-slate-400">
+            <ShieldCheck className="size-3 text-emerald-500" />
+            <span>Database-per-Tenant 物理数据库独立加密隔离</span>
           </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-blue-600 py-3 text-sm font-bold text-white shadow-md hover:bg-blue-500 focus:ring-2 focus:ring-blue-600 focus:outline-none disabled:opacity-50 transition-colors"
-          >
-            {loading ? "提交处理中..." : isRegister ? "立即注册" : "安全登录"}
-          </button>
-        </form>
-
-        <div className="mt-6 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-          <button
-            type="button"
-            onClick={() => {
-              setIsRegister(!isRegister);
-              setError(null);
-            }}
-            className="text-blue-600 hover:underline dark:text-blue-400 font-semibold"
-          >
-            {isRegister ? "已有账号？点此登录" : "没有账号？点此快速注册"}
-          </button>
-
-          <Link href="/" className="hover:underline text-zinc-400">
-            返回首页
-          </Link>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -3,13 +3,14 @@ import { cn } from "../lib/utils";
 
 /**
  * shadcn/ui Card 容器组件
+ * 遵循现代数智工业风：纯白浮动、极细淡边框、柔和微弥散投影
  */
 export const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => {
     return React.createElement("div", {
       ref,
       className: cn(
-        "rounded-2xl border border-zinc-200 bg-white text-zinc-950 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50",
+        "rounded-2xl border border-slate-100 bg-white text-slate-900 shadow-xs transition-all duration-150 dark:border-slate-800/80 dark:bg-slate-900/90 dark:text-slate-100",
         className,
       ),
       ...props,
@@ -24,7 +25,7 @@ export const CardHeader = forwardRef<
 >(({ className, ...props }, ref) => {
   return React.createElement("div", {
     ref,
-    className: cn("flex flex-col space-y-1.5 p-6", className),
+    className: cn("flex flex-col space-y-1.5 p-5", className),
     ...props,
   });
 });
@@ -36,7 +37,10 @@ export const CardTitle = forwardRef<
 >(({ className, ...props }, ref) => {
   return React.createElement("h3", {
     ref,
-    className: cn("text-lg font-bold leading-none tracking-tight", className),
+    className: cn(
+      "text-sm font-bold leading-none tracking-tight text-slate-800 dark:text-slate-100",
+      className,
+    ),
     ...props,
   });
 });
@@ -48,7 +52,7 @@ export const CardDescription = forwardRef<
 >(({ className, ...props }, ref) => {
   return React.createElement("p", {
     ref,
-    className: cn("text-xs text-zinc-500 dark:text-zinc-400", className),
+    className: cn("text-xs text-slate-400 dark:text-slate-500", className),
     ...props,
   });
 });
@@ -60,7 +64,7 @@ export const CardContent = forwardRef<
 >(({ className, ...props }, ref) => {
   return React.createElement("div", {
     ref,
-    className: cn("p-6 pt-0", className),
+    className: cn("p-5 pt-0", className),
     ...props,
   });
 });
@@ -72,7 +76,7 @@ export const CardFooter = forwardRef<
 >(({ className, ...props }, ref) => {
   return React.createElement("div", {
     ref,
-    className: cn("flex items-center p-6 pt-0", className),
+    className: cn("flex items-center p-5 pt-0", className),
     ...props,
   });
 });
