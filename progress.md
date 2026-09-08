@@ -6,11 +6,11 @@
 
 ## 一、 当前会话状态 (Current State)
 
-- **当前目标**：多租户与身份认证底座 (`foundation-tenant-auth`)
+- **当前目标 (Current Objective)**：多租户与身份认证底座 (`foundation-tenant-auth`)
 - **激活特性**：`foundation-tenant-auth`
 - **执行人/角色**：implementer
 - **当前阶段**：已完成 (Completed)
-- **最后更新**：2026-09-07
+- **最后更新 (Last Updated)**：2026-09-07
 
 ---
 
@@ -45,7 +45,7 @@
 
 ---
 
-## 四、 下一步计划 (Next Steps)
+## 四、 下一步计划 (Recommended Next Step)
 
 - [ ] 切换至第四个特性：`foundation-authorization`
 - [ ] 集成 Better Auth Dynamic Access Control 与 CASL Ability Factory

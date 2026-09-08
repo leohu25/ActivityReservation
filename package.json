@@ -3,6 +3,10 @@
   "private": true,
   "packageManager": "pnpm@11.1.2",
   "scripts": {
+    "init": "./init.sh",
+    "status": "./scripts/status.sh",
+    "verify": "./scripts/verify.sh",
+    "session:end": "./scripts/session-end.sh",
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",

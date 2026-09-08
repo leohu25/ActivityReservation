@@ -59,6 +59,7 @@
 2. 更新 `feature_list.json` 中的特性完成状态与证据。
 3. 若存在未解决的风险或阻塞项，记录到 `session-handoff.md`。
 4. 运行 `./scripts/verify.sh` 确保留给下一会话一个可正常重启的干净代码库 (clean restartable state)。
+5. 运行 `./scripts/session-end.sh` (或 `pnpm session:end`) 执行物理收尾校验，确认交接闭环就绪。
 
 ---
 
@@ -73,6 +74,9 @@
 
 # 全栈极速门禁自检 (包含 type check, lint 与 test)
 ./scripts/verify.sh
+
+# 会话收尾与交接状态校验
+./scripts/session-end.sh
 ```
 
 ---

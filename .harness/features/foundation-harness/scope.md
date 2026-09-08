@@ -13,6 +13,9 @@
 - `.gitignore`
 - `scripts/`
 - `.harness/`
+- `package.json`
+- `pnpm-workspace.yaml`
+- `docs/harness-collaboration-guide.md`
 
 ## 严禁修改的内容
 
