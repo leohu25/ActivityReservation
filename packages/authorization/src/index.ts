@@ -40,3 +40,8 @@ export {
   type RoleFieldPolicyConfig,
 } from "./field-policy";
 export { getAccessibleWhere } from "./prisma-access";
+export {
+  AbilityContext,
+  createReactAbilityAdapter,
+  useAbility,
+} from "./react";

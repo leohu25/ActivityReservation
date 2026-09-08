@@ -1,8 +1,6 @@
 "use client";
 
-import React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import type { ComponentType, ReactNode } from "react";
 
 export interface NavItem {
   readonly id: string;
@@ -13,11 +11,18 @@ export interface NavItem {
   readonly requiredSubject?: string;
 }
 
-interface SidebarProps {
+export interface SidebarProps {
+  readonly navItems?: readonly NavItem[];
+  readonly currentPath?: string;
   readonly can?: (action: string, subject: string) => boolean;
+  readonly LinkComponent?: ComponentType<{
+    href: string;
+    className?: string;
+    children: ReactNode;
+  }>;
 }
 
-const NAV_ITEMS: readonly NavItem[] = [
+export const DEFAULT_NAV_ITEMS: readonly NavItem[] = [
   {
     id: "workbench",
     label: "权限控制台",
@@ -40,14 +45,30 @@ const NAV_ITEMS: readonly NavItem[] = [
   },
 ];
 
+const DefaultLink = ({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className?: string;
+  children: ReactNode;
+}) => (
+  <a href={href} className={className}>
+    {children}
+  </a>
+);
+
 /**
  * ERP 统一后台左侧导航侧边栏
- * 使用 Next.js usePathname 与 Link 组件进行原生路由跳转，彻底消除函数 Props 跨 Server/Client 传递问题
  */
-export function Sidebar({ can }: SidebarProps) {
-  const pathname = usePathname();
-
-  const visibleItems = NAV_ITEMS.filter((item) => {
+export function Sidebar({
+  navItems = DEFAULT_NAV_ITEMS,
+  currentPath = "",
+  can,
+  LinkComponent = DefaultLink,
+}: SidebarProps) {
+  const visibleItems = navItems.filter((item) => {
     if (!item.requiredAction || !item.requiredSubject) {
       return true;
     }
@@ -56,6 +77,8 @@ export function Sidebar({ can }: SidebarProps) {
     }
     return can(item.requiredAction, item.requiredSubject);
   });
+
+  const Link = LinkComponent;
 
   return (
     <aside className="w-64 border-r border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/50 flex flex-col justify-between shrink-0">
@@ -66,8 +89,8 @@ export function Sidebar({ can }: SidebarProps) {
         <nav className="space-y-1">
           {visibleItems.map((item) => {
             const isActive =
-              pathname === item.href ||
-              (item.href !== "/" && pathname.startsWith(item.href));
+              currentPath === item.href ||
+              (item.href !== "/" && currentPath.startsWith(item.href));
             return (
               <Link
                 key={item.id}

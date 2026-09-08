@@ -2,12 +2,19 @@
 
 ## 允许修改的文件与目录 (修改白名单)
 
+- `apps/platform/**`
 - `apps/tenant/**`
+- `packages/features/**`
+- `packages/ui/**`
+- `packages/auth/**`
+- `packages/authorization/**`
 - `packages/db-control/**`
 - `packages/shared/**`
+- `tsconfig.base.json`
 - `pnpm-lock.yaml`
 - `feature_list.json`
-- `.harness/features/foundation-platform-admin/**`
+- `AGENTS.md`
+- `.harness/**`
 
 ## 严禁修改的内容 (受保护区域)
 

@@ -3,6 +3,9 @@ export * from "./components/button";
 export * from "./components/card";
 export * from "./components/input";
 export * from "./components/badge";
+export * from "./components/layout/DashboardShell";
+export * from "./components/layout/TopHeader";
+export * from "./components/layout/Sidebar";
 
 import React, { cloneElement, isValidElement } from "react";
 

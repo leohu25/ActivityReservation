@@ -2,7 +2,7 @@
 
 import React from "react";
 
-interface DashboardShellProps {
+export interface DashboardShellProps {
   readonly children: React.ReactNode;
   readonly header: React.ReactNode;
   readonly sidebar: React.ReactNode;

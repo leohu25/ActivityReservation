@@ -71,9 +71,9 @@
       "name": "平台运营商总控面板与租户开通中心 (Platform Super Admin & Provisioning Portal)",
       "description": "提供平台运营商独立管理视图，支持平台管理员总控查看所有租户、开通新租户并触发物理数据库 Provisioning、配置租户初始管理员账号与状态管控",
       "dependencies": ["foundation-migration"],
-      "status": "not-started",
+      "status": "completed",
       "owner": "implementer",
-      "evidence": ""
+      "evidence": "落地平台超管 Fail-Closed 鉴权守卫与 PlatformAdminService；实现多租户指标卡片与生命周期运维表格，集成 TenantProvisioner 自动创建独立物理库并执行基线迁移；全仓 7 个测试套件 64/64 单测 100% 通过、9/9 包类型检查 0 错误、Next.js 生产构建通过与 Reviewer 独立审计 PASS"
     },
     {
       "id": "foundation-tenant-rbac-ui",

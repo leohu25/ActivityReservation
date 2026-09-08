@@ -1,16 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import { signIn, signUp } from "@/lib/auth/client";
+import { signIn, signUp } from "../client";
 
-interface AuthModalProps {
+export interface AuthModalProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
   readonly onSuccess?: () => void;
 }
 
 /**
- * 认证模态框：支持邮箱密码登录与快捷注册
+ * 认证模态框组件：支持邮箱密码登录与快捷注册
  */
 export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   const [isRegister, setIsRegister] = useState(false);
@@ -71,7 +71,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           <button
             type="button"
             onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
           >
             ✕
           </button>
@@ -109,14 +109,14 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="user@example.com"
+              placeholder="name@example.com"
               className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              账户密码
+              密码
             </label>
             <input
               type="password"
@@ -131,13 +131,13 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus:ring-2 focus:ring-blue-600 focus:outline-none disabled:opacity-50 transition-colors"
+            className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 disabled:opacity-50 transition-colors cursor-pointer"
           >
-            {loading ? "提交处理中..." : isRegister ? "立即注册" : "安全登录"}
+            {loading ? "提交中..." : isRegister ? "立即注册" : "确认登录"}
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
+        <div className="mt-6 text-center text-xs text-zinc-500 dark:text-zinc-400">
           {isRegister ? "已有账号？" : "还没有账号？"}
           <button
             type="button"
@@ -145,9 +145,9 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               setIsRegister(!isRegister);
               setError(null);
             }}
-            className="ml-1 text-blue-600 hover:underline dark:text-blue-400 font-medium"
+            className="ml-1 text-blue-600 hover:underline dark:text-blue-400 font-medium cursor-pointer"
           >
-            {isRegister ? "点此登录" : "点此注册"}
+            {isRegister ? "直接登录" : "免费注册"}
           </button>
         </div>
       </div>

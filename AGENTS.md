@@ -35,6 +35,12 @@
 
 ## 架构与工程规范 (Architectural & Engineering Principles)
 
+- **Turborepo 多应用解耦与极薄路由 (Multi-App Decoupling & Thin Routing)**：
+  - `apps/tenant`（租户端 SaaS ERP）与 `apps/platform`（平台运营商总控）双核独立部署，物理隔离租户上下文与跨租户运维视界；
+  - `apps/*/src/app/` 仅作为页面路由与权限上下文的装配层（Thin Routing），严禁在应用内部直接编写领域业务服务或直接 SQL 查询。
+- **FDD (Feature-Driven Development) 垂直切片规范**：
+  - 核心领域业务逻辑、专属 UI 交互组件、权限事实源与 DTO 类型全部内聚沉淀在 `packages/features/<feature-name>/` 专属包中；
+  - 每个垂直切片包保持自包含与高内聚，应用通过引用切片包进行路由挂载，严禁跨切片循环依赖。
 - **高内聚、低耦合、单一职责 (High Cohesion, Low Coupling, Single Responsibility)**：
   - 模块与包之间职责边界绝对清晰，业务切片独立内聚，底座包仅提供纯粹的基础服务与抽象契约，严禁循环依赖或倒置反向依赖。
   - 函数与类严格遵循单一职责，避免巨石函数与过度泛化的“瑞士军刀”结构；跨层调用依赖明确接口或强类型契约。

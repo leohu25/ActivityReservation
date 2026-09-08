@@ -1,27 +1,27 @@
 "use client";
 
-import { OrgSwitcher } from "@/components/auth/OrgSwitcher";
-import { signOut } from "@/lib/auth/client";
+import type { ReactNode } from "react";
 
-interface TopHeaderProps {
+export interface TopHeaderProps {
   readonly user?: {
     name?: string | null;
     email: string;
   } | null;
-  readonly activeOrgId?: string | null;
+  readonly orgSwitcherSlot?: ReactNode;
+  readonly onSignOut?: () => void | Promise<void>;
   readonly onOpenLogin?: () => void;
 }
 
 /**
  * ERP 统一后台顶部栏
- * 包含：系统品牌、租户切换器、当前用户信息与登录/退出操作
+ * 包含：系统品牌、租户切换槽位、当前用户信息与登录/退出操作
  */
-export function TopHeader({ user, activeOrgId, onOpenLogin }: TopHeaderProps) {
-  const handleSignOut = async () => {
-    await signOut();
-    window.location.reload();
-  };
-
+export function TopHeader({
+  user,
+  orgSwitcherSlot,
+  onSignOut,
+  onOpenLogin,
+}: TopHeaderProps) {
   return (
     <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b border-zinc-200 bg-white/80 px-6 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/80">
       <div className="flex items-center gap-6">
@@ -39,7 +39,7 @@ export function TopHeader({ user, activeOrgId, onOpenLogin }: TopHeaderProps) {
           </div>
         </div>
 
-        {user && <OrgSwitcher activeOrgId={activeOrgId} />}
+        {user && orgSwitcherSlot}
       </div>
 
       <div className="flex items-center gap-4">
@@ -53,8 +53,8 @@ export function TopHeader({ user, activeOrgId, onOpenLogin }: TopHeaderProps) {
             </div>
             <button
               type="button"
-              onClick={handleSignOut}
-              className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 transition-colors"
+              onClick={onSignOut}
+              className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 transition-colors cursor-pointer"
             >
               退出登录
             </button>
@@ -63,7 +63,7 @@ export function TopHeader({ user, activeOrgId, onOpenLogin }: TopHeaderProps) {
           <button
             type="button"
             onClick={onOpenLogin}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 transition-colors"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 transition-colors cursor-pointer"
           >
             登录 / 注册
           </button>

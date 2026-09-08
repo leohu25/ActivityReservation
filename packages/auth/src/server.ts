@@ -61,13 +61,13 @@ export type ServerAuthRuntime = ReturnType<typeof createServerAuth>;
 let singleton: ServerAuthRuntime | undefined;
 
 /** Lazily initializes server auth so build-time module evaluation needs no secrets. */
-export function getServerAuthRuntime(): ServerAuthRuntime {
+export function getServerAuthRuntime(options?: ServerAuthOptions): ServerAuthRuntime {
   if (singleton) {
     return singleton;
   }
 
-  const databaseUrl = process.env.CONTROL_DATABASE_URL;
-  const secret = process.env.BETTER_AUTH_SECRET;
+  const databaseUrl = options?.databaseUrl ?? process.env.CONTROL_DATABASE_URL;
+  const secret = options?.secret ?? process.env.BETTER_AUTH_SECRET;
   if (!databaseUrl) {
     throw new Error("CONTROL_DATABASE_URL is required");
   }
@@ -78,7 +78,8 @@ export function getServerAuthRuntime(): ServerAuthRuntime {
   singleton = createServerAuth({
     databaseUrl,
     secret,
-    baseURL: process.env.BETTER_AUTH_URL,
+    baseURL: options?.baseURL ?? process.env.BETTER_AUTH_URL,
+    organizationAccessControl: options?.organizationAccessControl,
   });
   return singleton;
 }

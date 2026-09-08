@@ -2,7 +2,7 @@
 
 import React, { useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { authClient } from "@/lib/auth/client";
+import { authClient } from "../client";
 import { Button, Input } from "@chenrun/ui";
 
 interface OrgItem {
@@ -11,7 +11,7 @@ interface OrgItem {
   slug: string;
 }
 
-interface OrgSwitcherProps {
+export interface OrgSwitcherProps {
   readonly activeOrgId?: string | null;
   readonly onOrgChanged?: () => void;
 }
@@ -19,7 +19,7 @@ interface OrgSwitcherProps {
 const emptySubscribe = () => () => {};
 
 /**
- * 租户(Organization)切换与创建组件
+ * 租户(Organization)切换与创建客户端组件 (基于 Better Auth client)
  */
 export function OrgSwitcher({ activeOrgId, onOrgChanged }: OrgSwitcherProps) {
   const {
@@ -32,7 +32,6 @@ export function OrgSwitcher({ activeOrgId, onOrgChanged }: OrgSwitcherProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 使用 useSyncExternalStore 安全判断客户端注水，消除 useEffect 中的 setState 级联渲染警告
   const isMounted = useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -66,7 +65,6 @@ export function OrgSwitcher({ activeOrgId, onOrgChanged }: OrgSwitcherProps) {
     setLoading(true);
     setError(null);
     try {
-      // 英文数字转 slug，若全中文则生成唯一安全 slug
       const pinyinOrAscii = trimmed
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
@@ -105,12 +103,16 @@ export function OrgSwitcher({ activeOrgId, onOrgChanged }: OrgSwitcherProps) {
   };
 
   if (isPending) {
-    return <div className="text-xs text-zinc-400">加载租户中...</div>;
+    return (
+      <div className="flex items-center gap-2 text-xs text-zinc-400">
+        <span className="h-2 w-2 animate-ping rounded-full bg-blue-500" />
+        加载租户中...
+      </div>
+    );
   }
 
   const activeOrg = orgList.find((o) => o.id === activeOrgId);
 
-  // 模态框通过 React Portal 直接挂载到 document.body，彻底脱离任何相对定位/变换容器
   const modalElement =
     isCreating && isMounted && typeof document !== "undefined"
       ? createPortal(
@@ -126,37 +128,40 @@ export function OrgSwitcher({ activeOrgId, onOrgChanged }: OrgSwitcherProps) {
                     setIsCreating(false);
                     setError(null);
                   }}
-                  className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                  className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
                 >
                   ✕
                 </button>
               </div>
 
               {error && (
-                <div className="mt-4 rounded-xl bg-red-50 p-3 text-xs text-red-600 dark:bg-red-950/50 dark:text-red-400 border border-red-200 dark:border-red-900">
+                <div className="mt-3 rounded-lg bg-red-50 p-2.5 text-xs text-red-600 dark:bg-red-950/50 dark:text-red-400 border border-red-200 dark:border-red-900">
                   {error}
                 </div>
               )}
 
               <form onSubmit={handleCreateOrg} className="mt-4 space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                    租户企业 / 分部名称
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                    组织 / 企业名称
                   </label>
                   <Input
                     type="text"
                     required
-                    autoFocus
                     value={newOrgName}
                     onChange={(e) => setNewOrgName(e.target.value)}
-                    placeholder="例如：晨润华东分部"
+                    placeholder="例如：江苏晨润实业有限公司"
+                    className="mt-1"
                   />
+                  <p className="mt-1 text-[11px] text-zinc-400">
+                    系统将自动生成物理数据库标识，并建立隔离的数据空间。
+                  </p>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-2">
+                <div className="flex items-center justify-end gap-2 pt-2">
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={() => {
                       setIsCreating(false);
@@ -170,7 +175,7 @@ export function OrgSwitcher({ activeOrgId, onOrgChanged }: OrgSwitcherProps) {
                     size="sm"
                     disabled={loading || !newOrgName.trim()}
                   >
-                    {loading ? "创建激活中..." : "确认创建"}
+                    {loading ? "创建中..." : "立即创建"}
                   </Button>
                 </div>
               </form>
@@ -181,42 +186,39 @@ export function OrgSwitcher({ activeOrgId, onOrgChanged }: OrgSwitcherProps) {
       : null;
 
   return (
-    <div className="relative inline-block text-left">
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-          当前组织:
-        </span>
+    <>
+      <div className="relative inline-flex items-center gap-2">
         <select
           value={activeOrgId || ""}
-          disabled={loading}
           onChange={(e) => {
             const val = e.target.value;
-            if (val === "__NEW__") {
+            if (val === "__new__") {
               setIsCreating(true);
-              setError(null);
             } else if (val) {
               handleSelectOrg(val);
             }
           }}
-          className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-800 shadow-xs focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 cursor-pointer"
+          disabled={loading}
+          className="h-9 rounded-xl border border-zinc-200 bg-zinc-50/80 px-3 pr-8 text-xs font-semibold text-zinc-800 shadow-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 cursor-pointer"
         >
-          {activeOrg ? (
-            <option value={activeOrg.id}>{activeOrg.name}</option>
-          ) : (
-            <option value="">未选择组织</option>
-          )}
-          {orgList
-            .filter((o) => o.id !== activeOrgId)
-            .map((org) => (
-              <option key={org.id} value={org.id}>
-                {org.name}
-              </option>
-            ))}
-          <option value="__NEW__">+ 新建组织/租户...</option>
+          {orgList.length === 0 && <option value="">暂无租户组织</option>}
+          {orgList.map((org) => (
+            <option key={org.id} value={org.id}>
+              🏢 {org.name} ({org.slug})
+            </option>
+          ))}
+          <option disabled>──────────</option>
+          <option value="__new__">➕ 新建企业租户...</option>
         </select>
+
+        {activeOrg && (
+          <span className="hidden md:inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-950/40 dark:text-emerald-400">
+            活跃租户
+          </span>
+        )}
       </div>
 
       {modalElement}
-    </div>
+    </>
   );
 }

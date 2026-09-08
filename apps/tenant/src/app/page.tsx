@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getServerAuthRuntime } from "@/lib/auth";
+import { getServerAuthRuntime } from "@chenrun/auth";
 
 /**
  * 根门户路由 (App Router Root Page)

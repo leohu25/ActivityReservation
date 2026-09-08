@@ -1,9 +1,8 @@
 import React from "react";
 import { headers } from "next/headers";
-import { getServerAuthRuntime } from "@/lib/auth";
-import { TopHeader } from "@/components/layout/TopHeader";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { getServerAuthRuntime } from "@chenrun/auth";
+import { OrgSwitcher } from "@chenrun/auth/client";
+import { TopHeader, Sidebar, DashboardShell } from "@chenrun/ui";
 import { redirect } from "next/navigation";
 
 interface DashboardLayoutProps {
@@ -11,8 +10,8 @@ interface DashboardLayoutProps {
 }
 
 /**
- * 后台系统主布局（Server Component）
- * 真实读取当前请求的 Better Auth Session 与租户组织信息，杜绝死数据
+ * 后台系统主布局（Server Component - 极薄装配线）
+ * 真实读取当前请求的 Better Auth Session 与租户组织信息，挂载 @chenrun/ui 布局组件与 @chenrun/auth 租户切换器
  */
 export default async function DashboardLayout({
   children,
@@ -36,7 +35,12 @@ export default async function DashboardLayout({
 
   return (
     <DashboardShell
-      header={<TopHeader user={user} activeOrgId={activeOrgId} />}
+      header={
+        <TopHeader
+          user={user}
+          orgSwitcherSlot={<OrgSwitcher activeOrgId={activeOrgId} />}
+        />
+      }
       sidebar={<Sidebar />}
     >
       {children}

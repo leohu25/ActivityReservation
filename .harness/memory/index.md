@@ -6,7 +6,8 @@
 
 - [ADR-001: FDD 垂直切片与 Harness 协作工程](adr/ADR-001-fdd-and-harness.md)
 - [ADR-002: PostgreSQL Database-per-Tenant 租户物理隔离](adr/ADR-002-database-per-tenant.md)
-- [ADR-003: 四层权限架构与 Code-as-Config 编译器](adr/ADR-003-four-tier-permissions.md)
+- [ADR-003: 成熟框架版四层权限架构 (Better Auth + CASL)](adr/ADR-003-four-tier-permissions.md)
+- [ADR-004: Turborepo 多应用解耦与 FDD 垂直切片规范](adr/ADR-004-fdd-vertical-slices-and-multi-app.md)
 
 ## 二、 踩坑经验与避雷库 (Learnings)
 

@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
-import { getServerAuthRuntime } from "@/lib/auth";
+import { getServerAuthRuntime } from "@chenrun/auth";
 import { CaslAbilityFactory } from "@chenrun/authorization";
-import { applicationPermissionCatalog } from "@/lib/authorization/catalog";
+import { procurementCatalog } from "@chenrun/feature-procurement-center";
 import {
   Card,
   CardHeader,
@@ -60,7 +60,7 @@ export default async function WorkbenchPage() {
   // 3. 构造 CASL Ability Factory 并动态编译真实 Ability
   const factory = new CaslAbilityFactory(
     runtime.tenantContextRepository,
-    applicationPermissionCatalog,
+    procurementCatalog,
   );
 
   const topology = {
