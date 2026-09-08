@@ -11,7 +11,12 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "check": "turbo run check",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "migrate": "pnpm --filter @chenrun/tenant-migrate migrate",
+    "migrate:gen": "pnpm --filter @chenrun/tenant-migrate migrate generate",
+    "migrate:up": "pnpm --filter @chenrun/tenant-migrate migrate up",
+    "migrate:status": "pnpm --filter @chenrun/tenant-migrate migrate status",
+    "migrate:retry": "pnpm --filter @chenrun/tenant-migrate migrate retry"
   },
   "devDependencies": {
     "turbo": "^2.4.4",

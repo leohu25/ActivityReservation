@@ -108,10 +108,12 @@ async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   const { command, positionals, options } = parseArgs(argv);
 
-  const workspaceRoot = path.resolve(process.cwd());
+  const cliDir = import.meta.dirname;
+  const packageDir = path.resolve(cliDir, "..");
+  const workspaceRoot = path.resolve(packageDir, "../..");
   const defaultMigrationsDir = path.join(
-    workspaceRoot,
-    "tooling/tenant-migrate/migrations",
+    packageDir,
+    "migrations",
   );
   const defaultSchemaPath = path.join(
     workspaceRoot,
