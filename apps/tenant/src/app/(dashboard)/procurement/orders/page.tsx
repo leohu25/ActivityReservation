@@ -109,6 +109,11 @@ export default async function ProcurementOrdersPage() {
     "read",
   );
   const canCreate = prismaAbility.can("create", ProcurementSubject);
+  const canCreateCostPrice = prismaAbility.can(
+    "create",
+    ProcurementSubject,
+    "costPrice",
+  );
   const canAuditGlobal = prismaAbility.can("audit", ProcurementSubject);
   const canExport = prismaAbility.can("export", ProcurementSubject);
   const isCostPriceVisible = prismaAbility.can(
@@ -126,6 +131,12 @@ export default async function ProcurementOrdersPage() {
     departmentName = dept?.name ?? topology.departmentId;
   }
 
+  const createFieldModes = {
+    supplierName: "EDITABLE" as const,
+    quantity: "EDITABLE" as const,
+    costPrice: canCreateCostPrice ? ("EDITABLE" as const) : ("HIDDEN" as const),
+  };
+
   return (
     <ProcurementOrderCenter
       orders={orders}
@@ -137,7 +148,7 @@ export default async function ProcurementOrdersPage() {
       canExport={canExport}
       isCostPriceVisible={isCostPriceVisible}
       currentUserId={tenantCtx.user.id}
-      ability={prismaAbility}
+      createFieldModes={createFieldModes}
     />
   );
 }

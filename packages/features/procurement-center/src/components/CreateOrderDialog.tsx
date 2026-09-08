@@ -16,13 +16,15 @@ import { createOrderAction } from "../actions";
 import type { ProcurementAnyAbility } from "../types";
 
 export interface CreateOrderDialogProps {
-  readonly ability: ProcurementAnyAbility;
+  readonly ability?: ProcurementAnyAbility;
+  readonly fieldModes?: Record<string, "EDITABLE" | "READONLY" | "HIDDEN">;
   readonly departmentName?: string | null;
   readonly onCreated?: () => void;
 }
 
 export function CreateOrderDialog({
   ability,
+  fieldModes,
   departmentName,
   onCreated,
 }: CreateOrderDialogProps) {
@@ -139,6 +141,7 @@ export function CreateOrderDialog({
 
                 <AuthorizedField
                   ability={ability}
+                  mode={fieldModes?.supplierName}
                   subject="PurchaseOrder"
                   field="supplierName"
                   action="create"
@@ -156,6 +159,7 @@ export function CreateOrderDialog({
                 <div className="grid grid-cols-2 gap-4">
                   <AuthorizedField
                     ability={ability}
+                    mode={fieldModes?.quantity}
                     subject="PurchaseOrder"
                     field="quantity"
                     action="create"
@@ -173,6 +177,7 @@ export function CreateOrderDialog({
 
                   <AuthorizedField
                     ability={ability}
+                    mode={fieldModes?.costPrice}
                     subject="PurchaseOrder"
                     field="costPrice"
                     action="create"

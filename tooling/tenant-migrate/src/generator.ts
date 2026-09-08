@@ -84,11 +84,15 @@ export function generateMigrationFromSchema(
 
   let diffSql = "";
 
+  const schemaDir = path.dirname(input.schemaPath);
+  const packageDir = path.dirname(schemaDir);
+
   try {
     if (existingMigrations.length === 0) {
-      // 首次生成：从空基线对比当前 Schema
+      // 首次生成：从空基线对比当前 Schema (指定包含 prisma.config.ts 的包目录为 cwd)
       const cmd = `pnpm exec prisma migrate diff --from-empty --to-schema "${input.schemaPath}" --script`;
       diffSql = execSync(cmd, {
+        cwd: packageDir,
         encoding: "utf-8",
         stdio: ["pipe", "pipe", "pipe"],
       });
@@ -96,6 +100,7 @@ export function generateMigrationFromSchema(
       // 增量生成：从已有迁移历史对比当前 Schema
       const cmd = `pnpm exec prisma migrate diff --from-migrations "${input.migrationsDir}" --to-schema "${input.schemaPath}" --script`;
       diffSql = execSync(cmd, {
+        cwd: packageDir,
         encoding: "utf-8",
         stdio: ["pipe", "pipe", "pipe"],
       });

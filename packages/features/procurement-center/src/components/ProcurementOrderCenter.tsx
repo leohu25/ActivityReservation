@@ -33,7 +33,8 @@ export interface ProcurementOrderCenterProps {
   readonly canExport: boolean;
   readonly isCostPriceVisible: boolean;
   readonly currentUserId: string;
-  readonly ability: ProcurementAnyAbility;
+  readonly ability?: ProcurementAnyAbility;
+  readonly createFieldModes?: Record<string, "EDITABLE" | "READONLY" | "HIDDEN">;
 }
 
 export function ProcurementOrderCenter({
@@ -46,6 +47,7 @@ export function ProcurementOrderCenter({
   canExport,
   isCostPriceVisible,
   ability,
+  createFieldModes,
 }: ProcurementOrderCenterProps) {
   const [selectedAuditOrder, setSelectedAuditOrder] = useState<ProcurementOrderItem | null>(null);
 
@@ -90,6 +92,7 @@ export function ProcurementOrderCenter({
           {canCreate && (
             <CreateOrderDialog
               ability={ability}
+              fieldModes={createFieldModes}
               departmentName={departmentName}
             />
           )}
