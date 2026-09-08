@@ -37,7 +37,8 @@ export default async function WorkbenchPage() {
             ⚠️ 尚未选择或激活任何 ERP 租户组织
           </CardTitle>
           <CardDescription className="text-amber-700 dark:text-amber-300">
-            晨润 ERP 采用严格的 Database-per-Tenant 物理隔离机制。请在顶部导航栏下拉菜单中选择现有组织或新建租户组织。
+            晨润 ERP 采用严格的 Database-per-Tenant
+            物理隔离机制。请在顶部导航栏下拉菜单中选择现有组织或新建租户组织。
           </CardDescription>
         </CardHeader>
       </Card>
@@ -136,14 +137,30 @@ export default async function WorkbenchPage() {
               {activeOrg?.name ?? "默认企业租户"}
             </h1>
             <p className="mt-2 text-sm text-blue-100">
-              组织标识: <code className="font-mono bg-white/10 px-1.5 py-0.5 rounded">{activeOrg?.slug}</code> |
-              当前用户: <span className="font-bold">{session.user.name || session.user.email}</span> |
-              角色: <Badge variant="secondary" className="ml-1 text-white bg-blue-500/50">{currentMember?.role ?? "普通成员"}</Badge>
+              组织标识:{" "}
+              <code className="font-mono bg-white/10 px-1.5 py-0.5 rounded">
+                {activeOrg?.slug}
+              </code>{" "}
+              | 当前用户:{" "}
+              <span className="font-bold">
+                {session.user.name || session.user.email}
+              </span>{" "}
+              | 角色:{" "}
+              <Badge
+                variant="secondary"
+                className="ml-1 text-white bg-blue-500/50"
+              >
+                {currentMember?.role ?? "普通成员"}
+              </Badge>
             </p>
           </div>
 
           <Link href="/procurement/orders">
-            <Button variant="secondary" size="lg" className="rounded-2xl font-bold text-blue-700">
+            <Button
+              variant="secondary"
+              size="lg"
+              className="rounded-2xl font-bold text-blue-700"
+            >
               前往采购订单中心 →
             </Button>
           </Link>
@@ -175,7 +192,9 @@ export default async function WorkbenchPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm">
               <span>📝</span>
-              <span>字段权限三态交互 (&lt;PermissionField&gt; + shadcn/ui)</span>
+              <span>
+                字段权限三态交互 (&lt;PermissionField&gt; + shadcn/ui)
+              </span>
             </CardTitle>
             <CardDescription>
               基于角色策略动态渲染只读或可写 Input 组件：
@@ -190,7 +209,10 @@ export default async function WorkbenchPage() {
               label="采购成本价 (costPrice) —— 核心保密资产"
               mode={currentMember?.role === "owner" ? "EDITABLE" : "READONLY"}
             >
-              <Input defaultValue="¥ 246,800.00" className="font-semibold text-emerald-600 dark:text-emerald-400" />
+              <Input
+                defaultValue="¥ 246,800.00"
+                className="font-semibold text-emerald-600 dark:text-emerald-400"
+              />
             </PermissionField>
           </CardContent>
         </Card>

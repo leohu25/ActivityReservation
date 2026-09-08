@@ -103,7 +103,11 @@ export default async function ProcurementOrdersPage() {
 
   // 3. 计算数据范围与字段访问权限
   const sqlWhere = getAccessibleWhere(prismaAbility, "PurchaseOrder", "read");
-  const isCostPriceVisible = prismaAbility.can("read", "PurchaseOrder", "costPrice");
+  const isCostPriceVisible = prismaAbility.can(
+    "read",
+    "PurchaseOrder",
+    "costPrice",
+  );
   const canCreate = prismaAbility.can("create", "PurchaseOrder");
   const canAudit = prismaAbility.can("audit", "PurchaseOrder");
 
@@ -134,7 +138,10 @@ export default async function ProcurementOrdersPage() {
       <div className="flex items-center justify-between border-b border-zinc-200 pb-4 dark:border-zinc-800">
         <div>
           <div className="flex items-center gap-2">
-            <Link href="/workbench" className="text-xs text-blue-600 hover:underline">
+            <Link
+              href="/workbench"
+              className="text-xs text-blue-600 hover:underline"
+            >
               ← 返回工作台
             </Link>
           </div>
@@ -142,7 +149,8 @@ export default async function ProcurementOrdersPage() {
             采购订单中心 (Procurement Orders)
           </h1>
           <p className="mt-1 text-xs text-zinc-500">
-            真实 CASL 动态鉴权：按钮依权限展示、敏感成本价依字段策略控制、查询遵循数据范围下推
+            真实 CASL
+            动态鉴权：按钮依权限展示、敏感成本价依字段策略控制、查询遵循数据范围下推
           </p>
         </div>
 
@@ -168,7 +176,11 @@ export default async function ProcurementOrdersPage() {
 
       {/* 实时下推与字段权限说明看板 */}
       <div className="rounded-2xl bg-zinc-950 p-4 font-mono text-xs text-emerald-400">
-        <div className="text-zinc-500 mb-1">{"// 当前租户下推的 Prisma 查询条件 (通过 @casl/prisma accessibleBy 提取):"}</div>
+        <div className="text-zinc-500 mb-1">
+          {
+            "// 当前租户下推的 Prisma 查询条件 (通过 @casl/prisma accessibleBy 提取):"
+          }
+        </div>
         <pre>{JSON.stringify(sqlWhere, null, 2)}</pre>
       </div>
 
@@ -188,7 +200,10 @@ export default async function ProcurementOrdersPage() {
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
             {sampleOrders.map((order) => (
-              <tr key={order.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+              <tr
+                key={order.id}
+                className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
+              >
                 <td className="px-6 py-4 font-mono font-medium text-zinc-900 dark:text-zinc-100">
                   {order.orderNo}
                 </td>

@@ -12,7 +12,11 @@ interface DashboardShellProps {
  * ERP 统一后台主容器 Shell
  * 负责整体左右两栏响应式布局
  */
-export function DashboardShell({ children, header, sidebar }: DashboardShellProps) {
+export function DashboardShell({
+  children,
+  header,
+  sidebar,
+}: DashboardShellProps) {
   return (
     <div className="flex h-screen w-full flex-col bg-zinc-100 dark:bg-zinc-950 font-sans">
       {header}

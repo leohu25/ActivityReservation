@@ -30,7 +30,9 @@ export function PermissionField({
   fallback = null,
 }: PermissionFieldProps) {
   if (mode === "HIDDEN") {
-    return fallback ? React.createElement(React.Fragment, null, fallback) : null;
+    return fallback
+      ? React.createElement(React.Fragment, null, fallback)
+      : null;
   }
 
   const isReadOnly = mode === "READONLY";

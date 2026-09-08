@@ -26,7 +26,9 @@ function isEmptyOrCondition(condition: PrismaQueryCondition): boolean {
  * 当 Ability 规则中包含数据范围条件时，直接下推为 Prisma 条件对象。
  * 若无权限或匹配失败，一律 Fail-Closed 返回拒绝条件 ({ AND: [{ id: "__NO_PERMISSION_FAIL_CLOSED__" }] })。
  */
-export function getAccessibleWhere<TAbility extends PrismaAbility<[string, string]>>(
+export function getAccessibleWhere<
+  TAbility extends PrismaAbility<[string, string]>,
+>(
   ability: TAbility,
   subject: string,
   action: string = "read",
@@ -35,12 +37,17 @@ export function getAccessibleWhere<TAbility extends PrismaAbility<[string, strin
     // SAFETY: accessibleBy 需要接受特定泛型能力，此处传入 TAbility 并在未知 action 时安全降级
     const accessible = accessibleBy(ability, action as never);
     // SAFETY: AccessibleRecords 在运行时提供基于 Subject 模型的属性访问器与动态 Getter
-    const records = accessible as unknown as Record<string, PrismaQueryCondition>;
+    const records = accessible as unknown as Record<
+      string,
+      PrismaQueryCondition
+    >;
     // SAFETY: AccessibleRecords 具备 ofType(subject) 方法可显式获取该 Subject 的条件对象
     const ofTypeRecords = accessible as unknown as OfTypeAccessible;
     const where =
       records[subject] ??
-      (typeof ofTypeRecords.ofType === "function" ? ofTypeRecords.ofType(subject) : undefined);
+      (typeof ofTypeRecords.ofType === "function"
+        ? ofTypeRecords.ofType(subject)
+        : undefined);
 
     // @casl/prisma 在无权限或完全被拒绝时返回 { OR: [] }，需要对其统一归一化为标准的 Fail-Closed 过滤条件
     if (where) {

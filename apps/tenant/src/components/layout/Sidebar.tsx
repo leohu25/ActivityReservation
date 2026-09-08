@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export interface NavItem {
   readonly id: string;
@@ -12,8 +14,6 @@ export interface NavItem {
 }
 
 interface SidebarProps {
-  readonly activeTab: string;
-  readonly onSelectTab: (tabId: string) => void;
   readonly can?: (action: string, subject: string) => boolean;
 }
 
@@ -22,35 +22,31 @@ const NAV_ITEMS: readonly NavItem[] = [
     id: "workbench",
     label: "权限控制台",
     icon: "🛡️",
-    href: "#",
+    href: "/workbench",
   },
   {
     id: "procurement",
     label: "采购订单中心",
     icon: "📦",
-    href: "#",
+    href: "/procurement/orders",
     requiredAction: "read",
     requiredSubject: "PurchaseOrder",
   },
   {
-    id: "organization",
-    label: "组织与角色管理",
-    icon: "👥",
-    href: "#",
-  },
-  {
-    id: "settings",
-    label: "系统设置",
-    icon: "⚙️",
-    href: "#",
+    id: "login",
+    label: "切换身份 / 账号",
+    icon: "🔑",
+    href: "/login",
   },
 ];
 
 /**
  * ERP 统一后台左侧导航侧边栏
- * 遵循高内聚、单一职责，并根据当前权限动态过滤展示菜单项
+ * 使用 Next.js usePathname 与 Link 组件进行原生路由跳转，彻底消除函数 Props 跨 Server/Client 传递问题
  */
-export function Sidebar({ activeTab, onSelectTab, can }: SidebarProps) {
+export function Sidebar({ can }: SidebarProps) {
+  const pathname = usePathname();
+
   const visibleItems = NAV_ITEMS.filter((item) => {
     if (!item.requiredAction || !item.requiredSubject) {
       return true;
@@ -69,12 +65,11 @@ export function Sidebar({ activeTab, onSelectTab, can }: SidebarProps) {
         </div>
         <nav className="space-y-1">
           {visibleItems.map((item) => {
-            const isActive = activeTab === item.id;
+            const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
             return (
-              <button
-                type="button"
+              <Link
                 key={item.id}
-                onClick={() => onSelectTab(item.id)}
+                href={item.href}
                 className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all ${
                   isActive
                     ? "bg-blue-600 text-white shadow-sm shadow-blue-500/20"
@@ -83,7 +78,7 @@ export function Sidebar({ activeTab, onSelectTab, can }: SidebarProps) {
               >
                 <span className="text-base">{item.icon}</span>
                 <span>{item.label}</span>
-              </button>
+              </Link>
             );
           })}
         </nav>
@@ -95,7 +90,8 @@ export function Sidebar({ activeTab, onSelectTab, can }: SidebarProps) {
           <span>四层权限体系</span>
         </div>
         <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-          包含 Better Auth 功能权限、CASL 按钮守卫、Prisma 数据下推与三态字段控制。
+          包含 Better Auth 功能权限、CASL 按钮守卫、Prisma
+          数据下推与三态字段控制。
         </p>
       </div>
     </aside>

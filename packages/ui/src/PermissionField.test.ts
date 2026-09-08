@@ -11,14 +11,11 @@ test("PermissionField 在 EDITABLE 模式下正常渲染子元素且不注入禁
   });
 
   const html = renderToString(
-    React.createElement(
-      PermissionField,
-      {
-        mode: "EDITABLE",
-        label: "供应商名称",
-        children: childInput,
-      },
-    ),
+    React.createElement(PermissionField, {
+      mode: "EDITABLE",
+      label: "供应商名称",
+      children: childInput,
+    }),
   );
 
   assert.match(html, /供应商名称/);
@@ -34,14 +31,11 @@ test("PermissionField 在 READONLY 模式下注入 disabled 与 readOnly 属性�
   });
 
   const html = renderToString(
-    React.createElement(
-      PermissionField,
-      {
-        mode: "READONLY",
-        label: "成本价格",
-        children: childInput,
-      },
-    ),
+    React.createElement(PermissionField, {
+      mode: "READONLY",
+      label: "成本价格",
+      children: childInput,
+    }),
   );
 
   assert.match(html, /成本价格/);
@@ -57,28 +51,22 @@ test("PermissionField 在 HIDDEN 模式下彻底不渲染子元素，仅渲染 f
   });
 
   const htmlWithoutFallback = renderToString(
-    React.createElement(
-      PermissionField,
-      {
-        mode: "HIDDEN",
-        label: "内部机密",
-        children: childInput,
-      },
-    ),
+    React.createElement(PermissionField, {
+      mode: "HIDDEN",
+      label: "内部机密",
+      children: childInput,
+    }),
   );
 
   assert.equal(htmlWithoutFallback, "");
 
   const htmlWithFallback = renderToString(
-    React.createElement(
-      PermissionField,
-      {
-        mode: "HIDDEN",
-        label: "内部机密",
-        fallback: React.createElement("span", null, "无权查看"),
-        children: childInput,
-      },
-    ),
+    React.createElement(PermissionField, {
+      mode: "HIDDEN",
+      label: "内部机密",
+      fallback: React.createElement("span", null, "无权查看"),
+      children: childInput,
+    }),
   );
 
   assert.match(htmlWithFallback, /无权查看/);

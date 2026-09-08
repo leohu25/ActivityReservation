@@ -18,6 +18,10 @@ build/
 .env
 .env*.local
 member.local.md
+compose.local.yaml
+compose.local.yml
+docker-compose.local.yaml
+docker-compose.local.yml
 
 # Logs and debug
 npm-debug.log*
