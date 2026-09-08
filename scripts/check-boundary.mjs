@@ -31,10 +31,16 @@ function getChangedFiles() {
 
     for (const line of lines) {
       // porcelain 格式前两个字符为状态标记，后面为文件路径（若重命名有 " -> "）
-      const rawPath = line.slice(3).trim();
-      const finalPath = rawPath.includes(" -> ")
+      let rawPath = line.slice(3).trim();
+      if (rawPath.startsWith('"') && rawPath.endsWith('"')) {
+        rawPath = rawPath.slice(1, -1);
+      }
+      let finalPath = rawPath.includes(" -> ")
         ? rawPath.split(" -> ")[1].trim()
         : rawPath;
+      if (finalPath.startsWith('"') && finalPath.endsWith('"')) {
+        finalPath = finalPath.slice(1, -1);
+      }
 
       // 若处于 0 commit 的初始仓库初始化阶段，已有的 docs/ 架构规范属于项目底座只读事实，予以放行
       if (!hasHead && (finalPath === "docs" || finalPath.startsWith("docs/"))) {

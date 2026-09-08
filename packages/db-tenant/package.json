@@ -10,10 +10,12 @@
   },
   "scripts": {
     "check": "tsc --noEmit",
+    "generate": "prisma generate --config prisma.config.ts",
     "test": "tsx --test src/*.test.ts"
   },
   "dependencies": {
     "@chenrun/db-control": "workspace:*",
+    "@prisma/client": "7.10.0",
     "pg": "^8.23.0"
   },
   "devDependencies": {

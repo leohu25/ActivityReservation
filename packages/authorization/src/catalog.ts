@@ -1,3 +1,15 @@
+import type { DataScopeType } from "./data-scope";
+
+/** 单个动作维度的自描述元数据 */
+export interface ActionMetadata {
+  /** 动作中文显示标签 (如 '查看订单') */
+  readonly label?: string;
+  /** 该动作允许配置的数据范围类型集合 (如 ['SELF', 'DEPT', 'ALL']) */
+  readonly scopes?: readonly DataScopeType[];
+  /** 该动作生效或允许控制的字段白名单 */
+  readonly fields?: readonly string[];
+}
+
 export interface PermissionDefinition<
   TResource extends string = string,
   TSubject extends string = string,
@@ -5,7 +17,13 @@ export interface PermissionDefinition<
 > {
   resource: TResource;
   subject: TSubject;
+  /** 资源中文显示标签 (如 '采购订单') */
+  label?: string;
   actions: readonly [TAction, ...TAction[]];
+  /** 动作级别的自描述元数据 (支持的 Scope 列表与敏感字段列表) */
+  actionMetadata?: Partial<Record<TAction, ActionMetadata>>;
+  /** 实体级支持的全部字段白名单 (供字段矩阵表格渲染使用) */
+  fields?: readonly string[];
 }
 
 export type CatalogAction<
@@ -23,7 +41,7 @@ export class PermissionCatalogError extends Error {
   }
 }
 
-/** Runtime validator and Resource -> CASL Subject mapping. */
+/** 运行时校验器、Resource 到 CASL Subject 映射以及自描述元数据引擎。 */
 export class PermissionCatalog<
   const TDefinitions extends readonly PermissionDefinition[],
 > {
@@ -63,6 +81,49 @@ export class PermissionCatalog<
     action: string,
   ): action is CatalogAction<TDefinitions> {
     return definition.actions.includes(action);
+  }
+
+  /**
+   * 获取指定资源与动作所支持的可配置数据范围列表。
+   * 若未显式配置，则默认返回全局通用范围 ['SELF', 'DEPT', 'DEPT_TREE', 'ALL']。
+   */
+  getActionScopes(resource: string, action: string): readonly DataScopeType[] {
+    const definition = this.resolve(resource);
+    if (!definition) {
+      return [];
+    }
+    const meta = definition.actionMetadata?.[action];
+    if (meta?.scopes && meta.scopes.length > 0) {
+      return meta.scopes;
+    }
+    return ["SELF", "DEPT", "DEPT_TREE", "ALL"];
+  }
+
+  /**
+   * 获取指定资源在某动作下受控的字段白名单。
+   */
+  getActionFields(resource: string, action: string): readonly string[] {
+    const definition = this.resolve(resource);
+    if (!definition) {
+      return [];
+    }
+    const meta = definition.actionMetadata?.[action];
+    if (meta?.fields && meta.fields.length > 0) {
+      return meta.fields;
+    }
+    return definition.fields ?? [];
+  }
+
+  /**
+   * 自动转换为 Better Auth 所需的 Application Statement。
+   * 实现业务模块一处声明，认证与授权两处自动复用。
+   */
+  toBetterAuthStatement(): Record<string, readonly string[]> {
+    const statement: Record<string, readonly string[]> = {};
+    for (const def of this.definitions) {
+      statement[def.resource] = [...def.actions];
+    }
+    return statement;
   }
 }
 

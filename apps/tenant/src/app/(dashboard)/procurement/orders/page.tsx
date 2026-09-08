@@ -10,7 +10,7 @@ import {
   CardContent,
   Badge,
   Button,
-  PermissionField,
+  AuthorizedField,
 } from "@chenrun/ui";
 import { getAccessibleWhere } from "@chenrun/authorization";
 import Link from "next/link";
@@ -64,6 +64,16 @@ export default async function ProcurementOrdersPage() {
     },
   });
 
+  if (!currentMember) {
+    return (
+      <Card className="border-rose-200 bg-rose-50/50 p-6 text-rose-800 shadow-xs dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-200">
+        <div className="flex items-center gap-2 font-bold text-sm">
+          <span>⚠️ 当前登录账号尚未加入该租户组织，无权访问业务数据</span>
+        </div>
+      </Card>
+    );
+  }
+
   // 2. 编译当前租户与角色的 CASL Ability
   const factory = new CaslAbilityFactory(
     runtime.tenantContextRepository,
@@ -81,13 +91,7 @@ export default async function ProcurementOrdersPage() {
       organizationId: activeOrgId,
       user: session.user,
       session: session.session,
-      member: currentMember ?? {
-        id: "temp_member",
-        organizationId: activeOrgId,
-        userId: session.user.id,
-        role: "member",
-        createdAt: new Date(),
-      },
+      member: currentMember,
       database: {
         id: "db_local",
         organizationId: activeOrgId,
@@ -104,7 +108,7 @@ export default async function ProcurementOrdersPage() {
     {
       dataScopes: [
         {
-          role: currentMember?.role ?? "member",
+          role: currentMember.role,
           resource: "procurement.order",
           action: "read",
           scopeType: "DEPT_TREE",
@@ -112,10 +116,10 @@ export default async function ProcurementOrdersPage() {
       ],
       fieldPolicies: [
         {
-          role: currentMember?.role ?? "member",
+          role: currentMember.role,
           subject: "PurchaseOrder",
           field: "costPrice",
-          access: currentMember?.role === "owner" ? "EDITABLE" : "READONLY",
+          access: currentMember.role === "owner" ? "EDITABLE" : "READONLY",
         },
       ],
     },
@@ -292,7 +296,12 @@ export default async function ProcurementOrdersPage() {
                   {order.createdByName}
                 </td>
                 <td className="px-5 py-3.5 text-right">
-                  <PermissionField mode="READONLY">
+                  <AuthorizedField
+                    ability={prismaAbility}
+                    subject="PurchaseOrder"
+                    field="costPrice"
+                    action="update"
+                  >
                     <Button
                       variant="ghost"
                       size="sm"
@@ -300,7 +309,7 @@ export default async function ProcurementOrdersPage() {
                     >
                       详情 / 编辑
                     </Button>
-                  </PermissionField>
+                  </AuthorizedField>
                 </td>
               </tr>
             ))}

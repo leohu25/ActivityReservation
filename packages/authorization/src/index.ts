@@ -3,15 +3,20 @@
 export {
   AbilityFactoryError,
   CaslAbilityFactory,
+  parsePersistedPermissions,
+  serializeRolePermissions,
   type AbilityFactoryOptions,
   type AppAbility,
   type AppPrismaAbility,
+  type ParsedRolePermissions,
+  type RolePermissionPayload,
   type RolePermissionStatement,
 } from "./ability-factory";
 export {
   createPermissionCatalog,
   PermissionCatalog,
   PermissionCatalogError,
+  type ActionMetadata,
   type CatalogAction,
   type CatalogSubject,
   type PermissionDefinition,

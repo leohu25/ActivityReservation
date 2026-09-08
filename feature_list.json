@@ -76,10 +76,19 @@
       "evidence": "落地平台超管 Fail-Closed 鉴权守卫与 PlatformAdminService；实现多租户指标卡片与生命周期运维表格，集成 TenantProvisioner 自动创建独立物理库并执行基线迁移；全仓 7 个测试套件 64/64 单测 100% 通过、9/9 包类型检查 0 错误、Next.js 生产构建通过与 Reviewer 独立审计 PASS"
     },
     {
+      "id": "foundation-tenant-rbac-core",
+      "name": "租户组织人事模型与四层权限底层对齐 (Tenant Organization Core & RBAC Schema Alignment)",
+      "description": "对齐权限系统设计方案核心基石：在租户物理库建立 EmployeeProfile 员工档案模型打通真实部门拓扑解析；升级 PermissionCatalog 支持 Scopes/Fields 自描述元数据；扩展 Control DB 角色存储契约完整持久化四层权限；封装全自动感应 CASL Ability 的 <AuthorizedField> 表单组件",
+      "dependencies": ["foundation-platform-admin"],
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "租户库落地 EmployeeProfile 与部门拓扑自驱装配；PermissionCatalog 扩展 ActionMetadata 自描述；CaslAbilityFactory 落地四层角色 (statement+dataScopes+fieldPolicies) 编译下推；封装 AuthorizedField 组件；全仓 7 个测试套件 75/75 单测 100% 通过、11/11 包类型检查 0 错误、Next.js 生产构建通过与全栈门禁 PASS"
+    },
+    {
       "id": "foundation-tenant-rbac-ui",
       "name": "租户管理员角色与四层权限配置中心 (Tenant Role & Permission Config Center)",
-      "description": "提供租户内专属管理员控制台，支持租户管理员可视化创建/编辑动态角色，通过复选框可视化配置按钮权限(Actions)、数据范围(Data Scope)与字段三态(HIDDEN/READONLY/EDITABLE)，真实持久化至 Control DB OrganizationRole 表并给成员指派角色",
-      "dependencies": ["foundation-platform-admin"],
+      "description": "遵循文档第 21、22、41 节工业级设计：提供租户管理后台(系统管理/角色管理)，支持租户管理员维护角色，基于 Permission Registry 元数据自动渲染功能权限复选框(Actions)、数据范围单选(self/department/department_and_children/tenant/custom)、与字段权限四维矩阵(查看/新增/修改/导出列)，完整持久化至 Control DB 角色存储并支持成员角色指派",
+      "dependencies": ["foundation-tenant-rbac-core"],
       "status": "not-started",
       "owner": "implementer",
       "evidence": ""
@@ -87,7 +96,7 @@
     {
       "id": "procurement-center",
       "name": "采购中心业务特性验收 (Procurement Center Feature)",
-      "description": "以真实采购订单切片落地 packages/features/procurement-center，连接独立租户物理数据库，端到端闭环验证由租户管理员配置驱动的 RBAC 按钮、数据范围下推、敏感成本价字段策略、禁止自审业务规则与租户物理隔离",
+      "description": "以真实采购订单切片落地 packages/features/procurement-center，连接独立租户物理数据库，端到端闭环验证由租户管理员配置驱动的 RBAC 按钮、部门数据范围下推、字段四维控制矩阵与 <AuthorizedField> 自动表单三态、禁止自审业务规则与租户物理隔离",
       "dependencies": ["foundation-tenant-rbac-ui"],
       "status": "not-started",
       "owner": "implementer",

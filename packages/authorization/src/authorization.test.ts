@@ -186,3 +186,53 @@ test("server guard and decorator-first wrapper require CASL ability", async () =
   assert.equal(await secured({ ability }, "order-1"), "order-1");
   await assert.rejects(secured(undefined, "order-1"));
 });
+
+test("catalog 支持 Scopes 与 Fields 自描述元数据与 toBetterAuthStatement 导出", () => {
+  const customDef = {
+    resource: "finance.invoice",
+    subject: "Invoice",
+    label: "发票管理",
+    actions: ["read", "issue"] as const,
+    fields: ["invoiceNo", "amount", "taxRate"],
+    actionMetadata: {
+      read: {
+        scopes: ["SELF", "DEPT"] as const,
+        fields: ["invoiceNo", "amount", "taxRate"],
+      },
+      issue: {
+        fields: ["amount", "taxRate"],
+      },
+    },
+  } as const;
+
+  const customCatalog = createPermissionCatalog([customDef] as const);
+
+  // 1. 获取显式声明的 scopes 与 fields
+  assert.deepEqual(customCatalog.getActionScopes("finance.invoice", "read"), [
+    "SELF",
+    "DEPT",
+  ]);
+  assert.deepEqual(customCatalog.getActionFields("finance.invoice", "read"), [
+    "invoiceNo",
+    "amount",
+    "taxRate",
+  ]);
+
+  // 2. 未声明特定 scopes 时，安全回退到默认四种常用范围
+  assert.deepEqual(customCatalog.getActionScopes("finance.invoice", "issue"), [
+    "SELF",
+    "DEPT",
+    "DEPT_TREE",
+    "ALL",
+  ]);
+  assert.deepEqual(customCatalog.getActionFields("finance.invoice", "issue"), [
+    "amount",
+    "taxRate",
+  ]);
+
+  // 3. 自动转换 Better Auth 语句
+  const baStatement = customCatalog.toBetterAuthStatement();
+  assert.deepEqual(baStatement, {
+    "finance.invoice": ["read", "issue"],
+  });
+});

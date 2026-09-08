@@ -235,3 +235,79 @@ test("CaslAbilityFactory 隔离不同 Action 的数据范围，防止写操作�
     ],
   });
 });
+
+test("CaslAbilityFactory 自动解析角色持久化的四层权限 (statement + dataScopes + fieldPolicies)", async () => {
+  const fullPayload = {
+    statement: {
+      "procurement.order": ["read", "create", "update"],
+    },
+    dataScopes: [
+      {
+        resource: "procurement.order",
+        action: "read",
+        scopeType: "DEPT",
+      },
+    ],
+    fieldPolicies: [
+      {
+        subject: "PurchaseOrder",
+        field: "costPrice",
+        access: "READONLY",
+      },
+      {
+        subject: "PurchaseOrder",
+        field: "supplierName",
+        access: "EDITABLE",
+      },
+    ],
+  };
+
+  const repo = createMockRepository([
+    {
+      id: "role-buyer-full",
+      organizationId: "org-po-1",
+      role: "buyer",
+      permission: JSON.stringify(fullPayload),
+      createdAt: now,
+      updatedAt: now,
+    },
+  ]);
+
+  // 构建工厂时无需外部传参注入 dataScopes 或 fieldPolicies
+  const factory = new CaslAbilityFactory(repo, catalog);
+
+  const topology = {
+    userId: "user-po-1",
+    departmentId: "dept_procurement_east",
+    departmentTreeIds: ["dept_procurement_east"],
+  };
+
+  const prismaAbility = await factory.createPrismaAbilityForTenant(
+    context,
+    topology,
+  );
+
+  // 1. 验证持久化中的 DEPT 数据范围自动生效
+  const readWhere = getAccessibleWhere(prismaAbility, "PurchaseOrder", "read");
+  assert.deepEqual(readWhere, {
+    OR: [
+      {
+        deptId: "dept_procurement_east",
+      },
+    ],
+  });
+
+  // 2. 验证持久化中的字段策略自动生效
+  assert.equal(
+    getFieldMode(prismaAbility, "PurchaseOrder", "costPrice"),
+    "READONLY",
+  );
+  assert.equal(
+    getFieldMode(prismaAbility, "PurchaseOrder", "supplierName"),
+    "EDITABLE",
+  );
+  assert.equal(
+    getFieldMode(prismaAbility, "PurchaseOrder", "unknownSecret"),
+    "HIDDEN",
+  );
+});

@@ -19,8 +19,28 @@ model Department {
   updatedAt DateTime @updatedAt
 
   orders    PurchaseOrder[]
+  employees EmployeeProfile[]
 
+  @@index([parentId])
   @@map("department")
+}
+
+// 租户内员工档案模型 (对应 Control DB Member.id，组织人事与数据范围事实源)
+model EmployeeProfile {
+  id           String      @id @default(cuid())
+  memberId     String      @unique
+  departmentId String?
+  employeeNo   String?     @unique
+  jobTitle     String?
+  status       String      @default("ACTIVE")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  @@index([departmentId])
+  @@index([memberId])
+  @@map("employee_profile")
 }
 
 // 采购订单业务模型 (核心 ERP 业务切片与 CASL 授权实体)

@@ -9,6 +9,7 @@ export * from "./components/ExceptionList";
 export * from "./components/layout/DashboardShell";
 export * from "./components/layout/TopHeader";
 export * from "./components/layout/Sidebar";
+export * from "./components/AuthorizedField";
 
 import React, { cloneElement, isValidElement } from "react";
 

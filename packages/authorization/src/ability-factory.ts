@@ -34,6 +34,29 @@ export type RolePermissionStatement = Readonly<
   Record<string, readonly string[]>
 >;
 
+/** 完整的四层角色权限配置 Payload (功能权限 + 数据范围 + 字段策略) */
+export interface RolePermissionPayload {
+  /** 功能权限语句 (resource -> actions[]) */
+  readonly statement: RolePermissionStatement;
+  /** 数据范围规则 (可选) */
+  readonly dataScopes?: readonly Omit<RoleDataScopeConfig, "role">[];
+  /** 字段策略规则 (可选) */
+  readonly fieldPolicies?: readonly Omit<RoleFieldPolicyConfig, "role">[];
+}
+
+export interface ParsedRolePermissions {
+  readonly statement: RolePermissionStatement;
+  readonly dataScopes: readonly RoleDataScopeConfig[];
+  readonly fieldPolicies: readonly RoleFieldPolicyConfig[];
+}
+
+/** 序列化四层角色权限 Payload 为 JSON 字符串以持久化至 Control DB */
+export function serializeRolePermissions(
+  payload: RolePermissionPayload,
+): string {
+  return JSON.stringify(payload);
+}
+
 export interface AbilityFactoryOptions {
   staticRolePermissions?: Readonly<Record<string, RolePermissionStatement>>;
   /**
@@ -75,9 +98,38 @@ function parseMemberRoles(role: string): string[] {
   ];
 }
 
-function parsePersistedPermissions(
-  record: OrganizationRoleRecord,
+function parseStatementObject(
+  roleName: string,
+  rawStatement: unknown,
 ): RolePermissionStatement {
+  if (
+    !rawStatement ||
+    typeof rawStatement !== "object" ||
+    Array.isArray(rawStatement)
+  ) {
+    throw new AbilityFactoryError(
+      `Role ${roleName} permissions must be an object`,
+    );
+  }
+
+  const result: Record<string, readonly string[]> = {};
+  for (const [resource, actions] of Object.entries(rawStatement)) {
+    if (
+      !Array.isArray(actions) ||
+      actions.some((action) => typeof action !== "string")
+    ) {
+      throw new AbilityFactoryError(
+        `Role ${roleName} contains invalid actions for ${resource}`,
+      );
+    }
+    result[resource] = actions;
+  }
+  return result;
+}
+
+export function parsePersistedPermissions(
+  record: OrganizationRoleRecord,
+): ParsedRolePermissions {
   let value: unknown;
   try {
     value = JSON.parse(record.permission);
@@ -93,19 +145,59 @@ function parsePersistedPermissions(
     );
   }
 
-  const result: Record<string, readonly string[]> = {};
-  for (const [resource, actions] of Object.entries(value)) {
-    if (
-      !Array.isArray(actions) ||
-      actions.some((action) => typeof action !== "string")
-    ) {
-      throw new AbilityFactoryError(
-        `Role ${record.role} contains invalid actions for ${resource}`,
-      );
+  const candidate = value as Record<string, unknown>;
+
+  // 判断是否为四层扩展结构 (携带 statement 属性)
+  if ("statement" in candidate) {
+    const statement = parseStatementObject(record.role, candidate.statement);
+    const dataScopes: RoleDataScopeConfig[] = [];
+    if (Array.isArray(candidate.dataScopes)) {
+      for (const item of candidate.dataScopes) {
+        if (
+          item &&
+          typeof item === "object" &&
+          typeof item.resource === "string" &&
+          typeof item.scopeType === "string"
+        ) {
+          dataScopes.push({
+            role: record.role,
+            resource: item.resource,
+            action: typeof item.action === "string" ? item.action : undefined,
+            scopeType: item.scopeType,
+            customDepartmentIds: Array.isArray(item.customDepartmentIds)
+              ? item.customDepartmentIds
+              : undefined,
+          });
+        }
+      }
     }
-    result[resource] = actions;
+
+    const fieldPolicies: RoleFieldPolicyConfig[] = [];
+    if (Array.isArray(candidate.fieldPolicies)) {
+      for (const item of candidate.fieldPolicies) {
+        if (
+          item &&
+          typeof item === "object" &&
+          typeof item.subject === "string" &&
+          typeof item.field === "string" &&
+          typeof item.access === "string"
+        ) {
+          fieldPolicies.push({
+            role: record.role,
+            subject: item.subject,
+            field: item.field,
+            access: item.access,
+          });
+        }
+      }
+    }
+
+    return { statement, dataScopes, fieldPolicies };
   }
-  return result;
+
+  // 向后兼容处理：直接作为纯功能权限语句
+  const statement = parseStatementObject(record.role, candidate);
+  return { statement, dataScopes: [], fieldPolicies: [] };
 }
 
 function validatePermission<
@@ -240,8 +332,11 @@ export class CaslAbilityFactory<
     const seen = new Set<string>();
     for (const roleName of roleNames) {
       const persisted = byRole.get(roleName);
-      const statement = persisted
+      const parsed = persisted
         ? parsePersistedPermissions(persisted)
+        : undefined;
+      const statement = parsed
+        ? parsed.statement
         : this.options.staticRolePermissions?.[roleName];
       if (!statement) {
         continue;
@@ -280,12 +375,33 @@ export class CaslAbilityFactory<
     const { roleNames, byRole } = await this.resolveRolesAndStatements(context);
     const activeRoles = new Set(roleNames);
 
+    const persistedDataScopes: RoleDataScopeConfig[] = [];
+    const persistedFieldPolicies: RoleFieldPolicyConfig[] = [];
+    const parsedStatements = new Map<string, RolePermissionStatement>();
+
+    for (const roleName of roleNames) {
+      const persisted = byRole.get(roleName);
+      if (persisted) {
+        const parsed = parsePersistedPermissions(persisted);
+        parsedStatements.set(roleName, parsed.statement);
+        persistedDataScopes.push(...parsed.dataScopes);
+        persistedFieldPolicies.push(...parsed.fieldPolicies);
+      } else if (this.options.staticRolePermissions?.[roleName]) {
+        parsedStatements.set(
+          roleName,
+          this.options.staticRolePermissions[roleName],
+        );
+      }
+    }
+
     const mergedDataScopes = [
+      ...persistedDataScopes,
       ...(this.options.dataScopes ?? []),
       ...(options?.dataScopes ?? []),
     ].filter((s) => activeRoles.has(s.role));
 
     const mergedFieldPolicies = [
+      ...persistedFieldPolicies,
       ...(this.options.fieldPolicies ?? []),
       ...(options?.fieldPolicies ?? []),
     ].filter((p) => activeRoles.has(p.role));
@@ -294,10 +410,7 @@ export class CaslAbilityFactory<
     const rules: IntermediateRule[] = [];
 
     for (const roleName of roleNames) {
-      const persisted = byRole.get(roleName);
-      const statement = persisted
-        ? parsePersistedPermissions(persisted)
-        : this.options.staticRolePermissions?.[roleName];
+      const statement = parsedStatements.get(roleName);
       if (!statement) {
         continue;
       }
