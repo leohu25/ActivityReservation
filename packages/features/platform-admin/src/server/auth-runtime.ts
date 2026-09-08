@@ -1,16 +1,16 @@
 import { createServerAuth, type ServerAuthRuntime } from "@chenrun/auth";
 import { PlatformAdminService } from "../services/platform-admin";
 
-let authSingleton: ServerAuthRuntime | undefined;
+let platformAuthSingleton: ServerAuthRuntime | undefined;
 let platformAdminServiceSingleton: PlatformAdminService | undefined;
 
 /**
  * 获取平台端 ServerAuthRuntime 单例
- * 自包含在 @chenrun/feature-platform-admin 内部管理
+ * 平台端独立配置 Better Auth，管理会话与超管账号
  */
 export function getPlatformAuthRuntime(): ServerAuthRuntime {
-  if (authSingleton) {
-    return authSingleton;
+  if (platformAuthSingleton) {
+    return platformAuthSingleton;
   }
   const databaseUrl =
     process.env.CONTROL_DATABASE_URL ??
@@ -18,17 +18,16 @@ export function getPlatformAuthRuntime(): ServerAuthRuntime {
   const secret =
     process.env.BETTER_AUTH_SECRET ??
     "platform-default-auth-secret-32-chars-key";
-  authSingleton = createServerAuth({
+  platformAuthSingleton = createServerAuth({
     databaseUrl,
     secret,
-    baseURL: process.env.BETTER_AUTH_URL,
+    baseURL: process.env.PLATFORM_AUTH_URL ?? "http://localhost:3001",
   });
-  return authSingleton;
+  return platformAuthSingleton;
 }
 
 /**
  * 获取平台总控服务单例
- * 自包含在 @chenrun/feature-platform-admin 内部提供
  */
 export function getPlatformAdminService(): PlatformAdminService {
   if (platformAdminServiceSingleton) {

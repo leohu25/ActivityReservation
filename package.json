@@ -9,6 +9,8 @@
     "session:end": "./scripts/session-end.sh",
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "dev:platform": "pnpm --filter platform dev",
+    "dev:tenant": "pnpm --filter tenant dev",
     "lint": "turbo run lint",
     "check": "turbo run check",
     "test": "turbo run test",

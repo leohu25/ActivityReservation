@@ -10,6 +10,7 @@
 - `packages/authorization/**`
 - `packages/db-control/**`
 - `packages/shared/**`
+- `package.json`
 - `tsconfig.base.json`
 - `pnpm-lock.yaml`
 - `feature_list.json`

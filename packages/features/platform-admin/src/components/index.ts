@@ -7,3 +7,4 @@ export * from "./PlatformConsoleLayout";
 export * from "./PlatformOverviewPage";
 export * from "./PlatformTenantsPage";
 export * from "./PlatformTenantsClient";
+export * from "./PlatformLoginPage";
