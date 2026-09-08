@@ -54,5 +54,7 @@
 | `foundation-authorization` | 动态角色与能力构建器 | ✅ 已完成 | `foundation-tenant-auth` | PostgreSQL 17 动态角色实库集成 1/1、单测 29/29、8/8 check、build、verify、init PASS |
 | `foundation-advanced-authz` | 数据范围与字段权限 | ✅ 已完成 | `foundation-authorization` | 单测 27/27、全仓 39/39、实库 1/1、8/8 check、verify、init、Reviewer PASS |
 | `foundation-web-shell` | SaaS Web 门户与主面板框架 | ✅ 已完成 | `foundation-advanced-authz` | App Router 路由拆解、shadcn/ui 集成、实库直连、单测 42/42、check/build 全部 PASS |
-| `foundation-migration` | 多租户数据库迁移引擎 | ⏳ 待开始 | `foundation-web-shell` | 依赖已满足 |
-| `procurement-center` | 采购中心业务特性验收 | ⏳ 待开始 | `foundation-migration` | 尚未开始 |
+| `foundation-migration` | 多租户数据库自动开通与迁移引擎 | ⏳ 待开始 | `foundation-web-shell` | 依赖已满足 |
+| `foundation-platform-admin` | 平台总控面板与租户开通中心 | ⏳ 待开始 | `foundation-migration` | 尚未开始 |
+| `foundation-tenant-rbac-ui` | 租户角色与四层权限配置中心 | ⏳ 待开始 | `foundation-platform-admin` | 尚未开始 |
+| `procurement-center` | 采购中心业务特性验收 | ⏳ 待开始 | `foundation-tenant-rbac-ui` | 尚未开始 |

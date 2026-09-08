@@ -146,10 +146,7 @@ export default async function WorkbenchPage() {
                 {session.user.name || session.user.email}
               </span>
               <span>| 角色:</span>
-              <Badge
-                variant="secondary"
-                className="text-white bg-blue-500/50"
-              >
+              <Badge variant="secondary" className="text-white bg-blue-500/50">
                 {currentMember?.role ?? "普通成员"}
               </Badge>
             </div>

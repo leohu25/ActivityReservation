@@ -1,17 +1,16 @@
-# 修改白名单与边界：SaaS Web 门户与主面板框架 (foundation-web-shell)
+# 修改白名单与边界：平台运营商总控面板与租户开通中心 (foundation-platform-admin)
 
 ## 允许修改的文件与目录 (修改白名单)
 
 - `apps/tenant/**`
-- `packages/ui/**`
-- `packages/authorization/**`
-- `.gitignore`
+- `packages/db-control/**`
+- `packages/shared/**`
 - `pnpm-lock.yaml`
 - `AGENTS.md`
 - `feature_list.json`
 - `progress.md`
 - `session-handoff.md`
-- `.harness/features/**`
+- `.harness/features/foundation-platform-admin/**`
 
 ## 严禁修改的内容 (受保护区域)
 

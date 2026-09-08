@@ -22,7 +22,11 @@ const emptySubscribe = () => () => {};
  * 租户(Organization)切换与创建组件
  */
 export function OrgSwitcher({ activeOrgId, onOrgChanged }: OrgSwitcherProps) {
-  const { data: orgListData, isPending, refetch } = authClient.useListOrganizations();
+  const {
+    data: orgListData,
+    isPending,
+    refetch,
+  } = authClient.useListOrganizations();
   const [isCreating, setIsCreating] = useState(false);
   const [newOrgName, setNewOrgName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -63,7 +67,10 @@ export function OrgSwitcher({ activeOrgId, onOrgChanged }: OrgSwitcherProps) {
     setError(null);
     try {
       // 英文数字转 slug，若全中文则生成唯一安全 slug
-      const pinyinOrAscii = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      const pinyinOrAscii = trimmed
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
       const slug = pinyinOrAscii || `org-${Date.now()}`;
 
       const res = await authClient.organization.create({
@@ -89,7 +96,9 @@ export function OrgSwitcher({ activeOrgId, onOrgChanged }: OrgSwitcherProps) {
         window.location.href = "/workbench";
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "创建组织发生异常，请稍后重试");
+      setError(
+        err instanceof Error ? err.message : "创建组织发生异常，请稍后重试",
+      );
     } finally {
       setLoading(false);
     }

@@ -59,9 +59,27 @@
     },
     {
       "id": "foundation-migration",
-      "name": "多租户数据库迁移引擎 (Tenant DB Migration CLI)",
-      "description": "提供 tooling/tenant-migrate 工具，对每个独立租户数据库进行幂等、可追溯、可重试的版本升级，记录 TenantMigration 账本",
+      "name": "多租户数据库自动开通与迁移引擎 (Tenant DB Provisioning & Migration Engine)",
+      "description": "实现新租户创建时的自动化独立数据库开通（PostgreSQL CREATE DATABASE tenant_xxx）与 tooling/tenant-migrate 迁移工具，对每个租户物理库执行幂等、可追溯的版本升级并记录 TenantMigration 账本",
       "dependencies": ["foundation-web-shell"],
+      "status": "not-started",
+      "owner": "implementer",
+      "evidence": ""
+    },
+    {
+      "id": "foundation-platform-admin",
+      "name": "平台运营商总控面板与租户开通中心 (Platform Super Admin & Provisioning Portal)",
+      "description": "提供平台运营商独立管理视图，支持平台管理员总控查看所有租户、开通新租户并触发物理数据库 Provisioning、配置租户初始管理员账号与状态管控",
+      "dependencies": ["foundation-migration"],
+      "status": "not-started",
+      "owner": "implementer",
+      "evidence": ""
+    },
+    {
+      "id": "foundation-tenant-rbac-ui",
+      "name": "租户管理员角色与四层权限配置中心 (Tenant Role & Permission Config Center)",
+      "description": "提供租户内专属管理员控制台，支持租户管理员可视化创建/编辑动态角色，通过复选框可视化配置按钮权限(Actions)、数据范围(Data Scope)与字段三态(HIDDEN/READONLY/EDITABLE)，真实持久化至 Control DB OrganizationRole 表并给成员指派角色",
+      "dependencies": ["foundation-platform-admin"],
       "status": "not-started",
       "owner": "implementer",
       "evidence": ""
@@ -69,8 +87,8 @@
     {
       "id": "procurement-center",
       "name": "采购中心业务特性验收 (Procurement Center Feature)",
-      "description": "以最小采购订单为首个真实 Feature 落地 packages/features/procurement-center，闭环验证 RBAC、数据范围、敏感成本价字段、禁止自审业务规则与租户隔离",
-      "dependencies": ["foundation-migration"],
+      "description": "以真实采购订单切片落地 packages/features/procurement-center，连接独立租户物理数据库，端到端闭环验证由租户管理员配置驱动的 RBAC 按钮、数据范围下推、敏感成本价字段策略、禁止自审业务规则与租户物理隔离",
+      "dependencies": ["foundation-tenant-rbac-ui"],
       "status": "not-started",
       "owner": "implementer",
       "evidence": ""
