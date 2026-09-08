@@ -6,8 +6,8 @@
 
 ## 一、 当前会话状态 (Current State)
 
-- **当前目标 (Current Objective)**：数据与字段权限引擎 (`foundation-advanced-authz`)
-- **激活特性**：`foundation-advanced-authz`
+- **当前目标 (Current Objective)**：SaaS Web 门户与主面板框架 (`foundation-web-shell`)
+- **激活特性**：`foundation-web-shell`
 - **执行人/角色**：implementer
 - **当前阶段**：已完成 (Completed)
 - **最后更新 (Last Updated)**：2026-09-08
@@ -16,31 +16,30 @@
 
 ## 二、 工作内容与产出 (What Was Done)
 
-- [x] 在 `AGENTS.md` 中持久化架构原则：高内聚低耦合单一职责、全中文注释规范与零 any 纪律
-- [x] 实现支持 `SELF`, `DEPT`, `DEPT_TREE`, `CUSTOM`, `ALL` 五种范围的数据权限引擎与 Fail-Closed 兜底
-- [x] 实现字段权限 `HIDDEN`, `READONLY`, `EDITABLE` 三态读写拦截策略
-- [x] 基于 `@casl/prisma` 实现 Prisma `where` 条件安全提取器 `getAccessibleWhere`
-- [x] 扩展 `CaslAbilityFactory` 生成支持数据范围与字段策略的 `AppPrismaAbility`
-- [x] 修复 Action 维度隔离与空值防御，通过独立 Reviewer 严格审计并取得 PASS
-- [x] 完成全套单元测试 (27/27) 与实库集成验证，全栈门禁 100% 通过
+- [x] 配置不入版本控制的 `.env.local` 环境变量，直连本地 Docker PostgreSQL 容器实库端口
+- [x] 基于 Next.js 16 App Router 拆解组织标准页面路由：`/`、`/login`、`/workbench`、`/procurement/orders`
+- [x] 深度集成 **shadcn/ui** 设计体系 (`Button`, `Card`, `Input`, `Badge`, `cn`) 并升级 `<PermissionField>`
+- [x] 前后端实库直连消除写死数据：基于 Better Auth 会话与 Control DB 动态编译 CASL Ability
+- [x] 编写 UI 组件测试，全仓 5 个测试包 42/42 全部通过
+- [x] 全仓 8/8 包类型检查通过，Next.js 6 个动静态路由生产构建 100% 成功，全栈门禁验证通过
 
 ---
 
 ## 三、 验证证据 (Verification Evidence)
 
-- `pnpm --filter @chenrun/authorization test`：27/27 PASS
-- 全仓单元测试 `pnpm test`：39/39 PASS
-- PostgreSQL 17 实库授权集成测试：1/1 PASS
+- UI 专属单元测试 `pnpm --filter @chenrun/ui test`：3/3 PASS
+- 全仓单元测试 `pnpm test`：42/42 PASS
 - 全仓类型检查 `pnpm check`：8/8 packages PASS
-- 全栈门禁自检 `./scripts/verify.sh`：PASS，边界合规、40 个源码无红线违规
-- 可重启自检 `./init.sh`：PASS，环境就绪
-- Reviewer 独立审查：PASS / Merge verdict OK
+- Next.js 生产构建 `pnpm build`：PASS（6 个 App Router 路由）
+- 全栈门禁自检 `./scripts/verify.sh`：PASS（边界合规、56 个源码无红线违规）
+- 环境自检 `./init.sh`：PASS
+- 会话收尾检查 `pnpm session:end`：PASS
 
 ---
 
 ## 四、 下一步计划 (Recommended Next Step)
 
-- [ ] 切换至第六个特性：`foundation-migration`
+- [ ] 切换至第七个特性：`foundation-migration`
 - [ ] 推进多租户数据库迁移引擎 (Tenant DB Migration CLI)
 
 ---
@@ -54,5 +53,6 @@
 | `foundation-tenant-auth` | 多租户与身份认证底座 | ✅ 已完成 | `foundation-monorepo` | PostgreSQL 实库集成 1/1、单测 21/21、8/8 check、build、verify、init、Reviewer PASS |
 | `foundation-authorization` | 动态角色与能力构建器 | ✅ 已完成 | `foundation-tenant-auth` | PostgreSQL 17 动态角色实库集成 1/1、单测 29/29、8/8 check、build、verify、init PASS |
 | `foundation-advanced-authz` | 数据范围与字段权限 | ✅ 已完成 | `foundation-authorization` | 单测 27/27、全仓 39/39、实库 1/1、8/8 check、verify、init、Reviewer PASS |
-| `foundation-migration` | 多租户数据库迁移引擎 | ⏳ 待开始 | `foundation-advanced-authz` | 依赖已满足 |
+| `foundation-web-shell` | SaaS Web 门户与主面板框架 | ✅ 已完成 | `foundation-advanced-authz` | App Router 路由拆解、shadcn/ui 集成、实库直连、单测 42/42、check/build 全部 PASS |
+| `foundation-migration` | 多租户数据库迁移引擎 | ⏳ 待开始 | `foundation-web-shell` | 依赖已满足 |
 | `procurement-center` | 采购中心业务特性验收 | ⏳ 待开始 | `foundation-migration` | 尚未开始 |

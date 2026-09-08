@@ -155,7 +155,9 @@ function computeAllowedFields(
 ): string[] {
   return policies.flatMap((p) => {
     if (action === "read") {
-      return p.access === "READONLY" || p.access === "EDITABLE" ? [p.field] : [];
+      return p.access === "READONLY" || p.access === "EDITABLE"
+        ? [p.field]
+        : [];
     }
     if (action === "update" || action === "create") {
       return p.access === "EDITABLE" ? [p.field] : [];
@@ -329,7 +331,10 @@ export class CaslAbilityFactory<
           }
           rules.push(rule);
         } else {
-          const allowedFields = computeAllowedFields(grant.action, roleSubjectPolicies);
+          const allowedFields = computeAllowedFields(
+            grant.action,
+            roleSubjectPolicies,
+          );
           if (allowedFields.length > 0) {
             const rule: IntermediateRule = {
               action: grant.action,
@@ -346,7 +351,9 @@ export class CaslAbilityFactory<
     }
 
     // SAFETY: createPrismaAbility 接收带有 conditions 和 fields 的规则集合并创建类型化 PrismaAbility
-    const rawRules = rules as unknown as Parameters<typeof createPrismaAbility>[0];
+    const rawRules = rules as unknown as Parameters<
+      typeof createPrismaAbility
+    >[0];
     const ability = createPrismaAbility(rawRules);
     // SAFETY: 断言转换为目录绑定的 AppPrismaAbility，确保编译期 action/subject 契约严格受限
     return ability as unknown as AppPrismaAbility<

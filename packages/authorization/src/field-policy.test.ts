@@ -18,7 +18,10 @@ test("getFieldMode 正确推导 HIDDEN、READONLY 与 EDITABLE 三态属性", ()
     // remark 未声明任何权限 -> HIDDEN
   });
 
-  assert.equal(getFieldMode(ability, "PurchaseOrder", "supplierName"), "EDITABLE");
+  assert.equal(
+    getFieldMode(ability, "PurchaseOrder", "supplierName"),
+    "EDITABLE",
+  );
   assert.equal(getFieldMode(ability, "PurchaseOrder", "costPrice"), "READONLY");
   assert.equal(getFieldMode(ability, "PurchaseOrder", "remark"), "HIDDEN");
 });
@@ -29,10 +32,19 @@ test("getReadableFields 与 getEditableFields 返回被授权的字段子集", (
     can("update", "PurchaseOrder", ["title"]);
   });
 
-  const readable = getReadableFields(ability, "PurchaseOrder", ["id", "title", "costPrice", "secretNote"]);
+  const readable = getReadableFields(ability, "PurchaseOrder", [
+    "id",
+    "title",
+    "costPrice",
+    "secretNote",
+  ]);
   assert.deepEqual(readable.sort(), ["costPrice", "id", "title"]);
 
-  const editable = getEditableFields(ability, "PurchaseOrder", ["id", "title", "costPrice"]);
+  const editable = getEditableFields(ability, "PurchaseOrder", [
+    "id",
+    "title",
+    "costPrice",
+  ]);
   assert.deepEqual(editable, ["title"]);
 });
 
@@ -77,7 +89,10 @@ test("assertEditableFields 允许合法可编辑字段并拦截只读或隐藏�
     },
     (err: unknown) => {
       assert.ok(err instanceof ForbiddenError);
-      assert.match((err as Error).message, /禁止修改 PurchaseOrder 的非编辑或隐藏字段: costPrice/);
+      assert.match(
+        (err as Error).message,
+        /禁止修改 PurchaseOrder 的非编辑或隐藏字段: costPrice/,
+      );
       return true;
     },
   );
@@ -91,7 +106,10 @@ test("assertEditableFields 允许合法可编辑字段并拦截只读或隐藏�
     },
     (err: unknown) => {
       assert.ok(err instanceof ForbiddenError);
-      assert.match((err as Error).message, /禁止修改 PurchaseOrder 的非编辑或隐藏字段: secretNote/);
+      assert.match(
+        (err as Error).message,
+        /禁止修改 PurchaseOrder 的非编辑或隐藏字段: secretNote/,
+      );
       return true;
     },
   );

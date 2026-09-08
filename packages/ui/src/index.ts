@@ -1,54 +1,83 @@
-/**
- * @chenrun/ui
- * 共享基础 UI 组件与 CASL 门禁展示
- */
+export * from "./lib/utils";
+export * from "./components/button";
+export * from "./components/card";
+export * from "./components/input";
+export * from "./components/badge";
 
-import React from "react";
-
-export interface CanProps {
- I: string;
- a: string;
- field?: string;
- children: React.ReactNode;
- fallback?: React.ReactNode;
-}
-
-/**
- * CASL 权限门禁组件 (兼容 @casl/react 风格)
- */
-export function Can({ children }: CanProps) {
- return React.createElement(React.Fragment, null, children);
-}
-
-export interface PermissionProps {
- action: string;
- subject: string;
- field?: string;
- children: React.ReactNode;
- fallback?: React.ReactNode;
-}
-
-/**
- * 项目语义化门禁包装组件
- */
-export function Permission({ children }: PermissionProps) {
- return React.createElement(React.Fragment, null, children);
-}
+import React, { cloneElement, isValidElement } from "react";
 
 export interface PermissionFieldProps {
- mode: "HIDDEN" | "READONLY" | "EDITABLE";
- children: React.ReactElement<{ readOnly?: boolean; disabled?: boolean }>;
+  readonly mode: "HIDDEN" | "READONLY" | "EDITABLE";
+  readonly children: React.ReactElement<{
+    readOnly?: boolean;
+    disabled?: boolean;
+    className?: string;
+  }>;
+  readonly label?: string;
+  readonly fallback?: React.ReactNode;
 }
 
 /**
- * 字段三态门禁包装组件
+ * 字段三态门禁控制组件 (与 shadcn/ui 样式无缝结合)
+ * - HIDDEN: 隐藏
+ * - READONLY: 设为只读并禁用
+ * - EDITABLE: 正常交互编辑
  */
-export function PermissionField({ mode, children }: PermissionFieldProps) {
- if (mode === "HIDDEN") {
-  return null;
- }
- return React.cloneElement(children, {
-  readOnly: mode === "READONLY",
-  disabled: mode === "READONLY",
- });
+export function PermissionField({
+  mode,
+  children,
+  label,
+  fallback = null,
+}: PermissionFieldProps) {
+  if (mode === "HIDDEN") {
+    return fallback ? React.createElement(React.Fragment, null, fallback) : null;
+  }
+
+  const isReadOnly = mode === "READONLY";
+
+  let badgeElement: React.ReactNode = null;
+  if (isReadOnly) {
+    badgeElement = React.createElement(
+      "span",
+      {
+        className:
+          "rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700",
+      },
+      "只读",
+    );
+  }
+
+  let labelElement: React.ReactNode = null;
+  if (label) {
+    labelElement = React.createElement(
+      "div",
+      { className: "flex items-center justify-between mb-1" },
+      React.createElement(
+        "label",
+        { className: "text-xs font-semibold text-zinc-700 dark:text-zinc-300" },
+        label,
+      ),
+      badgeElement,
+    );
+  }
+
+  let childElement: React.ReactNode = children;
+  if (isValidElement(children)) {
+    const existingClass = children.props.className || "";
+    const readOnlyClass = isReadOnly
+      ? "bg-zinc-100/70 text-zinc-500 cursor-not-allowed dark:bg-zinc-800/50 dark:text-zinc-400"
+      : "";
+    childElement = cloneElement(children, {
+      disabled: isReadOnly || children.props.disabled,
+      readOnly: isReadOnly || children.props.readOnly,
+      className: `${existingClass} ${readOnlyClass}`.trim(),
+    });
+  }
+
+  return React.createElement(
+    "div",
+    { className: "flex flex-col gap-1.5" },
+    labelElement,
+    childElement,
+  );
 }

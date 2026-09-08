@@ -9,7 +9,9 @@ interface TestRawRule {
   readonly conditions?: Record<string, unknown>;
 }
 
-function createTestPrismaAbility(rules: readonly TestRawRule[]): PrismaAbility<[string, string]> {
+function createTestPrismaAbility(
+  rules: readonly TestRawRule[],
+): PrismaAbility<[string, string]> {
   // SAFETY: 单元测试使用通用 RawRule 映射构造用于验证下推逻辑的 PrismaAbility 实例
   const raw = rules as unknown as Parameters<typeof createPrismaAbility>[0];
   const ability = createPrismaAbility(raw);

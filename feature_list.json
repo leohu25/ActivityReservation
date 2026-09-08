@@ -49,10 +49,19 @@
       "evidence": "实现五种数据范围解析器、字段三态拦截、@casl/prisma 查询下推提取器及 CaslAbilityFactory Prisma 扩展；单测 27/27、全仓单测 39/39、PostgreSQL 实库 1/1、8/8 check 与 verify 全部 PASS，Reviewer 独立审计 PASS"
     },
     {
+      "id": "foundation-web-shell",
+      "name": "SaaS Web 门户与主面板框架 (Web Portal & Dashboard Shell)",
+      "description": "基于 Next.js 16 构建登录/注册界面、租户(Organization)切换器、ERP 统一仪表盘骨架(Header/Sidebar/Breadcrumb)、前端 CASL 权限树注入与 <PermissionField> 字段三态表单组件，提供四层权限可视化演练交互面板",
+      "dependencies": ["foundation-advanced-authz"],
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "基于 App Router 拆解 /login, /workbench, /procurement/orders；引入 shadcn/ui 体系与 PermissionField；通过 .env.local 直连 PostgreSQL 容器实库消除死数据；全仓 42/42 测试、8/8 check 与 build 全部 PASS"
+    },
+    {
       "id": "foundation-migration",
       "name": "多租户数据库迁移引擎 (Tenant DB Migration CLI)",
       "description": "提供 tooling/tenant-migrate 工具，对每个独立租户数据库进行幂等、可追溯、可重试的版本升级，记录 TenantMigration 账本",
-      "dependencies": ["foundation-advanced-authz"],
+      "dependencies": ["foundation-web-shell"],
       "status": "not-started",
       "owner": "implementer",
       "evidence": ""

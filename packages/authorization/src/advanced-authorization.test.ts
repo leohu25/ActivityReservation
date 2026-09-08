@@ -9,7 +9,11 @@ import type {
 import { CaslAbilityFactory } from "./ability-factory";
 import { createPermissionCatalog } from "./catalog";
 import { getAccessibleWhere } from "./prisma-access";
-import { getFieldMode, getReadableFields, getEditableFields } from "./field-policy";
+import {
+  getFieldMode,
+  getReadableFields,
+  getEditableFields,
+} from "./field-policy";
 
 const orderPermission = {
   resource: "procurement.order",
@@ -51,7 +55,9 @@ const context: TenantContext = {
   },
 };
 
-function createMockRepository(roles: OrganizationRoleRecord[]): AuthorizationRepository {
+function createMockRepository(
+  roles: OrganizationRoleRecord[],
+): AuthorizationRepository {
   return {
     async findMember() {
       return member;
@@ -112,7 +118,10 @@ test("CaslAbilityFactory 整合生成带数据范围条件与字段限制的 Pri
     departmentTreeIds: ["dept_procurement", "dept_procurement_sub"],
   };
 
-  const prismaAbility = await factory.createPrismaAbilityForTenant(context, topology);
+  const prismaAbility = await factory.createPrismaAbilityForTenant(
+    context,
+    topology,
+  );
 
   // 1. 验证 Prisma where 条件直接下推生成
   const where = getAccessibleWhere(prismaAbility, "PurchaseOrder", "read");
@@ -127,9 +136,18 @@ test("CaslAbilityFactory 整合生成带数据范围条件与字段限制的 Pri
   });
 
   // 2. 验证字段三态推导
-  assert.equal(getFieldMode(prismaAbility, "PurchaseOrder", "supplierName"), "EDITABLE");
-  assert.equal(getFieldMode(prismaAbility, "PurchaseOrder", "costPrice"), "READONLY");
-  assert.equal(getFieldMode(prismaAbility, "PurchaseOrder", "internalAuditLog"), "HIDDEN");
+  assert.equal(
+    getFieldMode(prismaAbility, "PurchaseOrder", "supplierName"),
+    "EDITABLE",
+  );
+  assert.equal(
+    getFieldMode(prismaAbility, "PurchaseOrder", "costPrice"),
+    "READONLY",
+  );
+  assert.equal(
+    getFieldMode(prismaAbility, "PurchaseOrder", "internalAuditLog"),
+    "HIDDEN",
+  );
 
   // 3. 验证读写字段集合
   const readable = getReadableFields(prismaAbility, "PurchaseOrder", [
@@ -186,7 +204,10 @@ test("CaslAbilityFactory 隔离不同 Action 的数据范围，防止写操作�
     departmentTreeIds: ["dept_procurement", "dept_procurement_sub"],
   };
 
-  const prismaAbility = await factory.createPrismaAbilityForTenant(context, topology);
+  const prismaAbility = await factory.createPrismaAbilityForTenant(
+    context,
+    topology,
+  );
 
   // 验证 read 动作精确下推 DEPT_TREE 范围
   const readWhere = getAccessibleWhere(prismaAbility, "PurchaseOrder", "read");
@@ -201,7 +222,11 @@ test("CaslAbilityFactory 隔离不同 Action 的数据范围，防止写操作�
   });
 
   // 验证 update 动作精确下推 SELF 范围，未被 read 的 DEPT_TREE 污染扩大
-  const updateWhere = getAccessibleWhere(prismaAbility, "PurchaseOrder", "update");
+  const updateWhere = getAccessibleWhere(
+    prismaAbility,
+    "PurchaseOrder",
+    "update",
+  );
   assert.deepEqual(updateWhere, {
     OR: [
       {

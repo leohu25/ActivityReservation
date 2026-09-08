@@ -6,12 +6,7 @@
  * - CUSTOM: 显式枚举指定的自定义部门数据。
  * - ALL: 整个租户组织范围内的全量数据，无范围限制。
  */
-export type DataScopeType =
-  | "SELF"
-  | "DEPT"
-  | "DEPT_TREE"
-  | "CUSTOM"
-  | "ALL";
+export type DataScopeType = "SELF" | "DEPT" | "DEPT_TREE" | "CUSTOM" | "ALL";
 
 /**
  * 角色数据范围配置契约
@@ -82,10 +77,14 @@ function resolveScopeCondition(
         : { [departmentIdField]: "__NO_DEPARTMENT_FAIL_CLOSED__" };
 
     case "DEPT_TREE": {
-      const treeIds = topology.departmentTreeIds ?? (topology.departmentId ? [topology.departmentId] : []);
+      const treeIds =
+        topology.departmentTreeIds ??
+        (topology.departmentId ? [topology.departmentId] : []);
       // 部门树为空时严格执行 Fail-Closed
       if (treeIds.length === 0) {
-        return { [departmentIdField]: { in: ["__NO_DEPARTMENT_FAIL_CLOSED__"] } };
+        return {
+          [departmentIdField]: { in: ["__NO_DEPARTMENT_FAIL_CLOSED__"] },
+        };
       }
       return treeIds.length === 1
         ? { [departmentIdField]: treeIds[0] }
@@ -96,7 +95,9 @@ function resolveScopeCondition(
       const customIds = scope.customDepartmentIds ?? [];
       // 自定义部门列表为空时严格执行 Fail-Closed
       if (customIds.length === 0) {
-        return { [departmentIdField]: { in: ["__NO_CUSTOM_DEPARTMENT_FAIL_CLOSED__"] } };
+        return {
+          [departmentIdField]: { in: ["__NO_CUSTOM_DEPARTMENT_FAIL_CLOSED__"] },
+        };
       }
       return customIds.length === 1
         ? { [departmentIdField]: customIds[0] }
@@ -137,7 +138,12 @@ export function resolveDataScopeConditions(
   const conditions: PrismaQueryCondition[] = [];
 
   for (const scope of scopes) {
-    const cond = resolveScopeCondition(scope, topology, userIdField, departmentIdField);
+    const cond = resolveScopeCondition(
+      scope,
+      topology,
+      userIdField,
+      departmentIdField,
+    );
     if (cond) {
       conditions.push(cond);
     }

@@ -198,10 +198,7 @@ test("resolveDataScopeConditions 将多角色数据范围通过 OR 进行并集�
 
   const condition = resolveDataScopeConditions(scopes, topology);
   assert.deepEqual(condition, {
-    OR: [
-      { createdById: "usr_multi" },
-      { deptId: "dept_vip" },
-    ],
+    OR: [{ createdById: "usr_multi" }, { deptId: "dept_vip" }],
   });
 });
 
