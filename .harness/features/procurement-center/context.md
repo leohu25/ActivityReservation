@@ -5,9 +5,9 @@
 作为 SaaS 平台 Foundation V1 的首个端到端验证业务模块，用于闭环验证：
 
 1. 租户物理数据库隔离 (Tenant DB)
-2. RBAC 四层权限体系与 Code-as-Config 编译器生成的 `P.*` 与 `F.*`
-3. 部门数据范围控制 (Data Scope: 本部门及下级)
-4. 敏感字段安全策略 (Field Policy: 成本价 costPrice 脱敏与只读)
+2. RBAC 四层权限体系（Better Auth 动态角色 + CASL 动作/资源/数据范围/字段策略）与业务切片声明的权限契约
+3. 部门数据范围控制 (Data Scope: SELF, DEPT, DEPT_TREE, CUSTOM, ALL)
+4. 敏感字段安全策略 (Field Policy: 成本价 costPrice 脱敏与只读/编辑)
 5. 业务规则控制 (Business Policy: 仅 pending 允许审核、禁止自审)
 
 ## 二、 核心用例

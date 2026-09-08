@@ -13,7 +13,7 @@
 3. **查阅项目架构文档**：阅读 `docs/SaaS_Foundation_Minimal.md`。
 4. **运行环境自检**：运行 `./init.sh` 确保环境无损。
 5. **查阅多智能体与工具规范**：参阅 `.harness/agents/index.md` 与 `.harness/tools/policies.md`。
-6. **查阅特性总账**：阅读 `feature_list.json` 与 `progress.md` 获取当前特性状态。
+6. **查阅特性总账**：阅读 `feature_list.json` 获取全局特性状态与前置依赖。
 7. **锁定会话特性**：配置 `member.local.md` 中的 `active_feature_id`。
 
 若基础自检失败，必须先修复基线问题，严禁带病开发新功能。
@@ -25,7 +25,10 @@
 - **单次仅限一个特性 (One feature at a time)**：从 `feature_list.json` 中仅认领一个前置依赖已满足的未完成特性。
 - **严格遵守修改边界 (Stay in scope)**：严格只修改 `.harness/features/<feature_id>/scope.md` 白名单内列出的文件，严禁越界修改其他目录。
 - **强制门禁验证 (Verification required)**：不运行门禁验证命令，绝对不能宣称完成。
-- **及时更新状态记录 (Update artifacts)**：每次会话结束前必须更新 `feature_list.json`、`progress.md` 与 `session-handoff.md`。
+- **单源状态与沙盒收敛 (Single Source of Truth)**：
+  - 各特性的阶段任务清单、测试输出与换手交接单严格在专属沙盒 `.harness/features/<feature_id>/progress.md` 与 `handoff.md` 中维护，杜绝双写冗余；
+  - 发现的历史遗留问题与架构漂移统一登记至 `.harness/memory/technical-debt.md`；
+  - 踩坑经验与通用架构反思沉淀至 `.harness/memory/learnings.md`。
 - **保持整洁可重启状态 (Leave clean state / restartable)**：结束时保证工作区处于随时可重新运行 `./init.sh` 的健康状态。
 
 ---
@@ -60,7 +63,7 @@
 
 - [ ] 目标业务功能与逻辑全部实现完毕。
 - [ ] 专属自动化测试及全栈门禁 `./scripts/verify.sh` 100% 执行通过（类型检查 0 错误、单测 0 失败）。
-- [ ] 真实验证输出与日志已作为证据记录到 `feature_list.json` 与 `progress.md` 中。
+- [ ] 真实任务进展与验证证据已记录至 `.harness/features/<feature_id>/progress.md` 与 `feature_list.json`。
 - [ ] 仓库保持干净且可无缝重启（从标准启动入口 `./init.sh` 正常运行）。
 
 ---
@@ -69,11 +72,11 @@
 
 在结束当前开发会话前，必须完成：
 
-1. 更新 `progress.md` 记录当前执行状态与产出。
-2. 更新 `feature_list.json` 中的特性完成状态与证据。
-3. 若存在未解决的风险或阻塞项，记录到 `session-handoff.md`。
+1. 在当前特性沙盒 `.harness/features/<feature_id>/progress.md` 与 `handoff.md` 记录详细执行状态、产出与交接信息。
+2. 更新 `feature_list.json` 中的特性完成状态与真实证据。
+3. 若存在跨特性的历史遗留缺陷或架构漂移，统一登记到 `.harness/memory/technical-debt.md`；若有踩坑经验，沉淀到 `.harness/memory/learnings.md`。
 4. 运行 `./scripts/verify.sh` 确保留给下一会话一个可正常重启的干净代码库 (clean restartable state)。
-5. 运行 `./scripts/session-end.sh` (或 `pnpm session:end`) 执行物理收尾校验，确认交接闭环就绪。
+5. 运行 `./scripts/session-end.sh` (或 `pnpm session:end`) 执行物理收尾校验，确认沙盒交接闭环就绪。
 
 ---
 
@@ -106,7 +109,7 @@
 ## 必需的核心工件 (Required Artifacts)
 
 - `feature_list.json` — 全局特性状态总账 (唯一事实源)
-- `progress.md` — 持续推进看板与证据库
+- `.harness/features/<id>/` — 单特性专属沙盒（含 `progress.md`, `handoff.md`, `scope.md`, `context.md`, `verification.md`）
+- `.harness/memory/` — 架构决策 (ADR)、避坑指南 (learnings) 与技术债台账 (technical-debt)
 - `init.sh` — 标准自检与启动脚本
-- `session-handoff.md` — 跨会话换手交接单
 - `member.local.md` — 本地会话单特性锁定锚点

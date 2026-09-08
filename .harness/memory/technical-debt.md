@@ -10,6 +10,7 @@
 | 编号 | 登记日期 | 登记人/角色 | 所在文件/模块 | 漂移/债务描述 | 推荐收敛方案 | 优先级 | 处理状态 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | DEBT-001 | 2025-05-18 | @coordinator | 根目录 | 初始骨架搭建待引入模块化 Monorepo 依赖扫描工具 | 配置 tooling/boundary-check 静态检查 | 中 | 待排期 |
+| DEBT-002 | 2026-09-08 | @implementer | packages/db-tenant, apps/tenant | 租户物理库连接池需补充 LRU 容量上限保护与闲置连接主动回收 | 在 TenantDbManager 引入 LRU 缓存与断连保活 | 低 | 待排期 |
 
 ---
 

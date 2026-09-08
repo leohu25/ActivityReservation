@@ -29,7 +29,7 @@
 
 | 角色 (Role) | 允许工具 | 只读限制 | 写入范围 |
 | :--- | :--- | :--- | :--- |
-| `coordinator` | `read`, `grep`, `find`, `ls`, `todo`, `subagent`, `ask_user` | 是 | 仅限状态工件 (`progress.md`, `feature_list.json`) |
+| `coordinator` | `read`, `grep`, `find`, `ls`, `todo`, `subagent`, `ask_user` | 是 | 仅限特性总账与沙盒工件 (`feature_list.json`, `.harness/features/**`, `.harness/memory/**`) |
 | `researcher` | `read`, `grep`, `find`, `ls`, `symbol_search` | 是 | 仅限 ADR 草案 (`.harness/memory/adr/`) |
 | `implementer` | `read`, `edit`, `write`, `grep`, `find`, `ls`, `bash` | 否 | 严格限制在激活特性的 `scope.md` 白名单内 |
 | `reviewer` | `read`, `grep`, `find`, `ls`, `bash` | 是 | 严禁修改任何代码；只允许执行门禁测试命令 |

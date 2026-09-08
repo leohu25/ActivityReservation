@@ -7,11 +7,8 @@
 - `packages/authorization/**`
 - `.gitignore`
 - `pnpm-lock.yaml`
-- `AGENTS.md`
 - `feature_list.json`
-- `progress.md`
-- `session-handoff.md`
-- `.harness/features/**`
+- `.harness/features/foundation-web-shell/**`
 
 ## 严禁修改的内容 (受保护区域)
 

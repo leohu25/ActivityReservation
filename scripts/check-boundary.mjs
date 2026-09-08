@@ -134,14 +134,12 @@ for (const line of lines) {
   }
 }
 
-// 5. 注入通用合规放行项 (协同元数据与技术债登记)
+// 5. 注入通用合规放行项 (协同元数据、特性沙盒与公共记忆库)
 const universalAllowed = [
   "member.local.md",
   "member.local.example.md",
-  "progress.md",
-  "session-handoff.md",
   "feature_list.json",
-  ".harness/memory/technical-debt.md",
+  ".harness/memory/**",
   `.harness/features/${activeFeature}/**`,
 ];
 

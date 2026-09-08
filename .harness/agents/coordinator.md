@@ -14,7 +14,7 @@
    - 当遇到架构分歧、业务规则模糊或非预期的需求变更时，主动调用 `ask_user_question` 与用户对齐，严禁自行假设。
 3. **编排派发与验收**：
    - 编排 Research、Plan、Implement、Review 四阶段流水线。
-   - 验收 Implementer 和 Reviewer 的产出，并更新 `feature_list.json` 与 `progress.md`。
+   - 验收 Implementer 和 Reviewer 的产出，并在当前特性沙盒 `.harness/features/<id>/progress.md`、`handoff.md` 与全局 `feature_list.json` 中更新状态与证据。
 
 ## 自包含 Worker 派发模板 (Task Dispatch Template)
 

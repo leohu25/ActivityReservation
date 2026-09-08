@@ -11,7 +11,7 @@
 1. **白名单自律 (Stay in Scope)**：
    - 严禁触碰白名单外的任何受保护基础底座或无关业务切片。
 2. **规范与契约遵从**：
-   - 权限码必须在 Feature 的 `permissions.ts` 中声明，使用 `P.*` 与 `F.*` 强类型常量，严禁裸写字符串。
+   - 权限统一在业务切片的 `permissions.ts` 中声明 Better Auth `statement` 与 CASL 契约常量，严禁裸写魔术字符串或绕过授权体系。
    - 严格遵循 Database-per-Tenant 隔离机制，通过 Tenant Context 访问数据，严禁拼接连接串。
 3. **测试先行与闭环**：
    - 实现业务逻辑的同时必须编写单元测试，跑通 Feature 专属测试后向 Coordinator 回执交付。

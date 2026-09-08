@@ -7,29 +7,43 @@ import { execSync } from "node:child_process";
 const workspaceRoot = path.resolve(process.cwd());
 const localMember = path.join(workspaceRoot, "member.local.md");
 const featureListPath = path.join(workspaceRoot, "feature_list.json");
-const rootProgress = path.join(workspaceRoot, "progress.md");
-const rootHandoff = path.join(workspaceRoot, "session-handoff.md");
 
 let hasError = false;
 
-process.stdout.write(">>> [Session End] 执行会话收尾与交接状态校验\n");
+process.stdout.write(">>> [Session End] 执行会话收尾与沙盒交接状态校验\n");
 
-// 1. 检查根目录全局交接工件
-if (fs.existsSync(rootProgress)) {
-  process.stdout.write("  • 全局看板: progress.md 存在\n");
+// 1. 检查全局特性总账与公共记忆库
+if (fs.existsSync(featureListPath)) {
+  process.stdout.write("  • 特性总账: feature_list.json 存在\n");
 } else {
-  process.stderr.write("  ✗ 缺少根目录推进看板: progress.md\n");
+  process.stderr.write("  ✗ 缺少全局特性总账: feature_list.json\n");
   hasError = true;
 }
 
-if (fs.existsSync(rootHandoff)) {
-  process.stdout.write("  • 会话交接: session-handoff.md 存在\n");
+const learningsFile = path.join(workspaceRoot, ".harness/memory/learnings.md");
+const techDebtFile = path.join(
+  workspaceRoot,
+  ".harness/memory/technical-debt.md",
+);
+if (fs.existsSync(learningsFile)) {
+  process.stdout.write("  • 团队经验: .harness/memory/learnings.md 就绪\n");
 } else {
-  process.stderr.write("  ✗ 缺少根目录会话交接单: session-handoff.md\n");
+  process.stderr.write("  ✗ 缺少避坑指南库: .harness/memory/learnings.md\n");
   hasError = true;
 }
 
-// 2. 检查本地激活特性
+if (fs.existsSync(techDebtFile)) {
+  process.stdout.write(
+    "  • 技术债库: .harness/memory/technical-debt.md 就绪\n",
+  );
+} else {
+  process.stderr.write(
+    "  ✗ 缺少技术债台账: .harness/memory/technical-debt.md\n",
+  );
+  hasError = true;
+}
+
+// 2. 检查本地激活特性沙盒进展与交接工件
 let activeFeature = "none";
 if (fs.existsSync(localMember)) {
   const content = fs.readFileSync(localMember, "utf-8");
@@ -110,7 +124,7 @@ try {
   if (statusOutput.length > 0) {
     const changeCount = statusOutput.split("\n").length;
     process.stdout.write(
-      `  • 工作区提示: 检测到 ${changeCount} 个未提交/未暂存改动，请确保已在交接单中说明\n`,
+      `  • 工作区提示: 检测到 ${changeCount} 个未提交/未暂存改动，请确保已在沙盒 handoff.md 中说明\n`,
     );
   } else {
     process.stdout.write("  • 工作区状态: 干净 (无未提交改动)\n");
@@ -121,10 +135,12 @@ try {
 
 if (hasError) {
   process.stderr.write(
-    "\n\x1b[31m✗ 会话收尾检查未通过，请补齐上述交接记录后再结束会话！\x1b[0m\n",
+    "\n\x1b[31m✗ 会话收尾检查未通过，请补齐沙盒交接记录后再结束会话！\x1b[0m\n",
   );
   process.exit(1);
 } else {
-  process.stdout.write("\n\x1b[32m✔ 会话收尾检查通过，工程交接就绪！\x1b[0m\n");
+  process.stdout.write(
+    "\n\x1b[32m✔ 会话收尾检查通过，特性沙盒交接就绪！\x1b[0m\n",
+  );
   process.exit(0);
 }
