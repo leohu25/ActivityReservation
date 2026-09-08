@@ -2,49 +2,44 @@
 
 ## 基本信息与目标
 
-- **目标特性**：多租户与身份认证底座 (`foundation-tenant-auth`)
+- **目标特性**：授权核心与能力构建器 (`foundation-authorization`)
 - **当前状态**：已完成 (Completed)
-- **当前分支**：`main`
-- **最后更新**：2026-09-07T17:43:03Z
+- **当前分支**：`gemini`
+- **最后更新**：2026-09-08T12:00:00Z
 
 ## 本次会话完成内容
 
-- Better Auth 1.7.3 邮箱密码认证、Prisma adapter、Organization 插件与惰性服务端 Runtime。
-- Prisma 7.10 Control DB Schema：Better Auth 身份/组织模型及一对一 `TenantDatabase` 映射。
-- Next.js `/api/auth/[...all]` Handler。
-- 基于 `headers()`、`auth.api.getSession`、Member 与 ACTIVE Mapping 的可信 Tenant Context。
-- 仅经 `secretRef` 和受信 Secret Resolver 建立客户端的 Tenant DB Manager。
-- 同租户并发初始化去重、跨租户隔离、evict、closeAll 与关闭竞态 drain/fail-closed。
-- 21 个自动化测试及 Reviewer 最终 PASS。
-- PostgreSQL 17 Docker Compose 本地实库，绑定 `127.0.0.1:55432`。
-- 真实执行 Better Auth 注册、Organization/Member、Session activeOrganizationId、TenantDatabase 和可信 Tenant Context 集成闭环。
+- 检查前序特性 3 (`foundation-tenant-auth`) 与特性 4 (`foundation-authorization`) 实现状态与测试证据。
+- 确认特性 3 与特性 4 的代码已在 git 提交 `9050a29` 中完备实现。
+- 修复并补齐了特性 4 关联的账本同步状态 (`feature_list.json`, `progress.md`, `session-handoff.md`, `member.local.md`)。
+- 运行 PostgreSQL 17 实库集成测试，验证 Better Auth Dynamic Access Control、Prisma `OrganizationRole`、CASL Ability Factory 与 React/服务端适配在真实 PostgreSQL 中的闭环执行。
+- 保证测试后数据库数据彻底清理（残留 `0|0|0|0`）。
+- 验证全仓 8/8 包类型检查、全栈门禁、单元测试（29/29 PASS）及环境重启自检。
 
 ## 门禁验证证据
 
 | 检查项 | 结果 |
 | :--- | :--- |
-| Auth 测试 | 10/10 PASS |
-| Control DB 测试 | 3/3 PASS |
-| Tenant DB 测试 | 8/8 PASS |
-| Prisma validate/generate/db push | PASS，v7.10.0 |
-| PostgreSQL 实库集成测试 | 1/1 PASS |
-| 集成测试残留数据 | `0|0|0` |
-| `pnpm check` | 8/8 PASS |
-| `pnpm build` | PASS |
-| `./scripts/verify.sh` | PASS |
-| `./init.sh` | PASS |
-| Reviewer | PASS / Merge verdict OK |
-| Git 暂存区 | 空，NO STAGED FILES |
+| Auth 单元测试 | 10/10 PASS |
+| Control DB 单元测试 | 4/4 PASS |
+| Tenant DB 单元测试 | 8/8 PASS |
+| Authorization 单元测试 | 7/7 PASS |
+| PostgreSQL 认证实库集成测试 | 1/1 PASS |
+| PostgreSQL 动态角色授权集成测试 | 1/1 PASS |
+| 实库清理后残留数据 | 0 0 0 0 |
+| pnpm check | 8/8 PASS（含 catalog.type-contract.tsx 负向编译期约束） |
+| pnpm build | PASS（Next.js 生产构建完成） |
+| ./scripts/verify.sh | PASS（边界合规且无红线） |
+| ./init.sh | PASS（环境自检通过，就绪重启） |
+| ./scripts/session-end.sh | PASS（会话收尾与交接状态校验通过） |
 
-## 遗留风险
+## 遗留风险与注意事项
 
-- 本地 PostgreSQL 容器和持久卷保持运行；可供后续授权特性继续执行实库集成验证。
-- `db:push` 仅用于本地测试，不能替代后续 `foundation-migration` 的正式迁移流程。
-- 部署必须提供 `CONTROL_DATABASE_URL` 与至少 32 字符的 `BETTER_AUTH_SECRET`；可选 `BETTER_AUTH_URL`。
-- 数据库迁移执行、动态角色、CASL、数据范围和字段权限均按特性边界留待后续实现。
+- 本地 PostgreSQL 容器 (`chenrun-saas-control-postgres`) 在 `127.0.0.1:55432` 正常保持运行。
+- 下一特性为 `foundation-advanced-authz`（五种数据范围与字段权限引擎），请遵循其 scope 沙盒。
 
 ## 下一会话启动指引
 
 1. 运行 `./init.sh` 确认环境。
-2. 将 `member.local.md` 的 `active_feature_id` 切换为 `foundation-authorization`。
-3. 创建并读取对应特性 scope 后，推进 Better Auth Dynamic Access Control 与 CASL Ability Factory。
+2. 将 `member.local.md` 中的 `active_feature_id` 设为 `foundation-advanced-authz`。
+3. 遵循 `.harness/features/foundation-advanced-authz/scope.md` 推进数据范围与字段权限引擎。

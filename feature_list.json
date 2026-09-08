@@ -35,9 +35,9 @@
       "name": "授权核心与能力构建器 (Better Auth Roles & CASL Factory)",
       "description": "集成 Better Auth Dynamic Access Control 与 CASL Ability Factory，支持动态角色与功能权限，打通 React <Can> 与服务端 @RequireAbility 契约",
       "dependencies": ["foundation-tenant-auth"],
-      "status": "not-started",
+      "status": "completed",
       "owner": "implementer",
-      "evidence": ""
+      "evidence": "Better Auth 动态访问控制、Prisma OrganizationRole、CASL Ability Factory 与 React/服务端适配已落地；PostgreSQL 17 实库集成测试 1/1、单测 21/21（auth 10 + authorization 7 + db-control 4）、残留数据 0；pnpm check 8/8、build、verify、init 全部 PASS"
     },
     {
       "id": "foundation-advanced-authz",
