@@ -65,7 +65,9 @@ export function Sidebar({ can }: SidebarProps) {
         </div>
         <nav className="space-y-1">
           {visibleItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+            const isActive =
+              pathname === item.href ||
+              (item.href !== "/" && pathname.startsWith(item.href));
             return (
               <Link
                 key={item.id}

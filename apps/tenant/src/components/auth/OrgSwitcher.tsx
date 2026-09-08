@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { authClient } from "@/lib/auth/client";
+import { Button, Input } from "@chenrun/ui";
 
 interface OrgItem {
   id: string;
@@ -18,24 +19,27 @@ interface OrgSwitcherProps {
  * 租户(Organization)切换与创建组件
  */
 export function OrgSwitcher({ activeOrgId, onOrgChanged }: OrgSwitcherProps) {
-  const { data: orgListData, isPending } = authClient.useListOrganizations();
+  const { data: orgListData, isPending, refetch } = authClient.useListOrganizations();
   const [isCreating, setIsCreating] = useState(false);
   const [newOrgName, setNewOrgName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // SAFETY: Better Auth 官方 organizationClient 插件返回包含 id, name, slug 的租户列表结构
   const orgList = (orgListData ?? []) as unknown as OrgItem[];
 
   const handleSelectOrg = async (orgId: string) => {
     if (orgId === activeOrgId) return;
     setLoading(true);
+    setError(null);
     try {
       await authClient.organization.setActive({
         organizationId: orgId,
       });
       onOrgChanged?.();
-      window.location.reload();
-    } catch {
-      // 异常拦截
+      window.location.href = "/workbench";
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "切换租户失败");
     } finally {
       setLoading(false);
     }
@@ -43,24 +47,40 @@ export function OrgSwitcher({ activeOrgId, onOrgChanged }: OrgSwitcherProps) {
 
   const handleCreateOrg = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    if (!newOrgName.trim()) return;
+    const trimmed = newOrgName.trim();
+    if (!trimmed) return;
     setLoading(true);
+    setError(null);
     try {
+      // 英文数字转 slug，若全中文则生成唯一安全 slug
+      const pinyinOrAscii = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      const slug = pinyinOrAscii || `org-${Date.now()}`;
+
       const res = await authClient.organization.create({
-        name: newOrgName.trim(),
-        slug: newOrgName.trim().toLowerCase().replace(/\s+/g, "-"),
+        name: trimmed,
+        slug: slug,
       });
+
+      if (res.error) {
+        setError(res.error.message || "创建组织失败，请检查输入");
+        return;
+      }
+
       if (res.data) {
         await authClient.organization.setActive({
           organizationId: res.data.id,
         });
         setIsCreating(false);
         setNewOrgName("");
+        if (refetch) {
+          await refetch();
+        }
         onOrgChanged?.();
-        window.location.reload();
+        // 直接硬跳转到工作台，让服务端完全重新加载该组织的上下文
+        window.location.href = "/workbench";
       }
-    } catch {
-      // 异常防御
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "创建组织发生异常，请稍后重试");
     } finally {
       setLoading(false);
     }
@@ -85,6 +105,7 @@ export function OrgSwitcher({ activeOrgId, onOrgChanged }: OrgSwitcherProps) {
             const val = e.target.value;
             if (val === "__NEW__") {
               setIsCreating(true);
+              setError(null);
             } else if (val) {
               handleSelectOrg(val);
             }
@@ -108,35 +129,64 @@ export function OrgSwitcher({ activeOrgId, onOrgChanged }: OrgSwitcherProps) {
       </div>
 
       {isCreating && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-            <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-              新建 ERP 租户组织
-            </h3>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-50">
+                新建 ERP 租户组织
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCreating(false);
+                  setError(null);
+                }}
+                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+              >
+                ✕
+              </button>
+            </div>
+
+            {error && (
+              <div className="mt-4 rounded-xl bg-red-50 p-3 text-xs text-red-600 dark:bg-red-950/50 dark:text-red-400 border border-red-200 dark:border-red-900">
+                {error}
+              </div>
+            )}
+
             <form onSubmit={handleCreateOrg} className="mt-4 space-y-4">
-              <input
-                type="text"
-                required
-                value={newOrgName}
-                onChange={(e) => setNewOrgName(e.target.value)}
-                placeholder="例如：晨润华东分部"
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-              />
-              <div className="flex justify-end gap-2">
-                <button
+              <div>
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                  租户企业 / 分部名称
+                </label>
+                <Input
+                  type="text"
+                  required
+                  autoFocus
+                  value={newOrgName}
+                  onChange={(e) => setNewOrgName(e.target.value)}
+                  placeholder="例如：晨润华东分部"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <Button
                   type="button"
-                  onClick={() => setIsCreating(false)}
-                  className="rounded-lg px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsCreating(false);
+                    setError(null);
+                  }}
                 >
                   取消
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  disabled={loading}
-                  className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+                  size="sm"
+                  disabled={loading || !newOrgName.trim()}
                 >
-                  {loading ? "创建中..." : "确认创建"}
-                </button>
+                  {loading ? "创建激活中..." : "确认创建"}
+                </Button>
               </div>
             </form>
           </div>

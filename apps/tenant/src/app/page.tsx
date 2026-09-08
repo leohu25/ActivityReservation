@@ -9,14 +9,14 @@ import { getServerAuthRuntime } from "@/lib/auth";
  * - 未登录访客：直接分发至独立认证登录页 (/login)
  */
 export default async function RootPage() {
-  const runtime = getServerAuthRuntime();
-  const session = await runtime.auth.api.getSession({
-    headers: await headers(),
-  });
+ const runtime = getServerAuthRuntime();
+ const session = await runtime.auth.api.getSession({
+  headers: await headers(),
+ });
 
-  if (session) {
-    redirect("/workbench");
-  } else {
-    redirect("/login");
-  }
+ if (session) {
+  redirect("/workbench");
+ } else {
+  redirect("/login");
+ }
 }
