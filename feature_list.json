@@ -101,6 +101,78 @@
       "status": "completed",
       "owner": "implementer",
       "evidence": "落地 packages/features/procurement-center 领域服务与 Server Actions；实现 CASL accessibleBy 数据范围 SQL 下推、敏感成本价只读/脱敏、CreateOrderDialog/AuditOrderModal 交互；端到端打通租户独立物理库与 employee_profile 部门拓扑自驱装配；严密执行不可逆状态机与【禁止自审】红线；切片测试 5/5、全仓 9 套件 87/87 单测通过、12 包 check 0 错误、Next.js 生产构建与 verify.sh PASS"
+    },
+    {
+      "id": "p0-org-schema-and-entities",
+      "name": "【P0】租户组织人事模型与基础实体补齐 (Tenant Org Core Schema & Entities)",
+      "description": "第一梯队核心地基：重构 Tenant DB 实体，彻底解决模型失真。EmployeeProfile 独立主键并支持直接开通在职档案，补全 userId/employeeNo/departmentId/positionId/managerEmployeeId/nameSnapshot/emailSnapshot 与生命周期状态；新增 Position（岗位实体，支持职责/编码/排序）；增强 Department（补充 leaderMemberId/sort/status）；新增 CompanyProfile（企业私有资料）；Control DB 引入 authorizationVersion 并生成兼容物理库迁移",
+      "dependencies": ["procurement-center"],
+      "status": "pending",
+      "owner": "implementer"
+    },
+    {
+      "id": "p0-tenant-seed-and-provisioning",
+      "name": "【P0】租户开通与初始数据种子初始化 (Tenant Direct Provisioning & Baseline Seed)",
+      "description": "第一梯队开通闭环：平台管理员在总控开通租户时，直接为 Owner 创建已验证用户与初始密码（免邮件激活），物理建库并完成迁移后自动执行基线 Seed：创建 ROOT 根部门、默认岗位字典（总经理/部门主管/业务专员）、自动在租户库为 Owner 创建首个 EmployeeProfile（在职激活态），并初始化预置四层角色策略，确保 Owner 可无障碍直接登录使用",
+      "dependencies": ["p0-org-schema-and-entities"],
+      "status": "pending",
+      "owner": "implementer"
+    },
+    {
+      "id": "p0-tenant-navigation-and-settings",
+      "name": "【P0】租户后台多级导航与企业/基础/安全设置中心 (Tenant Multi-Level Navigation & Settings Center)",
+      "description": "第一梯队导航与设置基石：完全对齐规范第 48 节重构 Sidebar.tsx 为多级分组折叠导航目录树（工作台/业务模块/系统管理：组织架构、权限管理、企业设置、审计日志占位）；落地企业设置三大核心页面：/settings/company（企业信息，读写 CompanyProfile）、/settings/general（基础设置，系统名称/编号规则等偏好配置）、/settings/security（安全设置，会话超时等策略）",
+      "dependencies": ["p0-tenant-seed-and-provisioning"],
+      "status": "pending",
+      "owner": "implementer"
+    },
+    {
+      "id": "p0-tenant-org-management",
+      "name": "【P0】组织架构中心：部门树维护、岗位字典与直接录入建号 (Tenant Org Management: Dept Tree, Positions & Direct Employee Provisioning)",
+      "description": "第一梯队人事业务核心：落地 DepartmentService、PositionService 与 EmployeeOnboarding/Transfer 服务。部门管理 (/organization/departments) 支持树状拓扑、换上级防环检测与 Fail-Closed 删除保护；岗位管理 (/organization/positions) 支持岗位字典与推荐角色（坚持 Position != Role）；员工管理 (/organization/employees) 支持部门树级联联动筛选、直接录入建号（录入档案与初始密码原子创建 User/Member/EmployeeProfile）、调岗、调部门、升降角色（自增 authorizationVersion 动态下推权限）与停用/恢复",
+      "dependencies": ["p0-tenant-navigation-and-settings"],
+      "status": "pending",
+      "owner": "implementer"
+    },
+    {
+      "id": "p0-tenant-workbench-real-topology",
+      "name": "【P0】工作台真实拓扑装配与租户访问门禁 (Workbench Real Topology & Tenant Access Gate)",
+      "description": "第一梯队真实权限闭环验证：彻底废除 /workbench 中写死的 dept_procurement_east mock 数据，自驱读取当前登录人真实 EmployeeProfile 与部门树，动态计算并展示 CASL 权限；在路由与 Server Actions 处植入 Tenant Access Gate，严格断言 EmployeeProfile.status === 'ACTIVE'，被停用人员即时阻断；联动验证调部门后采购订单列表部门范围下推实时变动",
+      "dependencies": ["p0-tenant-org-management"],
+      "status": "pending",
+      "owner": "implementer"
+    },
+    {
+      "id": "p1-tenant-audit-logs",
+      "name": "【P1】租户三维审计安全体系 (Tenant 3D Audit Logs)",
+      "description": "第二梯队合规保障：Tenant DB 建立 OperationAuditLog 与 PermissionAuditLog，Control DB / Tenant DB 建立 LoginAuditLog；在采购订单核心流转处拦截插入操作流水；在角色与权限配置变更处拦截记录四层策略 JSON Diff；落地 /audit/operations（操作日志）、/audit/logins（登录日志）与 /audit/permissions（权限变更 Diff 对比抽屉）查询控制台",
+      "dependencies": ["p0-tenant-workbench-real-topology"],
+      "status": "pending",
+      "owner": "implementer"
+    },
+    {
+      "id": "p1-tenant-lifecycle-governance",
+      "name": "【P1】租户全生命周期管控与排期安全清理 (Tenant Full Lifecycle Governance & Clean Purge)",
+      "description": "第二梯队租户运维：落地 TenantLifecycleService，实现租户 PROVISIONING -> ACTIVE -> SUSPENDED -> PENDING_DELETE -> DELETED 完整流转；租户停用仅阻断本租户物理库访问，严禁封禁全局 User（遵循 R-04）；建立排期删除 30 天冷静保留期与物理安全清理（备份 -> Drop 租户库 -> 清理 Control 映射 -> 留存审计账本，遵循第 60 节顺序）",
+      "dependencies": ["p1-tenant-audit-logs"],
+      "status": "pending",
+      "owner": "implementer"
+    },
+    {
+      "id": "p2-tenant-member-invitation-flow",
+      "name": "【P2】成员邮件邀请与激活绑定流 (Member Email Invitation & Acceptance Flow)",
+      "description": "第三梯队外部协同：对接 SMTP / 外部邮件服务，启用 Better Auth Organization 邀请插件与 afterAcceptInvitation Hook；在租户后台提供 /access/invitations 待加入成员列表管理（重发邀请、撤回取消）；员工点击邮件 Token 激活或注册，Hook 自动将对应预置档案由 INVITED 翻转为 ACTIVE 并绑定 memberId/userId",
+      "dependencies": ["p1-tenant-lifecycle-governance"],
+      "status": "pending",
+      "owner": "implementer"
+    },
+    {
+      "id": "p2-tenant-ownership-and-advanced-offboarding",
+      "name": "【P2】租户所有权移交与复杂离职批量单据交接 (Tenant Ownership Transfer & Batch Offboarding Handover)",
+      "description": "第三梯队高级运维：落地 TenantOwnershipService，当前 Owner 经过密码二次验证后，原子提升新 Owner 并降级原 Owner，严格保持唯一 Primary Owner；落地员工离职时的未完结业务单据（未审核采购单等）批量交接过户流程并生成交接归档清单",
+      "dependencies": ["p2-tenant-member-invitation-flow"],
+      "status": "pending",
+      "owner": "implementer"
     }
   ]
 }
