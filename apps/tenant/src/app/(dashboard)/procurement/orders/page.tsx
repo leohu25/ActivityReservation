@@ -32,19 +32,27 @@ export default async function ProcurementOrdersPage() {
   try {
     tenantCtx = await getCurrentTenantContext(await headers());
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "未激活有效的租户会话";
+    const rawMsg = err instanceof Error ? err.message : "";
+    const isNoDb = rawMsg.includes("no tenant database mapping");
+    const msg = isNoDb
+      ? "当前激活的企业租户尚未开通专属独立数据库。晨润 ERP 严格遵循 Database-per-Tenant 物理隔离机制，请先在平台管理控制台 (/tenants) 为该租户开通物理库。"
+      : rawMsg || "未激活有效的租户会话，请先在右上角选择或激活租户组织";
     return (
       <Card className="border-amber-200 bg-amber-50/50 p-6 text-amber-800 shadow-xs dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200">
         <div className="flex items-center gap-2 font-bold text-sm">
           <AlertCircle className="size-4 text-amber-600 shrink-0" />
-          <span>{msg}，请先在右上角选择或激活租户组织</span>
+          <span>{msg}</span>
         </div>
       </Card>
     );
   }
 
-  // 1. 获取当前租户独立物理数据库连接
-  const manager = getTenantDbManager();
+  // 1. 获取认证与仓储运行时，并获取当前租户独立物理数据库连接
+  const { getServerAuthRuntime } = await import("@chenrun/auth");
+  const authRuntime = getServerAuthRuntime();
+  const manager = getTenantDbManager({
+    repository: authRuntime.tenantContextRepository,
+  });
   const tenantPrisma = await manager.getClient(tenantCtx.organizationId);
 
   // 2. 依据当前租户内员工档案自驱解析部门拓扑 (Fail-Closed)
@@ -76,8 +84,6 @@ export default async function ProcurementOrdersPage() {
   );
 
   // 3. 构建当前租户与角色的 CASL PrismaAbility（动态读取 Control DB 持久化四层配置）
-  const { getServerAuthRuntime } = await import("@chenrun/auth");
-  const authRuntime = getServerAuthRuntime();
   const factory = new CaslAbilityFactory(
     authRuntime.tenantContextRepository,
     procurementCatalog,
@@ -97,11 +103,19 @@ export default async function ProcurementOrdersPage() {
   );
 
   // 5. 提取实时下推条件与权限状态
-  const sqlWhere = getAccessibleWhere(prismaAbility, ProcurementSubject, "read");
+  const sqlWhere = getAccessibleWhere(
+    prismaAbility,
+    ProcurementSubject,
+    "read",
+  );
   const canCreate = prismaAbility.can("create", ProcurementSubject);
   const canAuditGlobal = prismaAbility.can("audit", ProcurementSubject);
   const canExport = prismaAbility.can("export", ProcurementSubject);
-  const isCostPriceVisible = prismaAbility.can("read", ProcurementSubject, "costPrice");
+  const isCostPriceVisible = prismaAbility.can(
+    "read",
+    ProcurementSubject,
+    "costPrice",
+  );
 
   let departmentName: string | null = null;
   if (topology.departmentId) {

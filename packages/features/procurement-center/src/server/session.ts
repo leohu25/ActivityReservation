@@ -32,7 +32,12 @@ export async function getTenantProcurementContext(): Promise<TenantProcurementCo
   // 严格基于 Better Auth 签名 Session 解析可信上下文 (Fail-Closed)
   const tenantCtx = await getCurrentTenantContext(reqHeaders);
 
-  const manager = getTenantDbManager();
+  const { getServerAuthRuntime } = await import("@chenrun/auth");
+  const runtime = getServerAuthRuntime();
+
+  const manager = getTenantDbManager({
+    repository: runtime.tenantContextRepository,
+  });
   const tenantPrisma = await manager.getClient(tenantCtx.organizationId);
 
   // 动态自驱解析当前登录用户在该租户内的部门拓扑
@@ -62,9 +67,6 @@ export async function getTenantProcurementContext(): Promise<TenantProcurementCo
       memberId: tenantCtx.member.id,
     },
   );
-
-  const { getServerAuthRuntime } = await import("@chenrun/auth");
-  const runtime = getServerAuthRuntime();
 
   // 工厂回源读取 Control DB 中持久化的四层配置并自动下推编译
   const factory = new CaslAbilityFactory(
