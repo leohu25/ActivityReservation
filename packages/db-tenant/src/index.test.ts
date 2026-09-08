@@ -242,3 +242,66 @@ test("rejects an empty secret result without creating a client", async () => {
   );
   assert.equal(creations, 0);
 });
+
+test("createDefaultSecretResolver 支持 postgresql URL、env 及相对路径解析", async () => {
+  const { createDefaultSecretResolver } = await import("./index");
+  const resolver = createDefaultSecretResolver(
+    "postgresql://postgres:postgres@localhost:5432/saas_control",
+  );
+
+  // 1. 直传 postgresql 协议连接串
+  const direct = await resolver.resolveDatabaseUrl(
+    "postgresql://postgres:pass@remote:5432/custom_db",
+  );
+  assert.equal(direct, "postgresql://postgres:pass@remote:5432/custom_db");
+
+  // 2. 数据库名相对解析
+  const relative = await resolver.resolveDatabaseUrl("tenant_org_test");
+  assert.equal(
+    relative,
+    "postgresql://postgres:postgres@localhost:5432/tenant_org_test",
+  );
+
+  // 3. url: 前缀解析
+  const urlPrefix = await resolver.resolveDatabaseUrl(
+    "url:postgresql://usr:pwd@host:5432/db",
+  );
+  assert.equal(urlPrefix, "postgresql://usr:pwd@host:5432/db");
+});
+
+test("getTenantDbManager 与 resetTenantDbManager 正确管理单例", async () => {
+  const { getTenantDbManager, resetTenantDbManager } = await import("./index");
+  await resetTenantDbManager();
+
+  assert.throws(() => getTenantDbManager(), /TenantContextRepository/);
+
+  const mockRepo = repository({ org1: mapping("org1") });
+  const fakeFactory = async ({
+    organizationId,
+  }: {
+    organizationId: string;
+  }) => {
+    const client: FakeClient = {
+      organizationId,
+      disconnects: 0,
+      $disconnect: async () => {},
+    };
+    return client as unknown as import("./index").TenantPrismaClient;
+  };
+
+  const manager1 = getTenantDbManager({
+    repository: mockRepo,
+    clientFactory: fakeFactory,
+  });
+
+  const manager2 = getTenantDbManager();
+  assert.equal(manager1, manager2);
+
+  await resetTenantDbManager();
+  const manager3 = getTenantDbManager({
+    repository: mockRepo,
+    clientFactory: fakeFactory,
+  });
+  assert.notEqual(manager1, manager3);
+  await resetTenantDbManager();
+});

@@ -89,9 +89,25 @@ export class ControlAdminService {
               CREATE INDEX IF NOT EXISTS "purchase_order_deptId_idx" ON "purchase_order"("deptId");
               CREATE INDEX IF NOT EXISTS "purchase_order_createdById_idx" ON "purchase_order"("createdById");
               CREATE INDEX IF NOT EXISTS "purchase_order_status_idx" ON "purchase_order"("status");
+              CREATE TABLE IF NOT EXISTS "employee_profile" (
+                "id" TEXT NOT NULL,
+                "memberId" TEXT NOT NULL,
+                "departmentId" TEXT,
+                "employeeNo" TEXT,
+                "jobTitle" TEXT,
+                "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+                "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT "employee_profile_pkey" PRIMARY KEY ("id")
+              );
+              CREATE UNIQUE INDEX IF NOT EXISTS "employee_profile_memberId_key" ON "employee_profile"("memberId");
+              CREATE UNIQUE INDEX IF NOT EXISTS "employee_profile_employeeNo_key" ON "employee_profile"("employeeNo");
+              CREATE INDEX IF NOT EXISTS "employee_profile_departmentId_idx" ON "employee_profile"("departmentId");
+              CREATE INDEX IF NOT EXISTS "employee_profile_memberId_idx" ON "employee_profile"("memberId");
             `,
             down: `
               DROP TABLE IF EXISTS "purchase_order";
+              DROP TABLE IF EXISTS "employee_profile";
               DROP TABLE IF EXISTS "department";
             `,
           },

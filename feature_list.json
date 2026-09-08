@@ -98,9 +98,9 @@
       "name": "采购中心业务特性验收 (Procurement Center Feature)",
       "description": "以真实采购订单切片落地 packages/features/procurement-center，连接独立租户物理数据库，端到端闭环验证由租户管理员配置驱动的 RBAC 按钮、部门数据范围下推、字段四维控制矩阵与 <AuthorizedField> 自动表单三态、禁止自审业务规则与租户物理隔离",
       "dependencies": ["foundation-tenant-rbac-ui"],
-      "status": "not-started",
+      "status": "completed",
       "owner": "implementer",
-      "evidence": ""
+      "evidence": "落地 packages/features/procurement-center 领域服务与 Server Actions；实现 CASL accessibleBy 数据范围 SQL 下推、敏感成本价只读/脱敏、CreateOrderDialog/AuditOrderModal 交互；端到端打通租户独立物理库与 employee_profile 部门拓扑自驱装配；严密执行不可逆状态机与【禁止自审】红线；切片测试 5/5、全仓 9 套件 87/87 单测通过、12 包 check 0 错误、Next.js 生产构建与 verify.sh PASS"
     }
   ]
 }

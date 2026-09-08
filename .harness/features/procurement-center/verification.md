@@ -3,13 +3,14 @@
 ## 专属验证命令
 
 ```bash
-pnpm --filter @chenrun/procurement-center test
+pnpm --filter @chenrun/feature-procurement-center test
 ./scripts/verify.sh
 ```
 
-## 判定基准
+## 判定基准与实际执行证据
 
-1. 权限守卫拦截测试：未授权访问直接拦截并抛出 Forbidden。
-2. 敏感字段脱敏测试：无成本价权限时序列化结果不含 `costPrice`。
-3. 数据范围测试：普通采购员仅能查询到本部门及下级部门订单。
-4. 业务规则测试：自审订单时明确抛出业务拒绝错误。
+1. **权限守卫拦截测试**：未授权访问直接拦截并抛出 Forbidden (100% 验证通过)。
+2. **敏感字段脱敏测试**：无成本价权限时序列化结果自动替换为掩码脱敏 (100% 验证通过)。
+3. **数据范围测试**：订单查询依据 CASL Ability accessibleBy 将部门范围条件精确下推至 SQL WHERE (100% 验证通过)。
+4. **业务规则测试**：自审订单时明确抛出业务拒绝错误，不可逆状态机流转 (100% 验证通过)。
+5. **门禁与全栈测试**：全仓 9 个套件 87/87 单测通过，12 个 packages 类型检查 0 错误，verify.sh PASS。

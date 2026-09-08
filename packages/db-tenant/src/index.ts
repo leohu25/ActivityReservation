@@ -124,8 +124,7 @@ export class TenantDbManager<Client extends TenantDbClient> {
         }
       }
 
-      // Initializers cache clients before resolving, so awaiting them first
-      // guarantees every successfully created client is included here.
+      // 初始化器在解析前先行缓存客户端，优先等待确保所有成功创建的客户端均被纳入断连回收
       const clients = new Set(this.clients.values());
       this.clients.clear();
       const disconnectResults = await Promise.allSettled(
@@ -198,5 +197,122 @@ export class TenantDbManager<Client extends TenantDbClient> {
       );
     }
     return mapping;
+  }
+}
+
+import { PrismaPg } from "@prisma/adapter-pg";
+import {
+  PrismaClient as GeneratedTenantPrismaClient,
+  type Prisma as TenantPrisma,
+} from "@prisma/client-tenant";
+
+export type TenantPrismaClient = GeneratedTenantPrismaClient;
+export type { TenantPrisma };
+
+/**
+ * 根据数据库连接串创建租户专属的 Prisma 客户端实例
+ */
+export function createTenantPrismaClient(
+  databaseUrl: string,
+): TenantPrismaClient {
+  if (databaseUrl.trim().length === 0) {
+    throw new Error("TENANT_DATABASE_URL is required");
+  }
+  const adapter = new PrismaPg({ connectionString: databaseUrl });
+  return new GeneratedTenantPrismaClient({ adapter });
+}
+
+/**
+ * 默认的 Secret 动态连接串解析器
+ */
+export function createDefaultSecretResolver(
+  baseDatabaseUrl?: string,
+): SecretResolver {
+  return {
+    async resolveDatabaseUrl(secretRef: string): Promise<string> {
+      if (secretRef.startsWith("env:")) {
+        const envKey = secretRef.slice(4);
+        return process.env[envKey] ?? "";
+      }
+      if (
+        secretRef.startsWith("url:") ||
+        secretRef.startsWith("postgresql://") ||
+        secretRef.startsWith("postgres://")
+      ) {
+        return secretRef.startsWith("url:") ? secretRef.slice(4) : secretRef;
+      }
+      const adminDbUrl =
+        baseDatabaseUrl ??
+        process.env.CONTROL_DATABASE_URL ??
+        process.env.TENANT_DATABASE_URL ??
+        "postgresql://postgres:postgres@localhost:5432/saas_control";
+      try {
+        const url = new URL(adminDbUrl);
+        url.pathname = `/${secretRef}`;
+        return url.toString();
+      } catch {
+        return "";
+      }
+    },
+  };
+}
+
+export interface DefaultTenantDbManagerOptions {
+  repository: TenantContextRepository;
+  secretResolver?: SecretResolver;
+  clientFactory?: TenantClientFactory<TenantPrismaClient>;
+}
+
+/**
+ * 创建针对 TenantPrismaClient 的默认租户数据库管理器实例
+ */
+export function createDefaultTenantDbManager(
+  options: DefaultTenantDbManagerOptions,
+): TenantDbManager<TenantPrismaClient> {
+  const secretResolver =
+    options.secretResolver ?? createDefaultSecretResolver();
+  const clientFactory =
+    options.clientFactory ??
+    (({ databaseUrl }) => createTenantPrismaClient(databaseUrl));
+
+  return new TenantDbManager<TenantPrismaClient>(
+    options.repository,
+    secretResolver,
+    clientFactory,
+  );
+}
+
+let tenantDbManagerSingleton: TenantDbManager<TenantPrismaClient> | undefined;
+
+/**
+ * 获取租户物理数据库管理器单例
+ */
+export function getTenantDbManager(
+  options?: Partial<DefaultTenantDbManagerOptions>,
+): TenantDbManager<TenantPrismaClient> {
+  if (tenantDbManagerSingleton) {
+    return tenantDbManagerSingleton;
+  }
+  if (!options?.repository) {
+    throw new Error(
+      "初始化 TenantDbManager 单例需要提供 TenantContextRepository",
+    );
+  }
+  tenantDbManagerSingleton = createDefaultTenantDbManager({
+    repository: options.repository,
+    secretResolver: options.secretResolver,
+    clientFactory: options.clientFactory,
+  });
+  return tenantDbManagerSingleton;
+}
+
+/**
+ * 重置租户数据库管理器单例（清理缓存与关闭连接，主要用于测试或进程退出）
+ */
+export async function resetTenantDbManager(): Promise<void> {
+  if (tenantDbManagerSingleton) {
+    const manager = tenantDbManagerSingleton;
+    tenantDbManagerSingleton = undefined;
+    await manager.closeAll();
   }
 }

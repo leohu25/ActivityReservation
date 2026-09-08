@@ -7,17 +7,37 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./permissions": "./src/permissions.ts"
+    "./permissions": "./src/permissions.ts",
+    "./services": "./src/services/index.ts",
+    "./components": "./src/components/index.ts",
+    "./actions": "./src/actions.ts"
   },
   "scripts": {
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "test": "tsx --test src/**/*.test.ts src/**/*.test.tsx"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "dependencies": {
+    "@casl/ability": "7.0.1",
+    "@casl/prisma": "^2.0.2",
     "@chenrun/auth": "workspace:*",
     "@chenrun/authorization": "workspace:*",
-    "@chenrun/shared": "workspace:*"
+    "@chenrun/db-tenant": "workspace:*",
+    "@chenrun/shared": "workspace:*",
+    "@chenrun/ui": "workspace:*",
+    "lucide-react": "^1.41.0",
+    "next": "16.3.4"
   },
   "devDependencies": {
+    "@types/node": "^20.17.24",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tsx": "^4.20.6",
     "typescript": "^5.8.2"
   }
 }

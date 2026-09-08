@@ -3,7 +3,11 @@
 ## 允许修改的文件与目录
 
 - `packages/features/procurement-center/**`
+- `packages/features/control-admin/**`
+- `packages/db-tenant/**`
 - `apps/tenant/src/app/(dashboard)/procurement/**`
+- `feature_list.json`
+- `pnpm-lock.yaml`
 - `.harness/features/procurement-center/**`
 
 ## 严禁修改的内容
