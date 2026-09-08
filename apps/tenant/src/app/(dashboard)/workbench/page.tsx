@@ -136,23 +136,23 @@ export default async function WorkbenchPage() {
             <h1 className="mt-3 text-3xl font-black tracking-tight">
               {activeOrg?.name ?? "默认企业租户"}
             </h1>
-            <p className="mt-2 text-sm text-blue-100">
-              组织标识:{" "}
+            <div className="mt-2 text-sm text-blue-100 flex flex-wrap items-center gap-2">
+              <span>组织标识:</span>
               <code className="font-mono bg-white/10 px-1.5 py-0.5 rounded">
                 {activeOrg?.slug}
-              </code>{" "}
-              | 当前用户:{" "}
+              </code>
+              <span>| 当前用户:</span>
               <span className="font-bold">
                 {session.user.name || session.user.email}
-              </span>{" "}
-              | 角色:{" "}
+              </span>
+              <span>| 角色:</span>
               <Badge
                 variant="secondary"
-                className="ml-1 text-white bg-blue-500/50"
+                className="text-white bg-blue-500/50"
               >
                 {currentMember?.role ?? "普通成员"}
               </Badge>
-            </p>
+            </div>
           </div>
 
           <Link href="/procurement/orders">
