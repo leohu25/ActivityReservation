@@ -1,9 +1,12 @@
 import { headers } from "next/headers";
 import { getServerAuthRuntime } from "@chenrun/auth";
-import type { OrganizationMemberRecord } from "@chenrun/db-control";
-import { getTenantDbManager } from "@chenrun/db-tenant";
+import type { ControlPrismaClient, OrganizationMemberRecord } from "@chenrun/db-control";
+import { getTenantDbManager, type TenantPrismaClient } from "@chenrun/db-tenant";
 import { TenantRoleService } from "../services/tenant-role-service";
 import { TenantSettingsService } from "../services/tenant-settings-service";
+import { DepartmentService } from "../services/department-service";
+import { PositionService } from "../services/position-service";
+import { EmployeeManagementService } from "../services/employee-management-service";
 
 export interface TenantAdminSessionContext {
   readonly organizationId: string;
@@ -54,10 +57,42 @@ export async function requireTenantAdminSession(): Promise<TenantAdminSessionCon
   };
 }
 
+/** 获取 Control DB Prisma 客户端 */
+export function getControlPrismaClient(): ControlPrismaClient {
+  const runtime = getServerAuthRuntime();
+  return runtime.prisma;
+}
+
+/** 获取租户专属物理库 Prisma 客户端 */
+export async function getTenantPrismaClient(
+  organizationId: string,
+): Promise<TenantPrismaClient> {
+  const runtime = getServerAuthRuntime();
+  const manager = getTenantDbManager({
+    repository: runtime.tenantContextRepository,
+  });
+  return manager.getClient(organizationId);
+}
+
 /** 获取租户角色管理服务实例 */
 export function getTenantRoleService(): TenantRoleService {
   const runtime = getServerAuthRuntime();
   return new TenantRoleService(runtime.tenantContextRepository);
+}
+
+/** 获取部门管理服务实例 */
+export function getDepartmentService(): DepartmentService {
+  return new DepartmentService();
+}
+
+/** 获取岗位管理服务实例 */
+export function getPositionService(): PositionService {
+  return new PositionService();
+}
+
+/** 获取员工管理服务实例 */
+export function getEmployeeManagementService(): EmployeeManagementService {
+  return new EmployeeManagementService();
 }
 
 /** 获取租户企业信息与系统设置管理服务实例 */
@@ -71,3 +106,4 @@ export function getTenantSettingsService(): TenantSettingsService {
     (orgId: string) => manager.getClient(orgId),
   );
 }
+

@@ -5,6 +5,7 @@
 - `packages/features/tenant-admin/**`
 - `apps/tenant/src/app/(dashboard)/organization/**`
 - `packages/ui/src/components/layout/Sidebar.tsx`
+- `pnpm-lock.yaml`
 - `feature_list.json`
 - `.harness/features/p0-tenant-org-management/**`
 

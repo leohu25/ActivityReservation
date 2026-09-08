@@ -134,8 +134,9 @@
       "name": "【P0】组织架构中心：部门树维护、岗位字典与直接录入建号 (Tenant Org Management: Dept Tree, Positions & Direct Employee Provisioning)",
       "description": "第一梯队人事业务核心：落地 DepartmentService、PositionService 与 EmployeeOnboarding/Transfer 服务。部门管理 (/organization/departments) 支持树状拓扑、换上级防环检测与 Fail-Closed 删除保护；岗位管理 (/organization/positions) 支持岗位字典与推荐角色（坚持 Position != Role）；员工管理 (/organization/employees) 支持部门树级联联动筛选、直接录入建号（录入档案与初始密码原子创建 User/Member/EmployeeProfile）、调岗、调部门、升降角色（自增 authorizationVersion 动态下推权限）与停用/恢复",
       "dependencies": ["p0-tenant-navigation-and-settings"],
-      "status": "pending",
-      "owner": "implementer"
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "落地 DepartmentService（树形拓扑、换上级防环算法、Fail-Closed 删除保护）、PositionService（岗位字典与启停状态、删除保护）、EmployeeManagementService（部门级联多维筛选、直接录入建号免邮件在职激活、调岗调部门调角色自增 authorizationVersion、停用/恢复）；落地专属单测 org-management-services.test.ts；封装 DepartmentView、PositionView、EmployeeView 并装配至 /organization/* 极薄路由；全仓 9 套件 96/96 单测 100% 通过、12 包类型检查 0 错误、./scripts/verify.sh 门禁全绿"
     },
     {
       "id": "p0-tenant-workbench-real-topology",

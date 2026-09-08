@@ -1,0 +1,1177 @@
+"use client";
+
+import React, { useState, useTransition } from "react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Input,
+  Button,
+  Badge,
+} from "@chenrun/ui";
+import {
+  Users,
+  UserPlus,
+  Building,
+  Briefcase,
+  Shield,
+  Search,
+  CheckCircle2,
+  AlertCircle,
+  FolderTree,
+  ChevronRight,
+  ChevronDown,
+  UserCheck,
+  UserX,
+  Shuffle,
+  ShieldCheck,
+} from "lucide-react";
+import type {
+  DepartmentTreeNode,
+  DirectCreateEmployeeInput,
+  EmployeeItem,
+  PositionItem,
+} from "../types";
+import {
+  directCreateEmployeeAction,
+  listEmployeesAction,
+  resumeEmployeeAction,
+  suspendEmployeeAction,
+  transferDepartmentAction,
+  transferPositionAction,
+  transferRolesAction,
+} from "../actions";
+
+export interface EmployeeViewProps {
+  readonly initialEmployees: readonly EmployeeItem[];
+  readonly departmentTree: readonly DepartmentTreeNode[];
+  readonly positions: readonly PositionItem[];
+  readonly availableRoles: readonly { role: string; name: string }[];
+}
+
+/** 扁平化部门树，供下拉选择 */
+interface FlatDeptOption {
+  readonly id: string;
+  readonly name: string;
+  readonly depth: number;
+}
+
+function flattenTree(
+  nodes: readonly DepartmentTreeNode[],
+  depth = 0,
+): FlatDeptOption[] {
+  const result: FlatDeptOption[] = [];
+  for (const n of nodes) {
+    result.push({ id: n.id, name: n.name, depth });
+    if (n.children && n.children.length > 0) {
+      result.push(...flattenTree(n.children, depth + 1));
+    }
+  }
+  return result;
+}
+
+/**
+ * 员工档案与人事调动中心面板组件 (现代数智工业风)
+ * 支持部门树级联下推过滤、直接录入建号模式（免邮件直接在职）、调岗调部门与状态管控
+ */
+export function EmployeeView({
+  initialEmployees,
+  departmentTree,
+  positions,
+  availableRoles,
+}: EmployeeViewProps) {
+  const [employees, setEmployees] =
+    useState<readonly EmployeeItem[]>(initialEmployees);
+
+  // 部门树与筛选状态
+  const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
+  const [includeChildren, setIncludeChildren] = useState(true);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [selectedPositionId, setSelectedPositionId] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [treeExpandedIds, setTreeExpandedIds] = useState<Set<string>>(() => {
+    const set = new Set<string>();
+    for (const d of departmentTree) set.add(d.id);
+    return set;
+  });
+
+  const [feedback, setFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  // 弹窗状态
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [transferDeptEmp, setTransferDeptEmp] = useState<EmployeeItem | null>(
+    null,
+  );
+  const [transferPosEmp, setTransferPosEmp] = useState<EmployeeItem | null>(
+    null,
+  );
+  const [transferRolesEmp, setTransferRolesEmp] =
+    useState<EmployeeItem | null>(null);
+
+  // 新增员工表单状态
+  const [createForm, setCreateForm] = useState<{
+    name: string;
+    email: string;
+    employeeNo: string;
+    departmentId: string;
+    positionId: string;
+    jobTitle: string;
+    roles: string[];
+    password: string;
+  }>({
+    name: "",
+    email: "",
+    employeeNo: "",
+    departmentId: "",
+    positionId: "",
+    jobTitle: "",
+    roles: ["buyer"],
+    password: "Admin123456!",
+  });
+
+  // 调动弹窗临时选择状态
+  const [targetDeptId, setTargetDeptId] = useState("");
+  const [targetPosId, setTargetPosId] = useState("");
+  const [selectedRoleCodes, setSelectedRoleCodes] = useState<string[]>([]);
+
+  const [isPending, startTransition] = useTransition();
+
+  const flatDepts = flattenTree(departmentTree);
+
+  const refreshList = async () => {
+    const res = await listEmployeesAction({
+      departmentId: selectedDeptId || undefined,
+      includeChildren,
+      positionId: selectedPositionId || undefined,
+      status: selectedStatus || undefined,
+      search: searchKeyword || undefined,
+    });
+    if (res.success && res.data) {
+      setEmployees(res.data);
+    }
+  };
+
+  const handleDeptSelect = (deptId: string | null) => {
+    setSelectedDeptId(deptId);
+    startTransition(async () => {
+      const res = await listEmployeesAction({
+        departmentId: deptId || undefined,
+        includeChildren,
+        positionId: selectedPositionId || undefined,
+        status: selectedStatus || undefined,
+        search: searchKeyword || undefined,
+      });
+      if (res.success && res.data) {
+        setEmployees(res.data);
+      }
+    });
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    startTransition(async () => {
+      await refreshList();
+    });
+  };
+
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createForm.name.trim() || !createForm.email.trim()) {
+      setFeedback({ type: "error", message: "姓名与邮箱为必填项" });
+      return;
+    }
+    if (createForm.roles.length === 0) {
+      setFeedback({ type: "error", message: "至少需为员工指定一个系统角色" });
+      return;
+    }
+
+    startTransition(async () => {
+      const payload: DirectCreateEmployeeInput = {
+        name: createForm.name.trim(),
+        email: createForm.email.trim(),
+        employeeNo: createForm.employeeNo.trim() || undefined,
+        departmentId: createForm.departmentId || null,
+        positionId: createForm.positionId || null,
+        jobTitle: createForm.jobTitle.trim() || undefined,
+        initialRoleCodes: createForm.roles,
+        password: createForm.password.trim() || undefined,
+      };
+
+      const res = await directCreateEmployeeAction(payload);
+      if (res.success) {
+        setFeedback({
+          type: "success",
+          message: `员工 [${payload.name}] 已直接录入建号并激活在职`,
+        });
+        setIsCreateOpen(false);
+        setCreateForm({
+          name: "",
+          email: "",
+          employeeNo: "",
+          departmentId: "",
+          positionId: "",
+          jobTitle: "",
+          roles: ["buyer"],
+          password: "Admin123456!",
+        });
+        await refreshList();
+      } else {
+        setFeedback({
+          type: "error",
+          message: res.error || "创建员工失败",
+        });
+      }
+    });
+  };
+
+  const handleTransferDept = () => {
+    if (!transferDeptEmp) return;
+    startTransition(async () => {
+      const res = await transferDepartmentAction({
+        employeeId: transferDeptEmp.id,
+        targetDepartmentId: targetDeptId || null,
+      });
+      if (res.success) {
+        setFeedback({
+          type: "success",
+          message: `员工 [${transferDeptEmp.name}] 部门调换成功，权限下推已即时重算`,
+        });
+        setTransferDeptEmp(null);
+        await refreshList();
+      } else {
+        setFeedback({
+          type: "error",
+          message: res.error || "调换部门失败",
+        });
+      }
+    });
+  };
+
+  const handleTransferPos = () => {
+    if (!transferPosEmp) return;
+    startTransition(async () => {
+      const res = await transferPositionAction({
+        employeeId: transferPosEmp.id,
+        targetPositionId: targetPosId || null,
+      });
+      if (res.success) {
+        setFeedback({
+          type: "success",
+          message: `员工 [${transferPosEmp.name}] 岗位调换成功`,
+        });
+        setTransferPosEmp(null);
+        await refreshList();
+      } else {
+        setFeedback({
+          type: "error",
+          message: res.error || "调换岗位失败",
+        });
+      }
+    });
+  };
+
+  const handleTransferRoles = () => {
+    if (!transferRolesEmp || !transferRolesEmp.memberId) return;
+    if (selectedRoleCodes.length === 0) {
+      setFeedback({ type: "error", message: "至少需选择一个角色" });
+      return;
+    }
+
+    startTransition(async () => {
+      const res = await transferRolesAction({
+        memberId: transferRolesEmp.memberId!,
+        newRoleCodes: selectedRoleCodes,
+      });
+      if (res.success) {
+        setFeedback({
+          type: "success",
+          message: `员工 [${transferRolesEmp.name}] 系统角色已调整，权限已即时更新`,
+        });
+        setTransferRolesEmp(null);
+        await refreshList();
+      } else {
+        setFeedback({
+          type: "error",
+          message: res.error || "调整角色失败",
+        });
+      }
+    });
+  };
+
+  const handleToggleSuspend = (emp: EmployeeItem) => {
+    const isSuspended = emp.status === "SUSPENDED";
+    const actionName = isSuspended ? "恢复" : "停用";
+
+    if (
+      !confirm(
+        `确定要${actionName}员工 [${emp.name}] 的业务访问权限吗？${
+          isSuspended
+            ? "恢复后将重新允许访问当前企业。"
+            : "停用后将立即阻断其访问当前企业，但不会封禁全局用户。"
+        }`,
+      )
+    ) {
+      return;
+    }
+
+    startTransition(async () => {
+      const res = isSuspended
+        ? await resumeEmployeeAction(emp.id)
+        : await suspendEmployeeAction(emp.id);
+
+      if (res.success) {
+        setFeedback({
+          type: "success",
+          message: `员工 [${emp.name}] 已${actionName}`,
+        });
+        await refreshList();
+      } else {
+        setFeedback({
+          type: "error",
+          message: res.error || `${actionName}操作失败`,
+        });
+      }
+    });
+  };
+
+  // 递归渲染左侧部门树过滤项
+  const renderDeptFilterTree = (
+    nodes: readonly DepartmentTreeNode[],
+    depth = 0,
+  ) => {
+    return (
+      <div className="space-y-0.5">
+        {nodes.map((node) => {
+          const isSelected = selectedDeptId === node.id;
+          const hasChildren = node.children && node.children.length > 0;
+          const isExpanded = treeExpandedIds.has(node.id);
+
+          return (
+            <div key={node.id}>
+              <div
+                className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition-colors cursor-pointer ${
+                  isSelected
+                    ? "bg-blue-50 text-blue-700 font-bold dark:bg-blue-950/40 dark:text-blue-300"
+                    : "text-slate-600 hover:bg-slate-100/70 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                }`}
+                style={{ paddingLeft: `${depth * 14 + 10}px` }}
+                onClick={() => handleDeptSelect(node.id)}
+              >
+                <div className="flex items-center gap-1.5 truncate">
+                  {hasChildren ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTreeExpandedIds((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(node.id)) next.delete(node.id);
+                          else next.add(node.id);
+                          return next;
+                        });
+                      }}
+                      className="size-4 flex items-center justify-center text-slate-400 hover:text-slate-700"
+                    >
+                      {isExpanded ? (
+                        <ChevronDown className="size-3 text-blue-600" />
+                      ) : (
+                        <ChevronRight className="size-3" />
+                      )}
+                    </button>
+                  ) : (
+                    <span className="size-4 flex items-center justify-center text-slate-300">
+                      •
+                    </span>
+                  )}
+                  <span className="truncate">{node.name}</span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  {node.employeeCount}
+                </span>
+              </div>
+              {hasChildren &&
+                isExpanded &&
+                renderDeptFilterTree(node.children, depth + 1)}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* 顶部标题与直接建号操作 */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            员工档案与人事调动
+          </h1>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            维护企业内部员工档案。支持直接建号（免邮件直接在职激活），调部门即刻联动 CASL 权限下推范围，调岗不改变权限。
+          </p>
+        </div>
+        <Button
+          onClick={() => setIsCreateOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs"
+        >
+          <UserPlus className="mr-1.5 size-4" />
+          新增员工（直接建号）
+        </Button>
+      </div>
+
+      {/* 反馈信息 */}
+      {feedback && (
+        <div
+          className={`flex items-center gap-2 rounded-xl p-3.5 text-xs font-semibold border ${
+            feedback.type === "success"
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+              : "bg-rose-50 text-rose-800 border-rose-200"
+          }`}
+        >
+          {feedback.type === "success" ? (
+            <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+          ) : (
+            <AlertCircle className="size-4 shrink-0 text-rose-600" />
+          )}
+          <span>{feedback.message}</span>
+        </div>
+      )}
+
+      {/* 左右分栏布局 */}
+      <div className="flex flex-col gap-6 lg:flex-row items-start">
+        {/* 左栏：部门架构过滤树卡片 */}
+        <Card className="w-full lg:w-64 shrink-0 rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <CardHeader className="border-b border-slate-100 p-4 dark:border-slate-800">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-slate-100">
+                <FolderTree className="size-4 text-blue-600" />
+                <span>部门级联过滤</span>
+              </CardTitle>
+              <button
+                type="button"
+                onClick={() => handleDeptSelect(null)}
+                className={`text-[11px] font-semibold transition-colors ${
+                  selectedDeptId === null
+                    ? "text-blue-600 font-bold"
+                    : "text-slate-400 hover:text-slate-700"
+                }`}
+              >
+                全部
+              </button>
+            </div>
+            <div className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-500">
+              <input
+                type="checkbox"
+                id="inc_children"
+                checked={includeChildren}
+                onChange={(e) => {
+                  setIncludeChildren(e.target.checked);
+                  startTransition(async () => {
+                    const res = await listEmployeesAction({
+                      departmentId: selectedDeptId || undefined,
+                      includeChildren: e.target.checked,
+                      positionId: selectedPositionId || undefined,
+                      status: selectedStatus || undefined,
+                      search: searchKeyword || undefined,
+                    });
+                    if (res.success && res.data) setEmployees(res.data);
+                  });
+                }}
+                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 size-3.5"
+              />
+              <label htmlFor="inc_children" className="cursor-pointer">
+                级联包含子部门
+              </label>
+            </div>
+          </CardHeader>
+          <CardContent className="p-3 max-h-[500px] overflow-y-auto">
+            {departmentTree.length === 0 ? (
+              <div className="py-6 text-center text-xs text-slate-400">
+                暂无部门数据
+              </div>
+            ) : (
+              renderDeptFilterTree(departmentTree)
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 右栏：员工列表与多维工具栏 */}
+        <div className="flex-1 w-full space-y-4">
+          {/* 工具栏 */}
+          <Card className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+            <form
+              onSubmit={handleSearchSubmit}
+              className="flex flex-wrap items-center gap-3"
+            >
+              <div className="relative min-w-[200px] flex-1">
+                <Search className="absolute left-3 top-2.5 size-3.5 text-slate-400" />
+                <Input
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  placeholder="搜索姓名、邮箱或工号..."
+                  className="pl-9 text-xs h-9"
+                />
+              </div>
+
+              <select
+                value={selectedPositionId}
+                onChange={(e) => {
+                  setSelectedPositionId(e.target.value);
+                  startTransition(async () => {
+                    const res = await listEmployeesAction({
+                      departmentId: selectedDeptId || undefined,
+                      includeChildren,
+                      positionId: e.target.value || undefined,
+                      status: selectedStatus || undefined,
+                      search: searchKeyword || undefined,
+                    });
+                    if (res.success && res.data) setEmployees(res.data);
+                  });
+                }}
+                className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 shadow-xs focus:border-blue-500 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              >
+                <option value="">全部岗位</option>
+                {positions.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={selectedStatus}
+                onChange={(e) => {
+                  setSelectedStatus(e.target.value);
+                  startTransition(async () => {
+                    const res = await listEmployeesAction({
+                      departmentId: selectedDeptId || undefined,
+                      includeChildren,
+                      positionId: selectedPositionId || undefined,
+                      status: e.target.value || undefined,
+                      search: searchKeyword || undefined,
+                    });
+                    if (res.success && res.data) setEmployees(res.data);
+                  });
+                }}
+                className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 shadow-xs focus:border-blue-500 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              >
+                <option value="">全部状态</option>
+                <option value="ACTIVE">在职</option>
+                <option value="SUSPENDED">已停用</option>
+                <option value="TERMINATED">已离职</option>
+              </select>
+
+              <Button
+                type="submit"
+                size="sm"
+                variant="outline"
+                className="h-9 text-xs"
+              >
+                筛选
+              </Button>
+            </form>
+          </Card>
+
+          {/* 员工数据表格 */}
+          <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+            <CardContent className="p-0">
+              {employees.length === 0 ? (
+                <div className="py-16 text-center text-xs text-slate-400">
+                  未匹配到任何员工记录，请调整筛选条件或直接录入新员工
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold text-slate-500 uppercase dark:border-slate-800 dark:bg-slate-800/40">
+                        <th className="px-5 py-3">员工姓名与账号</th>
+                        <th className="px-4 py-3">工号</th>
+                        <th className="px-4 py-3">所属部门</th>
+                        <th className="px-4 py-3">承担岗位</th>
+                        <th className="px-4 py-3">系统角色</th>
+                        <th className="px-4 py-3 text-center">状态</th>
+                        <th className="px-5 py-3 text-right">人事与权限操作</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {employees.map((emp) => {
+                        const isActive = emp.status === "ACTIVE";
+                        const isSuspended = emp.status === "SUSPENDED";
+                        return (
+                          <tr
+                            key={emp.id}
+                            className="transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/40"
+                          >
+                            <td className="px-5 py-3.5">
+                              <div className="flex items-center gap-2.5">
+                                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                                  {emp.name.slice(0, 1)}
+                                </div>
+                                <div>
+                                  <div className="font-bold text-slate-900 dark:text-slate-100">
+                                    {emp.name}
+                                  </div>
+                                  <div className="text-[11px] text-slate-400 font-mono">
+                                    {emp.email}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3.5 font-mono text-slate-600 dark:text-slate-300">
+                              {emp.employeeNo ? (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[11px] font-mono"
+                                >
+                                  {emp.employeeNo}
+                                </Badge>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                            <td className="px-4 py-3.5 text-slate-700 dark:text-slate-300">
+                              {emp.departmentName || (
+                                <span className="text-slate-400">未分配</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3.5 text-slate-700 dark:text-slate-300">
+                              {emp.positionName || (
+                                <span className="text-slate-400">未指定</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3.5">
+                              <div className="flex flex-wrap gap-1">
+                                {emp.roles.map((r) => (
+                                  <span
+                                    key={r}
+                                    className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 border border-slate-200"
+                                  >
+                                    {r}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3.5 text-center">
+                              <span
+                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold border ${
+                                  isActive
+                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800"
+                                    : isSuspended
+                                      ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800"
+                                      : "bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:border-slate-700"
+                                }`}
+                              >
+                                {isActive
+                                  ? "在职"
+                                  : isSuspended
+                                    ? "已停用"
+                                    : "已离职"}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3.5 text-right space-x-1 whitespace-nowrap">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs text-blue-600 hover:bg-blue-50"
+                                onClick={() => {
+                                  setTransferDeptEmp(emp);
+                                  setTargetDeptId(emp.departmentId || "");
+                                }}
+                              >
+                                <Building className="mr-1 size-3.5" />
+                                调部门
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs text-indigo-600 hover:bg-indigo-50"
+                                onClick={() => {
+                                  setTransferPosEmp(emp);
+                                  setTargetPosId(emp.positionId || "");
+                                }}
+                              >
+                                <Briefcase className="mr-1 size-3.5" />
+                                调岗位
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs text-purple-600 hover:bg-purple-50"
+                                onClick={() => {
+                                  setTransferRolesEmp(emp);
+                                  setSelectedRoleCodes([...emp.roles]);
+                                }}
+                              >
+                                <ShieldCheck className="mr-1 size-3.5" />
+                                调角色
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className={`h-7 text-xs ${
+                                  isActive
+                                    ? "text-rose-600 hover:bg-rose-50"
+                                    : "text-emerald-600 hover:bg-emerald-50"
+                                }`}
+                                onClick={() => handleToggleSuspend(emp)}
+                              >
+                                {isActive ? (
+                                  <>
+                                    <UserX className="mr-1 size-3.5" />
+                                    停用
+                                  </>
+                                ) : (
+                                  <>
+                                    <UserCheck className="mr-1 size-3.5" />
+                                    恢复
+                                  </>
+                                )}
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* 弹窗 1：直接录入建号新员工 */}
+      {isCreateOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              直接录入新员工（免邮件建号）
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              系统将原子创建全局用户、租户成员并生成在职员工档案，员工凭初始密码可立即登录进入系统。
+            </p>
+
+            <form onSubmit={handleCreateSubmit} className="mt-5 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    员工姓名 <span className="text-rose-500">*</span>
+                  </label>
+                  <Input
+                    value={createForm.name}
+                    onChange={(e) =>
+                      setCreateForm((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
+                    placeholder="例如: 王小明"
+                    className="text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    登录邮箱 <span className="text-rose-500">*</span>
+                  </label>
+                  <Input
+                    type="email"
+                    value={createForm.email}
+                    onChange={(e) =>
+                      setCreateForm((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
+                    placeholder="例如: wang@company.com"
+                    className="text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    工号 (可选)
+                  </label>
+                  <Input
+                    value={createForm.employeeNo}
+                    onChange={(e) =>
+                      setCreateForm((prev) => ({
+                        ...prev,
+                        employeeNo: e.target.value,
+                      }))
+                    }
+                    placeholder="例如: E1001"
+                    className="text-xs font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    职务头衔 (可选)
+                  </label>
+                  <Input
+                    value={createForm.jobTitle}
+                    onChange={(e) =>
+                      setCreateForm((prev) => ({
+                        ...prev,
+                        jobTitle: e.target.value,
+                      }))
+                    }
+                    placeholder="例如: 华东区域采购专员"
+                    className="text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    所属部门
+                  </label>
+                  <select
+                    value={createForm.departmentId}
+                    onChange={(e) =>
+                      setCreateForm((prev) => ({
+                        ...prev,
+                        departmentId: e.target.value,
+                      }))
+                    }
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-xs focus:border-blue-500 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  >
+                    <option value="">-- 暂不分配部门 --</option>
+                    {flatDepts.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {"— ".repeat(d.depth)}
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    承担岗位
+                  </label>
+                  <select
+                    value={createForm.positionId}
+                    onChange={(e) =>
+                      setCreateForm((prev) => ({
+                        ...prev,
+                        positionId: e.target.value,
+                      }))
+                    }
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-xs focus:border-blue-500 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  >
+                    <option value="">-- 暂不指定岗位 --</option>
+                    {positions.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  初始系统角色 <span className="text-rose-500">*</span>
+                </label>
+                <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200/80 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+                  {availableRoles.map((r) => {
+                    const isChecked = createForm.roles.includes(r.role);
+                    return (
+                      <label
+                        key={r.role}
+                        className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold cursor-pointer border transition-colors ${
+                          isChecked
+                            ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setCreateForm((prev) => ({
+                                ...prev,
+                                roles: [...prev.roles, r.role],
+                              }));
+                            } else {
+                              setCreateForm((prev) => ({
+                                ...prev,
+                                roles: prev.roles.filter((x) => x !== r.role),
+                              }));
+                            }
+                          }}
+                          className="sr-only"
+                        />
+                        <span>{r.name}</span>
+                        <span
+                          className={`text-[10px] font-mono ${
+                            isChecked ? "text-blue-100" : "text-slate-400"
+                          }`}
+                        >
+                          ({r.role})
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  初始登录密码
+                </label>
+                <Input
+                  type="text"
+                  value={createForm.password}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      password: e.target.value,
+                    }))
+                  }
+                  placeholder="默认: Admin123456!"
+                  className="text-xs font-mono"
+                />
+                <p className="text-[11px] text-slate-400">
+                  员工可凭该密码直接登录系统，后续可在安全设置中强制首次登录修改。
+                </p>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsCreateOpen(false)}
+                  disabled={isPending}
+                >
+                  取消
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={isPending}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {isPending ? "创建建号中..." : "确认建号入职"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 弹窗 2：调换部门 */}
+      {transferDeptEmp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              调整所属部门
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              为员工 [{transferDeptEmp.name}]
+              重新指派部门。系统将自动自增权限版本号，CASL 数据下推范围立即生效。
+            </p>
+
+            <div className="mt-5 space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  目标部门
+                </label>
+                <select
+                  value={targetDeptId}
+                  onChange={(e) => setTargetDeptId(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-xs focus:border-blue-500 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                >
+                  <option value="">-- 无部门 (清空现有部门分配) --</option>
+                  {flatDepts.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {"— ".repeat(d.depth)}
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="rounded-xl bg-blue-50/60 p-3 text-xs text-blue-800 border border-blue-200/70">
+                <div className="font-semibold flex items-center gap-1">
+                  <AlertCircle className="size-3.5" />
+                  <span>数据范围即时下推机制说明</span>
+                </div>
+                <p className="mt-1 text-[11px] text-blue-700 leading-relaxed">
+                  调换部门后，该员工的采购订单等业务数据访问范围将根据新部门及其子部门拓扑自驱动重算，无需重新登录即可刷新。
+                </p>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTransferDeptEmp(null)}
+                  disabled={isPending}
+                >
+                  取消
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={isPending}
+                  onClick={handleTransferDept}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {isPending ? "保存中..." : "确认调换部门"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 弹窗 3：调换岗位 */}
+      {transferPosEmp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              调整承担岗位
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              为员工 [{transferPosEmp.name}] 指定新的企业岗位。遵循 Position !=
+              Role 原则，调岗不改变其系统角色权限。
+            </p>
+
+            <div className="mt-5 space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  目标岗位
+                </label>
+                <select
+                  value={targetPosId}
+                  onChange={(e) => setTargetPosId(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-xs focus:border-blue-500 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                >
+                  <option value="">-- 无岗位 (清空现有岗位分配) --</option>
+                  {positions.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTransferPosEmp(null)}
+                  disabled={isPending}
+                >
+                  取消
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={isPending}
+                  onClick={handleTransferPos}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  {isPending ? "保存中..." : "确认调换岗位"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 弹窗 4：调换系统角色 */}
+      {transferRolesEmp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              调整系统角色与权限
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              修改员工 [{transferRolesEmp.name}]
+              拥有的角色集合。保存后立即自增权限版本号，使缓存的能力集失效。
+            </p>
+
+            <div className="mt-5 space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  选择分配角色 (可多选)
+                </label>
+                <div className="space-y-2 rounded-xl border border-slate-200/80 bg-slate-50/50 p-3">
+                  {availableRoles.map((r) => {
+                    const isChecked = selectedRoleCodes.includes(r.role);
+                    return (
+                      <label
+                        key={r.role}
+                        className="flex items-center justify-between rounded-lg p-2 text-xs font-semibold cursor-pointer hover:bg-white transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedRoleCodes((prev) => [
+                                  ...prev,
+                                  r.role,
+                                ]);
+                              } else {
+                                setSelectedRoleCodes((prev) =>
+                                  prev.filter((x) => x !== r.role),
+                                );
+                              }
+                            }}
+                            className="rounded border-slate-300 text-blue-600 size-3.5"
+                          />
+                          <span className="text-slate-800">{r.name}</span>
+                        </div>
+                        <span className="text-[11px] font-mono text-slate-400">
+                          {r.role}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTransferRolesEmp(null)}
+                  disabled={isPending}
+                >
+                  取消
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={isPending}
+                  onClick={handleTransferRoles}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  {isPending ? "保存中..." : "确认调整角色"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
