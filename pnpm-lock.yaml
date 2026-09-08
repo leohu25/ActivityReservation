@@ -388,6 +388,9 @@ importers:
       '@chenrun/db-control':
         specifier: workspace:*
         version: link:../../db-control
+      '@chenrun/db-tenant':
+        specifier: workspace:*
+        version: link:../../db-tenant
       '@chenrun/feature-procurement-center':
         specifier: workspace:*
         version: link:../procurement-center

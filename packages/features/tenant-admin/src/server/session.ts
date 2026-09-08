@@ -1,7 +1,9 @@
 import { headers } from "next/headers";
 import { getServerAuthRuntime } from "@chenrun/auth";
 import type { OrganizationMemberRecord } from "@chenrun/db-control";
+import { getTenantDbManager } from "@chenrun/db-tenant";
 import { TenantRoleService } from "../services/tenant-role-service";
+import { TenantSettingsService } from "../services/tenant-settings-service";
 
 export interface TenantAdminSessionContext {
   readonly organizationId: string;
@@ -56,4 +58,16 @@ export async function requireTenantAdminSession(): Promise<TenantAdminSessionCon
 export function getTenantRoleService(): TenantRoleService {
   const runtime = getServerAuthRuntime();
   return new TenantRoleService(runtime.tenantContextRepository);
+}
+
+/** 获取租户企业信息与系统设置管理服务实例 */
+export function getTenantSettingsService(): TenantSettingsService {
+  const runtime = getServerAuthRuntime();
+  const manager = getTenantDbManager({
+    repository: runtime.tenantContextRepository,
+  });
+  return new TenantSettingsService(
+    runtime.prisma,
+    (orgId: string) => manager.getClient(orgId),
+  );
 }

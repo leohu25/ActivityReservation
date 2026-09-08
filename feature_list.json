@@ -125,8 +125,9 @@
       "name": "【P0】租户后台多级导航与企业/基础/安全设置中心 (Tenant Multi-Level Navigation & Settings Center)",
       "description": "第一梯队导航与设置基石：完全对齐规范第 48 节重构 Sidebar.tsx 为多级分组折叠导航目录树（工作台/业务模块/系统管理：组织架构、权限管理、企业设置、审计日志占位）；落地企业设置三大核心页面：/settings/company（企业信息，读写 CompanyProfile）、/settings/general（基础设置，系统名称/编号规则等偏好配置）、/settings/security（安全设置，会话超时等策略）",
       "dependencies": ["p0-tenant-seed-and-provisioning"],
-      "status": "pending",
-      "owner": "implementer"
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "重构 Sidebar 为符合规范第 48 节的多级折叠导航树并新增组件单测；在 packages/features/tenant-admin 落地 TenantSettingsService 领域服务读写 Tenant DB CompanyProfile 与 Control DB Organization.metadata，覆盖单测 9/9；落地 /settings/company、/settings/general、/settings/security 三大页面与 Server Actions；全仓 9 套件 93/93 单测 100% 通过、12 包类型检查 0 错误、./scripts/verify.sh 门禁全绿"
     },
     {
       "id": "p0-tenant-org-management",

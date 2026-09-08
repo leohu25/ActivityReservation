@@ -2,9 +2,10 @@
 
 ## 允许修改的文件与目录 (修改白名单)
 
-- `packages/ui/src/components/layout/**`
+- `packages/ui/**`
 - `packages/features/tenant-admin/**`
 - `apps/tenant/src/app/(dashboard)/settings/**`
+- `pnpm-lock.yaml`
 - `feature_list.json`
 - `.harness/features/p0-tenant-navigation-and-settings/**`
 

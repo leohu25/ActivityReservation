@@ -2,9 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 import type { RolePermissionPayload } from "@chenrun/authorization";
-import type { TenantRoleItem } from "./types";
+import type {
+  CompanyProfileData,
+  GeneralSettingsData,
+  SecuritySettingsData,
+  TenantRoleItem,
+  UpdateCompanyProfileInput,
+  UpdateGeneralSettingsInput,
+  UpdateSecuritySettingsInput,
+} from "./types";
 import {
   getTenantRoleService,
+  getTenantSettingsService,
   requireTenantAdminSession,
 } from "./server/session";
 
@@ -70,6 +79,126 @@ export async function deleteRoleAction(
     return { success: true };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "删除角色失败";
+    return { success: false, error: message };
+  }
+}
+
+/** 获取企业信息 Server Action */
+export async function getCompanyProfileAction(): Promise<{
+  success: boolean;
+  data?: CompanyProfileData;
+  error?: string;
+}> {
+  try {
+    const session = await requireTenantAdminSession();
+    const service = getTenantSettingsService();
+    const data = await service.getCompanyProfile(session.organizationId);
+    return { success: true, data };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "获取企业信息失败";
+    return { success: false, error: message };
+  }
+}
+
+/** 更新企业信息 Server Action */
+export async function updateCompanyProfileAction(
+  input: UpdateCompanyProfileInput,
+): Promise<{
+  success: boolean;
+  data?: CompanyProfileData;
+  error?: string;
+}> {
+  try {
+    const session = await requireTenantAdminSession();
+    const service = getTenantSettingsService();
+    const data = await service.updateCompanyProfile(
+      session.organizationId,
+      input,
+    );
+    revalidatePath("/settings/company");
+    return { success: true, data };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "更新企业信息失败";
+    return { success: false, error: message };
+  }
+}
+
+/** 获取系统基础设置 Server Action */
+export async function getGeneralSettingsAction(): Promise<{
+  success: boolean;
+  data?: GeneralSettingsData;
+  error?: string;
+}> {
+  try {
+    const session = await requireTenantAdminSession();
+    const service = getTenantSettingsService();
+    const data = await service.getGeneralSettings(session.organizationId);
+    return { success: true, data };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "获取基础设置失败";
+    return { success: false, error: message };
+  }
+}
+
+/** 更新系统基础设置 Server Action */
+export async function updateGeneralSettingsAction(
+  input: UpdateGeneralSettingsInput,
+): Promise<{
+  success: boolean;
+  data?: GeneralSettingsData;
+  error?: string;
+}> {
+  try {
+    const session = await requireTenantAdminSession();
+    const service = getTenantSettingsService();
+    const data = await service.updateGeneralSettings(
+      session.organizationId,
+      input,
+    );
+    revalidatePath("/settings/general");
+    return { success: true, data };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "更新基础设置失败";
+    return { success: false, error: message };
+  }
+}
+
+/** 获取安全策略设置 Server Action */
+export async function getSecuritySettingsAction(): Promise<{
+  success: boolean;
+  data?: SecuritySettingsData;
+  error?: string;
+}> {
+  try {
+    const session = await requireTenantAdminSession();
+    const service = getTenantSettingsService();
+    const data = await service.getSecuritySettings(session.organizationId);
+    return { success: true, data };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "获取安全设置失败";
+    return { success: false, error: message };
+  }
+}
+
+/** 更新安全策略设置 Server Action */
+export async function updateSecuritySettingsAction(
+  input: UpdateSecuritySettingsInput,
+): Promise<{
+  success: boolean;
+  data?: SecuritySettingsData;
+  error?: string;
+}> {
+  try {
+    const session = await requireTenantAdminSession();
+    const service = getTenantSettingsService();
+    const data = await service.updateSecuritySettings(
+      session.organizationId,
+      input,
+    );
+    revalidatePath("/settings/security");
+    return { success: true, data };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "更新安全设置失败";
     return { success: false, error: message };
   }
 }
