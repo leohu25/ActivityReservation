@@ -1,12 +1,13 @@
 "use client";
 
-import type { ComponentType, ReactNode } from "react";
+import React, { type ComponentType, type ReactNode } from "react";
 import {
   ShieldCheck,
   PackageCheck,
   KeyRound,
   LayoutDashboard,
   Layers,
+  Users,
 } from "lucide-react";
 
 export interface NavItem {
@@ -46,6 +47,13 @@ export const DEFAULT_NAV_ITEMS: readonly NavItem[] = [
     href: "/procurement/orders",
     requiredAction: "read",
     requiredSubject: "PurchaseOrder",
+  },
+  {
+    id: "settings-roles",
+    label: "角色权限管理",
+    category: "SYSTEM",
+    icon: <Users className="size-4" />,
+    href: "/settings/roles",
   },
   {
     id: "login",

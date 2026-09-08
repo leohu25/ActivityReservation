@@ -72,6 +72,20 @@ function repository(
     async findOrganizationRoles() {
       return roles;
     },
+    async listOrganizationRoles() {
+      return roles;
+    },
+    async upsertOrganizationRole(input) {
+      return {
+        id: `role-${input.role}`,
+        organizationId: input.organizationId,
+        role: input.role,
+        permission: input.permission,
+        createdAt: now,
+        updatedAt: now,
+      };
+    },
+    async deleteOrganizationRole() {},
   };
 }
 

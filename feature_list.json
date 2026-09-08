@@ -89,9 +89,9 @@
       "name": "租户管理员角色与四层权限配置中心 (Tenant Role & Permission Config Center)",
       "description": "遵循文档第 21、22、41 节工业级设计：提供租户管理后台(系统管理/角色管理)，支持租户管理员维护角色，基于 Permission Registry 元数据自动渲染功能权限复选框(Actions)、数据范围单选(self/department/department_and_children/tenant/custom)、与字段权限四维矩阵(查看/新增/修改/导出列)，完整持久化至 Control DB 角色存储并支持成员角色指派",
       "dependencies": ["foundation-tenant-rbac-core"],
-      "status": "not-started",
-      "owner": "implementer",
-      "evidence": ""
+      "status": "completed",
+      "owner": "coordinator",
+      "evidence": "落地 packages/features/tenant-admin 切片与 RolePermissionManager 组件；支持功能 Actions 复选、数据范围 Scopes 单选与四维字段矩阵；Control DB 扩展角色持久化 CRUD 并通过安全 Server Actions 严格守护租户管理员；极薄路由挂载 /settings/roles 与 Sidebar 导航；经独立 Reviewer 智能体审计并完成 403 守卫与推导加固；全仓 8 个测试套件 82/82 单测 100% 通过、12/12 包类型检查 0 错误、生产构建与全栈门禁 PASS"
     },
     {
       "id": "procurement-center",

@@ -43,6 +43,25 @@ const defaultTenantDatabaseDelegate = {
   },
 };
 
+const defaultOrganizationRoleDelegate = {
+  async findMany() {
+    return [];
+  },
+  async upsert() {
+    return {
+      id: "role-default",
+      organizationId: "org-1",
+      role: "default",
+      permission: "{}",
+      createdAt: now,
+      updatedAt: now,
+    };
+  },
+  async delete() {
+    return null;
+  },
+};
+
 test("queries membership by the organization and user compound key", async () => {
   let received: unknown;
   const client: ControlPrismaRepositoryClient = {
@@ -52,11 +71,7 @@ test("queries membership by the organization and user compound key", async () =>
         return member;
       },
     },
-    organizationRole: {
-      async findMany() {
-        return [];
-      },
-    },
+    organizationRole: defaultOrganizationRoleDelegate,
     tenantDatabase: defaultTenantDatabaseDelegate,
   };
 
@@ -84,11 +99,7 @@ test("queries the database mapping only by trusted organization id", async () =>
         return null;
       },
     },
-    organizationRole: {
-      async findMany() {
-        return [];
-      },
-    },
+    organizationRole: defaultOrganizationRoleDelegate,
     tenantDatabase: {
       ...defaultTenantDatabaseDelegate,
       async findUnique(args) {
@@ -117,6 +128,7 @@ test("queries dynamic roles by trusted organization and member role names", asyn
       },
     },
     organizationRole: {
+      ...defaultOrganizationRoleDelegate,
       async findMany(args) {
         received = args;
         return [];
@@ -209,11 +221,7 @@ test("tenant migration repository records lifecycle from start to success", asyn
         return null;
       },
     },
-    organizationRole: {
-      async findMany() {
-        return [];
-      },
-    },
+    organizationRole: defaultOrganizationRoleDelegate,
     tenantDatabase: {
       ...defaultTenantDatabaseDelegate,
       async update(args) {
@@ -318,11 +326,7 @@ test("tenant migration repository records failure and queries history", async ()
         return null;
       },
     },
-    organizationRole: {
-      async findMany() {
-        return [];
-      },
-    },
+    organizationRole: defaultOrganizationRoleDelegate,
     tenantDatabase: defaultTenantDatabaseDelegate,
     tenantMigration: {
       async create() {
@@ -362,4 +366,84 @@ test("tenant migration repository records failure and queries history", async ()
 
   const latestFailed = await repo.findLatestFailedMigration("org-1");
   assert.equal(latestFailed?.id, "mig-err");
+});
+
+test("organizationRole repository supports listing, upserting and deleting roles", async () => {
+  let findManyArgs: unknown;
+  let upsertArgs: unknown;
+  let deleteArgs: unknown;
+
+  const mockRoleRecord = {
+    id: "role-1",
+    organizationId: "org-test",
+    role: "custom_auditor",
+    permission: JSON.stringify({ statement: { "procurement.order": ["read"] } }),
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const client: ControlPrismaRepositoryClient = {
+    member: {
+      async findUnique() {
+        return null;
+      },
+    },
+    organizationRole: {
+      async findMany(args) {
+        findManyArgs = args;
+        return [mockRoleRecord];
+      },
+      async upsert(args) {
+        upsertArgs = args;
+        return mockRoleRecord;
+      },
+      async delete(args) {
+        deleteArgs = args;
+        return mockRoleRecord;
+      },
+    },
+    tenantDatabase: defaultTenantDatabaseDelegate,
+  };
+
+  const repo = new PrismaControlDbRepository(client);
+
+  // 1. listOrganizationRoles
+  const roles = await repo.listOrganizationRoles("org-test");
+  assert.equal(roles.length, 1);
+  assert.equal(roles[0].role, "custom_auditor");
+  assert.deepEqual(findManyArgs, {
+    where: { organizationId: "org-test" },
+    orderBy: { role: "asc" },
+  });
+
+  // 2. upsertOrganizationRole
+  const upserted = await repo.upsertOrganizationRole({
+    organizationId: "org-test",
+    role: "custom_auditor",
+    permission: mockRoleRecord.permission,
+  });
+  assert.equal(upserted.id, "role-1");
+  const actualUpsert = upsertArgs as {
+    where: unknown;
+    create: { id?: string; organizationId: string; role: string; permission: string };
+    update: unknown;
+  };
+  assert.ok(actualUpsert.create.id);
+  assert.equal(actualUpsert.create.organizationId, "org-test");
+  assert.equal(actualUpsert.create.role, "custom_auditor");
+  assert.equal(actualUpsert.create.permission, mockRoleRecord.permission);
+  assert.deepEqual(actualUpsert.update, {
+    permission: mockRoleRecord.permission,
+  });
+
+  // 3. deleteOrganizationRole
+  await repo.deleteOrganizationRole("org-test", "custom_auditor");
+  assert.deepEqual(deleteArgs, {
+    where: {
+      organizationId_role: {
+        organizationId: "org-test",
+        role: "custom_auditor",
+      },
+    },
+  });
 });

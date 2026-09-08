@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient as GeneratedPrismaClient } from "@prisma/client";
 
@@ -106,6 +107,18 @@ export interface AuthorizationRepository {
     organizationId: string,
     roles: readonly string[],
   ): Promise<OrganizationRoleRecord[]>;
+  listOrganizationRoles(
+    organizationId: string,
+  ): Promise<OrganizationRoleRecord[]>;
+  upsertOrganizationRole(input: {
+    organizationId: string;
+    role: string;
+    permission: string;
+  }): Promise<OrganizationRoleRecord>;
+  deleteOrganizationRole(
+    organizationId: string,
+    role: string,
+  ): Promise<void>;
 }
 
 /** 多租户物理库迁移账本与开通仓库契约 */
@@ -169,9 +182,37 @@ interface OrganizationRoleDelegate {
   findMany(args: {
     where: {
       organizationId: string;
-      role: { in: string[] };
+      role?: { in: string[] };
+    };
+    orderBy?: {
+      role?: "asc" | "desc";
     };
   }): Promise<OrganizationRoleRecord[]>;
+  upsert(args: {
+    where: {
+      organizationId_role: {
+        organizationId: string;
+        role: string;
+      };
+    };
+    create: {
+      id: string;
+      organizationId: string;
+      role: string;
+      permission: string;
+    };
+    update: {
+      permission: string;
+    };
+  }): Promise<OrganizationRoleRecord>;
+  delete(args: {
+    where: {
+      organizationId_role: {
+        organizationId: string;
+        role: string;
+      };
+    };
+  }): Promise<unknown>;
 }
 
 interface TenantDatabaseDelegate {
@@ -303,6 +344,56 @@ export class PrismaControlDbRepository
       where: {
         organizationId,
         role: { in: [...roles] },
+      },
+    });
+  }
+
+  /** 查询指定租户下的全部动态角色记录 */
+  async listOrganizationRoles(
+    organizationId: string,
+  ): Promise<OrganizationRoleRecord[]> {
+    return this.client.organizationRole.findMany({
+      where: { organizationId },
+      orderBy: { role: "asc" },
+    });
+  }
+
+  /** 创建或更新租户下的角色权限定义 */
+  async upsertOrganizationRole(input: {
+    organizationId: string;
+    role: string;
+    permission: string;
+  }): Promise<OrganizationRoleRecord> {
+    return this.client.organizationRole.upsert({
+      where: {
+        organizationId_role: {
+          organizationId: input.organizationId,
+          role: input.role,
+        },
+      },
+      create: {
+        id: randomUUID(),
+        organizationId: input.organizationId,
+        role: input.role,
+        permission: input.permission,
+      },
+      update: {
+        permission: input.permission,
+      },
+    });
+  }
+
+  /** 删除租户下的指定动态角色 */
+  async deleteOrganizationRole(
+    organizationId: string,
+    role: string,
+  ): Promise<void> {
+    await this.client.organizationRole.delete({
+      where: {
+        organizationId_role: {
+          organizationId,
+          role,
+        },
       },
     });
   }

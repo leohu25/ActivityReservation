@@ -15,6 +15,7 @@
     "@chenrun/db-control": "workspace:*",
     "@chenrun/db-tenant": "workspace:*",
     "@chenrun/feature-procurement-center": "workspace:*",
+    "@chenrun/feature-tenant-admin": "workspace:*",
     "@chenrun/shared": "workspace:*",
     "@chenrun/ui": "workspace:*",
     "better-auth": "1.7.3",

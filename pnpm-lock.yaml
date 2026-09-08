@@ -96,6 +96,9 @@ importers:
       '@chenrun/feature-procurement-center':
         specifier: workspace:*
         version: link:../../packages/features/procurement-center
+      '@chenrun/feature-tenant-admin':
+        specifier: workspace:*
+        version: link:../../packages/features/tenant-admin
       '@chenrun/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -322,6 +325,55 @@ importers:
         specifier: workspace:*
         version: link:../../shared
     devDependencies:
+      typescript:
+        specifier: ^5.8.2
+        version: 5.8.2
+
+  packages/features/tenant-admin:
+    dependencies:
+      '@chenrun/auth':
+        specifier: workspace:*
+        version: link:../../auth
+      '@chenrun/authorization':
+        specifier: workspace:*
+        version: link:../../authorization
+      '@chenrun/db-control':
+        specifier: workspace:*
+        version: link:../../db-control
+      '@chenrun/feature-procurement-center':
+        specifier: workspace:*
+        version: link:../procurement-center
+      '@chenrun/shared':
+        specifier: workspace:*
+        version: link:../../shared
+      '@chenrun/ui':
+        specifier: workspace:*
+        version: link:../../ui
+      lucide-react:
+        specifier: ^1.41.0
+        version: 1.41.0(react@19.2.8)
+      next:
+        specifier: 16.3.4
+        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+    devDependencies:
+      '@types/node':
+        specifier: ^20.17.24
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19.2.18
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.7
+        version: 19.2.7(@types/react@19.2.18)
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: 19.2.8
+        version: 19.2.8(react@19.2.8)
+      tsx:
+        specifier: ^4.20.6
+        version: 4.23.13
       typescript:
         specifier: ^5.8.2
         version: 5.8.2
