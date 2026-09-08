@@ -35,7 +35,11 @@ export type TenantContextErrorCode =
   | "ACTIVE_ORGANIZATION_REQUIRED"
   | "ORGANIZATION_MEMBERSHIP_REQUIRED"
   | "TENANT_DATABASE_NOT_FOUND"
-  | "TENANT_DATABASE_INACTIVE";
+  | "TENANT_DATABASE_INACTIVE"
+  | "EMPLOYEE_PROFILE_NOT_FOUND"
+  | "EMPLOYEE_SUSPENDED"
+  | "EMPLOYEE_TERMINATED"
+  | "EMPLOYEE_NOT_ACTIVE";
 
 export class TenantContextError extends Error {
   constructor(
@@ -46,6 +50,50 @@ export class TenantContextError extends Error {
     this.name = "TenantContextError";
   }
 }
+
+/**
+ * 员工档案简要状态模型 (用于租户准入门禁断言)
+ */
+export interface EmployeeProfileStatusInput {
+  readonly status: string;
+}
+
+/**
+ * 租户访问硬门禁 (Tenant Access Gate)
+ * 严格基于企业员工档案状态断言租户业务系统的准入资格。
+ * 若员工档案缺失、被停用 (SUSPENDED) 或已离职 (TERMINATED)，严格执行 Fail-Closed 阻断访问。
+ */
+export function assertTenantAccessGate(
+  profile: EmployeeProfileStatusInput | null | undefined,
+): void {
+  if (!profile) {
+    throw new TenantContextError(
+      "EMPLOYEE_PROFILE_NOT_FOUND",
+      "未检测到有效的企业员工档案，请联系管理员分配",
+    );
+  }
+
+  if (profile.status === "SUSPENDED") {
+    throw new TenantContextError(
+      "EMPLOYEE_SUSPENDED",
+      "您在该企业的员工账号已被暂停访问，请联系管理员",
+    );
+  }
+
+  if (profile.status === "TERMINATED") {
+    throw new TenantContextError(
+      "EMPLOYEE_TERMINATED",
+      "您已从该企业离职，无权访问内部业务数据",
+    );
+  }
+
+  if (profile.status !== "ACTIVE") {
+    throw new TenantContextError("EMPLOYEE_NOT_ACTIVE", "员工档案尚未激活");
+  }
+}
+
+/** 兼容别名导出 */
+export const assertEmployeeActive = assertTenantAccessGate;
 
 /**
  * Resolves the tenant exclusively from a trusted Better Auth session.

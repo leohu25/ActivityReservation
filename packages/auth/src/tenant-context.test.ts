@@ -6,6 +6,8 @@ import type {
   TenantDatabaseRecord,
 } from "@chenrun/db-control";
 import {
+  assertTenantAccessGate,
+  assertEmployeeActive,
   resolveTenantContext,
   TenantContextError,
   type AuthSessionInput,
@@ -157,4 +159,52 @@ test("trusted request resolver fails closed when Better Auth finds no session", 
   });
 
   await rejectsWithCode(resolver(new Headers()), "UNAUTHENTICATED");
+});
+
+test("assertTenantAccessGate allows ACTIVE employee profile", () => {
+  assert.doesNotThrow(() => {
+    assertTenantAccessGate({ status: "ACTIVE" });
+  });
+  assert.doesNotThrow(() => {
+    assertEmployeeActive({ status: "ACTIVE" });
+  });
+});
+
+test("assertTenantAccessGate rejects null or undefined profile", () => {
+  assert.throws(
+    () => assertTenantAccessGate(null),
+    (err: unknown) =>
+      err instanceof TenantContextError &&
+      err.code === "EMPLOYEE_PROFILE_NOT_FOUND",
+  );
+  assert.throws(
+    () => assertTenantAccessGate(undefined),
+    (err: unknown) =>
+      err instanceof TenantContextError &&
+      err.code === "EMPLOYEE_PROFILE_NOT_FOUND",
+  );
+});
+
+test("assertTenantAccessGate rejects SUSPENDED employee profile", () => {
+  assert.throws(
+    () => assertTenantAccessGate({ status: "SUSPENDED" }),
+    (err: unknown) =>
+      err instanceof TenantContextError && err.code === "EMPLOYEE_SUSPENDED",
+  );
+});
+
+test("assertTenantAccessGate rejects TERMINATED employee profile", () => {
+  assert.throws(
+    () => assertTenantAccessGate({ status: "TERMINATED" }),
+    (err: unknown) =>
+      err instanceof TenantContextError && err.code === "EMPLOYEE_TERMINATED",
+  );
+});
+
+test("assertTenantAccessGate rejects unactivated employee profile", () => {
+  assert.throws(
+    () => assertTenantAccessGate({ status: "INVITED" }),
+    (err: unknown) =>
+      err instanceof TenantContextError && err.code === "EMPLOYEE_NOT_ACTIVE",
+  );
 });

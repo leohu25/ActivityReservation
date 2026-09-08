@@ -143,8 +143,9 @@
       "name": "【P0】工作台真实拓扑装配与租户访问门禁 (Workbench Real Topology & Tenant Access Gate)",
       "description": "第一梯队真实权限闭环验证：彻底废除 /workbench 中写死的 dept_procurement_east mock 数据，自驱读取当前登录人真实 EmployeeProfile 与部门树，动态计算并展示 CASL 权限；在路由与 Server Actions 处植入 Tenant Access Gate，严格断言 EmployeeProfile.status === 'ACTIVE'，被停用人员即时阻断；联动验证调部门后采购订单列表部门范围下推实时变动",
       "dependencies": ["p0-tenant-org-management"],
-      "status": "pending",
-      "owner": "implementer"
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "彻底清除 /workbench 中写死的 mock 数据与部门字符串，直连 Tenant DB 查询真实 EmployeeProfile 与关联部门/岗位；在 packages/auth 落地 assertTenantAccessGate 与 assertEmployeeActive 并在 getTenantProcurementContext 统一守卫；调用 resolveEmployeeTopology 自驱装配真实部门拓扑并动态下推 CASL Prisma where；新增 workbench-real-topology.test.ts 验证无 mock 源码、准入门禁严格拦截与调部门下推实时切换；全仓 9 套件 96/96 单测 100% 通过、12 包 check 0 错误、./scripts/verify.sh 门禁全绿"
     },
     {
       "id": "p1-tenant-audit-logs",

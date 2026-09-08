@@ -21,8 +21,12 @@ export {
 } from "./trusted-tenant-context";
 export {
   TenantContextError,
+  assertTenantAccessGate,
+  assertEmployeeActive,
+  resolveTenantContext,
   type AuthenticatedSession,
   type AuthenticatedUser,
+  type EmployeeProfileStatusInput,
   type TenantContext,
   type TenantContextErrorCode,
 } from "./tenant-context";

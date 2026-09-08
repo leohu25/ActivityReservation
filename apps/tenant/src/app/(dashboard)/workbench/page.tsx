@@ -1,7 +1,25 @@
 import { headers } from "next/headers";
-import { getServerAuthRuntime } from "@chenrun/auth";
-import { CaslAbilityFactory } from "@chenrun/authorization";
-import { procurementCatalog } from "@chenrun/feature-procurement-center";
+import Link from "next/link";
+import {
+  getCurrentTenantContext,
+  getServerAuthRuntime,
+  assertTenantAccessGate,
+  type TenantContext,
+} from "@chenrun/auth";
+import {
+  CaslAbilityFactory,
+  getAccessibleWhere,
+  type AppPrismaAbility,
+} from "@chenrun/authorization";
+import {
+  getTenantDbManager,
+  resolveEmployeeTopology,
+  type ResolvedDepartmentTopology,
+} from "@chenrun/db-tenant";
+import {
+  procurementCatalog,
+  type ProcurementAction,
+} from "@chenrun/feature-procurement-center";
 import {
   Card,
   CardHeader,
@@ -13,8 +31,6 @@ import {
   Button,
   PermissionField,
 } from "@chenrun/ui";
-import { getAccessibleWhere } from "@chenrun/authorization";
-import Link from "next/link";
 import {
   Building2,
   Database,
@@ -24,238 +40,461 @@ import {
   Code2,
   SlidersHorizontal,
   CheckCircle2,
+  Users,
+  Briefcase,
+  GitFork,
+  AlertCircle,
+  ShieldCheck,
+  Check,
+  X,
+  Building,
 } from "lucide-react";
+
+interface EmployeeProfileWithRelations {
+  id: string;
+  memberId: string | null;
+  employeeNo: string | null;
+  nameSnapshot: string;
+  emailSnapshot: string;
+  jobTitle: string | null;
+  status: string;
+  department: { id: string; name: string; code: string } | null;
+  position: { id: string; name: string; code: string } | null;
+}
+
+/**
+ * 租户会话未激活提示卡片
+ */
+function TenantUnauthenticatedCard({ message, isNoOrg }: { message: string; isNoOrg: boolean }) {
+  return (
+    <Card className="border-amber-200 bg-amber-50/50 shadow-xs dark:border-amber-900/40 dark:bg-amber-950/20">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
+          <ShieldAlert className="size-5 text-amber-600" />
+          <span>{isNoOrg ? "尚未选择或激活任何 ERP 租户组织" : "租户会话未激活"}</span>
+        </CardTitle>
+        <CardDescription className="text-amber-700 dark:text-amber-300">
+          晨润 ERP 采用严格的 Database-per-Tenant 物理隔离机制。
+          {isNoOrg ? "请在顶部导航栏组织切换器中选择或创建企业租户。" : message}
+        </CardDescription>
+      </CardHeader>
+    </Card>
+  );
+}
+
+/**
+ * 租户业务准入受限拦截卡片
+ */
+function TenantAccessBlockedCard({ message, status }: { message: string; status?: string }) {
+  return (
+    <div className="space-y-6">
+      <Card className="border-rose-200 bg-rose-50/60 p-6 shadow-xs dark:border-rose-900/50 dark:bg-rose-950/30">
+        <div className="flex items-start gap-4">
+          <div className="rounded-xl bg-rose-100 p-2.5 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300">
+            <AlertCircle className="size-6 shrink-0" />
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-rose-900 dark:text-rose-200">
+                租户业务系统准入受限 (Tenant Access Gate Blocked)
+              </h2>
+              <Badge variant="destructive" size="sm">
+                {status ?? "NO_PROFILE"}
+              </Badge>
+            </div>
+            <p className="text-sm text-rose-700 dark:text-rose-300">{message}</p>
+            <p className="text-xs text-rose-600/80 dark:text-rose-400/80">
+              根据 SaaS 最高宪法，当租户内员工档案处于停用或离职状态时，严格执行 Fail-Closed 阻断策略。您仍可在其他正常租户中使用平台账号。
+            </p>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+/**
+ * 顶部租户状态与当前账号信息横幅
+ */
+function WorkbenchHeaderBanner({
+  orgName,
+  orgSlug,
+  userName,
+  userRole,
+  authVersion,
+}: {
+  orgName: string;
+  orgSlug: string;
+  userName: string;
+  userRole: string;
+  authVersion: number;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/60">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <Building2 className="size-3.5" />
+            <span>PostgreSQL 租户独立物理库动态连接就绪</span>
+          </div>
+
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+            {orgName}
+          </h1>
+
+          <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-500 dark:text-slate-400">
+            <span>组织标识:</span>
+            <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-800 dark:text-slate-200 font-semibold">
+              {orgSlug}
+            </code>
+            <span className="text-slate-300 dark:text-slate-700">|</span>
+            <UserCheck className="size-3.5 text-slate-400" />
+            <span>当前用户:</span>
+            <span className="font-bold text-slate-800 dark:text-slate-200">{userName}</span>
+            <span className="text-slate-300 dark:text-slate-700">|</span>
+            <span>系统角色:</span>
+            <Badge variant="process" size="sm">
+              {userRole}
+            </Badge>
+            <span className="text-slate-300 dark:text-slate-700">|</span>
+            <span>权限版本:</span>
+            <span className="font-mono text-slate-700 dark:text-slate-300">v{authVersion}</span>
+          </div>
+        </div>
+
+        <Link href="/procurement/orders">
+          <Button
+            variant="default"
+            size="lg"
+            className="group rounded-xl font-bold shadow-sm shadow-blue-600/20"
+          >
+            <span>前往采购订单中心</span>
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 员工档案与组织关系四指标栅格
+ */
+function EmployeeProfileMetricsGrid({
+  profile,
+  fallbackName,
+  treeCount,
+}: {
+  profile: EmployeeProfileWithRelations | null;
+  fallbackName: string;
+  treeCount: number;
+}) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <Card className="p-4 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-blue-50 p-2.5 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+            <Users className="size-5" />
+          </div>
+          <div>
+            <div className="text-[11px] font-medium text-slate-400">员工档案编号</div>
+            <div className="text-sm font-bold text-slate-800 dark:text-slate-100">
+              {profile?.employeeNo || "未分配工号"}
+            </div>
+            <div className="text-[11px] text-slate-500">
+              {profile?.nameSnapshot || fallbackName || "在职档案"}
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-4 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-indigo-50 p-2.5 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+            <Building className="size-5" />
+          </div>
+          <div>
+            <div className="text-[11px] font-medium text-slate-400">所属组织部门</div>
+            <div className="text-sm font-bold text-slate-800 dark:text-slate-100">
+              {profile?.department?.name || "未分配部门"}
+            </div>
+            <div className="text-[11px] text-slate-500 font-mono">
+              {profile?.department?.code ? `编码: ${profile.department.code}` : "未关联拓扑节点"}
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-4 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-emerald-50 p-2.5 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+            <Briefcase className="size-5" />
+          </div>
+          <div>
+            <div className="text-[11px] font-medium text-slate-400">岗位职务 (Position)</div>
+            <div className="text-sm font-bold text-slate-800 dark:text-slate-100">
+              {profile?.position?.name || profile?.jobTitle || "企业成员"}
+            </div>
+            <div className="text-[11px] text-emerald-600 dark:text-emerald-400">
+              Position != Role 解耦
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-4 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-amber-50 p-2.5 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
+            <GitFork className="size-5" />
+          </div>
+          <div>
+            <div className="text-[11px] font-medium text-slate-400">数据管辖范围</div>
+            <div className="text-sm font-bold text-slate-800 dark:text-slate-100">
+              {treeCount > 0 ? `${treeCount} 个部门节点` : "个人范围 / 无部门"}
+            </div>
+            <div className="text-[11px] text-amber-600 dark:text-amber-400">
+              自驱物理库实时装配
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+/**
+ * 四层权限下推与字段策略展示
+ */
+function PermissionAnalysisPanels({
+  sqlWhere,
+  canReadOrder,
+  canCreateOrder,
+  canAuditOrder,
+  canExportOrder,
+  canEditSupplier,
+  canReadCostPrice,
+  canEditCostPrice,
+}: {
+  sqlWhere: unknown;
+  canReadOrder: boolean;
+  canCreateOrder: boolean;
+  canAuditOrder: boolean;
+  canExportOrder: boolean;
+  canEditSupplier: boolean;
+  canReadCostPrice: boolean;
+  canEditCostPrice: boolean;
+}) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
+              <Database className="size-4 text-blue-600" />
+              <span>数据库数据下推 (Prisma accessibleBy)</span>
+            </CardTitle>
+            <Badge variant="success" size="sm">
+              <CheckCircle2 className="size-3" />
+              <span>实时计算生效</span>
+            </Badge>
+          </div>
+          <CardDescription>
+            由当前登录员工档案部门拓扑与 CASL 角色规则动态编译生成的 Prisma Where 查询条件：
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="relative rounded-xl bg-slate-900 p-4 font-mono text-xs text-emerald-400 shadow-inner overflow-x-auto dark:bg-slate-950 border border-slate-800">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[10px] text-slate-400">
+              <span className="flex items-center gap-1.5">
+                <Code2 className="size-3" />
+                <span>CASL Prisma Where Clause</span>
+              </span>
+              <span>自驱装配结果</span>
+            </div>
+            <pre className="leading-relaxed">{JSON.stringify(sqlWhere, null, 2)}</pre>
+          </div>
+
+          <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
+            <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+              <ShieldCheck className="size-3.5 text-blue-600" />
+              <span>采购中心功能权限断言状态</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <div className="flex items-center gap-1.5">
+                {canReadOrder ? <Check className="size-3.5 text-emerald-600" /> : <X className="size-3.5 text-rose-500" />}
+                <span className="text-slate-600 dark:text-slate-400">查看单据</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {canCreateOrder ? <Check className="size-3.5 text-emerald-600" /> : <X className="size-3.5 text-rose-500" />}
+                <span className="text-slate-600 dark:text-slate-400">新建采购</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {canAuditOrder ? <Check className="size-3.5 text-emerald-600" /> : <X className="size-3.5 text-rose-500" />}
+                <span className="text-slate-600 dark:text-slate-400">单据审核</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {canExportOrder ? <Check className="size-3.5 text-emerald-600" /> : <X className="size-3.5 text-rose-500" />}
+                <span className="text-slate-600 dark:text-slate-400">数据导出</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
+              <SlidersHorizontal className="size-4 text-blue-600" />
+              <span>字段策略三态保护 (PermissionField 自动感知)</span>
+            </CardTitle>
+            <Badge variant="default" size="sm">
+              动态策略生效
+            </Badge>
+          </div>
+          <CardDescription>
+            基于角色字段策略与 CASL Ability 动态呈现可编辑 (EDITABLE) 或只读 (READONLY) 状态：
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <PermissionField
+            label="供应商全称 (supplierName)"
+            mode={canEditSupplier ? "EDITABLE" : "READONLY"}
+          >
+            <Input defaultValue="晨润精密设备供应链有限公司" />
+          </PermissionField>
+
+          <PermissionField
+            label="采购成本价 (costPrice) —— 核心保密资产"
+            mode={canReadCostPrice ? (canEditCostPrice ? "EDITABLE" : "READONLY") : "HIDDEN"}
+          >
+            <Input
+              defaultValue="¥ 246,800.00"
+              className="font-semibold text-emerald-600 tabular-nums dark:text-emerald-400"
+            />
+          </PermissionField>
+
+          <div className="text-[11px] text-slate-400 leading-relaxed bg-slate-50/80 p-3 rounded-xl dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+            💡 字段三态策略直接绑定自 Control DB 的 OrganizationRole 策略定义。
+            管理员在【系统管理 / 权限管理】中调整字段四维矩阵后，页面将自动响应隐藏、只读或编辑模式。
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 /**
  * 工作台页面（Server Component）
- * 遵循现代数智工业风与 shadcn/ui 组件规范，真实读取 PostgreSQL Control DB 与 Better Auth 会话
  */
 export default async function WorkbenchPage() {
-  const runtime = getServerAuthRuntime();
-  const session = await runtime.auth.api.getSession({
-    headers: await headers(),
-  });
+  const reqHeaders = await headers();
 
-  const activeOrgId = session?.session.activeOrganizationId;
-
-  // 1. 如果没有激活的租户组织，提示用户创建或选择租户
-  if (!activeOrgId) {
-    return (
-      <Card className="border-amber-200 bg-amber-50/50 shadow-xs dark:border-amber-900/40 dark:bg-amber-950/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
-            <ShieldAlert className="size-5 text-amber-600" />
-            <span>尚未选择或激活任何 ERP 租户组织</span>
-          </CardTitle>
-          <CardDescription className="text-amber-700 dark:text-amber-300">
-            晨润 ERP 采用严格的 Database-per-Tenant
-            物理隔离机制。请在顶部导航栏下拉菜单中选择现有组织或新建租户组织。
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
+  let tenantCtx: TenantContext;
+  try {
+    tenantCtx = await getCurrentTenantContext(reqHeaders);
+  } catch (err: unknown) {
+    const rawMsg = err instanceof Error ? err.message : "";
+    const isNoOrg =
+      rawMsg.includes("no active organization") ||
+      rawMsg.includes("ACTIVE_ORGANIZATION_REQUIRED");
+    return <TenantUnauthenticatedCard message={rawMsg} isNoOrg={isNoOrg} />;
   }
 
-  // 2. 从数据库真实查询当前组织与成员
-  const activeOrg = await runtime.prisma.organization.findUnique({
-    where: { id: activeOrgId },
+  const authRuntime = getServerAuthRuntime();
+  const org = await authRuntime.prisma.organization.findUnique({
+    where: { id: tenantCtx.organizationId },
+    select: { id: true, name: true, slug: true, authorizationVersion: true },
   });
 
-  const currentMember = await runtime.prisma.member.findFirst({
-    where: {
-      organizationId: activeOrgId,
-      userId: session.user.id,
+  const manager = getTenantDbManager({
+    repository: authRuntime.tenantContextRepository,
+  });
+  const tenantPrisma = await manager.getClient(tenantCtx.organizationId);
+
+  const profile = (await tenantPrisma.employeeProfile.findUnique({
+    where: { memberId: tenantCtx.member.id },
+    include: {
+      department: { select: { id: true, name: true, code: true } },
+      position: { select: { id: true, name: true, code: true } },
     },
-  });
+  })) as EmployeeProfileWithRelations | null;
 
-  // 3. 构造 CASL Ability Factory 并动态编译真实 Ability
+  try {
+    assertTenantAccessGate(profile);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "员工档案状态异常，业务准入受限";
+    return <TenantAccessBlockedCard message={message} status={profile?.status} />;
+  }
+
+  const topology: ResolvedDepartmentTopology = await resolveEmployeeTopology(
+    {
+      findEmployeeProfile: async (memberId: string) =>
+        tenantPrisma.employeeProfile.findUnique({
+          where: { memberId },
+          select: {
+            id: true,
+            memberId: true,
+            departmentId: true,
+            employeeNo: true,
+            jobTitle: true,
+            status: true,
+          },
+        }),
+      findAllDepartments: async () =>
+        tenantPrisma.department.findMany({ select: { id: true, parentId: true } }),
+    },
+    { userId: tenantCtx.user.id, memberId: tenantCtx.member.id },
+  );
+
   const factory = new CaslAbilityFactory(
-    runtime.tenantContextRepository,
+    authRuntime.tenantContextRepository,
     procurementCatalog,
   );
 
-  const topology = {
-    userId: session.user.id,
-    departmentId: "dept_procurement_east",
-    departmentTreeIds: ["dept_procurement_east", "dept_procurement_east_sub"],
-  };
-
-  const prismaAbility = await factory.createPrismaAbilityForTenant(
-    {
-      organizationId: activeOrgId,
-      user: session.user,
-      session: session.session,
-      member: currentMember ?? {
-        id: "temp_member",
-        organizationId: activeOrgId,
-        userId: session.user.id,
-        role: "member",
-        createdAt: new Date(),
-      },
-      database: {
-        id: "db_local",
-        organizationId: activeOrgId,
-        clusterCode: "local",
-        databaseName: `tenant_${activeOrgId}`,
-        secretRef: `secret/${activeOrgId}`,
-        schemaVersion: "1",
-        status: "ACTIVE",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    },
+  const prismaAbility = (await factory.createPrismaAbilityForTenant(
+    tenantCtx,
     topology,
-    {
-      dataScopes: [
-        {
-          role: currentMember?.role ?? "member",
-          resource: "procurement.order",
-          action: "read",
-          scopeType: "DEPT_TREE",
-        },
-      ],
-      fieldPolicies: [
-        {
-          role: currentMember?.role ?? "member",
-          subject: "PurchaseOrder",
-          field: "supplierName",
-          access: "EDITABLE",
-        },
-        {
-          role: currentMember?.role ?? "member",
-          subject: "PurchaseOrder",
-          field: "costPrice",
-          access: currentMember?.role === "owner" ? "EDITABLE" : "READONLY",
-        },
-      ],
-    },
-  );
+  )) as AppPrismaAbility<ProcurementAction, "PurchaseOrder">;
 
-  // 4. 真实调用 @casl/prisma 生成当前数据库查询下推条件
   const sqlWhere = getAccessibleWhere(prismaAbility, "PurchaseOrder", "read");
 
   return (
     <div className="space-y-6">
-      {/* 租户与登录真实状态横幅 (现代轻量数智风) */}
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            {/* 顶栏健康微胶囊 */}
-            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/60">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-              </span>
-              <Building2 className="size-3.5" />
-              <span>PostgreSQL 租户物理隔离库动态连接正常</span>
-            </div>
+      <WorkbenchHeaderBanner
+        orgName={org?.name ?? "ERP 租户控制台"}
+        orgSlug={org?.slug ?? tenantCtx.organizationId}
+        userName={tenantCtx.user.name || tenantCtx.user.email}
+        userRole={tenantCtx.member.role}
+        authVersion={org?.authorizationVersion ?? 1}
+      />
 
-            {/* 组织名称大标题 */}
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">
-              {activeOrg?.name ?? "默认企业租户"}
-            </h1>
+      <EmployeeProfileMetricsGrid
+        profile={profile}
+        fallbackName={tenantCtx.user.name || tenantCtx.user.email}
+        treeCount={topology.departmentTreeIds.length}
+      />
 
-            {/* 组织与用户信息属性条 */}
-            <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-500 dark:text-slate-400">
-              <span>组织标识:</span>
-              <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-800 dark:text-slate-200 font-semibold">
-                {activeOrg?.slug}
-              </code>
-              <span className="text-slate-300 dark:text-slate-700">|</span>
-              <UserCheck className="size-3.5 text-slate-400" />
-              <span>当前账号:</span>
-              <span className="font-bold text-slate-800 dark:text-slate-200">
-                {session.user.name || session.user.email}
-              </span>
-              <span className="text-slate-300 dark:text-slate-700">|</span>
-              <span>角色状态:</span>
-              <Badge variant="process" size="sm">
-                {currentMember?.role ?? "普通成员"}
-              </Badge>
-            </div>
-          </div>
-
-          <Link href="/procurement/orders">
-            <Button
-              variant="default"
-              size="lg"
-              className="group rounded-xl font-bold shadow-sm shadow-blue-600/20"
-            >
-              <span>前往采购订单中心</span>
-              <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* 四层权限真实下推与字段三态呈现 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 左侧：数据范围下推 SQL */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
-                <Database className="size-4 text-blue-600" />
-                <span>数据库数据下推 (Prisma accessibleBy)</span>
-              </CardTitle>
-              <Badge variant="success" size="sm">
-                <CheckCircle2 className="size-3" />
-                <span>已编译下推</span>
-              </Badge>
-            </div>
-            <CardDescription>
-              由 CASL 规则下推编译生成的真实 Prisma Where 过滤条件：
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="relative rounded-xl bg-slate-900 p-4 font-mono text-xs text-emerald-400 shadow-inner overflow-x-auto dark:bg-slate-950 border border-slate-800">
-              <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[10px] text-slate-400">
-                <span className="flex items-center gap-1.5">
-                  <Code2 className="size-3" />
-                  <span>CASL Prisma Where Clause</span>
-                </span>
-                <span>JSON Output</span>
-              </div>
-              <pre className="leading-relaxed">
-                {JSON.stringify(sqlWhere, null, 2)}
-              </pre>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 右侧：表单字段三态安全渲染 */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
-                <SlidersHorizontal className="size-4 text-blue-600" />
-                <span>字段权限三态交互 (PermissionField + shadcn/ui)</span>
-              </CardTitle>
-              <Badge variant="default" size="sm">
-                动态策略保护
-              </Badge>
-            </div>
-            <CardDescription>
-              基于角色策略动态渲染只读 (READONLY) 或可编辑 (EDITABLE) 状态：
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <PermissionField label="供应商全称 (supplierName)" mode="EDITABLE">
-              <Input defaultValue="晨润精密设备供应链" />
-            </PermissionField>
-
-            <PermissionField
-              label="采购成本价 (costPrice) —— 核心保密资产"
-              mode={currentMember?.role === "owner" ? "EDITABLE" : "READONLY"}
-            >
-              <Input
-                defaultValue="¥ 246,800.00"
-                className="font-semibold text-emerald-600 tabular-nums dark:text-emerald-400"
-              />
-            </PermissionField>
-          </CardContent>
-        </Card>
-      </div>
+      <PermissionAnalysisPanels
+        sqlWhere={sqlWhere}
+        canReadOrder={prismaAbility.can("read", "PurchaseOrder")}
+        canCreateOrder={prismaAbility.can("create", "PurchaseOrder")}
+        canAuditOrder={prismaAbility.can("audit", "PurchaseOrder")}
+        canExportOrder={prismaAbility.can("export", "PurchaseOrder")}
+        canEditSupplier={
+          prismaAbility.can("create", "PurchaseOrder", "supplierName") ||
+          prismaAbility.can("update", "PurchaseOrder", "supplierName")
+        }
+        canReadCostPrice={prismaAbility.can("read", "PurchaseOrder", "costPrice")}
+        canEditCostPrice={
+          prismaAbility.can("create", "PurchaseOrder", "costPrice") ||
+          prismaAbility.can("update", "PurchaseOrder", "costPrice")
+        }
+      />
     </div>
   );
 }

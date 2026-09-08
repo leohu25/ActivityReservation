@@ -32,13 +32,29 @@ export async function getTenantProcurementContext(): Promise<TenantProcurementCo
   // 严格基于 Better Auth 签名 Session 解析可信上下文 (Fail-Closed)
   const tenantCtx = await getCurrentTenantContext(reqHeaders);
 
-  const { getServerAuthRuntime } = await import("@chenrun/auth");
+  const { getServerAuthRuntime, assertTenantAccessGate } = await import(
+    "@chenrun/auth"
+  );
   const runtime = getServerAuthRuntime();
 
   const manager = getTenantDbManager({
     repository: runtime.tenantContextRepository,
   });
   const tenantPrisma = await manager.getClient(tenantCtx.organizationId);
+
+  // 严格执行租户准入门禁断言：核验当前成员在租户物理库中的员工档案状态 (Fail-Closed)
+  const employeeProfile = await tenantPrisma.employeeProfile.findUnique({
+    where: { memberId: tenantCtx.member.id },
+    select: {
+      id: true,
+      memberId: true,
+      departmentId: true,
+      employeeNo: true,
+      jobTitle: true,
+      status: true,
+    },
+  });
+  assertTenantAccessGate(employeeProfile);
 
   // 动态自驱解析当前登录用户在该租户内的部门拓扑
   const topology = await resolveEmployeeTopology(
