@@ -107,8 +107,9 @@
       "name": "【P0】租户组织人事模型与基础实体补齐 (Tenant Org Core Schema & Entities)",
       "description": "第一梯队核心地基：重构 Tenant DB 实体，彻底解决模型失真。EmployeeProfile 独立主键并支持直接开通在职档案，补全 userId/employeeNo/departmentId/positionId/managerEmployeeId/nameSnapshot/emailSnapshot 与生命周期状态；新增 Position（岗位实体，支持职责/编码/排序）；增强 Department（补充 leaderMemberId/sort/status）；新增 CompanyProfile（企业私有资料）；Control DB 引入 authorizationVersion 并生成兼容物理库迁移",
       "dependencies": ["procurement-center"],
-      "status": "pending",
-      "owner": "implementer"
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "Prisma Schemas 完成 Department 扩展、Position 与 CompanyProfile 新增，重构 EmployeeProfile 为主键自生成且 memberId 可选；Control DB 新增 authorizationVersion；落地 202609080002_org_entities_and_positions 迁移与基线 DDL；适配 department-topology 契约；新增 schema-entities.test.ts，全仓 9 套件 89/89 单测 100% 通过、12 包 check 0 错误、./scripts/verify.sh 门禁全绿"
     },
     {
       "id": "p0-tenant-seed-and-provisioning",

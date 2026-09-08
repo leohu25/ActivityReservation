@@ -74,17 +74,18 @@ model Verification {
 }
 
 model Organization {
-  id             String          @id
-  name           String
-  slug           String          @unique
-  logo           String?
-  createdAt      DateTime        @default(now())
-  metadata       String?
-  members        Member[]
-  invitations    Invitation[]
-  roles          OrganizationRole[]
-  tenantDatabase TenantDatabase?
-  migrations     TenantMigration[]
+  id                   String          @id
+  name                 String
+  slug                 String          @unique
+  logo                 String?
+  createdAt            DateTime        @default(now())
+  metadata             String?
+  authorizationVersion Int             @default(1)
+  members              Member[]
+  invitations          Invitation[]
+  roles                OrganizationRole[]
+  tenantDatabase       TenantDatabase?
+  migrations           TenantMigration[]
 
   @@map("organization")
 }

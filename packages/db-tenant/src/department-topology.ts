@@ -32,7 +32,7 @@ export interface DepartmentNode {
 export interface DepartmentTopologyReader {
   findEmployeeProfile(memberId: string): Promise<{
     id: string;
-    memberId: string;
+    memberId?: string | null;
     departmentId: string | null;
     employeeNo: string | null;
     jobTitle: string | null;

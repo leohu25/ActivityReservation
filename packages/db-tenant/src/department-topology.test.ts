@@ -99,7 +99,17 @@ test("resolveEmployeeTopology 在员工不存在、离职或未分配部门时�
           departmentId: "dept_sales",
           employeeNo: "CR-002",
           jobTitle: "前销售",
-          status: "INACTIVE",
+          status: "TERMINATED",
+        };
+      }
+      if (memberId === "member_suspended") {
+        return {
+          id: "emp_suspended",
+          memberId: "member_suspended",
+          departmentId: "dept_sales",
+          employeeNo: "CR-SUSPENDED",
+          jobTitle: "暂停员工",
+          status: "SUSPENDED",
         };
       }
       if (memberId === "member_no_dept") {
@@ -127,7 +137,7 @@ test("resolveEmployeeTopology 在员工不存在、离职或未分配部门时�
   assert.equal(notFound.departmentId, null);
   assert.deepEqual(notFound.departmentTreeIds, []);
 
-  // 2. 档案为离职态
+  // 2. 档案为离职态 (TERMINATED)
   const inactive = await resolveEmployeeTopology(mockReader, {
     userId: "user_inactive",
     memberId: "member_inactive",
@@ -135,7 +145,15 @@ test("resolveEmployeeTopology 在员工不存在、离职或未分配部门时�
   assert.equal(inactive.departmentId, null);
   assert.deepEqual(inactive.departmentTreeIds, []);
 
-  // 3. 档案未分配部门
+  // 3. 档案为停用态 (SUSPENDED)
+  const suspended = await resolveEmployeeTopology(mockReader, {
+    userId: "user_suspended",
+    memberId: "member_suspended",
+  });
+  assert.equal(suspended.departmentId, null);
+  assert.deepEqual(suspended.departmentTreeIds, []);
+
+  // 4. 档案未分配部门
   const noDept = await resolveEmployeeTopology(mockReader, {
     userId: "user_no_dept",
     memberId: "member_no_dept",

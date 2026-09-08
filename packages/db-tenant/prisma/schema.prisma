@@ -11,36 +11,89 @@ datasource db {
 
 // 部门拓扑模型 (用于数据范围 DEPT / DEPT_TREE 判定)
 model Department {
-  id        String   @id
-  name      String
-  code      String   @unique
-  parentId  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id
+  name           String
+  code           String   @unique
+  parentId       String?
+  leaderMemberId String?
+  sort           Int      @default(0)
+  status         String   @default("ACTIVE")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  orders    PurchaseOrder[]
-  employees EmployeeProfile[]
+  orders         PurchaseOrder[]
+  employees      EmployeeProfile[]
 
   @@index([parentId])
+  @@index([status])
   @@map("department")
+}
+
+// 岗位模型 (实现 Position != Role 物理正交解耦)
+model Position {
+  id          String            @id @default(cuid())
+  name        String
+  code        String            @unique
+  description String?
+  sort        Int               @default(0)
+  status      String            @default("ACTIVE")
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  employees   EmployeeProfile[]
+
+  @@index([status])
+  @@map("position")
 }
 
 // 租户内员工档案模型 (对应 Control DB Member.id，组织人事与数据范围事实源)
 model EmployeeProfile {
-  id           String      @id @default(cuid())
-  memberId     String      @unique
-  departmentId String?
-  employeeNo   String?     @unique
-  jobTitle     String?
-  status       String      @default("ACTIVE")
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id                String           @id @default(cuid())
+  memberId          String?          @unique
+  userId            String?
+  invitationId      String?
+  employeeNo        String?          @unique
+  departmentId      String?
+  positionId        String?
+  managerEmployeeId String?
+  nameSnapshot      String           @default("")
+  emailSnapshot     String           @default("")
+  jobTitle          String?
+  status            String           @default("ACTIVE")
+  joinedAt          DateTime?
+  terminatedAt      DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
-  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  department        Department?      @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  position          Position?        @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  manager           EmployeeProfile? @relation("EmployeeManager", fields: [managerEmployeeId], references: [id], onDelete: SetNull)
+  subordinates      EmployeeProfile[] @relation("EmployeeManager")
 
   @@index([departmentId])
+  @@index([positionId])
+  @@index([managerEmployeeId])
   @@index([memberId])
+  @@index([status])
   @@map("employee_profile")
+}
+
+// 租户企业扩展资料模型 (与平台 Organization 动静分离)
+model CompanyProfile {
+  id           String   @id @default(cuid())
+  companyName  String
+  shortName    String?
+  creditCode   String?
+  legalPerson  String?
+  contactPhone String?
+  contactEmail String?
+  address      String?
+  timezone     String   @default("Asia/Shanghai")
+  currency     String   @default("CNY")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("company_profile")
 }
 
 // 采购订单业务模型 (核心 ERP 业务切片与 CASL 授权实体)

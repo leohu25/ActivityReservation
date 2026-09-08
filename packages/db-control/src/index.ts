@@ -115,10 +115,7 @@ export interface AuthorizationRepository {
     role: string;
     permission: string;
   }): Promise<OrganizationRoleRecord>;
-  deleteOrganizationRole(
-    organizationId: string,
-    role: string,
-  ): Promise<void>;
+  deleteOrganizationRole(organizationId: string, role: string): Promise<void>;
 }
 
 /** 多租户物理库迁移账本与开通仓库契约 */
@@ -564,6 +561,7 @@ export class PrismaControlDbRepository
 }
 
 export type ControlPrismaClient = GeneratedPrismaClient;
+export type { Prisma as ControlPrisma } from "@prisma/client";
 
 /** 根据可信服务端连接串创建 Control DB Prisma 客户端 */
 export function createControlPrismaClient(
