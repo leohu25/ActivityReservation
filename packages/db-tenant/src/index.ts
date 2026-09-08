@@ -37,10 +37,14 @@ export class TenantDbRoutingError extends Error {
   }
 }
 
+export * from "./sql-executor";
+export * from "./migration-types";
+export * from "./migration-runner";
+export * from "./tenant-provisioner";
+
 /**
- * Routes an already-authorized organization to its isolated database.
- * The opaque URL is obtained only through SecretResolver; this class never
- * derives connection details from organization IDs or client input.
+ * 将已授权的租户组织请求路由至其专属物理数据库。
+ * 敏感连接串仅通过 SecretResolver 解析，严禁客户端直接传入连接串。
  */
 export class TenantDbManager<Client extends TenantDbClient> {
   private readonly clients = new Map<string, Client>();

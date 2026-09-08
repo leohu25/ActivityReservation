@@ -62,9 +62,9 @@
       "name": "多租户数据库自动开通与迁移引擎 (Tenant DB Provisioning & Migration Engine)",
       "description": "实现新租户创建时的自动化独立数据库开通（PostgreSQL CREATE DATABASE tenant_xxx）与 tooling/tenant-migrate 迁移工具，对每个租户物理库执行幂等、可追溯的版本升级并记录 TenantMigration 账本",
       "dependencies": ["foundation-web-shell"],
-      "status": "not-started",
+      "status": "completed",
       "owner": "implementer",
-      "evidence": ""
+      "evidence": "Control DB 新增 TenantMigration 账本模型与生命周期 API；packages/db-tenant 落地 PgSqlExecutor、TenantMigrationRunner 事务升级与 TenantProvisioner 物理库自动开通引擎；tooling/tenant-migrate 落地 Alembic 式实体变更自动扫描生成 (Prisma diff) 与多租户批量迁移 CLI；全仓 6 个测试套件 62/62 单测 100% 通过、9/9 包类型检查 0 错误、Next.js 构建与全栈门禁全绿"
     },
     {
       "id": "foundation-platform-admin",
