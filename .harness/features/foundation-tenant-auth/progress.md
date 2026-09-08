@@ -8,7 +8,8 @@
 - [x] 实现基于服务端 Headers + Better Auth `auth.api.getSession` 的可信 Tenant Context 入口
 - [x] 实现基于 `secretRef` 且关闭竞态安全的 Tenant DB Manager
 - [x] 编写拒绝路径、契约、隔离、缓存、并发、关闭竞态与释放测试
-- [x] 运行专属测试、类型检查与生产构建
+- [x] 使用本地 PostgreSQL 17 完成真实 Better Auth 租户上下文集成验证
+- [x] 运行专属测试、类型检查、生产构建与可重启自检
 
 ## 二、 实际验证记录
 
@@ -20,4 +21,9 @@
 - `pnpm --filter @chenrun/db-tenant test`：PASS，8/8（含关闭期间并发 drain 与 fail-closed）。
 - `pnpm check`：PASS，8/8 packages。
 - `pnpm build`：PASS，Next.js 生产构建成功，Auth 路由为动态服务端路由。
-- `./scripts/verify.sh`：PASS，24 个变动文件边界合规、20 个源码文件红线扫描通过。
+- `docker compose up -d --wait saas-control-postgres`：PASS，`chenrun-saas-control-postgres` 健康，绑定 `127.0.0.1:55432`。
+- 使用本地连接执行 `pnpm --filter @chenrun/db-control db:push`：PASS，`saas_control.public` 与 Prisma Schema 同步。
+- `pnpm --filter @chenrun/auth test:integration`：PASS，1/1；真实注册、Organization/Member、active Session、TenantDatabase 映射及可信 Tenant Context 全链路通过，并精准清理测试数据。
+- 集成后 PostgreSQL 定向残留查询：测试用户、Organization、TenantDatabase 映射均为 0。
+- 复跑现有单测：Auth 10/10、Control DB 3/3、Tenant DB 8/8，合计 21/21 PASS。
+- `./scripts/verify.sh` 与 `./init.sh`：PASS。

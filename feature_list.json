@@ -28,7 +28,7 @@
       "dependencies": ["foundation-monorepo"],
       "status": "completed",
       "owner": "implementer",
-      "evidence": "Better Auth 1.7.3 + Organization + Prisma 7.10 Control DB、可信服务端 Tenant Context、基于 secretRef 的竞态安全 TenantDbManager 已实现；21/21 专属测试、Prisma validate/generate、pnpm check 8/8、pnpm build、./scripts/verify.sh 与 ./init.sh 全部通过；Reviewer PASS"
+      "evidence": "Better Auth 1.7.3 + Organization + Prisma 7.10 Control DB、可信 Tenant Context 与竞态安全 TenantDbManager 已实现；PostgreSQL 17 Docker 实库完成注册、Organization、Session activeOrganizationId、TenantDatabase 与上下文解析闭环，集成测试 1/1、单测 21/21、残留数据 0；pnpm check 8/8、build、verify、init 与 Reviewer 全部 PASS"
     },
     {
       "id": "foundation-authorization",

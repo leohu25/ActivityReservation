@@ -8,6 +8,7 @@
 - `apps/tenant/package.json`
 - `apps/tenant/src/app/api/auth/**`
 - `apps/tenant/src/lib/auth/**`
+- `compose.yaml`
 - `pnpm-lock.yaml`
 - `.harness/features/foundation-tenant-auth/**`
 

@@ -16,6 +16,8 @@
 - 仅经 `secretRef` 和受信 Secret Resolver 建立客户端的 Tenant DB Manager。
 - 同租户并发初始化去重、跨租户隔离、evict、closeAll 与关闭竞态 drain/fail-closed。
 - 21 个自动化测试及 Reviewer 最终 PASS。
+- PostgreSQL 17 Docker Compose 本地实库，绑定 `127.0.0.1:55432`。
+- 真实执行 Better Auth 注册、Organization/Member、Session activeOrganizationId、TenantDatabase 和可信 Tenant Context 集成闭环。
 
 ## 门禁验证证据
 
@@ -24,7 +26,9 @@
 | Auth 测试 | 10/10 PASS |
 | Control DB 测试 | 3/3 PASS |
 | Tenant DB 测试 | 8/8 PASS |
-| Prisma validate/generate | PASS，v7.10.0 |
+| Prisma validate/generate/db push | PASS，v7.10.0 |
+| PostgreSQL 实库集成测试 | 1/1 PASS |
+| 集成测试残留数据 | `0|0|0` |
 | `pnpm check` | 8/8 PASS |
 | `pnpm build` | PASS |
 | `./scripts/verify.sh` | PASS |
@@ -34,7 +38,8 @@
 
 ## 遗留风险
 
-- 尚未连接真实 PostgreSQL 执行注册、登录、创建 Organization 的端到端集成测试；当前以构造、类型、Schema 契约和单元测试验证，不阻塞本特性交付。
+- 本地 PostgreSQL 容器和持久卷保持运行；可供后续授权特性继续执行实库集成验证。
+- `db:push` 仅用于本地测试，不能替代后续 `foundation-migration` 的正式迁移流程。
 - 部署必须提供 `CONTROL_DATABASE_URL` 与至少 32 字符的 `BETTER_AUTH_SECRET`；可选 `BETTER_AUTH_URL`。
 - 数据库迁移执行、动态角色、CASL、数据范围和字段权限均按特性边界留待后续实现。
 

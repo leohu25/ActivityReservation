@@ -11,6 +11,7 @@
   "scripts": {
     "check": "tsc --noEmit",
     "generate": "prisma generate --config prisma.config.ts",
+    "db:push": "prisma db push --config prisma.config.ts",
     "prisma:validate": "prisma validate --config prisma.config.ts",
     "test": "tsx --test src/*.test.ts"
   },

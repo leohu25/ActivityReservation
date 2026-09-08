@@ -10,7 +10,8 @@
   },
   "scripts": {
     "check": "tsc --noEmit",
-    "test": "tsx --test src/*.test.ts"
+    "test": "tsx --test src/*.test.ts",
+    "test:integration": "tsx --test src/integration/*.integration.ts"
   },
   "dependencies": {
     "@chenrun/db-control": "workspace:*",
