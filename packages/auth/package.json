@@ -9,12 +9,15 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "test": "tsx --test src/*.test.ts"
   },
   "dependencies": {
-    "@chenrun/shared": "workspace:*"
+    "@chenrun/db-control": "workspace:*",
+    "better-auth": "1.7.3"
   },
   "devDependencies": {
+    "tsx": "^4.20.6",
     "typescript": "^5.8.2"
   }
 }

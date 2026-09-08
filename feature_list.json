@@ -26,9 +26,9 @@
       "name": "多租户与身份认证底座 (Better Auth & Tenant)",
       "description": "基于 Better Auth + Organization 插件建立多租户与身份认证底座，配置 saas_control Control DB 并实现 TenantDatabase 动态路由与数据库物理隔离",
       "dependencies": ["foundation-monorepo"],
-      "status": "not-started",
+      "status": "completed",
       "owner": "implementer",
-      "evidence": ""
+      "evidence": "Better Auth 1.7.3 + Organization + Prisma 7.10 Control DB、可信服务端 Tenant Context、基于 secretRef 的竞态安全 TenantDbManager 已实现；21/21 专属测试、Prisma validate/generate、pnpm check 8/8、pnpm build、./scripts/verify.sh 与 ./init.sh 全部通过；Reviewer PASS"
     },
     {
       "id": "foundation-authorization",

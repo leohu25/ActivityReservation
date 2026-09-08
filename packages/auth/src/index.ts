@@ -1,34 +1,23 @@
-/**
- * @chenrun/auth
- * Better Auth 认证与 Organization 租户上下文契约
- */
+/** Better Auth configuration and trusted Organization tenant context. */
 
-export interface BetterAuthUser {
- id: string;
- email: string;
- name?: string;
- createdAt: Date;
- updatedAt: Date;
-}
-
-export interface BetterAuthSession {
- id: string;
- userId: string;
- activeOrganizationId?: string;
- expiresAt: Date;
-}
-
-export interface OrganizationMember {
- id: string;
- organizationId: string;
- userId: string;
- roles: string[];
- createdAt: Date;
-}
-
-export interface AuthContext {
- user: BetterAuthUser;
- session: BetterAuthSession;
- organizationId: string;
- member: OrganizationMember;
-}
+export {
+  closeServerAuth,
+  createServerAuth,
+  getCurrentTenantContext,
+  getServerAuth,
+  getServerAuthRuntime,
+  type ServerAuthOptions,
+  type ServerAuthRuntime,
+} from "./server";
+export {
+  createTrustedTenantContextResolver,
+  type TrustedSessionReader,
+  type TrustedTenantContextDependencies,
+} from "./trusted-tenant-context";
+export {
+  TenantContextError,
+  type AuthenticatedSession,
+  type AuthenticatedUser,
+  type TenantContext,
+  type TenantContextErrorCode,
+} from "./tenant-context";

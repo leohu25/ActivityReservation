@@ -1,0 +1,244 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import type {
+  TenantContextRepository,
+  TenantDatabaseRecord,
+} from "@chenrun/db-control";
+import {
+  TenantDbManager,
+  TenantDbRoutingError,
+  type TenantDbClient,
+} from "./index";
+
+const now = new Date("2026-01-01T00:00:00.000Z");
+
+function mapping(
+  organizationId: string,
+  status: TenantDatabaseRecord["status"] = "ACTIVE",
+): TenantDatabaseRecord {
+  return {
+    id: `database-${organizationId}`,
+    organizationId,
+    clusterCode: "cluster-a",
+    databaseName: `tenant-${organizationId}`,
+    secretRef: `secret/${organizationId}`,
+    schemaVersion: "1",
+    status,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function repository(
+  records: Record<string, TenantDatabaseRecord | undefined>,
+): TenantContextRepository {
+  return {
+    async findMember() {
+      throw new Error("membership lookup is not part of DB routing");
+    },
+    async findTenantDatabase(organizationId) {
+      return records[organizationId] ?? null;
+    },
+  };
+}
+
+interface FakeClient extends TenantDbClient {
+  organizationId: string;
+  disconnects: number;
+}
+
+function setup(records: Record<string, TenantDatabaseRecord | undefined>) {
+  const creations: Array<{ organizationId: string; databaseUrl: string }> = [];
+  const resolvedRefs: string[] = [];
+  const manager = new TenantDbManager<FakeClient>(
+    repository(records),
+    {
+      async resolveDatabaseUrl(secretRef) {
+        resolvedRefs.push(secretRef);
+        return `opaque://${secretRef}`;
+      },
+    },
+    async (options) => {
+      creations.push(options);
+      const client: FakeClient = {
+        organizationId: options.organizationId,
+        disconnects: 0,
+        async $disconnect() {
+          client.disconnects += 1;
+        },
+      };
+      return client;
+    },
+  );
+  return { manager, creations, resolvedRefs };
+}
+
+async function rejectsWithCode(
+  action: Promise<unknown>,
+  code: TenantDbRoutingError["code"],
+): Promise<void> {
+  await assert.rejects(action, (error: unknown) => {
+    return error instanceof TenantDbRoutingError && error.code === code;
+  });
+}
+
+test("rejects missing and inactive mappings", async () => {
+  const { manager } = setup({ suspended: mapping("suspended", "SUSPENDED") });
+
+  await rejectsWithCode(
+    manager.getClient("missing"),
+    "TENANT_DATABASE_NOT_FOUND",
+  );
+  await rejectsWithCode(
+    manager.getClient("suspended"),
+    "TENANT_DATABASE_INACTIVE",
+  );
+});
+
+test("resolves only secretRef and caches one client per organization", async () => {
+  const { manager, creations, resolvedRefs } = setup({ org1: mapping("org1") });
+
+  const first = await manager.getClient("org1");
+  const second = await manager.getClient("org1");
+
+  assert.equal(first, second);
+  assert.deepEqual(resolvedRefs, ["secret/org1"]);
+  assert.deepEqual(creations, [
+    { organizationId: "org1", databaseUrl: "opaque://secret/org1" },
+  ]);
+});
+
+test("deduplicates concurrent first access", async () => {
+  let release: (() => void) | undefined;
+  const wait = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let creations = 0;
+  const manager = new TenantDbManager<FakeClient>(
+    repository({ org1: mapping("org1") }),
+    {
+      async resolveDatabaseUrl() {
+        await wait;
+        return "opaque://org1";
+      },
+    },
+    async ({ organizationId }) => {
+      creations += 1;
+      const client: FakeClient = {
+        organizationId,
+        disconnects: 0,
+        async $disconnect() {
+          client.disconnects += 1;
+        },
+      };
+      return client;
+    },
+  );
+
+  const first = manager.getClient("org1");
+  const second = manager.getClient("org1");
+  release!();
+
+  assert.equal(await first, await second);
+  assert.equal(creations, 1);
+});
+
+test("isolates clients across organizations", async () => {
+  const { manager } = setup({ org1: mapping("org1"), org2: mapping("org2") });
+
+  const first = await manager.getClient("org1");
+  const second = await manager.getClient("org2");
+
+  assert.notEqual(first, second);
+  assert.equal(first.organizationId, "org1");
+  assert.equal(second.organizationId, "org2");
+});
+
+test("evict disconnects and recreates only the selected organization", async () => {
+  const { manager, creations } = setup({ org1: mapping("org1") });
+  const first = await manager.getClient("org1");
+
+  await manager.evict("org1");
+  const second = await manager.getClient("org1");
+
+  assert.equal(first.disconnects, 1);
+  assert.notEqual(first, second);
+  assert.equal(creations.length, 2);
+});
+
+test("closeAll disconnects every cached client", async () => {
+  const { manager } = setup({ org1: mapping("org1"), org2: mapping("org2") });
+  const first = await manager.getClient("org1");
+  const second = await manager.getClient("org2");
+
+  await manager.closeAll();
+
+  assert.equal(first.disconnects, 1);
+  assert.equal(second.disconnects, 1);
+});
+
+test("closeAll drains initialization and rejects acquisitions while closing", async () => {
+  let release: (() => void) | undefined;
+  const wait = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const manager = new TenantDbManager<FakeClient>(
+    repository({ org1: mapping("org1"), org2: mapping("org2") }),
+    {
+      async resolveDatabaseUrl() {
+        await wait;
+        return "opaque://org1";
+      },
+    },
+    async ({ organizationId }) => {
+      const client: FakeClient = {
+        organizationId,
+        disconnects: 0,
+        async $disconnect() {
+          client.disconnects += 1;
+        },
+      };
+      return client;
+    },
+  );
+
+  const initializingClient = manager.getClient("org1");
+  const closing = manager.closeAll();
+  await rejectsWithCode(manager.getClient("org2"), "MANAGER_CLOSING");
+  release!();
+
+  const client = await initializingClient;
+  await closing;
+
+  assert.equal(client.disconnects, 1);
+  await rejectsWithCode(manager.getClient("org1"), "MANAGER_CLOSED");
+});
+
+test("rejects an empty secret result without creating a client", async () => {
+  let creations = 0;
+  const manager = new TenantDbManager<FakeClient>(
+    repository({ org1: mapping("org1") }),
+    {
+      async resolveDatabaseUrl() {
+        return "";
+      },
+    },
+    async ({ organizationId }) => {
+      creations += 1;
+      const client: FakeClient = {
+        organizationId,
+        disconnects: 0,
+        async $disconnect() {
+          client.disconnects += 1;
+        },
+      };
+      return client;
+    },
+  );
+
+  await rejectsWithCode(
+    manager.getClient("org1"),
+    "TENANT_DATABASE_SECRET_INVALID",
+  );
+  assert.equal(creations, 0);
+});
