@@ -42,6 +42,7 @@ export * from "./migration-types";
 export * from "./migration-runner";
 export * from "./tenant-provisioner";
 export * from "./department-topology";
+export * from "./database-seeder";
 
 /**
  * 将已授权的租户组织请求路由至其专属物理数据库。

@@ -116,8 +116,9 @@
       "name": "【P0】租户开通与初始数据种子初始化 (Tenant Direct Provisioning & Baseline Seed)",
       "description": "第一梯队开通闭环：平台管理员在总控开通租户时，直接为 Owner 创建已验证用户与初始密码（免邮件激活），物理建库并完成迁移后自动执行基线 Seed：创建 ROOT 根部门、默认岗位字典（总经理/部门主管/业务专员）、自动在租户库为 Owner 创建首个 EmployeeProfile（在职激活态），并初始化预置四层角色策略，确保 Owner 可无障碍直接登录使用",
       "dependencies": ["p0-org-schema-and-entities"],
-      "status": "pending",
-      "owner": "implementer"
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "落地 TenantDatabaseSeeder（ROOT 部门、3 默认岗位字典、Owner EmployeeProfile 档案）；升级 TenantProvisioner 与 ControlAdminService 串联物理建库、迁移、种子填充与 Control DB 四层预置角色 (owner/admin/buyer)；生成初始密码并支持 ProvisionTenantDialog 弹窗展示与复制凭据；严守 R-01 规则；全仓 9 套件 93/93 单测 100% 通过、12 包 check 0 错误、verify.sh 门禁全绿"
     },
     {
       "id": "p0-tenant-navigation-and-settings",

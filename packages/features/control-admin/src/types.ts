@@ -49,6 +49,8 @@ export interface ProvisionTenantInput {
   readonly adminName?: string;
   /** 物理数据库集群标识（可选，缺省 primary） */
   readonly clusterCode?: string;
+  /** 初始租户管理员密码（可选，缺省自动生成 Admin123456!） */
+  readonly initialPassword?: string;
 }
 
 /**
@@ -59,4 +61,6 @@ export interface ProvisionTenantResult {
   readonly slug: string;
   readonly databaseName: string;
   readonly status: TenantDatabaseStatus;
+  /** 生成或设置的初始管理员登录密码（供管理员展示与提供给 Owner） */
+  readonly initialPassword?: string;
 }

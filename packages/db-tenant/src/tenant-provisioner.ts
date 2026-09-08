@@ -4,6 +4,11 @@ import type {
 } from "@chenrun/db-control";
 import type { TenantSqlExecutorFactory } from "./sql-executor";
 import type { TenantMigrationRunner } from "./migration-runner";
+import type {
+  TenantDatabaseSeeder,
+  TenantSeedInput,
+  TenantSeedResult,
+} from "./database-seeder";
 
 /**
  * 租户物理库开通参数契约
@@ -21,6 +26,10 @@ export interface ProvisionTenantDatabaseInput {
   readonly secretRef: string;
   /** 开通完成后待应用的基线版本目标（可选） */
   readonly targetVersion?: string;
+  /** 开通成功后待注入的基线数据参数（可选） */
+  readonly seedInput?: TenantSeedInput;
+  /** 租户物理库直连连接串（可选，缺省由 adminDatabaseUrl 与 databaseName 推导） */
+  readonly tenantDatabaseUrl?: string;
 }
 
 /**
@@ -37,6 +46,8 @@ export interface ProvisionTenantDatabaseResult {
   readonly status: "ACTIVE" | "PROVISIONING" | "FAILED";
   /** 初始化迁移应用的步骤总数 */
   readonly appliedMigrationCount: number;
+  /** 基线种子数据初始化结果（若执行了 Seed） */
+  readonly seedResult?: TenantSeedResult;
 }
 
 /**
@@ -48,6 +59,7 @@ export class TenantProvisioner {
     private readonly repository: TenantMigrationRepository,
     private readonly sqlExecutorFactory: TenantSqlExecutorFactory,
     private readonly migrationRunner: TenantMigrationRunner,
+    private readonly seeder?: TenantDatabaseSeeder,
   ) {}
 
   /**
@@ -118,12 +130,30 @@ export class TenantProvisioner {
         finalVersion,
       );
 
+      // 6. 若配置了种子初始化参数与 Seeder，执行基线种子数据填充
+      let seedResult: TenantSeedResult | undefined;
+      if (input.seedInput && this.seeder) {
+        const tenantUrl =
+          input.tenantDatabaseUrl ??
+          this.resolveTenantDatabaseUrl(input.adminDatabaseUrl, safeDbName);
+        const tenantExecutor = await this.sqlExecutorFactory(tenantUrl);
+        try {
+          seedResult = await this.seeder.seedTenant(
+            tenantExecutor,
+            input.seedInput,
+          );
+        } finally {
+          await tenantExecutor.close();
+        }
+      }
+
       return {
         organizationId: input.organizationId,
         databaseName: safeDbName,
         schemaVersion: finalVersion,
         status: "ACTIVE",
         appliedMigrationCount: appliedCount,
+        seedResult,
       };
     } catch (migrationError) {
       // 迁移失败则将租户物理库标记为 FAILED
@@ -132,6 +162,19 @@ export class TenantProvisioner {
         "FAILED",
       );
       throw migrationError;
+    }
+  }
+
+  /**
+   * 基于管理库连接串与租户物理库名推导该租户数据库直连连接串
+   */
+  private resolveTenantDatabaseUrl(adminDbUrl: string, dbName: string): string {
+    try {
+      const url = new URL(adminDbUrl);
+      url.pathname = `/${dbName}`;
+      return url.toString();
+    } catch {
+      return adminDbUrl;
     }
   }
 

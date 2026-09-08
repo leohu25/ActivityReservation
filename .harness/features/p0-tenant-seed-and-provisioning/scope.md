@@ -6,6 +6,7 @@
 - `packages/db-tenant/**`
 - `packages/db-control/**`
 - `apps/control/**`
+- `pnpm-lock.yaml`
 - `feature_list.json`
 - `.harness/features/p0-tenant-seed-and-provisioning/**`
 

@@ -3,7 +3,11 @@
 import React, { useState, useTransition } from "react";
 import { ProvisionTenantDialog } from "./ProvisionTenantDialog";
 import { TenantLifecycleTable } from "./TenantLifecycleTable";
-import type { ControlTenantItem, ProvisionTenantInput } from "../types";
+import type {
+  ControlTenantItem,
+  ProvisionTenantInput,
+  ProvisionTenantResult,
+} from "../types";
 import { provisionTenantAction, toggleTenantStatusAction } from "../actions";
 import { CheckCircle2, AlertCircle, X } from "lucide-react";
 
@@ -33,7 +37,9 @@ export function TenantsView({ tenants }: TenantsViewProps): React.JSX.Element {
     setIsModalOpen(false);
   };
 
-  const handleSubmitProvision = (input: ProvisionTenantInput) => {
+  const handleSubmitProvision = async (
+    input: ProvisionTenantInput,
+  ): Promise<ProvisionTenantResult | undefined> => {
     setMessage(null);
     const formData = new FormData();
     formData.append("name", input.name);
@@ -45,22 +51,31 @@ export function TenantsView({ tenants }: TenantsViewProps): React.JSX.Element {
     if (input.clusterCode) {
       formData.append("clusterCode", input.clusterCode);
     }
+    if (input.initialPassword) {
+      formData.append("initialPassword", input.initialPassword);
+    }
 
-    startTransition(async () => {
-      const res = await provisionTenantAction(formData);
-      if (res.success) {
-        setMessage({
-          type: "success",
-          text: `租户 [${input.name}] 开通成功！已自动分配独立物理库 [${res.data?.databaseName}] 并完成基线迁移。`,
-        });
-        setIsModalOpen(false);
-      } else {
-        setMessage({
-          type: "error",
-          text: res.error || "开通失败，请检查参数与集群状态",
-        });
-      }
+    let returnedResult: ProvisionTenantResult | undefined;
+    await new Promise<void>((resolve) => {
+      startTransition(async () => {
+        const res = await provisionTenantAction(formData);
+        if (res.success && res.data) {
+          returnedResult = res.data;
+          setMessage({
+            type: "success",
+            text: `租户 [${input.name}] 开通成功！已自动分配独立物理库 [${res.data.databaseName}] 并完成基线迁移与数据种子初始化。`,
+          });
+        } else {
+          setMessage({
+            type: "error",
+            text: res.error || "开通失败，请检查参数与集群状态",
+          });
+        }
+        resolve();
+      });
     });
+
+    return returnedResult;
   };
 
   const handleToggleStatus = (orgId: string, currentStatus: string) => {

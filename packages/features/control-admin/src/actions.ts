@@ -20,6 +20,8 @@ export async function provisionTenantAction(
       (formData.get("adminName") as string)?.trim() || undefined;
     const clusterCode =
       (formData.get("clusterCode") as string)?.trim() || undefined;
+    const initialPassword =
+      (formData.get("initialPassword") as string)?.trim() || undefined;
 
     if (!name || !slug || !adminEmail) {
       return { success: false, error: "租户名称、Slug 和管理员邮箱为必填项" };
@@ -31,6 +33,7 @@ export async function provisionTenantAction(
       adminEmail,
       adminName,
       clusterCode,
+      initialPassword,
     };
 
     const user = await requireControlAdminSession();

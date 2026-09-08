@@ -7,10 +7,16 @@ import {
 import {
   TenantProvisioner,
   TenantMigrationRunner,
+  TenantDatabaseSeeder,
   createDefaultPgSqlExecutorFactory,
   type ProvisionTenantDatabaseResult,
   type TenantMigrationDefinition,
 } from "@chenrun/db-tenant";
+import { hashPassword } from "better-auth/crypto";
+import {
+  serializeRolePermissions,
+  type RolePermissionPayload,
+} from "@chenrun/authorization";
 import { assertControlAdmin } from "../auth/control-guard";
 import type {
   ControlTenantItem,
@@ -27,6 +33,7 @@ export interface ControlAdminServiceOptions {
   readonly repository?: TenantMigrationRepository;
   readonly adminDatabaseUrl?: string;
   readonly provisioner?: TenantProvisioner;
+  readonly seeder?: TenantDatabaseSeeder;
 }
 
 /**
@@ -37,6 +44,7 @@ export class ControlAdminService {
   constructor(
     private readonly prisma: ControlPrismaClient,
     private readonly provisioner?: TenantProvisioner,
+    private readonly seeder?: TenantDatabaseSeeder,
   ) {}
 
   /**
@@ -44,7 +52,11 @@ export class ControlAdminService {
    */
   static create(options: ControlAdminServiceOptions): ControlAdminService {
     if (options.provisioner) {
-      return new ControlAdminService(options.prisma, options.provisioner);
+      return new ControlAdminService(
+        options.prisma,
+        options.provisioner,
+        options.seeder,
+      );
     }
 
     const adminDbUrl =
@@ -53,6 +65,8 @@ export class ControlAdminService {
       "postgresql://postgres:postgres@localhost:5432/saas_control";
 
     const sqlExecutorFactory = createDefaultPgSqlExecutorFactory();
+    const seeder =
+      options.seeder ?? new TenantDatabaseSeeder(sqlExecutorFactory);
     const baseMigrations: readonly TenantMigrationDefinition[] = [
       {
         version: "202609080001",
@@ -191,9 +205,10 @@ export class ControlAdminService {
       repo,
       sqlExecutorFactory,
       migrationRunner,
+      seeder,
     );
 
-    return new ControlAdminService(options.prisma, provisioner);
+    return new ControlAdminService(options.prisma, provisioner, seeder);
   }
 
   /**
@@ -315,7 +330,7 @@ export class ControlAdminService {
       throw new Error(`租户 Slug [${cleanSlug}] 已存在，请更换`);
     }
 
-    // 4. 查找或预置管理员 User
+    // 4. 查找或预置管理员 User 与凭证 Account
     let adminUser = await this.prisma.user.findUnique({
       where: { email: cleanEmail },
     });
@@ -331,8 +346,47 @@ export class ControlAdminService {
       });
     }
 
-    // 5. 在 Control DB 中创建 Organization 与初始 Owner Member
+    const initialPassword = input.initialPassword ?? "Admin123456!";
+    let returnedInitialPassword: string | undefined = undefined;
+
+    const existingAccount = await this.prisma.account.findFirst({
+      where: {
+        userId: adminUser.id,
+        providerId: "credential",
+      },
+    });
+
+    if (!existingAccount) {
+      const hashedPassword = await hashPassword(initialPassword);
+      await this.prisma.account.create({
+        data: {
+          id: `acc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          accountId: adminUser.id,
+          providerId: "credential",
+          userId: adminUser.id,
+          password: hashedPassword,
+        },
+      });
+      returnedInitialPassword = initialPassword;
+    } else if (input.initialPassword) {
+      const hashedPassword = await hashPassword(input.initialPassword);
+      await this.prisma.account.update({
+        where: {
+          providerId_accountId: {
+            providerId: "credential",
+            accountId: adminUser.id,
+          },
+        },
+        data: {
+          password: hashedPassword,
+        },
+      });
+      returnedInitialPassword = input.initialPassword;
+    }
+
+    // 5. 在 Control DB 中创建 Organization 与初始 Owner Member (严格遵循 R-01 规则)
     const orgId = `org_${cleanSlug}_${Date.now()}`;
+    const ownerMemberId = `mem_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const organization = await this.prisma.organization.create({
       data: {
         id: orgId,
@@ -340,7 +394,7 @@ export class ControlAdminService {
         slug: cleanSlug,
         members: {
           create: {
-            id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            id: ownerMemberId,
             userId: adminUser.id,
             role: "owner",
           },
@@ -348,13 +402,113 @@ export class ControlAdminService {
       },
     });
 
+    // 6. 在 Control DB 中初始化该租户的系统预置四层角色策略 (owner, admin, buyer)
+    const defaultRoles: Array<{
+      role: string;
+      payload: RolePermissionPayload;
+    }> = [
+      {
+        role: "owner",
+        payload: {
+          statement: {
+            "procurement.order": [
+              "read",
+              "create",
+              "update",
+              "audit",
+              "export",
+            ],
+          },
+          dataScopes: [
+            {
+              resource: "procurement.order",
+              scopeType: "ALL",
+            },
+          ],
+          fieldPolicies: [],
+        },
+      },
+      {
+        role: "admin",
+        payload: {
+          statement: {
+            "procurement.order": [
+              "read",
+              "create",
+              "update",
+              "audit",
+              "export",
+            ],
+          },
+          dataScopes: [
+            {
+              resource: "procurement.order",
+              scopeType: "DEPT_TREE",
+            },
+          ],
+          fieldPolicies: [],
+        },
+      },
+      {
+        role: "buyer",
+        payload: {
+          statement: {
+            "procurement.order": ["read", "create"],
+          },
+          dataScopes: [
+            {
+              resource: "procurement.order",
+              action: "read",
+              scopeType: "DEPT",
+            },
+          ],
+          fieldPolicies: [
+            {
+              subject: "PurchaseOrder",
+              field: "costPrice",
+              access: "READONLY",
+            },
+          ],
+        },
+      },
+    ];
+
+    for (const r of defaultRoles) {
+      await this.prisma.organizationRole.upsert({
+        where: {
+          organizationId_role: {
+            organizationId: organization.id,
+            role: r.role,
+          },
+        },
+        create: {
+          id: `role_${organization.id}_${r.role}`,
+          organizationId: organization.id,
+          role: r.role,
+          permission: serializeRolePermissions(r.payload),
+        },
+        update: {
+          permission: serializeRolePermissions(r.payload),
+        },
+      });
+    }
+
     const clusterCode = input.clusterCode ?? "primary";
     const databaseName = `tenant_${cleanSlug.replace(/-/g, "_")}`;
     const adminDbUrl =
       process.env.CONTROL_DATABASE_URL ??
       "postgresql://postgres:postgres@localhost:5432/saas_control";
 
-    // 6. 调用 TenantProvisioner 自动化创建物理数据库并应用基线 Schema 迁移
+    const seedInput = {
+      organizationId: organization.id,
+      organizationName: cleanName,
+      ownerUserId: adminUser.id,
+      ownerMemberId,
+      ownerName: adminUser.name,
+      ownerEmail: cleanEmail,
+    };
+
+    // 7. 调用 TenantProvisioner 自动化创建物理数据库、应用基线 Schema 迁移并注入种子数据
     if (this.provisioner) {
       const provisionResult: ProvisionTenantDatabaseResult =
         await this.provisioner.provisionTenantDatabase({
@@ -363,6 +517,7 @@ export class ControlAdminService {
           databaseName,
           adminDatabaseUrl: adminDbUrl,
           secretRef: databaseName,
+          seedInput,
         });
 
       return {
@@ -370,6 +525,7 @@ export class ControlAdminService {
         slug: cleanSlug,
         databaseName: provisionResult.databaseName,
         status: provisionResult.status,
+        initialPassword: returnedInitialPassword,
       };
     }
 
@@ -390,6 +546,7 @@ export class ControlAdminService {
       slug: cleanSlug,
       databaseName: dbRecord.databaseName,
       status: dbRecord.status,
+      initialPassword: returnedInitialPassword,
     };
   }
 
