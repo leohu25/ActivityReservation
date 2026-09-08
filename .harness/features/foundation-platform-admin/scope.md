@@ -3,6 +3,7 @@
 ## 允许修改的文件与目录 (修改白名单)
 
 - `apps/platform/**`
+- `apps/control/**`
 - `apps/tenant/**`
 - `packages/features/**`
 - `packages/ui/**`

@@ -22,8 +22,8 @@
       "@chenrun/db-control": ["packages/db-control/src/index.ts"],
       "@chenrun/db-tenant": ["packages/db-tenant/src/index.ts"],
       "@chenrun/ui": ["packages/ui/src/index.ts"],
-      "@chenrun/feature-platform-admin": ["packages/features/platform-admin/src/index.ts"],
-      "@chenrun/feature-platform-admin/*": ["packages/features/platform-admin/src/*"],
+      "@chenrun/feature-control-admin": ["packages/features/control-admin/src/index.ts"],
+      "@chenrun/feature-control-admin/*": ["packages/features/control-admin/src/*"],
       "@chenrun/feature-procurement-center": ["packages/features/procurement-center/src/index.ts"]
     }
   },

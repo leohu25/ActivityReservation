@@ -30,9 +30,25 @@
   - 跑通全仓 7 个测试套件 64/64 单测 100% 通过；
   - 全仓 9/9 packages 类型检查 0 错误，Next.js 生产构建通过；
   - 全栈极速门禁 `./scripts/verify.sh` 100% 通过（沙盒边界合规、69 个源码文件 0 红线违规）。
-- [x] **阶段 5: 审计与交接验收 (Review & Handoff)**
-  - 调度 `reviewer` 独立审计，审计结论为 **OK with notes**；
-  - 针对 Reviewer 反馈的 DDL 字段对齐与状态启停守卫进行加固与收口。
+- [x] **阶段 6: 架构命名统一与最新数智风 UI 全量重构 (Refactor & Design Modernization)**
+  - **概念体系收敛**：响应用户架构决策，将概念混淆的 `platform` 全面收敛为 `control`（Control Plane / 控制平面）；
+  - **目录与包结构升级**：
+    - 将应用目录由 `apps/platform` 正式重命名为 `apps/control`（package: `control`）；
+    - 将特性包由 `packages/features/platform-admin` 升级为 `packages/features/control-admin`（package: `@chenrun/feature-control-admin`）；
+  - **彻底去除历史包袱与叠词**：
+    - 消除 `ControlConsoleClient` 等叠词与暴露框架细节的技术后缀；
+    - 删除无用的历史单页大杂烩代码，全面按领域职责正交命名（`ControlLayout`、`ControlMetrics`、`OverviewPage`、`TenantsView`、`TenantsPage`、`ControlLogin`、`ProvisionTenantDialog`、`TenantLifecycleTable`）；
+    - 服务层与守卫层彻底清洗（`ControlAdminService`、`assertControlAdmin`、`requireControlAdminSession`、`getControlAuthRuntime`、`ControlStats`、`ControlTenantItem`）；
+  - **最新设计规范落地**：
+    - 废弃原有杂乱紫色调，统一采用科技皇家蓝（`#1864F5` / `bg-blue-600`）与极浅冷灰蓝背景（`#F4F7FB`）；
+    - 100% 清零界面 Emoji，统一使用 `lucide-react` 现代矢量图标；
+    - 数据指标全部标配 `tabular-nums font-bold tracking-tight` 等宽排版；
+    - 容器统一采用纯白浮动大圆角卡片（`rounded-2xl border border-slate-200/80 bg-white shadow-xs`）与平滑悬停微抬升反馈；
+  - **全量门禁与测试跑通**：
+    - 全仓 11/11 packages `pnpm check` 0 错误；
+    - 专属单测 `control-admin.test.ts` 2/2 PASS，全仓 7/7 套件 64/64 PASS；
+    - 生产构建 `pnpm build` 成功（包含 `/overview`, `/tenants`, `/login`）；
+    - 全栈门禁 `./scripts/verify.sh` 100% PASS（88 个源码文件 0 红线违规）。
 
 ## 三、 验证证据库
 

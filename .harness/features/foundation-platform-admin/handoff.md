@@ -10,22 +10,28 @@
 
 ## 二、 关键产出与核心能力
 
-1. **平台超管鉴权体系 (Platform Super Admin Guard)**：
-   - 在 `apps/tenant/src/lib/auth/platform-admin.ts` 落地 `checkIsPlatformAdmin` 与 `assertPlatformAdmin`；
-   - 严格遵循 Fail-Closed 默认拒绝原则，支持 `PLATFORM_ADMIN_EMAILS` 环境变量与大小写归一化判定。
-2. **总控管理核心服务 (PlatformAdminService)**：
-   - 位于 `apps/tenant/src/lib/services/platform-admin.ts`；
-   - 聚合查询租户列表、物理库状态、Schema 版本及运营统计数据（总租户、活跃数、挂起数、异常数）；
+1. **控制平面双核架构与命名统一 (Control Plane Decoupling)**：
+   - 将应用独立部署端由 `apps/platform` 正式收敛命名为 `apps/control`（包名：`control`）；
+   - 将 FDD 特性包升级为 `packages/features/control-admin`（包名：`@chenrun/feature-control-admin`）；
+   - 彻底消灭历史遗留代码与叠词，按领域职责正交命名（`ControlLayout`、`ControlMetrics`、`OverviewPage`、`TenantsView`、`TenantsPage`、`ControlLogin`、`ProvisionTenantDialog`、`TenantLifecycleTable`）。
+2. **总控超管鉴权体系 (Control Plane Super Admin Guard)**：
+   - 在 `packages/features/control-admin/src/auth/control-guard.ts` 落地 `checkIsControlAdmin` 与 `assertControlAdmin`；
+   - 严格遵循 Fail-Closed 默认拒绝原则，支持 `CONTROL_ADMIN_EMAILS` 环境变量与大小写归一化判定。
+3. **总控管理核心服务 (ControlAdminService)**：
+   - 位于 `packages/features/control-admin/src/services/control-admin.ts`；
+   - 聚合查询租户列表、物理库状态、Schema 版本及运营统计数据（总租户、活跃数、挂起数、开通中与故障数）；
    - 整合 `TenantProvisioner` 自动化开通独立物理数据库 (`CREATE DATABASE tenant_xxx`) 并执行基线实体迁移；
-   - 支持安全启停租户 (`toggleTenantStatus`)，将状态在 `ACTIVE` 与 `SUSPENDED` 之间切换，挂起时切断连接并阻断租户请求。
-3. **独立总控视图与直调 Server Actions**：
-   - 路由 `apps/tenant/src/app/(platform)/platform-admin/`；
-   - App Router 服务端直调 Service，严禁内网 self-fetch；
-   - 包含指标统计卡片、租户开通 Dialog 表单与全生命周期运维表格；
-   - 侧边栏为拥有超管身份的用户动态显示“平台总控中心”导航。
-4. **测试套件与交叉审计**：
-   - 专属单元测试 `apps/tenant/src/lib/auth/platform-admin.test.ts`；
-   - 经过 `reviewer` 独立交叉审计，完成基线 DDL 字段与 Prisma 租户实体严格对齐，完善状态转换守卫。
+   - 支持安全启停租户 (`toggleTenantStatus`)，在 `ACTIVE` 与 `SUSPENDED` 之间切换，挂起时切断连接并阻断租户请求。
+4. **最新工业数智风 UI/UX 全量落地 (Design Modernization)**：
+   - 全面采用科技皇家蓝（`#1864F5` / `bg-blue-600`）与极浅冷灰蓝背景（`#F4F7FB`）；
+   - 100% 清零 Emoji，统一采用 `lucide-react` 矢量图标；
+   - 所有 KPI 指标均配置 `tabular-nums font-bold tracking-tight` 等宽排版；
+   - 容器统一采用纯白浮动大圆角卡片（`rounded-2xl border border-slate-200/80 bg-white shadow-xs`）与平滑悬停微抬升反馈；
+   - 新增 Database-per-Tenant 物理库隔离架构大屏卡片与自动化基线迁移引擎概览；
+   - 租户开通弹窗支持 Slug 实时高亮预览物理数据库名。
+5. **测试套件与交叉审计**：
+   - 专属单元测试 `packages/features/control-admin/src/control-admin.test.ts`；
+   - 全仓 7/7 测试套件 64/64 自动化单测 100% PASS。
 
 ## 三、 门禁验证证据
 
