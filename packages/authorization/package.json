@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@casl/ability": "7.0.1",
+    "@casl/prisma": "^2.0.2",
     "@casl/react": "7.0.1",
     "@chenrun/auth": "workspace:*",
     "@chenrun/db-control": "workspace:*",

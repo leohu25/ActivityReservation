@@ -30,6 +30,20 @@
 
 ---
 
+## 架构与工程规范 (Architectural & Engineering Principles)
+
+- **高内聚、低耦合、单一职责 (High Cohesion, Low Coupling, Single Responsibility)**：
+  - 模块与包之间职责边界绝对清晰，业务切片独立内聚，底座包仅提供纯粹的基础服务与抽象契约，严禁循环依赖或倒置反向依赖。
+  - 函数与类严格遵循单一职责，避免巨石函数与过度泛化的“瑞士军刀”结构；跨层调用依赖明确接口或强类型契约。
+  - 授权、租户、ORM、数据范围与字段策略正交拆分，保持可插拔与可单测性。
+- **全中文代码注释规范 (Chinese Code Comments Requirement)**：
+  - 仓库内所有新增与修改的代码注释（包括 JSDoc/TSDoc、行内注释、块注释、架构说明等）必须统一使用中文，严禁使用英文随意注释，确保团队与智能体之间意图准确透明。
+- **TypeScript 强类型与零 any 纪律 (Strict TypeScript & Zero Any Discipline)**：
+  - 严禁滥用 `any`。所有函数参数、返回值、复杂结构必须提供精确类型定义或合理的泛型约束；
+  - 必须使用 `unknown`、`never`、类型守卫 (Type Guard) 或精准接口替换随意声明的 `any`；必要底层库类型断言必须有明确的上下文或 `SAFETY:` 说明，做到编译期类型安全与可预测性。
+
+---
+
 ## 五大工程红线 (Zero-Tolerance Rules)
 
 1. **严禁跨特性越权修改**：只能在对应特性的 `scope.md` 白名单文件内修改代码。

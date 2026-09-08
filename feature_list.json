@@ -44,9 +44,9 @@
       "name": "数据与字段权限引擎 (@casl/prisma & Fields)",
       "description": "基于 @casl/prisma 与 CASL Fields 实现五种数据范围 (SELF, DEPT, DEPT_TREE, CUSTOM, ALL) 查询下推过滤，与字段权限 (HIDDEN, READONLY, EDITABLE) 读写拦截",
       "dependencies": ["foundation-authorization"],
-      "status": "not-started",
+      "status": "completed",
       "owner": "implementer",
-      "evidence": ""
+      "evidence": "实现五种数据范围解析器、字段三态拦截、@casl/prisma 查询下推提取器及 CaslAbilityFactory Prisma 扩展；单测 27/27、全仓单测 39/39、PostgreSQL 实库 1/1、8/8 check 与 verify 全部 PASS，Reviewer 独立审计 PASS"
     },
     {
       "id": "foundation-migration",
