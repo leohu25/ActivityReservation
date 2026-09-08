@@ -1,5 +1,5 @@
 import { toNextJsHandler } from "better-auth/next-js";
-import { getServerAuth } from "@chenrun/auth";
+import { getServerAuth } from "../../../../lib/auth";
 
 function handlers() {
   return toNextJsHandler(getServerAuth());

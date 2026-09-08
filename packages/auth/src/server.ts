@@ -10,12 +10,17 @@ import {
   createTrustedTenantContextResolver,
   type TrustedSessionReader,
 } from "./trusted-tenant-context";
+import {
+  createOrganizationAccessControl,
+  type OrganizationAccessControl,
+} from "./access-control";
 import type { TenantContext } from "./tenant-context";
 
 export interface ServerAuthOptions {
   databaseUrl: string;
   secret: string;
   baseURL?: string;
+  organizationAccessControl?: OrganizationAccessControl;
 }
 
 export function createServerAuth(options: ServerAuthOptions) {
@@ -24,6 +29,8 @@ export function createServerAuth(options: ServerAuthOptions) {
   }
 
   const prisma = createControlPrismaClient(options.databaseUrl);
+  const accessControl =
+    options.organizationAccessControl ?? createOrganizationAccessControl({});
   const auth = betterAuth({
     database: prismaAdapter(prisma, { provider: "postgresql" }),
     secret: options.secret,
@@ -31,7 +38,15 @@ export function createServerAuth(options: ServerAuthOptions) {
     emailAndPassword: {
       enabled: true,
     },
-    plugins: [organization()],
+    plugins: [
+      organization({
+        // Better Auth's role types are invariant in the injected statement.
+        // The factory above is the only constructor accepted at this boundary.
+        ac: accessControl.ac as never,
+        roles: accessControl.roles as never,
+        dynamicAccessControl: { enabled: true },
+      }),
+    ],
   });
 
   return {

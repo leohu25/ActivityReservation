@@ -1,14 +1,30 @@
-/**
- * 采购中心功能权限目录 (Better Auth Access Control Statement)
- */
-export const procurementStatement = {
-  "procurement.order": ["read", "create", "update", "audit", "export"],
+/** 采购订单的 Resource -> Actions 是该切片唯一的功能权限事实。 */
+const procurementOrderActions = [
+  "read",
+  "create",
+  "update",
+  "audit",
+  "export",
+] as const;
+
+export const ProcurementPermission = {
+  order: {
+    resource: "procurement.order",
+    subject: "PurchaseOrder",
+    actions: procurementOrderActions,
+  },
 } as const;
 
-/**
- * CASL 对应的主体与字段契约
- */
-export const ProcurementSubject = "PurchaseOrder" as const;
+export type ProcurementAction = (typeof procurementOrderActions)[number];
+export const ProcurementSubject = ProcurementPermission.order.subject;
+
+/** Better Auth 应用层组合入口。 */
+export const procurementStatement = {
+  [ProcurementPermission.order.resource]: ProcurementPermission.order.actions,
+} as const;
+
+/** CASL Resource -> Subject 映射入口。 */
+export const procurementPermissionDefinition = ProcurementPermission.order;
 
 export const ProcurementFields = {
   supplierName: "supplierName",

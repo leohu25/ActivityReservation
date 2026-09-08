@@ -15,6 +15,15 @@ export interface OrganizationMemberRecord {
   createdAt: Date;
 }
 
+export interface OrganizationRoleRecord {
+  id: string;
+  organizationId: string;
+  role: string;
+  permission: string;
+  createdAt: Date;
+  updatedAt: Date | null;
+}
+
 export interface TenantDatabaseRecord {
   id: string;
   organizationId: string;
@@ -37,6 +46,17 @@ export interface TenantContextRepository {
   ): Promise<TenantDatabaseRecord | null>;
 }
 
+export interface AuthorizationRepository {
+  findMember(
+    organizationId: string,
+    userId: string,
+  ): Promise<OrganizationMemberRecord | null>;
+  findOrganizationRoles(
+    organizationId: string,
+    roles: readonly string[],
+  ): Promise<OrganizationRoleRecord[]>;
+}
+
 interface MemberDelegate {
   findUnique(args: {
     where: {
@@ -48,6 +68,15 @@ interface MemberDelegate {
   }): Promise<OrganizationMemberRecord | null>;
 }
 
+interface OrganizationRoleDelegate {
+  findMany(args: {
+    where: {
+      organizationId: string;
+      role: { in: string[] };
+    };
+  }): Promise<OrganizationRoleRecord[]>;
+}
+
 interface TenantDatabaseDelegate {
   findUnique(args: {
     where: { organizationId: string };
@@ -56,6 +85,7 @@ interface TenantDatabaseDelegate {
 
 export interface ControlPrismaRepositoryClient {
   member: MemberDelegate;
+  organizationRole: OrganizationRoleDelegate;
   tenantDatabase: TenantDatabaseDelegate;
 }
 
@@ -79,6 +109,21 @@ export class PrismaControlDbRepository implements TenantContextRepository {
   ): Promise<TenantDatabaseRecord | null> {
     return this.client.tenantDatabase.findUnique({
       where: { organizationId },
+    });
+  }
+
+  findOrganizationRoles(
+    organizationId: string,
+    roles: readonly string[],
+  ): Promise<OrganizationRoleRecord[]> {
+    if (roles.length === 0) {
+      return Promise.resolve([]);
+    }
+    return this.client.organizationRole.findMany({
+      where: {
+        organizationId,
+        role: { in: [...roles] },
+      },
     });
   }
 }

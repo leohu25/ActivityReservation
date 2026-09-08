@@ -37,6 +37,7 @@ test("queries membership by the organization and user compound key", async () =>
         return member;
       },
     },
+    organizationRole: { async findMany() { return []; } },
     tenantDatabase: { async findUnique() { return null; } },
   };
 
@@ -60,6 +61,7 @@ test("queries the database mapping only by trusted organization id", async () =>
   let received: unknown;
   const client: ControlPrismaRepositoryClient = {
     member: { async findUnique() { return null; } },
+    organizationRole: { async findMany() { return []; } },
     tenantDatabase: {
       async findUnique(args) {
         received = args;
@@ -78,6 +80,31 @@ test("queries the database mapping only by trusted organization id", async () =>
   assert.equal("password" in result!, false);
 });
 
+test("queries dynamic roles by trusted organization and member role names", async () => {
+  let received: unknown;
+  const client: ControlPrismaRepositoryClient = {
+    member: { async findUnique() { return null; } },
+    organizationRole: {
+      async findMany(args) {
+        received = args;
+        return [];
+      },
+    },
+    tenantDatabase: { async findUnique() { return null; } },
+  };
+
+  await new PrismaControlDbRepository(client).findOrganizationRoles(
+    "org-1",
+    ["buyer", "auditor"],
+  );
+  assert.deepEqual(received, {
+    where: {
+      organizationId: "org-1",
+      role: { in: ["buyer", "auditor"] },
+    },
+  });
+});
+
 test("Prisma schema exposes Better Auth Organization tenant contracts", () => {
   const schema = readFileSync(
     new URL("../prisma/schema.prisma", import.meta.url),
@@ -86,6 +113,11 @@ test("Prisma schema exposes Better Auth Organization tenant contracts", () => {
 
   assert.match(schema, /model Organization\s*{/);
   assert.match(schema, /model Member\s*{/);
+  assert.match(schema, /model OrganizationRole\s*{/);
+  assert.match(
+    schema,
+    /model OrganizationRole\s*{[\s\S]*?organizationId\s+String[\s\S]*?role\s+String[\s\S]*?permission\s+String/,
+  );
   assert.match(
     schema,
     /model Session\s*{[\s\S]*?activeOrganizationId\s+String\?/,

@@ -6,16 +6,30 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./react": "./src/react.tsx"
   },
   "scripts": {
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "test": "tsx --test src/*.test.ts src/*.test.tsx",
+    "test:integration": "tsx --test src/integration/*.integration.ts"
   },
   "dependencies": {
+    "@casl/ability": "7.0.1",
+    "@casl/react": "7.0.1",
     "@chenrun/auth": "workspace:*",
+    "@chenrun/db-control": "workspace:*",
     "@chenrun/shared": "workspace:*"
   },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
   "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tsx": "^4.20.6",
     "typescript": "^5.8.2"
   }
 }

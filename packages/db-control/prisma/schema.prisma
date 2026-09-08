@@ -82,6 +82,7 @@ model Organization {
   metadata       String?
   members        Member[]
   invitations    Invitation[]
+  roles          OrganizationRole[]
   tenantDatabase TenantDatabase?
 
   @@map("organization")
@@ -116,6 +117,21 @@ model Invitation {
   @@index([organizationId])
   @@index([email])
   @@map("invitation")
+}
+
+model OrganizationRole {
+  id             String       @id
+  organizationId String
+  role           String
+  permission     String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime?    @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, role])
+  @@index([organizationId])
+  @@index([role])
+  @@map("organizationRole")
 }
 
 model TenantDatabase {

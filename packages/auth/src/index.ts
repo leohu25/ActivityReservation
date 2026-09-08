@@ -1,6 +1,11 @@
 /** Better Auth configuration and trusted Organization tenant context. */
 
 export {
+  createOrganizationAccessControl,
+  type ApplicationPermissionStatement,
+  type OrganizationAccessControl,
+} from "./access-control";
+export {
   closeServerAuth,
   createServerAuth,
   getCurrentTenantContext,
