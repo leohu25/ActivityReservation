@@ -1,4 +1,10 @@
 import type { TenantPrismaClient } from "@chenrun/db-tenant";
+import {
+  buildTree,
+  BusinessError,
+  ConflictError,
+  NotFoundError,
+} from "@chenrun/shared";
 import type {
   CreateDepartmentInput,
   DepartmentTreeNode,
@@ -70,45 +76,23 @@ export class DepartmentService {
       }
     }
 
-    // 4. 构建树形目录
-    const allIds = new Set(allDepts.map((d) => d.id));
-    const childrenMap = new Map<string, typeof allDepts>();
+    // 4. 将扁平部门数据预装配为带统计信息的节点列表，并复用 @chenrun/shared 的 buildTree 统一构建树
+    const departmentNodes = allDepts.map((raw) => ({
+      id: raw.id,
+      name: raw.name,
+      code: raw.code,
+      parentId: raw.parentId,
+      leaderMemberId: raw.leaderMemberId,
+      leaderName: raw.leaderMemberId
+        ? (leaderMap.get(raw.leaderMemberId) ?? null)
+        : null,
+      sort: raw.sort,
+      status: raw.status,
+      employeeCount: countMap.get(raw.id) ?? 0,
+      createdAt: raw.createdAt,
+    }));
 
-    for (const dept of allDepts) {
-      if (dept.parentId) {
-        const list = childrenMap.get(dept.parentId) ?? [];
-        list.push(dept);
-        childrenMap.set(dept.parentId, list);
-      }
-    }
-
-    const buildNode = (raw: (typeof allDepts)[number]): DepartmentTreeNode => {
-      const childrenRaw = childrenMap.get(raw.id) ?? [];
-      const children = childrenRaw.map(buildNode);
-
-      return {
-        id: raw.id,
-        name: raw.name,
-        code: raw.code,
-        parentId: raw.parentId,
-        leaderMemberId: raw.leaderMemberId,
-        leaderName: raw.leaderMemberId
-          ? (leaderMap.get(raw.leaderMemberId) ?? null)
-          : null,
-        sort: raw.sort,
-        status: raw.status,
-        employeeCount: countMap.get(raw.id) ?? 0,
-        children,
-        createdAt: raw.createdAt,
-      };
-    };
-
-    // 顶层根节点：parentId 为空或 parentId 不在当前部门集合中
-    const roots = allDepts.filter(
-      (dept) => !dept.parentId || !allIds.has(dept.parentId),
-    );
-
-    return roots.map(buildNode);
+    return buildTree(departmentNodes);
   }
 
   /**
@@ -122,10 +106,10 @@ export class DepartmentService {
     const cleanCode = input.code.trim();
 
     if (!cleanName) {
-      throw new Error("部门名称不能为空");
+      throw new BusinessError("部门名称不能为空");
     }
     if (!cleanCode) {
-      throw new Error("部门编码不能为空");
+      throw new BusinessError("部门编码不能为空");
     }
 
     // 检查编码唯一性
@@ -133,7 +117,7 @@ export class DepartmentService {
       where: { code: cleanCode },
     });
     if (existing) {
-      throw new Error(`部门编码 [${cleanCode}] 已存在，请更换`);
+      throw new ConflictError(`部门编码 [${cleanCode}] 已存在，请更换`);
     }
 
     // 若指定了上级部门，检查上级是否存在
@@ -142,7 +126,7 @@ export class DepartmentService {
         where: { id: input.parentId },
       });
       if (!parent) {
-        throw new Error(`指定的上级部门不存在`);
+        throw new NotFoundError(`指定的上级部门不存在`);
       }
     }
 

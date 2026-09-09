@@ -6,7 +6,7 @@
 
 ## Current State (当前状态)
 
-- **当前目标 (Current Objective)**: 架构底座与共享库目录高内聚治理、Harness 宪法与渐进式分层上下文规范化
+- **当前目标 (Current Objective)**: 共享底座能力实战贯通与业务切片复用治理
 - **当前激活特性 (Active Feature)**: `none`
 - **当前状态 (Status)**: READY_FOR_NEXT_FEATURE
 - **最近更新时间 (Last Updated)**: 2026-09-09
@@ -16,13 +16,19 @@
 ## What Was Done (已完成工作)
 
 1. **共享底座包 (`packages/shared`) 架构治理**:
-   - 治理前：`src/` 下 11 个文件一锅端全部平铺展开，违背高内聚收敛原则。
-   - 治理后：按领域归类为 `api/`、`constants/`、`errors/`、`types/`、`utils/`，顶层 `index.ts` 聚合导出。
-   - 验证：全栈单测与 Turbo 类型检查 100% 绿色通过，向后兼容零破坏。
-2. **Harness 规约与分层上下文规范化**:
-   - 遵循 `harness-creator` 的 `context-engineering-pattern`，将庞杂的项目结构规范下沉至 `.harness/context/tier-2-domain-matrix.md`；
-   - 精简 `AGENTS.md` 顶层索引文件，确保其作为轻量路由和工程红线，而不是无限膨胀的大杂烩；
-   - 补齐根目录规范化工件 `progress.md` 与 `session-handoff.md`。
+   - 目录领域收敛：`api/`、`constants/`、`errors/`、`types/`、`utils/`，彻底消除平铺；
+   - 增强 `formatCurrency` 兼容 Prisma `Decimal` 鸭子类型（`{ toString(): string }`）。
+2. **共享能力真实业务贯通与消除重复造轮子**:
+   - **`packages/features/procurement-center` (采购中心)**:
+     - 接入 `formatCurrency`：替换采购单列表、新增、审核中的自写 `toLocaleString` 金额格式化；
+     - 接入标准错误体系：使用 `BusinessError`、`ForbiddenError`、`NotFoundError` 替换原生 `throw new Error`。
+   - **`packages/features/tenant-admin` (租户管理)**:
+     - 接入 `buildTree`：在 `DepartmentService.listDepartmentTree` 中消除自建 `childrenMap` 递归，直接复用底层树构造算法；
+     - 接入合规校验工具：在企业资料更新 `updateCompanyProfile` 中接入 `isValidUnifiedSocialCreditCode`、`isValidMobilePhone` 与 `isValidEmail`；
+     - 接入标准异常：使用 `BusinessError`、`ValidationError`、`ConflictError`、`NotFoundError` 规范化异常抛出。
+3. **Harness 规约与全栈验证**:
+   - 运行 `./scripts/verify.sh` 全栈物理门禁：153 个源码文件红线扫描 0 违规，Turbo 12 个模块类型检查 0 错误；
+   - 运行 `pnpm test`：全仓库 10 个测试套件全部通过（0 fail）。
 
 ---
 

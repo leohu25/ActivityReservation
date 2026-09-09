@@ -5,6 +5,12 @@ import {
   getAccessibleWhere,
 } from "@chenrun/authorization";
 import type { TenantPrismaClient, TenantPrisma } from "@chenrun/db-tenant";
+import {
+  BusinessError,
+  formatCurrency,
+  ForbiddenError,
+  NotFoundError,
+} from "@chenrun/shared";
 import { ProcurementSubject } from "../permissions";
 import type {
   AuditOrderInput,
@@ -69,13 +75,7 @@ export class ProcurementOrderService {
       const canAuditThisOrder = canAuditGlobal && isPending && !isCreator;
       const isSelfAuditBlocked = canAuditGlobal && isPending && isCreator;
 
-      const numPrice = Number(order.costPrice);
-      const formattedPrice = isNaN(numPrice)
-        ? `¥ ${order.costPrice}`
-        : `¥ ${numPrice.toLocaleString("zh-CN", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}`;
+      const formattedPrice = formatCurrency(order.costPrice);
 
       return {
         id: order.id,
@@ -107,7 +107,7 @@ export class ProcurementOrderService {
     input: CreateOrderInput,
   ): Promise<ProcurementOrderItem> {
     if (!ability.can("create", ProcurementSubject)) {
-      throw new Error("权限拒绝：您不具备新建采购订单的权限");
+      throw new ForbiddenError("权限拒绝：您不具备新建采购订单的权限");
     }
 
     // SAFETY: ability 满足 AnyMongoAbility 运行时契约，供 assertEditableFields 进行字段权限校验
@@ -123,21 +123,21 @@ export class ProcurementOrderService {
 
     const cleanSupplier = input.supplierName?.trim();
     if (!cleanSupplier) {
-      throw new Error("供应商名称不能为空");
+      throw new BusinessError("供应商名称不能为空");
     }
 
     const qty = Math.floor(Number(input.quantity));
     if (isNaN(qty) || qty <= 0) {
-      throw new Error("采购数量必须为大于 0 的有效正整数");
+      throw new BusinessError("采购数量必须为大于 0 的有效正整数");
     }
 
     const price = Number(input.costPrice);
     if (isNaN(price) || price < 0) {
-      throw new Error("采购成本单价必须为有效非负金额");
+      throw new BusinessError("采购成本单价必须为有效非负金额");
     }
 
     if (!operator.departmentId) {
-      throw new Error("当前操作员未分配所属部门，无法提交部门采购订单");
+      throw new BusinessError("当前操作员未分配所属部门，无法提交部门采购订单");
     }
 
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -166,7 +166,6 @@ export class ProcurementOrderService {
       ProcurementSubject,
       "costPrice",
     );
-    const numPrice = Number(created.costPrice);
 
     return {
       id: created.id,
@@ -174,10 +173,7 @@ export class ProcurementOrderService {
       supplierName: created.supplierName,
       quantity: created.quantity,
       costPrice: canReadCostPrice
-        ? `¥ ${numPrice.toLocaleString("zh-CN", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}`
+        ? formatCurrency(created.costPrice)
         : "*** (依据字段策略脱敏)",
       isCostPriceMasked: !canReadCostPrice,
       deptId: created.deptId,
@@ -202,7 +198,7 @@ export class ProcurementOrderService {
     input: AuditOrderInput,
   ): Promise<ProcurementOrderItem> {
     if (!ability.can("audit", ProcurementSubject)) {
-      throw new Error("权限拒绝：您不具备采购订单的审核权限");
+      throw new ForbiddenError("权限拒绝：您不具备采购订单的审核权限");
     }
 
     const order = await prisma.purchaseOrder.findUnique({
@@ -215,25 +211,25 @@ export class ProcurementOrderService {
     });
 
     if (!order) {
-      throw new Error(`目标采购订单不存在: ${input.orderId}`);
+      throw new NotFoundError(`目标采购订单不存在: ${input.orderId}`);
     }
 
     // 严格保障【禁止自审】铁律
     if (order.createdById === operator.userId) {
-      throw new Error(
+      throw new BusinessError(
         "业务安全红线：严禁采购人员审核自己创建的订单 (禁止自审)",
       );
     }
 
     // 状态流转单向保护：仅待审核态允许流转为 APPROVED 或 REJECTED
     if (order.status !== "PENDING") {
-      throw new Error(
+      throw new BusinessError(
         `单据流转错误：当前订单处于 [${order.status}] 状态，已为审核终态，禁止重复处理`,
       );
     }
 
     if (input.action !== "APPROVE" && input.action !== "REJECT") {
-      throw new Error(`不支持的审核操作类型: ${input.action}`);
+      throw new BusinessError(`不支持的审核操作类型: ${input.action}`);
     }
 
     const newStatus = input.action === "APPROVE" ? "APPROVED" : "REJECTED";
@@ -255,7 +251,6 @@ export class ProcurementOrderService {
       ProcurementSubject,
       "costPrice",
     );
-    const numPrice = Number(updated.costPrice);
 
     return {
       id: updated.id,
@@ -263,10 +258,7 @@ export class ProcurementOrderService {
       supplierName: updated.supplierName,
       quantity: updated.quantity,
       costPrice: canReadCostPrice
-        ? `¥ ${numPrice.toLocaleString("zh-CN", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}`
+        ? formatCurrency(updated.costPrice)
         : "*** (依据字段策略脱敏)",
       isCostPriceMasked: !canReadCostPrice,
       deptId: updated.deptId,
@@ -289,7 +281,7 @@ export class ProcurementOrderService {
     ability: ProcurementAnyAbility,
   ): Promise<readonly ExportOrderItem[]> {
     if (!ability.can("export", ProcurementSubject)) {
-      throw new Error("权限拒绝：您不具备导出采购订单的权限");
+      throw new ForbiddenError("权限拒绝：您不具备导出采购订单的权限");
     }
 
     // SAFETY: ability 满足 PrismaAbility 运行时契约，提取导出操作的数据下推过滤条件

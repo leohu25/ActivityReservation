@@ -12,8 +12,7 @@
 ---
 
 ## Current Objective (当前目标)
-- 治理 `packages/shared` 目录结构，消除平铺；
-- 遵循 `harness-creator` 规范重构 `AGENTS.md` 索引定位，规整上下文分层（Progressive Disclosure）。
+- 治理 `packages/shared` 孤岛工件问题，将树算法、货币格式化、合规校验与统一异常全面贯通至核心 Feature 切片中。
 
 ---
 
@@ -23,12 +22,13 @@
 ---
 
 ## Files Changed / In Scope (涉及文件)
-- `packages/shared/src/`（按职责子域划分子目录重构）
-- `AGENTS.md`（按 Harness Creator 规范精简为路由与不可违背红线索引）
-- `.harness/context/tier-2-domain-matrix.md`（承载细粒度的包目录结构与反平铺规约）
-- `docs/SaaS_Foundation_Minimal.md`（更新架构文档中的目录设计）
-- `progress.md`（根目录进展记录）
-- `session-handoff.md`（根目录会话交接记录）
+- `packages/shared/src/utils/format/index.ts`（增强货币格式化支持 Prisma Decimal）
+- `packages/features/procurement-center/src/services/procurement-order-service.ts`（复用 formatCurrency 与统一异常体系）
+- `packages/features/tenant-admin/src/services/department-service.ts`（复用 buildTree 与统一异常体系）
+- `packages/features/tenant-admin/src/services/tenant-settings-service.ts`（复用企业税号、手机号、邮箱合规校验）
+- `packages/features/tenant-admin/src/services/tenant-settings-service.test.ts`（对齐合规校验单测用例）
+- `progress.md`（进展更新）
+- `session-handoff.md`（交接单更新）
 
 ---
 

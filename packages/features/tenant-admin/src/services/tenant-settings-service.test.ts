@@ -100,9 +100,9 @@ test("TenantSettingsService 读写企业资料 (CompanyProfile) 与平台 Organi
   const created = await service.updateCompanyProfile("org_test", {
     companyName: "宸润数智工业制造有限公司",
     shortName: "宸润数智",
-    creditCode: "91330200MA2XXXXXX",
+    creditCode: "914403001922038216",
     legalPerson: "郭顺顺",
-    contactPhone: "0571-88888888",
+    contactPhone: "13800138000",
     contactEmail: "admin@chenrun.com",
     address: "浙江省杭州市高新数智产业园A座",
     currency: "CNY",
@@ -111,7 +111,7 @@ test("TenantSettingsService 读写企业资料 (CompanyProfile) 与平台 Organi
 
   assert.equal(created.companyName, "宸润数智工业制造有限公司");
   assert.equal(created.shortName, "宸润数智");
-  assert.equal(created.creditCode, "91330200MA2XXXXXX");
+  assert.equal(created.creditCode, "914403001922038216");
   assert.equal(created.legalPerson, "郭顺顺");
   // 验证 Control DB 的组织名称被同步更新
   assert.equal(orgName, "宸润数智工业制造有限公司");
@@ -120,7 +120,7 @@ test("TenantSettingsService 读写企业资料 (CompanyProfile) 与平台 Organi
   const updated = await service.updateCompanyProfile("org_test", {
     companyName: "宸润数智工业全球控股",
     shortName: "宸润控股",
-    creditCode: "91330200MA2XXXXXX",
+    creditCode: "914403001922038216",
   });
   assert.equal(updated.companyName, "宸润数智工业全球控股");
   assert.equal(updated.shortName, "宸润控股");

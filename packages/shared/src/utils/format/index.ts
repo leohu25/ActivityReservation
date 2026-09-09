@@ -15,7 +15,7 @@ export interface FormatCurrencyOptions {
  * 格式化货币金额 (支持千分位与小数控制，如 "¥ 123,456.78")
  */
 export function formatCurrency(
- amount: number | string | null | undefined,
+ amount: number | string | { toString(): string } | null | undefined,
  options: FormatCurrencyOptions = {},
 ): string {
  if (amount === null || amount === undefined || amount === "") {

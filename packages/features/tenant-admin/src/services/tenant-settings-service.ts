@@ -1,5 +1,12 @@
 import type { ControlPrismaClient } from "@chenrun/db-control";
 import type { TenantPrismaClient } from "@chenrun/db-tenant";
+import {
+  BusinessError,
+  isValidEmail,
+  isValidMobilePhone,
+  isValidUnifiedSocialCreditCode,
+  ValidationError,
+} from "@chenrun/shared";
 import type {
   CompanyProfileData,
   UpdateCompanyProfileInput,
@@ -100,7 +107,24 @@ export class TenantSettingsService {
   ): Promise<CompanyProfileData> {
     const cleanCompanyName = input.companyName?.trim();
     if (!cleanCompanyName) {
-      throw new Error("企业名称不能为空");
+      throw new BusinessError("企业名称不能为空");
+    }
+
+    const cleanCreditCode = input.creditCode?.trim();
+    if (cleanCreditCode && !isValidUnifiedSocialCreditCode(cleanCreditCode)) {
+      throw new ValidationError(
+        `统一社会信用代码格式不合法: [${cleanCreditCode}]，必须符合国家标准 18 位规范`,
+      );
+    }
+
+    const cleanPhone = input.contactPhone?.trim();
+    if (cleanPhone && !isValidMobilePhone(cleanPhone)) {
+      throw new ValidationError(`联系人手机号码格式不合法: [${cleanPhone}]`);
+    }
+
+    const cleanEmail = input.contactEmail?.trim();
+    if (cleanEmail && !isValidEmail(cleanEmail)) {
+      throw new ValidationError(`联系人电子邮箱格式不合法: [${cleanEmail}]`);
     }
 
     const tenantPrisma = await this.tenantDbResolver(organizationId);
@@ -111,10 +135,10 @@ export class TenantSettingsService {
     const updatePayload = {
       companyName: cleanCompanyName,
       shortName: input.shortName?.trim() || null,
-      creditCode: input.creditCode?.trim() || null,
+      creditCode: cleanCreditCode || null,
       legalPerson: input.legalPerson?.trim() || null,
-      contactPhone: input.contactPhone?.trim() || null,
-      contactEmail: input.contactEmail?.trim() || null,
+      contactPhone: cleanPhone || null,
+      contactEmail: cleanEmail || null,
       address: input.address?.trim() || null,
       timezone: input.timezone?.trim() || "Asia/Shanghai",
       currency: input.currency?.trim() || "CNY",
