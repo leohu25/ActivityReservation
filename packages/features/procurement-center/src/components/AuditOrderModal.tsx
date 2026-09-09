@@ -12,11 +12,15 @@ import {
 } from "@chenrun/ui";
 import { CheckCircle2, XCircle, X, Loader2, AlertTriangle } from "lucide-react";
 import { auditOrderAction } from "../actions";
-import type { ProcurementOrderItem } from "../types";
+import type {
+  ProcurementFieldVisibility,
+  ProcurementOrderItem,
+} from "../types";
 
 export interface AuditOrderModalProps {
   readonly order: ProcurementOrderItem;
   readonly isOpen: boolean;
+  readonly fieldVisibility: ProcurementFieldVisibility;
   readonly onClose: () => void;
   readonly onAudited?: () => void;
 }
@@ -24,6 +28,7 @@ export interface AuditOrderModalProps {
 export function AuditOrderModal({
   order,
   isOpen,
+  fieldVisibility,
   onClose,
   onAudited,
 }: AuditOrderModalProps) {
@@ -60,9 +65,14 @@ export function AuditOrderModal({
             <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
               采购单审核审批
             </CardTitle>
-            <CardDescription className="text-xs text-slate-500 mt-0.5">
-              单号: <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{order.orderNo}</span>
-            </CardDescription>
+            {fieldVisibility.orderNo ? (
+              <CardDescription className="text-xs text-slate-500 mt-0.5">
+                单号:{" "}
+                <span className="font-mono font-bold text-slate-700 dark:text-slate-300">
+                  {order.orderNo}
+                </span>
+              </CardDescription>
+            ) : null}
           </div>
           <Button
             variant="ghost"
@@ -95,35 +105,51 @@ export function AuditOrderModal({
           )}
 
           <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-xs space-y-1.5 dark:border-slate-800 dark:bg-slate-800/40">
-            <div className="flex justify-between">
-              <span className="text-slate-500">物料供应商:</span>
-              <span className="font-medium text-slate-800 dark:text-slate-200">{order.supplierName}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">采购数量:</span>
-              <span className="font-medium text-slate-800 dark:text-slate-200">{order.quantity} 件</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">采购单价:</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">{order.costPrice}</span>
-            </div>
+            {fieldVisibility.supplierName ? (
+              <div className="flex justify-between">
+                <span className="text-slate-500">物料供应商:</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200">
+                  {order.supplierName}
+                </span>
+              </div>
+            ) : null}
+            {fieldVisibility.quantity ? (
+              <div className="flex justify-between">
+                <span className="text-slate-500">采购数量:</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200">
+                  {order.quantity} 件
+                </span>
+              </div>
+            ) : null}
+            {fieldVisibility.costPrice ? (
+              <div className="flex justify-between">
+                <span className="text-slate-500">采购单价:</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                  {order.costPrice}
+                </span>
+              </div>
+            ) : null}
             <div className="flex justify-between">
               <span className="text-slate-500">提单部门:</span>
-              <span className="font-medium text-slate-800 dark:text-slate-200">{order.departmentName || "未指定"}</span>
+              <span className="font-medium text-slate-800 dark:text-slate-200">
+                {order.departmentName || "未指定"}
+              </span>
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              审核批注意见 (可选)
-            </label>
-            <Input
-              placeholder="如：经核算价格合理，准予执行采购"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              disabled={isPending || order.isSelfAuditBlocked}
-            />
-          </div>
+          {fieldVisibility.auditComment ? (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                审核批注意见 (可选)
+              </label>
+              <Input
+                placeholder="如：经核算价格合理，准予执行采购"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                disabled={isPending || order.isSelfAuditBlocked}
+              />
+            </div>
+          ) : null}
 
           <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
             <Button
@@ -139,22 +165,38 @@ export function AuditOrderModal({
               type="button"
               variant="outline"
               size="sm"
-              disabled={isPending || order.isSelfAuditBlocked || !order.canAuditThisOrder}
+              disabled={
+                isPending ||
+                order.isSelfAuditBlocked ||
+                !order.canAuditThisOrder
+              }
               onClick={() => handleAudit("REJECT")}
               className="border-rose-200 text-rose-700 hover:bg-rose-50 dark:border-rose-900/50 dark:text-rose-400 dark:hover:bg-rose-950/40"
             >
-              {isPending ? <Loader2 className="size-3.5 mr-1 animate-spin" /> : <XCircle className="size-3.5 mr-1" />}
+              {isPending ? (
+                <Loader2 className="size-3.5 mr-1 animate-spin" />
+              ) : (
+                <XCircle className="size-3.5 mr-1" />
+              )}
               <span>审核驳回</span>
             </Button>
             <Button
               type="button"
               variant="default"
               size="sm"
-              disabled={isPending || order.isSelfAuditBlocked || !order.canAuditThisOrder}
+              disabled={
+                isPending ||
+                order.isSelfAuditBlocked ||
+                !order.canAuditThisOrder
+              }
               onClick={() => handleAudit("APPROVE")}
               className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/25"
             >
-              {isPending ? <Loader2 className="size-3.5 mr-1 animate-spin" /> : <CheckCircle2 className="size-3.5 mr-1" />}
+              {isPending ? (
+                <Loader2 className="size-3.5 mr-1 animate-spin" />
+              ) : (
+                <CheckCircle2 className="size-3.5 mr-1" />
+              )}
               <span>准予通过</span>
             </Button>
           </div>

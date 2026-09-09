@@ -3,6 +3,7 @@ import type {
   OrganizationRoleRecord,
 } from "@chenrun/db-control";
 import {
+  FieldPolicy,
   parsePersistedPermissions,
   serializeRolePermissions,
   type RolePermissionPayload,
@@ -114,7 +115,7 @@ export class TenantRoleService {
             {
               subject: ProcurementSubject,
               field: "costPrice",
-              access: "READONLY",
+              access: FieldPolicy.READONLY,
             },
           ],
         },

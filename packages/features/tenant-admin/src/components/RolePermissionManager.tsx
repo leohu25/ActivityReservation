@@ -27,11 +27,15 @@ import {
   Badge,
   Input,
 } from "@chenrun/ui";
-import type {
-  DataScopeType,
-  RolePermissionPayload,
+import {
+  DataScope,
+  FieldPolicy,
+  type DataScopeType,
+  type FieldAccessMode,
+  type RolePermissionPayload,
 } from "@chenrun/authorization";
 import {
+  procurementConfigurableFields,
   ProcurementPermission,
   ProcurementSubject,
 } from "@chenrun/feature-procurement-center";
@@ -53,40 +57,25 @@ const DATA_SCOPE_OPTIONS: Array<{
   desc: string;
 }> = [
   {
-    value: "SELF",
+    value: DataScope.SELF,
     label: "仅本人数据",
     desc: "只允许访问由当前登录成员创建的业务单据",
   },
   {
-    value: "DEPT",
+    value: DataScope.DEPT,
     label: "本部门数据",
     desc: "允许访问当前成员所属部门的全部业务单据",
   },
   {
-    value: "DEPT_TREE",
+    value: DataScope.DEPT_TREE,
     label: "本部门及下级部门",
     desc: "包含本部门以及所有下属分支部门数据",
   },
   {
-    value: "ALL",
+    value: DataScope.ALL,
     label: "全公司/全租户",
     desc: "无部门范围约束，允许访问全租户组织业务数据",
   },
-];
-
-interface FieldConfigRow {
-  readonly field: string;
-  readonly label: string;
-  readonly isSensitive?: boolean;
-}
-
-const ORDER_FIELDS: readonly FieldConfigRow[] = [
-  { field: "orderNo", label: "采购订单编号" },
-  { field: "supplierName", label: "供应商名称" },
-  { field: "quantity", label: "物料采购数量" },
-  { field: "costPrice", label: "采购成本单价", isSensitive: true },
-  { field: "status", label: "订单审批状态" },
-  { field: "auditComment", label: "审核意见备注" },
 ];
 
 export function RolePermissionManager({
@@ -123,7 +112,7 @@ export function RolePermissionManager({
   const currentScopeType: DataScopeType =
     selectedRole?.permissions.dataScopes?.find(
       (s) => s.resource === resource && (!s.action || s.action === "read"),
-    )?.scopeType ?? "DEPT";
+    )?.scopeType ?? DataScope.DEPT;
 
   // 获取当前角色的字段策略配置
   const currentFieldPolicies = selectedRole?.permissions.fieldPolicies ?? [];
@@ -134,9 +123,7 @@ export function RolePermissionManager({
   // 当 policy 为 undefined（即未受限/未单独配置字段策略）时：
   // 若当前角色在 statement 中拥有当前模块的 'update' 或 'create' 动作，默认推导为 'EDITABLE'；
   // 若仅有 'read' 动作，默认推导为 'READONLY'；若均无，则为 'HIDDEN'。
-  const getEffectiveFieldAccess = (
-    fieldName: string,
-  ): "HIDDEN" | "READONLY" | "EDITABLE" => {
+  const getEffectiveFieldAccess = (fieldName: string): FieldAccessMode => {
     const policy = currentFieldPolicies.find(
       (p) => p.subject === ProcurementSubject && p.field === fieldName,
     );
@@ -144,12 +131,12 @@ export function RolePermissionManager({
       return policy.access;
     }
     if (hasWriteAction) {
-      return "EDITABLE";
+      return FieldPolicy.EDITABLE;
     }
     if (hasReadAction) {
-      return "READONLY";
+      return FieldPolicy.READONLY;
     }
-    return "HIDDEN";
+    return FieldPolicy.HIDDEN;
   };
 
   // 切换动作开关
@@ -196,19 +183,19 @@ export function RolePermissionManager({
       (p) => !(p.subject === ProcurementSubject && p.field === fieldName),
     );
 
-    if (currentAccess !== "HIDDEN") {
-      // 当前可读 -> 转为 HIDDEN
-      nextPolicies.push({
-        subject: ProcurementSubject,
-        field: fieldName,
-        access: "HIDDEN",
-      });
-    } else {
+    if (currentAccess === FieldPolicy.HIDDEN) {
       // 当前 HIDDEN -> 转为 READONLY
       nextPolicies.push({
         subject: ProcurementSubject,
         field: fieldName,
-        access: "READONLY",
+        access: FieldPolicy.READONLY,
+      });
+    } else {
+      // 当前可读 -> 转为 HIDDEN
+      nextPolicies.push({
+        subject: ProcurementSubject,
+        field: fieldName,
+        access: FieldPolicy.HIDDEN,
       });
     }
 
@@ -226,19 +213,19 @@ export function RolePermissionManager({
       (p) => !(p.subject === ProcurementSubject && p.field === fieldName),
     );
 
-    if (currentAccess === "EDITABLE") {
+    if (currentAccess === FieldPolicy.EDITABLE) {
       // 降级为只读
       nextPolicies.push({
         subject: ProcurementSubject,
         field: fieldName,
-        access: "READONLY",
+        access: FieldPolicy.READONLY,
       });
     } else {
       // 提升为可写
       nextPolicies.push({
         subject: ProcurementSubject,
         field: fieldName,
-        access: "EDITABLE",
+        access: FieldPolicy.EDITABLE,
       });
     }
 
@@ -602,12 +589,13 @@ export function RolePermissionManager({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {ORDER_FIELDS.map((row) => {
+                    {procurementConfigurableFields.map((row) => {
                       const effectiveAccess = getEffectiveFieldAccess(
                         row.field,
                       );
-                      const isHidden = effectiveAccess === "HIDDEN";
-                      const isEditable = effectiveAccess === "EDITABLE";
+                      const isHidden = effectiveAccess === FieldPolicy.HIDDEN;
+                      const isEditable =
+                        effectiveAccess === FieldPolicy.EDITABLE;
 
                       return (
                         <tr

@@ -50,11 +50,7 @@ import {
   isValidMobilePhone,
   isValidEmail,
   // 常量与枚举
-  DataScope,
   FieldPolicy,
-  AuditStatus,
-  TenantStatus,
-  EmployeeStatus,
 } from "./index";
 
 test("Result 工具：支持 ok, err, isOk, isErr 与 unwrap", () => {
@@ -238,9 +234,5 @@ test("异常与枚举：AppError 继承与枚举完备性", () => {
   assert.equal(err.code, "NOT_FOUND");
   assert.equal(err.status, 404);
 
-  assert.equal(DataScope.SELF, "SELF");
   assert.equal(FieldPolicy.EDITABLE, "EDITABLE");
-  assert.equal(AuditStatus.APPROVED, "APPROVED");
-  assert.equal(TenantStatus.ACTIVE, "ACTIVE");
-  assert.equal(EmployeeStatus.TERMINATED, "TERMINATED");
 });

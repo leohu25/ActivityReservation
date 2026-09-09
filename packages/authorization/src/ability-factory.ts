@@ -18,7 +18,7 @@ import {
   type PrismaQueryCondition,
   resolveDataScopeConditions,
 } from "./data-scope";
-import type { RoleFieldPolicyConfig } from "./field-policy";
+import { FieldPolicy, type RoleFieldPolicyConfig } from "./field-policy";
 
 export type AppAbility<
   TAction extends string,
@@ -260,11 +260,14 @@ function computeAllowedFields(
   return candidateFields.filter((field) => {
     const access = policyMap.get(field);
     // 1. 显式隐藏：彻底拒绝
-    if (access === "HIDDEN") {
+    if (access === FieldPolicy.HIDDEN) {
       return false;
     }
     // 2. 写操作：显式只读则不可写
-    if ((action === "create" || action === "update") && access === "READONLY") {
+    if (
+      (action === "create" || action === "update") &&
+      access === FieldPolicy.READONLY
+    ) {
       return false;
     }
     return true;

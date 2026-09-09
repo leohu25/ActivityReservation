@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { getCurrentTenantContext } from "@chenrun/auth";
 import {
   CaslAbilityFactory,
+  FieldPolicy,
   getAccessibleWhere,
   type AppPrismaAbility,
 } from "@chenrun/authorization";
@@ -10,7 +11,9 @@ import {
   resolveEmployeeTopology,
 } from "@chenrun/db-tenant";
 import {
+  getProcurementFieldVisibility,
   procurementCatalog,
+  procurementCreateFields,
   ProcurementOrderCenter,
   ProcurementOrderService,
   ProcurementSubject,
@@ -108,20 +111,18 @@ export default async function ProcurementOrdersPage() {
     ProcurementSubject,
     "read",
   );
-  const canCreate = prismaAbility.can("create", ProcurementSubject);
+  const fieldVisibility = getProcurementFieldVisibility(prismaAbility);
+  const canCreate =
+    prismaAbility.can("create", ProcurementSubject) &&
+    procurementCreateFields.every((field) =>
+      prismaAbility.can("create", ProcurementSubject, field),
+    );
   const canCreateCostPrice = prismaAbility.can(
     "create",
     ProcurementSubject,
     "costPrice",
   );
-  const canAuditGlobal = prismaAbility.can("audit", ProcurementSubject);
   const canExport = prismaAbility.can("export", ProcurementSubject);
-  const isCostPriceVisible = prismaAbility.can(
-    "read",
-    ProcurementSubject,
-    "costPrice",
-  );
-
   let departmentName: string | null = null;
   if (topology.departmentId) {
     const dept = await tenantPrisma.department.findUnique({
@@ -132,9 +133,9 @@ export default async function ProcurementOrdersPage() {
   }
 
   const createFieldModes = {
-    supplierName: "EDITABLE" as const,
-    quantity: "EDITABLE" as const,
-    costPrice: canCreateCostPrice ? ("EDITABLE" as const) : ("HIDDEN" as const),
+    supplierName: canCreate ? FieldPolicy.EDITABLE : FieldPolicy.HIDDEN,
+    quantity: canCreate ? FieldPolicy.EDITABLE : FieldPolicy.HIDDEN,
+    costPrice: canCreateCostPrice ? FieldPolicy.EDITABLE : FieldPolicy.HIDDEN,
   };
 
   return (
@@ -144,9 +145,8 @@ export default async function ProcurementOrdersPage() {
       activeOrgId={tenantCtx.organizationId}
       departmentName={departmentName}
       canCreate={canCreate}
-      canAuditGlobal={canAuditGlobal}
       canExport={canExport}
-      isCostPriceVisible={isCostPriceVisible}
+      fieldVisibility={fieldVisibility}
       currentUserId={tenantCtx.user.id}
       createFieldModes={createFieldModes}
     />

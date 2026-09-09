@@ -26,6 +26,7 @@ export {
   type AuthorizedInvocation,
 } from "./server";
 export {
+  DataScope,
   DataScopeError,
   resolveDataScopeConditions,
   type DataScopeFieldMapping,
@@ -36,6 +37,7 @@ export {
 } from "./data-scope";
 export {
   assertEditableFields,
+  FieldPolicy,
   FieldPolicyError,
   getFieldMode,
   getReadableFields,

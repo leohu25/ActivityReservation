@@ -77,7 +77,7 @@ function createMockPrisma(initialOrders: Array<Record<string, unknown>> = []) {
   } as unknown as TenantPrismaClient;
 }
 
-test("ProcurementOrderService.listOrders 能够依据 CASL 数据范围过滤并对成本价脱敏", async () => {
+test("ProcurementOrderService.listOrders 依据 CASL 数据范围过滤并彻底剥离隐藏字段", async () => {
   const service = new ProcurementOrderService();
   const mockPrisma = createMockPrisma([
     {
@@ -130,8 +130,7 @@ test("ProcurementOrderService.listOrders 能够依据 CASL 数据范围过滤并
   );
   assert.equal(orders1.length, 1);
   assert.equal(orders1[0].orderNo, "PO-2026-001");
-  assert.equal(orders1[0].isCostPriceMasked, true);
-  assert.match(orders1[0].costPrice, /脱敏/);
+  assert.equal("costPrice" in orders1[0], false);
   // 自己建的单子不能审核，且标记 isSelfAuditBlocked
   assert.equal(orders1[0].canAuditThisOrder, false);
 
@@ -154,8 +153,8 @@ test("ProcurementOrderService.listOrders 能够依据 CASL 数据范围过滤并
     "user_manager",
   );
   assert.equal(orders2.length, 2);
-  assert.equal(orders2[0].isCostPriceMasked, false);
-  assert.match(orders2[0].costPrice, /¥/);
+  assert.equal("costPrice" in orders2[0], true);
+  assert.match(orders2[0].costPrice ?? "", /¥/);
   // 管理员非创建者，可审核 PENDING 状态的订单
   const pendingOrder = orders2.find((o) => o.id === "po_1");
   assert.equal(pendingOrder?.canAuditThisOrder, true);
@@ -179,7 +178,7 @@ test("ProcurementOrderService.createOrder 校验合法字段、生成单号并�
     {
       action: "read",
       subject: "PurchaseOrder",
-      fields: ["supplierName", "quantity", "costPrice"],
+      fields: ["orderNo", "supplierName", "quantity", "costPrice", "status"],
     },
   ]);
 
@@ -191,7 +190,7 @@ test("ProcurementOrderService.createOrder 校验合法字段、生成单号并�
     { supplierName: "苏州晨润智能精密", quantity: 20, costPrice: 1500 },
   );
 
-  assert.match(order.orderNo, /^PO-\d{8}-[A-Z0-9]+$/);
+  assert.match(order.orderNo ?? "", /^PO-\d{8}-[A-Z0-9]+$/);
   assert.equal(order.supplierName, "苏州晨润智能精密");
   assert.equal(order.quantity, 20);
   assert.equal(order.status, "PENDING");
@@ -323,7 +322,7 @@ test("ProcurementOrderService.auditOrder 严格单向状态机流转 (仅 PENDIN
   );
 });
 
-test("ProcurementOrderService.exportOrders 导出安全字段并遵循脱敏规则", async () => {
+test("ProcurementOrderService.exportOrders 导出安全字段并剥离隐藏字段", async () => {
   const service = new ProcurementOrderService();
   const mockPrisma = createMockPrisma([
     {

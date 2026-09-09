@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
+import { FieldPolicy } from "@chenrun/authorization";
 import {
   Card,
   CardHeader,
@@ -135,7 +136,7 @@ export function CompanySettingsView({
               subject="CompanyProfile"
               field="companyName"
               action="update"
-              mode={isReadOnly ? "READONLY" : undefined}
+              mode={isReadOnly ? FieldPolicy.READONLY : undefined}
               label="企业法定全称 *"
             >
               <Input
@@ -152,7 +153,7 @@ export function CompanySettingsView({
               subject="CompanyProfile"
               field="shortName"
               action="update"
-              mode={isReadOnly ? "READONLY" : undefined}
+              mode={isReadOnly ? FieldPolicy.READONLY : undefined}
               label="企业品牌简称"
             >
               <Input
@@ -168,7 +169,7 @@ export function CompanySettingsView({
               subject="CompanyProfile"
               field="creditCode"
               action="update"
-              mode={isReadOnly ? "READONLY" : undefined}
+              mode={isReadOnly ? FieldPolicy.READONLY : undefined}
               label="统一社会信用代码"
             >
               <Input
@@ -184,7 +185,7 @@ export function CompanySettingsView({
               subject="CompanyProfile"
               field="legalPerson"
               action="update"
-              mode={isReadOnly ? "READONLY" : undefined}
+              mode={isReadOnly ? FieldPolicy.READONLY : undefined}
               label="法定代表人 / 负责人"
             >
               <Input
@@ -213,7 +214,7 @@ export function CompanySettingsView({
               subject="CompanyProfile"
               field="contactPhone"
               action="update"
-              mode={isReadOnly ? "READONLY" : undefined}
+              mode={isReadOnly ? FieldPolicy.READONLY : undefined}
               label="业务联系电话"
             >
               <Input
@@ -229,7 +230,7 @@ export function CompanySettingsView({
               subject="CompanyProfile"
               field="contactEmail"
               action="update"
-              mode={isReadOnly ? "READONLY" : undefined}
+              mode={isReadOnly ? FieldPolicy.READONLY : undefined}
               label="官方联系邮箱"
             >
               <Input
@@ -247,7 +248,7 @@ export function CompanySettingsView({
                 subject="CompanyProfile"
                 field="address"
                 action="update"
-                mode={isReadOnly ? "READONLY" : undefined}
+                mode={isReadOnly ? FieldPolicy.READONLY : undefined}
                 label="经营注册地址"
               >
                 <Input

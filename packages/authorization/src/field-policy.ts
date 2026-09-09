@@ -1,14 +1,9 @@
 import { ForbiddenError } from "@casl/ability";
 import type { AnyMongoAbility } from "@casl/ability";
 import { permittedFieldsOf } from "@casl/ability/extra";
+import { FieldPolicy, type FieldAccessMode } from "@chenrun/shared";
 
-/**
- * 字段访问权限三态定义：
- * - HIDDEN: 隐藏状态，既不可读取也不可写入/修改。
- * - READONLY: 只读状态，允许读取，但严禁写入/修改。
- * - EDITABLE: 可编辑状态，既允许读取也允许写入/修改。
- */
-export type FieldAccessMode = "HIDDEN" | "READONLY" | "EDITABLE";
+export { FieldPolicy, type FieldAccessMode } from "@chenrun/shared";
 
 /**
  * 角色字段策略配置契约
@@ -42,12 +37,12 @@ export function getFieldMode(
  const editable = ability.can("update", subject, field);
 
  if (!readable) {
-  return "HIDDEN";
+  return FieldPolicy.HIDDEN;
  }
  if (!editable) {
-  return "READONLY";
+  return FieldPolicy.READONLY;
  }
- return "EDITABLE";
+ return FieldPolicy.EDITABLE;
 }
 
 /**

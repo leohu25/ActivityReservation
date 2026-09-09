@@ -14,6 +14,7 @@ import {
 } from "@chenrun/db-tenant";
 import { hashPassword } from "better-auth/crypto";
 import {
+  FieldPolicy,
   serializeRolePermissions,
   type RolePermissionPayload,
 } from "@chenrun/authorization";
@@ -347,7 +348,7 @@ export class ControlAdminService {
     }
 
     const initialPassword = input.initialPassword ?? "Admin123456!";
-    let returnedInitialPassword: string | undefined = undefined;
+    let returnedInitialPassword: string | undefined;
 
     const existingAccount = await this.prisma.account.findFirst({
       where: {
@@ -466,7 +467,7 @@ export class ControlAdminService {
             {
               subject: "PurchaseOrder",
               field: "costPrice",
-              access: "READONLY",
+              access: FieldPolicy.READONLY,
             },
           ],
         },

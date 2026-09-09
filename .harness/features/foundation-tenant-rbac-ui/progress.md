@@ -16,3 +16,4 @@
 - 2026-09-08: 装配极薄路由 apps/tenant/src/app/(dashboard)/settings/roles/page.tsx，并在 Sidebar 增设角色权限导航节点。
 - 2026-09-08: 响应 Reviewer 审计反馈完成 3 项优化：1. 设置页面使用 findMember 结合 owner/admin 严格守卫并清除所有 Emoji 换用 Lucide 图标；2. RolePermissionManager 字段矩阵根据 update/create 动作优化默认推导为 EDITABLE 并替换 ProcurementSubject 常量；3. 补齐组件单测。
 - 2026-09-08: 全仓 8 个测试套件 82/82 单测 100% PASS，12 个包类型检查 0 错误，生产构建与全栈门禁 ./scripts/verify.sh PASS。
+- 2026-09-09: 完成字段权限语义纠偏：权限配置字段改由采购切片受控字段元数据驱动；HIDDEN 字段从服务端 DTO 与列表/审核表单中彻底剥离，不再混用脱敏占位；数据范围枚举内聚 authorization，采购订单状态枚举内聚 procurement-center，仅跨授权/UI 的字段三态值保留 shared；新增整列隐藏和未受控字段不展示测试。全仓 10 个测试任务、122 个测试全部通过，12/12 类型检查及 `./scripts/verify.sh` 通过。

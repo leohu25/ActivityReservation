@@ -1,10 +1,11 @@
 import React, { cloneElement, isValidElement } from "react";
+import { FieldPolicy, type FieldAccessMode } from "@chenrun/shared";
+
+export type { FieldAccessMode } from "@chenrun/shared";
 
 export interface AbilityLike {
   can(action: string, subject: string, field?: string): boolean;
 }
-
-export type FieldAccessMode = "HIDDEN" | "READONLY" | "EDITABLE";
 
 export interface AuthorizedFieldProps {
   /** CASL Ability 实例，用于全自动推导 read / write 权限三态 */
@@ -48,19 +49,19 @@ export function deriveFieldMode(
   }
   if (!ability) {
     // 严格遵循 Fail-Closed 原则：当缺少 Ability 时默认隐藏拒绝，杜绝未授权字段外泄
-    return "HIDDEN";
+    return FieldPolicy.HIDDEN;
   }
 
   const readable = ability.can("read", subject, field);
   const writable = ability.can(action, subject, field);
 
   if (!readable) {
-    return "HIDDEN";
+    return FieldPolicy.HIDDEN;
   }
   if (!writable) {
-    return "READONLY";
+    return FieldPolicy.READONLY;
   }
-  return "EDITABLE";
+  return FieldPolicy.EDITABLE;
 }
 
 /**
@@ -79,13 +80,13 @@ export function AuthorizedField({
 }: AuthorizedFieldProps) {
   const resolvedMode = deriveFieldMode(ability, subject, field, action, mode);
 
-  if (resolvedMode === "HIDDEN") {
+  if (resolvedMode === FieldPolicy.HIDDEN) {
     return fallback
       ? React.createElement(React.Fragment, null, fallback)
       : null;
   }
 
-  const isReadOnly = resolvedMode === "READONLY";
+  const isReadOnly = resolvedMode === FieldPolicy.READONLY;
 
   let badgeElement: React.ReactNode = null;
   if (isReadOnly) {

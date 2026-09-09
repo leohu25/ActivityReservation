@@ -3,6 +3,7 @@ import type { PrismaAbility } from "@casl/prisma";
 import {
   assertEditableFields,
   getAccessibleWhere,
+  pickReadableFields,
 } from "@chenrun/authorization";
 import type { TenantPrismaClient, TenantPrisma } from "@chenrun/db-tenant";
 import {
@@ -11,7 +12,11 @@ import {
   ForbiddenError,
   NotFoundError,
 } from "@chenrun/shared";
-import { ProcurementSubject } from "../permissions";
+import {
+  type ProcurementField,
+  ProcurementOrderStatus,
+  ProcurementSubject,
+} from "../permissions";
 import type {
   AuditOrderInput,
   AuditOrderOperator,
@@ -60,35 +65,36 @@ export class ProcurementOrderService {
       orderBy: { createdAt: "desc" },
     });
 
-    const canReadCostPrice = ability.can(
-      "read",
-      ProcurementSubject,
-      "costPrice",
-    );
     const canAuditGlobal = ability.can("audit", ProcurementSubject);
 
     return rawOrders.map((order) => {
       const isCreator = currentUserId
         ? order.createdById === currentUserId
         : false;
-      const isPending = order.status === "PENDING";
+      const isPending = order.status === ProcurementOrderStatus.PENDING;
       const canAuditThisOrder = canAuditGlobal && isPending && !isCreator;
       const isSelfAuditBlocked = canAuditGlobal && isPending && isCreator;
 
-      const formattedPrice = formatCurrency(order.costPrice);
+      // SAFETY: ProcurementAnyAbility 均实现 CASL 的字段级 can/rules 运行时契约。
+      const readableFields = pickReadableFields(
+        ability as unknown as AnyMongoAbility,
+        ProcurementSubject,
+        {
+          orderNo: order.orderNo,
+          supplierName: order.supplierName,
+          quantity: order.quantity,
+          costPrice: formatCurrency(order.costPrice),
+          status: order.status as ProcurementOrderStatus,
+          auditComment: order.auditComment,
+        } satisfies Record<ProcurementField, unknown>,
+      );
 
       return {
         id: order.id,
-        orderNo: order.orderNo,
-        supplierName: order.supplierName,
-        quantity: order.quantity,
-        costPrice: canReadCostPrice ? formattedPrice : "*** (依据字段策略脱敏)",
-        isCostPriceMasked: !canReadCostPrice,
+        ...readableFields,
         deptId: order.deptId,
         departmentName: order.department?.name ?? null,
         createdById: order.createdById,
-        status: order.status as "PENDING" | "APPROVED" | "REJECTED",
-        auditComment: order.auditComment,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         canAuditThisOrder,
@@ -152,7 +158,7 @@ export class ProcurementOrderService {
         costPrice: price,
         deptId: operator.departmentId,
         createdById: operator.userId,
-        status: "PENDING",
+        status: ProcurementOrderStatus.PENDING,
       },
       include: {
         department: {
@@ -161,26 +167,26 @@ export class ProcurementOrderService {
       },
     });
 
-    const canReadCostPrice = ability.can(
-      "read",
+    // SAFETY: ProcurementAnyAbility 均实现 CASL 的字段级 can/rules 运行时契约。
+    const readableFields = pickReadableFields(
+      ability as unknown as AnyMongoAbility,
       ProcurementSubject,
-      "costPrice",
+      {
+        orderNo: created.orderNo,
+        supplierName: created.supplierName,
+        quantity: created.quantity,
+        costPrice: formatCurrency(created.costPrice),
+        status: ProcurementOrderStatus.PENDING,
+        auditComment: null,
+      } satisfies Record<ProcurementField, unknown>,
     );
 
     return {
       id: created.id,
-      orderNo: created.orderNo,
-      supplierName: created.supplierName,
-      quantity: created.quantity,
-      costPrice: canReadCostPrice
-        ? formatCurrency(created.costPrice)
-        : "*** (依据字段策略脱敏)",
-      isCostPriceMasked: !canReadCostPrice,
+      ...readableFields,
       deptId: created.deptId,
       departmentName: created.department?.name ?? null,
       createdById: created.createdById,
-      status: "PENDING",
-      auditComment: null,
       createdAt: created.createdAt,
       updatedAt: created.updatedAt,
       canAuditThisOrder: false,
@@ -222,7 +228,7 @@ export class ProcurementOrderService {
     }
 
     // 状态流转单向保护：仅待审核态允许流转为 APPROVED 或 REJECTED
-    if (order.status !== "PENDING") {
+    if (order.status !== ProcurementOrderStatus.PENDING) {
       throw new BusinessError(
         `单据流转错误：当前订单处于 [${order.status}] 状态，已为审核终态，禁止重复处理`,
       );
@@ -232,7 +238,10 @@ export class ProcurementOrderService {
       throw new BusinessError(`不支持的审核操作类型: ${input.action}`);
     }
 
-    const newStatus = input.action === "APPROVE" ? "APPROVED" : "REJECTED";
+    const newStatus =
+      input.action === "APPROVE"
+        ? ProcurementOrderStatus.APPROVED
+        : ProcurementOrderStatus.REJECTED;
     const updated = await prisma.purchaseOrder.update({
       where: { id: input.orderId },
       data: {
@@ -246,26 +255,26 @@ export class ProcurementOrderService {
       },
     });
 
-    const canReadCostPrice = ability.can(
-      "read",
+    // SAFETY: ProcurementAnyAbility 均实现 CASL 的字段级 can/rules 运行时契约。
+    const readableFields = pickReadableFields(
+      ability as unknown as AnyMongoAbility,
       ProcurementSubject,
-      "costPrice",
+      {
+        orderNo: updated.orderNo,
+        supplierName: updated.supplierName,
+        quantity: updated.quantity,
+        costPrice: formatCurrency(updated.costPrice),
+        status: newStatus,
+        auditComment: updated.auditComment,
+      } satisfies Record<ProcurementField, unknown>,
     );
 
     return {
       id: updated.id,
-      orderNo: updated.orderNo,
-      supplierName: updated.supplierName,
-      quantity: updated.quantity,
-      costPrice: canReadCostPrice
-        ? formatCurrency(updated.costPrice)
-        : "*** (依据字段策略脱敏)",
-      isCostPriceMasked: !canReadCostPrice,
+      ...readableFields,
       deptId: updated.deptId,
       departmentName: updated.department?.name ?? null,
       createdById: updated.createdById,
-      status: newStatus,
-      auditComment: updated.auditComment,
       createdAt: updated.createdAt,
       updatedAt: updated.updatedAt,
       canAuditThisOrder: false,

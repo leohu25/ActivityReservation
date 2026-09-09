@@ -91,7 +91,7 @@
       "dependencies": ["foundation-tenant-rbac-core"],
       "status": "completed",
       "owner": "coordinator",
-      "evidence": "落地 packages/features/tenant-admin 切片与 RolePermissionManager 组件；支持功能 Actions 复选、数据范围 Scopes 单选与四维字段矩阵；Control DB 扩展角色持久化 CRUD 并通过安全 Server Actions 严格守护租户管理员；极薄路由挂载 /settings/roles 与 Sidebar 导航；经独立 Reviewer 智能体审计并完成 403 守卫与推导加固；全仓 8 个测试套件 82/82 单测 100% 通过、12/12 包类型检查 0 错误、生产构建与全栈门禁 PASS"
+      "evidence": "落地 packages/features/tenant-admin 切片与 RolePermissionManager 组件；支持功能 Actions 复选、数据范围 Scopes 单选与四维字段矩阵；Control DB 扩展角色持久化 CRUD 并通过安全 Server Actions 严格守护租户管理员；极薄路由挂载 /settings/roles 与 Sidebar 导航；2026-09-09 加固字段权限闭环：配置矩阵仅展示业务切片已接入权限消费的字段，HIDDEN 字段从服务端 DTO、列表整列与表单控件中直接剥离，领域枚举按 authorization/procurement-center 内聚；全仓 10 个测试任务 122/122 通过、12/12 包类型检查与全栈门禁 PASS"
     },
     {
       "id": "procurement-center",

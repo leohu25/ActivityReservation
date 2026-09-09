@@ -6,7 +6,15 @@
  * - CUSTOM: 显式枚举指定的自定义部门数据。
  * - ALL: 整个租户组织范围内的全量数据，无范围限制。
  */
-export type DataScopeType = "SELF" | "DEPT" | "DEPT_TREE" | "CUSTOM" | "ALL";
+export const DataScope = {
+  SELF: "SELF",
+  DEPT: "DEPT",
+  DEPT_TREE: "DEPT_TREE",
+  CUSTOM: "CUSTOM",
+  ALL: "ALL",
+} as const;
+
+export type DataScopeType = (typeof DataScope)[keyof typeof DataScope];
 
 /**
  * 角色数据范围配置契约
@@ -64,19 +72,19 @@ function resolveScopeCondition(
   departmentIdField: string,
 ): PrismaQueryCondition | undefined {
   switch (scope.scopeType) {
-    case "SELF":
+    case DataScope.SELF:
       // 当 userId 为空时严格执行 Fail-Closed，防止 undefined 导致 Prisma where 忽略过滤条件造成全表泄露
       return topology.userId
         ? { [userIdField]: topology.userId }
         : { [userIdField]: "__NO_USER_FAIL_CLOSED__" };
 
-    case "DEPT":
+    case DataScope.DEPT:
       // 当用户未归属于任何部门时严格执行 Fail-Closed
       return topology.departmentId
         ? { [departmentIdField]: topology.departmentId }
         : { [departmentIdField]: "__NO_DEPARTMENT_FAIL_CLOSED__" };
 
-    case "DEPT_TREE": {
+    case DataScope.DEPT_TREE: {
       const treeIds =
         topology.departmentTreeIds ??
         (topology.departmentId ? [topology.departmentId] : []);
@@ -91,7 +99,7 @@ function resolveScopeCondition(
         : { [departmentIdField]: { in: [...treeIds] } };
     }
 
-    case "CUSTOM": {
+    case DataScope.CUSTOM: {
       const customIds = scope.customDepartmentIds ?? [];
       // 自定义部门列表为空时严格执行 Fail-Closed
       if (customIds.length === 0) {
@@ -104,7 +112,7 @@ function resolveScopeCondition(
         : { [departmentIdField]: { in: [...customIds] } };
     }
 
-    case "ALL":
+    case DataScope.ALL:
       // 全量组织范围无约束
       return undefined;
 

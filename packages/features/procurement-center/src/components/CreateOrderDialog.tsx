@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
+import type { FieldAccessMode } from "@chenrun/authorization";
 import {
   Button,
   Card,
@@ -17,7 +18,7 @@ import type { ProcurementAnyAbility } from "../types";
 
 export interface CreateOrderDialogProps {
   readonly ability?: ProcurementAnyAbility;
-  readonly fieldModes?: Record<string, "EDITABLE" | "READONLY" | "HIDDEN">;
+  readonly fieldModes?: Record<string, FieldAccessMode>;
   readonly departmentName?: string | null;
   readonly onCreated?: () => void;
 }
@@ -182,11 +183,6 @@ export function CreateOrderDialog({
                     field="costPrice"
                     action="create"
                     label="采购成本价 (敏感资产) *"
-                    fallback={
-                      <div className="text-xs text-slate-400 italic p-2 border rounded-md">
-                        当前角色无权配置成本价
-                      </div>
-                    }
                   >
                     <Input
                       type="number"
