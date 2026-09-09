@@ -125,9 +125,9 @@ repo/
 │   ├── authorization/                # CASL + Ability Factory + React 适配
 │   ├── db-control/                   # Control DB
 │   ├── db-tenant/                    # Tenant DB
-│   ├── ui/
-│   ├── shared/
-│   └── features/
+│   ├── ui/                           # 通用 UI 组件库
+│   ├── shared/                       # 共享底座包 (按领域收敛: api/, constants/, errors/, types/, utils/)
+│   └── features/                     # 垂直切片专属包 (内聚 services/, components/, server/, types.ts)
 │       └── procurement-center/
 │
 ├── tooling/
@@ -1067,7 +1067,42 @@ Policy 部署
 
 ---
 
-# 33. 最终一句话
+# 33. 包目录组织与反平铺规约 (Anti-Flat Directory Guidelines)
+
+为防止仓库随着功能增加而出现代码扁平平铺、职责混乱，各包必须严格遵守以下目录结构规范：
+
+### 33.1 共享底座包 (`packages/shared/src/`)
+按职责领域收敛，杜绝顶层平铺：
+```text
+packages/shared/src/
+├── api/                  # API 响应契约与函数式 Result/Either (response.ts, result.ts)
+├── constants/            # 全局枚举与系统常量 (DataScope, FieldPolicy, AuditStatus 等)
+├── errors/               # 统一异常与错误码体系 (AppError, BusinessError 等)
+├── types/                # 通用 TypeScript 类型与分页契约 (common.ts, pagination.ts)
+├── utils/                # 纯函数工具套件 (按子领域划分)
+│   ├── collection/       # 集合与对象纯函数
+│   ├── format/           # 货币、数值、日期格式化
+│   ├── mask/             # 敏感数据脱敏
+│   ├── tree/             # 组织与部门树拓扑工具
+│   └── validation/       # 统一信用代码、手机、邮箱合规校验
+└── index.ts              # 统一对外聚合导出总入口
+```
+
+### 33.2 垂直切片包 (`packages/features/<feature-name>/src/`)
+标准内聚五大要素：
+```text
+packages/features/<name>/src/
+├── services/             # 领域业务服务 (纯粹业务逻辑与仓储操作)
+├── components/           # 视图交互组件 (复杂界面按子域建子目录，避免单目录膨胀)
+├── server/               # 服务端运行时装配 (会话校验、网关守卫)
+├── actions.ts            # Next.js Server Actions
+├── types.ts              # DTO、视图模型与入参回参契约
+└── index.ts              # 切片对外公开 API 聚合导出
+```
+
+---
+
+# 34. 最终一句话
 
 > **V1 使用 Better Auth 管理用户、会话、Tenant（Organization）、成员、动态角色和功能权限；使用 CASL 管理 Action（动作）、Subject（资源）、Conditions（数据条件）、Fields（字段权限），并通过 `@casl/react` 与 `@casl/prisma` 将同一套授权思想应用到前端组件、服务端检查和数据库查询；再结合 PostgreSQL Database-per-Tenant、FDD 和 Harness，形成一个最小但不简陋的 SaaS Foundation（基础设施）。**
 

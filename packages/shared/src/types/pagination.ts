@@ -2,7 +2,7 @@
  * @chenrun/shared - 分页请求参数与标准化分页结果
  */
 
-import { DEFAULT_PAGINATION } from "./constants";
+import { DEFAULT_PAGINATION } from "../constants";
 
 export interface PaginationParams {
   readonly page?: number;

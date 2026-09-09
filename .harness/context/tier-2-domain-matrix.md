@@ -27,7 +27,27 @@ tooling/
 └── boundary-check/          # 架构边界静态检查器
 ```
 
-## 二、 核心依赖流向规则与 FDD 纪律
+## 二、 包目录组织与反平铺规约 (Anti-Flat Directory Guidelines)
+
+为保障工程高内聚并防止代码扁平膨胀，任何包必须严格遵守以下目录收敛原则：
+
+1. **单目录收敛红线**：包内 `src/` 一级目录超过 5 个同类文件时，严禁平铺，必须按职责抽象子目录。
+2. **共享底座规范 (`packages/shared/src/`)**：
+   - `types/`：通用 TypeScript 类型与分页契约 (`common.ts`, `pagination.ts`)；
+   - `errors/`：统一异常与错误体系 (`app-error.ts`)；
+   - `api/`：标准 API 响应与函数式 Result/Either (`response.ts`, `result.ts`)；
+   - `constants/`：全局枚举与系统常量；
+   - `utils/`：按业务与功能子域划分的纯函数套件 (`collection/`, `format/`, `mask/`, `tree/`, `validation/`)；
+   - `index.ts`：对外统一聚合导出入口。
+3. **垂直切片规范 (`packages/features/<feature-name>/src/`)**：
+   - `services/`：领域业务服务 (纯粹业务逻辑与持久化操作)；
+   - `components/`：专属视图组件 (复杂模块按子域建子目录，严禁几十个组件平铺)；
+   - `server/`：服务端运行时装配 (会话校验、网关守卫)；
+   - `actions.ts`：Next.js Server Actions；
+   - `types.ts`：DTO 与入参回参契约；
+   - `index.ts`：对外公开能力导出。
+
+## 三、 核心依赖流向规则与 FDD 纪律
 
 1. **应用层极薄化 (Thin Apps)**：`apps/*` 仅作为页面路由与权限上下文的装配层，**严禁在 `apps/` 内部编写复杂的业务服务、直接 SQL 查询或私有业务组件**，必须将其下沉到 `packages/features/<feature>/`。
 2. **切片自包含 (Self-Contained Slices)**：每个业务切片独立内聚其专属的 UI 组件 (`components/`)、服务层 (`services/`)、权限契约 (`permissions.ts`)、数据类型 (`types.ts`) 与单元测试。

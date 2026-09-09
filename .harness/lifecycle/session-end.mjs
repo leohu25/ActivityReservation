@@ -110,7 +110,21 @@ if (activeFeature && activeFeature !== "none") {
     }
   }
 } else {
-  process.stdout.write("  • 协同模式: 公共协同 (无激活的单特性锁定)\n");
+  process.stdout.write("  • 协同模式: 全局/公共协同 (无激活的单特性锁定)\n");
+  const rootProgress = path.join(workspaceRoot, "progress.md");
+  const rootHandoff = path.join(workspaceRoot, "session-handoff.md");
+  if (fs.existsSync(rootProgress)) {
+    process.stdout.write("  • 全局进展: progress.md 就绪\n");
+  } else {
+    process.stderr.write("  ✗ 缺少全局进展记录: progress.md\n");
+    hasError = true;
+  }
+  if (fs.existsSync(rootHandoff)) {
+    process.stdout.write("  • 全局交接: session-handoff.md 就绪\n");
+  } else {
+    process.stderr.write("  ✗ 缺少全局交接单: session-handoff.md\n");
+    hasError = true;
+  }
 }
 
 // 3. 检查 Git 工作区变动提示
