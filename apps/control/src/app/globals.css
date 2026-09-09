@@ -1,5 +1,7 @@
 @import "tailwindcss" source("../../../../");
 
+@custom-variant dark (&:is(.dark *));
+
 :root {
   --background: #f4f7fb;
   --foreground: #0f172a;
@@ -47,28 +49,26 @@
   --font-mono: var(--font-geist-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0b0f19;
-    --foreground: #f8fafc;
-    --card: #111827;
-    --card-foreground: #f8fafc;
-    --popover: #111827;
-    --popover-foreground: #f8fafc;
-    --primary: #3b82f6;
-    --primary-foreground: #ffffff;
-    --secondary: #1f2937;
-    --secondary-foreground: #f8fafc;
-    --muted: #1f2937;
-    --muted-foreground: #94a3b8;
-    --accent: #1e293b;
-    --accent-foreground: #60a5fa;
-    --destructive: #dc2626;
-    --destructive-foreground: #ffffff;
-    --border: #1f2937;
-    --input: #374151;
-    --ring: #3b82f6;
-  }
+.dark {
+  --background: #0b0f19;
+  --foreground: #f8fafc;
+  --card: #111827;
+  --card-foreground: #f8fafc;
+  --popover: #111827;
+  --popover-foreground: #f8fafc;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #1f2937;
+  --secondary-foreground: #f8fafc;
+  --muted: #1f2937;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #60a5fa;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #1f2937;
+  --input: #374151;
+  --ring: #3b82f6;
 }
 
 body {
@@ -76,3 +76,13 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+

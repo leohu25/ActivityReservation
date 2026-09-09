@@ -1,5 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
+import { ThemeProvider } from "@chenrun/ui";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,9 +19,12 @@ export default function RootLayout({
  readonly children: React.ReactNode;
 }) {
  return (
-  <html lang="zh-CN">
-   <body className="min-h-screen bg-[#F4F7FB] text-slate-900 font-sans antialiased">
-    {children}
+  <html lang="zh-CN" suppressHydrationWarning>
+   <body
+    className="min-h-screen bg-[#F4F7FB] text-slate-900 font-sans antialiased"
+    suppressHydrationWarning
+   >
+    <ThemeProvider>{children}</ThemeProvider>
    </body>
   </html>
  );

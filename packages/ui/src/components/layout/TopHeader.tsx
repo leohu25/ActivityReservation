@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { Button } from "../button";
+import { ThemeToggle } from "../ThemeToggle";
 import { Loader2 } from "lucide-react";
 
 export interface TopHeaderProps {
@@ -26,6 +27,12 @@ export function TopHeader({
 }: TopHeaderProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  const safeNavigateToLogin = () => {
+    if (typeof window !== "undefined") {
+      window.location.assign("/login");
+    }
+  };
+
   const handleSignOutClick = async () => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
@@ -33,10 +40,10 @@ export function TopHeader({
       if (onSignOut) {
         await onSignOut();
       } else {
-        window.location.href = "/login";
+        safeNavigateToLogin();
       }
     } catch {
-      window.location.href = "/login";
+      safeNavigateToLogin();
     } finally {
       setIsLoggingOut(false);
     }
@@ -46,7 +53,7 @@ export function TopHeader({
     if (onOpenLogin) {
       onOpenLogin();
     } else {
-      window.location.href = "/login";
+      safeNavigateToLogin();
     }
   };
 
@@ -77,8 +84,11 @@ export function TopHeader({
         {user && orgSwitcherSlot}
       </div>
 
-      {/* 右侧用户操作区 */}
-      <div className="flex items-center gap-4">
+      {/* 右侧用户与主题操作区 */}
+      <div className="flex items-center gap-3">
+        {/* 三态主题切换 (暗色 / 亮色 / 跟随系统) */}
+        <ThemeToggle />
+
         {user ? (
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50/80 py-1 pl-1.5 pr-3 dark:border-slate-800 dark:bg-slate-800/80">

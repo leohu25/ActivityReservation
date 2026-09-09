@@ -12,6 +12,8 @@ export * from "./components/layout/TopHeader";
 export * from "./components/layout/Sidebar";
 export * from "./components/AuthorizedField";
 export * from "./components/BusinessTableWorkspace";
+export * from "./components/ThemeProvider";
+export * from "./components/ThemeToggle";
 
 import React from "react";
 import {

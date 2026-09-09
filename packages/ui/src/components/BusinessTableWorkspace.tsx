@@ -456,7 +456,7 @@ export function BusinessTableWorkspace<TData>({
         <div className="flex-1 w-full space-y-4 min-w-0">
           {/* 搜索栏 */}
           {(searchFilters || onSearch) && (
-            <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-3.5 shadow-xs text-card-foreground">
               <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
                 {searchFilters}
               </div>
@@ -465,7 +465,7 @@ export function BusinessTableWorkspace<TData>({
                   <Button
                     size="sm"
                     onClick={onSearch}
-                    className="h-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs"
+                    className="h-8 font-semibold text-xs"
                   >
                     <Search className="size-3.5 mr-1" />
                     <span>查询</span>
@@ -488,14 +488,14 @@ export function BusinessTableWorkspace<TData>({
 
           {/* 实时下推查询条件展示（用于审计与可视化） */}
           {debugQueryClause && (
-            <Card className="border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900">
+            <Card className="bg-card">
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <CardTitle className="text-xs font-semibold text-foreground">
                     {debugQueryClause.title}
                   </CardTitle>
                   {debugQueryClause.tenantInfo && (
-                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                       <Building2 className="size-3" />
                       <span>{debugQueryClause.tenantInfo}</span>
                     </div>
@@ -503,25 +503,25 @@ export function BusinessTableWorkspace<TData>({
                 </div>
               </CardHeader>
               <CardContent className="p-4 pt-0">
-                <pre className="rounded-xl bg-slate-900 p-3 font-mono text-xs text-emerald-400 overflow-x-auto dark:bg-slate-950 border border-slate-800">
+                <pre className="rounded-lg bg-muted p-3 font-mono text-xs text-foreground overflow-x-auto border">
                   {debugQueryClause.content}
                 </pre>
               </CardContent>
             </Card>
           )}
 
-          {/* 数据表格核心区：纯正 shadcn/ui Table 原生组件 */}
-          <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          {/* 数据表格核心区：纯正 shadcn/ui Table 原生组件规范 */}
+          <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
             <Table>
               <TableHeader>
                 <TableRow>
                   {selectable && (
-                    <TableHead className="w-10 px-4 py-3 text-center">
+                    <TableHead className="w-10 px-4 text-center">
                       <input
                         type="checkbox"
                         checked={isAllSelected}
                         onChange={toggleSelectAll}
-                        className="size-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        className="size-3.5 rounded border-input text-primary focus:ring-ring"
                       />
                     </TableHead>
                   )}
@@ -538,7 +538,7 @@ export function BusinessTableWorkspace<TData>({
                     </TableHead>
                   ))}
                   {rowActions && (
-                    <TableHead className="px-5 py-3 font-bold text-right">
+                    <TableHead className="px-4 text-right">
                       {rowActionsHeader}
                     </TableHead>
                   )}
@@ -553,7 +553,7 @@ export function BusinessTableWorkspace<TData>({
                         (selectable ? 1 : 0) +
                         (rowActions ? 1 : 0)
                       }
-                      className="px-5 py-12 text-center text-slate-400 text-xs"
+                      className="h-28 text-center text-muted-foreground text-xs"
                     >
                       暂无符合条件的数据记录
                     </TableCell>
@@ -568,12 +568,12 @@ export function BusinessTableWorkspace<TData>({
                         data-state={isSelected ? "selected" : undefined}
                       >
                         {selectable && (
-                          <TableCell className="px-4 py-3.5 text-center">
+                          <TableCell className="px-4 text-center">
                             <input
                               type="checkbox"
                               checked={isSelected}
                               onChange={() => toggleSelectRow(key)}
-                              className="size-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                              className="size-3.5 rounded border-input text-primary focus:ring-ring"
                             />
                           </TableCell>
                         )}
@@ -589,7 +589,7 @@ export function BusinessTableWorkspace<TData>({
                           </TableCell>
                         ))}
                         {rowActions && (
-                          <TableCell className="px-5 py-3.5 text-right whitespace-nowrap">
+                          <TableCell className="px-4 text-right whitespace-nowrap">
                             {rowActions(record)}
                           </TableCell>
                         )}
@@ -602,10 +602,10 @@ export function BusinessTableWorkspace<TData>({
 
             {/* 分页栏 */}
             {pagination && (
-              <div className="flex items-center justify-between border-t border-slate-200/80 px-5 py-3 bg-slate-50/40 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900/60">
+              <div className="flex items-center justify-between border-t px-4 py-3 bg-muted/30 text-xs text-muted-foreground">
                 <div>
                   共{" "}
-                  <span className="font-bold text-slate-800 dark:text-slate-200">
+                  <span className="font-semibold text-foreground">
                     {pagination.total}
                   </span>{" "}
                   条单据记录

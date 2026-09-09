@@ -42,3 +42,24 @@
   - 核心节点只需保证通过一次有效门禁；
   - 刚刚验证通过且代码未再修改时，直接执行提交，由 `pre-commit` 自动兜底；
   - 日常开发优先执行单 Package 测试或类型检查，避免无节制全量扫盘。
+
+## 7. 公共 UI 模块与 shadcn 官方组件安装规范 (Monorepo SOP)
+
+- **痛点**：
+  - 手写私有 UI 伪冒 shadcn 原生规范，不仅颜色硬编码（如 `slate-*`、`blue-*`），且绕过了 `--muted`、`--border` 等设计令牌，导致主题、品牌色和 Dark Mode 切换失效；
+  - 在 Monorepo 环境中随意运行交互式 CLI 容易卡死终端，或因缺少子包别名导致文件落入错误路径。
+- **解法与固化规范**：
+  - **基础原子组件标准**：`packages/ui` 基础原子组件必须 100% 遵循 `shadcn/ui (new-york)` 原生实现，使用 React 19 标准签名、`data-slot` 体系与 CSS 变量设计令牌；
+  - **安装新组件必须走统一命令**：
+
+    ```bash
+    pnpm ui:add <component_name>
+    # 等价于：npx shadcn@latest add <component_name> -y --overwrite -c packages/ui
+    ```
+
+  - **组件添加后的标准化流程 (SOP)**：
+    1. **命令下发**：根目录执行 `pnpm ui:add <组件名>`；
+    2. **依赖闭环**：检查 `packages/ui/package.json`，确保 CLI 下载引入的新依赖（如 `@radix-ui/*`）声明完整，避免幽灵依赖；
+    3. **统一导出**：在 `packages/ui/src/index.ts` 中显式追加 `export * from "./components/<组件名>";`，使全仓业务应用直接从 `@chenrun/ui` 导入；
+    4. **质量验证**：执行 `pnpm --filter @chenrun/ui check && pnpm --filter @chenrun/ui test`；
+    5. **门禁自检**：运行 `./scripts/verify.sh` 确保类型零错误、无幽灵依赖。
