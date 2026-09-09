@@ -34,3 +34,11 @@
   - **各特性的执行进度与换手交接单**严格且唯一收敛至其自身专属沙盒目录 `.harness/features/<id>/progress.md` 与 `handoff.md`；
   - **全局特性账本**统一以 `feature_list.json` 为唯一事实源 (SSoT)；
   - **跨特性的经验总结**统一沉淀至 `.harness/memory/learnings.md`，**发现的历史遗留问题**统一登记至 `.harness/memory/technical-debt.md`。
+
+## 6. 合理执行门禁验证，杜绝机械重复
+
+- **痛点**：在准备执行 `git commit` 前，开发者或智能体已刚刚手动运行过 `./scripts/verify.sh` 并确认通过；由于 Git `pre-commit` 钩子本身已挂载该校验，若在无源码变更下连续手动重复执行，会导致 12 个 package 的全量类型与红线扫描被连续计算两次，造成严重的无效等待。
+- **解法**：
+  - 核心节点只需保证通过一次有效门禁；
+  - 刚刚验证通过且代码未再修改时，直接执行提交，由 `pre-commit` 自动兜底；
+  - 日常开发优先执行单 Package 测试或类型检查，避免无节制全量扫盘。
