@@ -255,9 +255,7 @@ function computeAllowedFields(
 
   // 如果定义了受控字段清单，则以此为基准进行过滤
   const candidateFields =
-    catalogFields.length > 0
-      ? catalogFields
-      : policies.map((p) => p.field);
+    catalogFields.length > 0 ? catalogFields : policies.map((p) => p.field);
 
   return candidateFields.filter((field) => {
     const access = policyMap.get(field);
