@@ -74,3 +74,18 @@
   - **对齐成熟生态规范**：如 SuperJSON 官方明确提供了对 `Decimal.js` / `Prisma.Decimal` 的标准拓展配方（`SuperJSON.registerCustom<Decimal, string>(...)`），严格遵循官方实现既优雅又稳健；
   - **坚持工业级标准**：能用业界经过数亿次生产验证的成熟库（如 `radash`、`dayjs`、`superjson`、`Intl`）解决的问题，严禁手写脆弱轮子；同时必须对齐强类型（彻底消灭 `any`）与完备的中文业务注释。
 
+## 9. 严禁 UI 组件与 Next.js 假解耦！对齐 App Router 嵌套布局与局部渲染官方范式 (Partial Rendering Invariant)
+
+- **痛点复盘**：
+  - 租户端点击左侧侧边栏时整页白屏刷新，展开的手风琴全部收缩重置（体验极其怪异）；
+  - 核心根因：`packages/ui` 里的 `Sidebar.tsx` 为了所谓的“跨框架通用”，自欺欺人地搞了假解耦，默认退化为原生 `<a>`（`DefaultLink`）和 `window.location.pathname`。而在上层消费时又没有处理好路由注入，导致菜单点击退化成浏览器的**硬导航 (Hard Navigation)**，整篇 HTML 和 JS 内存堆全部被销毁重建；
+  - 初始误区：甚至试图在应用层再包一层 `app-sidebar.tsx` 去打补丁，制造了无意义的冗余胶水层。
+- **Next.js 官方正统 Mental Model (思维模型)**：
+  - **Hard Navigation vs Soft Navigation**：原生 `<a>` 必然导致硬导航（销毁整页与状态）；只有 `next/link` 才能触发 App Router 的软导航与路由缓存（Router Cache）；
+  - **Layout State Preservation**：官方原语承诺 *“A layout is UI that is shared between multiple routes. On navigation, layouts preserve state, remain interactive, and do not re-render.”*；
+  - **组件边界原则**：在针对 Next.js 生态的专用应用与 UI 库中，**严禁用冗余的 `LinkComponent` 抽象层把原本两行代码的原生 `next/link` 和 `usePathname` 搞得支离破碎**；直接遵循官方标准，组件自身原生接入 `next/link`。
+- **全栈固化工程规范 (Iron Rules)**：
+  1. **零冗余胶水层**：禁止在路由组目录制造类似于 `app-sidebar.tsx` 这种仅仅为了桥接 `Link` 的空壳组件，`layout.tsx` 直接消费 UI 库导出的标准组件；
+  2. **官方正统依赖**：由于本项目核心架构即为 Next.js 16 App Router，`@chenrun/ui` 显式依赖 `next`，直接 `import Link from "next/link"` 与 `import { usePathname } from "next/navigation"`；
+  3. **兼顾单测受控能力**：为纯 Node 环境的 `renderToString` 单测保留可选的 `currentPath` 覆盖入参（`const currentPath = propCurrentPath ?? routerPath ?? ""`），保证既有官方正统体验，又兼顾 100% 纯函数式测试能力；
+  4. **局部骨架标配**：所有路由组必须在同级配置 `loading.tsx`，在 RSC 增量取数期间提供即时骨架屏（Instant Loading States），杜绝页面跳转卡顿错觉。

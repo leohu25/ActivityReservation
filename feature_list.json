@@ -55,7 +55,7 @@
       "dependencies": ["foundation-advanced-authz"],
       "status": "completed",
       "owner": "implementer",
-      "evidence": "基于 App Router 拆解 /login, /workbench, /procurement/orders；引入 shadcn/ui 体系与 PermissionField；通过 .env.local 直连 PostgreSQL 容器实库消除死数据；全仓 42/42 测试、8/8 check 与 build 全部 PASS"
+      "evidence": "基于 App Router 拆解 /login, /workbench, /procurement/orders；引入 shadcn/ui 体系与 PermissionField；通过 .env.local 直连 PostgreSQL 实库；侧边栏遵循官方 Partial Rendering 范式内置 next/link 与 usePathname 彻底消除硬导航全页重载；全仓 14/14 ui 单测、14/14 turbo check 与 build 全部 PASS"
     },
     {
       "id": "foundation-migration",

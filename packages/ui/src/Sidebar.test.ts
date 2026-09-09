@@ -26,8 +26,7 @@ test("Sidebar 默认渲染出标准多级导航与各核心菜单分组", () => 
   assert.ok(html.includes("审计日志"));
 });
 
-test("Sidebar 依据 currentPath 自动展开所属父级分组并高亮对应子项", () => {
-  // 当访问 /settings/company 时，系统管理的“企业设置”应展开并渲染其子链接
+test("Sidebar 依据当前路由自动展开所属父级分组并高亮对应子项", () => {
   const html = renderToString(
     React.createElement(Sidebar, { currentPath: "/settings/company" }),
   );

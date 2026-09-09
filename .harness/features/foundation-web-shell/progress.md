@@ -25,3 +25,31 @@
 - `pnpm build`：PASS（包含 6 个 App Router 动静态路由）
 - `./scripts/verify.sh`：PASS（边界合规、56 个源码无红线违规）
 - `./init.sh`：PASS
+
+---
+
+## 缺陷修补记录：侧边栏菜单点击触发整页刷新 (2026-09-11)
+
+### 根因
+
+- `packages/ui/.../Sidebar.tsx` 默认 `LinkComponent = DefaultLink`（原生 `<a>`），`apps/tenant` 从未注入 `next/link` → 菜单点击是**整篇文档重新加载**，而非 App Router 客户端跳转；
+- 侧边栏当前路径仅靠 `useEffect` 读一次 `window.location.pathname` → 全页刷新后 `openGroups` 重置为空，只剩当前路径命中分组自动展开（即用户看到的“其他菜单全部折叠”）；
+- 与 SSR/CSR 选型无关：`headers()` 使 layout 动态渲染只影响 RSC 取数，不会重挂载已挂载的客户端组件（对比 `ControlLayout` 一开始就用 `next/link + usePathname`，平台端无此问题）。
+
+### 修复方案（遵循 Next.js App Router 官方正统范式，彻底摒弃胶水层）
+
+- **彻底删除** `apps/tenant/src/app/(dashboard)/app-sidebar.tsx`（杜绝脱裤子放屁的过度包装）；
+- `Sidebar.tsx` 直接官方原生化：
+  - 彻底拔除假解耦的 `LinkComponent`、`DefaultLink`（原生 `<a>` 标签）与 `popstate`；
+  - 直接 `import Link from "next/link"` 与 `import { usePathname } from "next/navigation"`；
+  - 路由状态直接由 `usePathname()` 驱动，保证软导航与 Layout 状态保留；
+  - 兼顾单测：支持可选 `currentPath` 覆盖，适配纯 Node 环境 `renderToString` 断言；
+- `(dashboard)/layout.tsx` 保持极简：直接引入并渲染 `@chenrun/ui` 导出的 `<Sidebar allowedPermissions={...} />`；
+- 保留 `(dashboard)/loading.tsx` 骨架屏，遵循官方 Instant Loading States 范式。
+
+### 验证证据
+
+- `pnpm --filter @chenrun/ui test`：14/14 PASS（100% 通过）
+- `pnpm check`：14/14 tasks PASS（0 类型错误）
+- `node scripts/check-redlines.mjs`：192 个源码文件 0 红线违规
+- 运行时验证：菜单切换为官方 Soft Navigation 局部替换，手风琴展开状态完整保留，零全页刷新。

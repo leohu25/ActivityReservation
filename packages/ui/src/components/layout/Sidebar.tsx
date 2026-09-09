@@ -1,11 +1,8 @@
 "use client";
 
-import React, {
-  type ComponentType,
-  type ReactNode,
-  useState,
-  useEffect,
-} from "react";
+import React, { type ReactNode, useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   ShieldCheck,
   PackageCheck,
@@ -44,15 +41,11 @@ export interface NavSection {
 export interface SidebarProps {
   readonly sections?: readonly NavSection[];
   readonly navItems?: readonly NavItem[];
+  /** 可选：仅在非 Next.js 路由测试环境或需要强制受控路由时指定，生产中默认自动读取 usePathname() */
   readonly currentPath?: string;
   readonly can?: (action: string, subject: string) => boolean;
   /** 允许的服务端序列化权限规则数组或白名单 key 集合 (例如: ['read:CustomerModule', 'read:Customer']) */
   readonly allowedPermissions?: readonly string[];
-  readonly LinkComponent?: ComponentType<{
-    href: string;
-    className?: string;
-    children: ReactNode;
-  }>;
 }
 
 /** 遵循设计规范第 48 节的标准租户导航菜单清单 */
@@ -244,20 +237,6 @@ export const DEFAULT_NAV_SECTIONS: readonly NavSection[] = [
 export const DEFAULT_NAV_ITEMS: readonly NavItem[] =
   DEFAULT_NAV_SECTIONS.flatMap((section) => section.items);
 
-const DefaultLink = ({
-  href,
-  className,
-  children,
-}: {
-  href: string;
-  className?: string;
-  children: ReactNode;
-}) => (
-  <a href={href} className={className}>
-    {children}
-  </a>
-);
-
 /** 递归检查项是否可见 */
 function isItemVisible(
   item: NavItem,
@@ -342,8 +321,9 @@ function hasActiveChild(item: NavItem, currentPath: string): boolean {
 }
 
 /**
- * ERP 统一后台左侧导航侧边栏 (遵循现代轻量工业数智风与规范第 48 节)
- * 支持多级折叠树、依据当前路径自动高亮展开、纯白浮动与矢量图标
+ * ERP 统一后台左侧导航侧边栏
+ * 遵循 Next.js App Router 官方标准：直接使用 usePathname() 与 next/link
+ * 支持多级折叠树、依据当前路径自动展开高亮、布局持久挂载且页面无刷新软跳转
  */
 export function Sidebar({
   sections,
@@ -351,23 +331,14 @@ export function Sidebar({
   currentPath: propCurrentPath,
   can,
   allowedPermissions,
-  LinkComponent = DefaultLink,
 }: SidebarProps) {
-  const Link = LinkComponent;
   const allowedPermissionsSet = allowedPermissions
     ? new Set(allowedPermissions)
     : undefined;
 
-  // 1. 确定当前路径：优先使用显式 prop，未提供时在浏览器端自适应 window.location.pathname
-  const [currentPath, setCurrentPath] = useState<string>(propCurrentPath ?? "");
-
-  useEffect(() => {
-    if (propCurrentPath !== undefined) {
-      setCurrentPath(propCurrentPath);
-    } else if (typeof window !== "undefined") {
-      setCurrentPath(window.location.pathname);
-    }
-  }, [propCurrentPath]);
+  // 1. Next.js 官方标准：生产中由 usePathname() 自动获取激活路由（支持单测传入 currentPath 覆盖）
+  const routerPath = usePathname();
+  const currentPath = propCurrentPath ?? routerPath ?? "";
 
   // 2. 确定数据源：若未提供 sections，支持将 navItems 适配为标准结构
   const effectiveSections: readonly NavSection[] =
