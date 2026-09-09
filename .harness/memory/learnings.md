@@ -63,3 +63,14 @@
     3. **统一导出**：在 `packages/ui/src/index.ts` 中显式追加 `export * from "./components/<组件名>";`，使全仓业务应用直接从 `@chenrun/ui` 导入；
     4. **质量验证**：执行 `pnpm --filter @chenrun/ui check && pnpm --filter @chenrun/ui test`；
     5. **门禁自检**：运行 `./scripts/verify.sh` 确保类型零错误、无幽灵依赖。
+
+## 8. 严禁主观猜测与私造轮子，遇到疑难强制检索官方规范 (Official Docs First)
+
+- **痛点**：
+  - 在遇到框架或库的复杂底层报错时（例如 Next.js App Router 报错 `Only plain objects can be passed. Decimal objects are not supported`），容易凭借主观经验猜测，盲目手写脆弱的递归清洗或 ad-hoc 拼接逻辑；
+  - 甚至在引入三方库时（如 SuperJSON）未查阅其真实规范，误以为默认支持任意非原生 Class，漏掉了官方 README 明确要求的 `registerCustom` 配方，导致重复踩坑与代码架构漂移。
+- **解法与行为契约 (Learning & Invariant)**：
+  - **首查官方文档 (Official Recipes First)**：遇到涉及三方库行为、版本破坏性改动或边缘报错时，**严禁闭门造车或主观猜测**，必须第一时间通过联网搜索或文档检索工具查阅官方 GitHub 仓库、官方 README 与标准配方（Recipes）；
+  - **对齐成熟生态规范**：如 SuperJSON 官方明确提供了对 `Decimal.js` / `Prisma.Decimal` 的标准拓展配方（`SuperJSON.registerCustom<Decimal, string>(...)`），严格遵循官方实现既优雅又稳健；
+  - **坚持工业级标准**：能用业界经过数亿次生产验证的成熟库（如 `radash`、`dayjs`、`superjson`、`Intl`）解决的问题，严禁手写脆弱轮子；同时必须对齐强类型（彻底消灭 `any`）与完备的中文业务注释。
+

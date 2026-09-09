@@ -4,6 +4,7 @@ import {
   listStoresAction,
   listCustomersAction,
 } from "@chenrun/feature-customer-center";
+import { toPlainData } from "@chenrun/shared";
 
 export default async function StoresPage() {
   const [storesRes, custRes] = await Promise.all([
@@ -11,8 +12,10 @@ export default async function StoresPage() {
     listCustomersAction(),
   ]);
 
-  const stores = storesRes.success && storesRes.data ? storesRes.data : [];
-  const customers = custRes.success && custRes.data ? custRes.data : [];
+  const stores =
+    storesRes.success && storesRes.data ? toPlainData(storesRes.data) : [];
+  const customers =
+    custRes.success && custRes.data ? toPlainData(custRes.data) : [];
 
   return <StoreView initialStores={stores} customers={customers} />;
 }

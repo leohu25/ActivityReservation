@@ -48,6 +48,8 @@ export interface ColumnDef<TData> {
   align?: "left" | "center" | "right";
 }
 
+export type { ColumnDef as BusinessTableColumn };
+
 export interface WorkspaceViewItem {
   id: string;
   label: string;
@@ -63,7 +65,7 @@ export interface WorkspaceStatusItem {
 
 export interface BusinessTableWorkspaceProps<TData> {
   /** 实体 Subject 标识，如 "PurchaseOrder" */
-  subject: string;
+  subject?: string;
   /** CASL Ability 或兼容接口实例，用于自动判定按钮显隐与受控字段权限 */
   ability?: {
     can(action: string, subject: string, field?: string): boolean;
@@ -141,7 +143,7 @@ export interface BusinessTableWorkspaceProps<TData> {
 }
 
 export function BusinessTableWorkspace<TData>({
-  subject,
+  subject = "General",
   ability,
   breadcrumbs,
   title,

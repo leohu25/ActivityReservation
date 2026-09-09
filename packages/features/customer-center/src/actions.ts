@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { toPlainData } from "@chenrun/shared";
 import { getTenantCustomerContext } from "./server/session";
 import {
   CustomerCategoryTagService,
@@ -24,7 +25,7 @@ export async function getCategoryTreeAction() {
   try {
     const { client } = await getTenantCustomerContext();
     const tree = await CustomerCategoryTagService.getCategoryTree(client);
-    return { success: true, data: tree };
+    return { success: true, data: toPlainData(tree) };
   } catch (err: unknown) {
     return {
       success: false,
@@ -81,7 +82,7 @@ export async function listTagsAction(tagType?: string) {
   try {
     const { client } = await getTenantCustomerContext();
     const tags = await CustomerCategoryTagService.listTags(client, tagType);
-    return { success: true, data: tags };
+    return { success: true, data: toPlainData(tags) };
   } catch (err: unknown) {
     return {
       success: false,
@@ -144,7 +145,7 @@ export async function listCustomersAction(filter?: {
   try {
     const { client } = await getTenantCustomerContext();
     const list = await CustomerService.listCustomers(client, filter);
-    return { success: true, data: list };
+    return { success: true, data: toPlainData(list) };
   } catch (err: unknown) {
     return {
       success: false,
@@ -237,7 +238,7 @@ export async function listStoresAction(filter?: {
   try {
     const { client } = await getTenantCustomerContext();
     const list = await CustomerStoreService.listStores(client, filter);
-    return { success: true, data: list };
+    return { success: true, data: toPlainData(list) };
   } catch (err: unknown) {
     return {
       success: false,
@@ -330,7 +331,7 @@ export async function listQuotesAction(filter?: {
   try {
     const { client } = await getTenantCustomerContext();
     const list = await CustomerQuoteService.listQuotes(client, filter);
-    return { success: true, data: list };
+    return { success: true, data: toPlainData(list) };
   } catch (err: unknown) {
     return {
       success: false,

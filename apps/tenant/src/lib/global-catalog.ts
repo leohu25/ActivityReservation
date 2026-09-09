@@ -5,6 +5,7 @@ import { procurementPermissionDefinition } from "@chenrun/feature-procurement-ce
 /**
  * 全局租户端自描述权限资源清单（供全局 Ability 构建与侧边栏动态过滤使用）
  * 彻底遵循形态 A（隐式自动推导）：仅注册真实的业务实体资源，完全废弃任何 *.module 伪资源！
+ * TODO 后续改为自动扫描,动态发现。
  */
 export const globalTenantPermissionDefinitions = [
   procurementPermissionDefinition,

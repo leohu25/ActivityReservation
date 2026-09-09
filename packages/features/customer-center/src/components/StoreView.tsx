@@ -3,25 +3,43 @@
 import React, { useState } from "react";
 import { Plus, Search, ShieldAlert, Building2 } from "lucide-react";
 import {
+  BusinessTableWorkspace,
+  Button,
+  Input,
+  Badge,
+  type BusinessTableColumn,
+} from "@chenrun/ui";
+import {
   createStoreAction,
   updateStoreStatusAction,
   deleteStoreAction,
 } from "../actions";
+import { CustomerStoreSubject } from "../permissions";
+import type { StoreListItem, CustomerListItem } from "../types";
 
+/**
+ * 门店档案列表页面入参属性契约
+ */
 interface Props {
-  initialStores: any[];
-  customers: any[];
+  /** 初始门店列表数据集 */
+  initialStores: StoreListItem[];
+  /** 可选客户关联字典列表 */
+  customers: CustomerListItem[];
 }
 
+/**
+ * 客户中心 - 门店档案管理工作台
+ * 遵循现代数智工业风规范，全面接入 BusinessTableWorkspace 标准表格体系
+ */
 export function StoreView({ initialStores, customers }: Props) {
-  const [stores] = useState(initialStores);
+  const [stores] = useState<StoreListItem[]>(initialStores);
   const [keyword, setKeyword] = useState("");
   const [selectedCust, setSelectedCust] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 新建门店表单
+  // 新建门店模态框表单状态
   const [showModal, setShowModal] = useState(false);
   const [customerCode, setCustomerCode] = useState(
     customers[0]?.customerCode || "",
@@ -37,6 +55,9 @@ export function StoreView({ initialStores, customers }: Props) {
   const [billingContact, setBillingContact] = useState("");
   const [billingPhone, setBillingPhone] = useState("");
 
+  /**
+   * 客户端组合多条件实时筛选
+   */
   const filteredStores = stores.filter((s) => {
     if (selectedCust && s.customerCode !== selectedCust) return false;
     if (selectedStatus && s.status !== selectedStatus) return false;
@@ -53,7 +74,10 @@ export function StoreView({ initialStores, customers }: Props) {
     return true;
   });
 
-  const handleCreateStore = async (e: React.FormEvent) => {
+  /**
+   * 提交新建门店主数据
+   */
+  const handleCreateStore = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -78,16 +102,19 @@ export function StoreView({ initialStores, customers }: Props) {
       } else {
         setError(res.error || "创建门店失败");
       }
-    } catch (err: any) {
-      setError(err.message || "请求异常");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "请求异常");
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * 切换门店启用/停用状态
+   */
   const handleToggleStatus = async (
     storeCode: string,
-    currentStatus: string,
+    currentStatus: "ACTIVE" | "DISABLED" | string,
   ) => {
     setLoading(true);
     setError(null);
@@ -104,6 +131,9 @@ export function StoreView({ initialStores, customers }: Props) {
     }
   };
 
+  /**
+   * 删除指定门店
+   */
   const handleDelete = async (storeCode: string) => {
     if (
       !confirm(
@@ -127,279 +157,295 @@ export function StoreView({ initialStores, customers }: Props) {
     }
   };
 
+  // 配送时段语义化字典映射
   const deliveryPeriodLabels: Record<string, string> = {
     MORNING: "早间配送 (05:00-08:00)",
     NOON: "午间配送 (10:00-12:00)",
     EVENING: "傍晚配送 (15:00-18:00)",
   };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center pb-4 border-b border-zinc-200 dark:border-zinc-800">
-        <div>
-          <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
-            门店档案管理
-          </h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            门店是订单订货、物流配送、现场签收与对账的最小履约单元，必须归属于有效客户并绑定区域。
-          </p>
+  /**
+   * 标准表格列定义（强类型化，无 any 逃逸）
+   */
+  const columns: BusinessTableColumn<StoreListItem>[] = [
+    {
+      id: "storeCode",
+      header: "门店编码",
+      width: 140,
+      cell: (s) => (
+        <span className="font-mono text-xs font-semibold text-foreground">
+          {s.storeCode}
+        </span>
+      ),
+    },
+    {
+      id: "storeName",
+      header: "门店名称",
+      cell: (s) => (
+        <div className="font-medium text-foreground">{s.storeName}</div>
+      ),
+    },
+    {
+      id: "customer",
+      header: "所属客户",
+      width: 170,
+      cell: (s) => (
+        <div className="flex items-center gap-1.5 text-xs text-foreground">
+          <Building2 className="size-3.5 text-muted-foreground shrink-0" />
+          <span className="truncate">
+            {s.customer?.customerName || s.customerCode}
+          </span>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-50 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 text-sm font-medium rounded-lg shadow-sm transition-colors"
+      ),
+    },
+    {
+      id: "regionDelivery",
+      header: "区域 / 配送时段",
+      width: 180,
+      cell: (s) => (
+        <div className="text-xs">
+          <div className="font-mono text-muted-foreground">{s.regionCode}</div>
+          <div className="text-foreground mt-0.5">
+            {s.deliveryPeriod
+              ? deliveryPeriodLabels[s.deliveryPeriod] || s.deliveryPeriod
+              : "默认时段"}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: "address",
+      header: "配送收货地址",
+      cell: (s) => (
+        <div
+          className="text-xs text-muted-foreground max-w-xs truncate"
+          title={s.address}
         >
-          <Plus className="size-4" />
-          新建门店
-        </button>
-      </div>
+          {s.address}
+        </div>
+      ),
+    },
+    {
+      id: "contact",
+      header: "门店联系人",
+      width: 150,
+      cell: (s) => (
+        <div className="text-xs">
+          <div className="font-medium text-foreground">{s.contactPerson}</div>
+          <div className="text-muted-foreground font-mono">
+            {s.contactPhone}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: "status",
+      header: "状态",
+      width: 90,
+      align: "center",
+      cell: (s) => (
+        <Badge
+          variant={s.status === "ACTIVE" ? "success" : "secondary"}
+          size="sm"
+        >
+          {s.status === "ACTIVE" ? "正常" : "已停用"}
+        </Badge>
+      ),
+    },
+  ];
 
+  return (
+    <div className="space-y-4">
+      {/* 错误提示浮层 */}
       {error && (
-        <div className="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-lg flex items-center gap-2 text-red-700 dark:text-red-400 text-sm">
+        <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg flex items-center gap-2 text-destructive text-sm">
           <ShieldAlert className="size-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* 筛选工具栏 */}
-      <div className="flex flex-wrap items-center gap-3 bg-zinc-50 dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 text-sm">
-        <div className="relative flex-1 min-w-[240px]">
-          <Search className="absolute left-3 top-2.5 size-4 text-zinc-400" />
-          <input
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="搜索门店名称、编码、收货地址..."
-            className="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-sm outline-none"
-          />
-        </div>
+      {/* 企业级标准表格工作台 */}
+      <BusinessTableWorkspace<StoreListItem>
+        subject={CustomerStoreSubject}
+        title="门店档案管理"
+        description="门店是订单订货、物流配送、现场签收与对账的最小履约单元，必须归属于有效客户并绑定区域。"
+        extraHeader={
+          <Button
+            size="sm"
+            onClick={() => setShowModal(true)}
+            className="font-semibold shadow-xs"
+          >
+            <Plus className="size-4 mr-1" />
+            <span>新建门店</span>
+          </Button>
+        }
+        searchFilters={
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
+              <Input
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                placeholder="搜索门店名称、编码、收货地址..."
+                className="h-8 w-64 pl-8 text-xs"
+              />
+            </div>
+            <select
+              value={selectedCust}
+              onChange={(e) => setSelectedCust(e.target.value)}
+              className="h-8 px-2.5 rounded-md border border-input bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              <option value="">全部所属客户</option>
+              {customers.map((c) => (
+                <option key={c.customerCode} value={c.customerCode}>
+                  {c.customerName}
+                </option>
+              ))}
+            </select>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="h-8 px-2.5 rounded-md border border-input bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              <option value="">全部状态</option>
+              <option value="ACTIVE">正常</option>
+              <option value="DISABLED">已停用</option>
+            </select>
+          </div>
+        }
+        onReset={() => {
+          setKeyword("");
+          setSelectedCust("");
+          setSelectedStatus("");
+        }}
+        data={filteredStores}
+        columns={columns}
+        rowKey={(s) => s.storeCode}
+        selectable={false}
+        rowActionsHeader="操作"
+        rowActions={(s) => (
+          <div className="flex items-center justify-end gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={loading}
+              onClick={() => handleToggleStatus(s.storeCode, s.status)}
+              className="h-7 px-2 text-xs"
+            >
+              {s.status === "ACTIVE" ? "停用" : "启用"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={loading}
+              onClick={() => handleDelete(s.storeCode)}
+              className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              删除
+            </Button>
+          </div>
+        )}
+      />
 
-        <select
-          value={selectedCust}
-          onChange={(e) => setSelectedCust(e.target.value)}
-          className="px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-sm"
-        >
-          <option value="">全部所属客户</option>
-          {customers.map((c) => (
-            <option key={c.customerCode} value={c.customerCode}>
-              {c.customerName}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value)}
-          className="px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-sm"
-        >
-          <option value="">全部状态</option>
-          <option value="ACTIVE">正常</option>
-          <option value="DISABLED">已停用</option>
-        </select>
-      </div>
-
-      {/* 门店表格 */}
-      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-zinc-700 dark:text-zinc-300">
-            <thead className="bg-zinc-100/70 dark:bg-zinc-800/60 text-xs font-semibold text-zinc-500 uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-800">
-              <tr>
-                <th className="px-4 py-3">门店编码</th>
-                <th className="px-4 py-3">门店名称</th>
-                <th className="px-4 py-3">所属客户</th>
-                <th className="px-4 py-3">区域/配送时段</th>
-                <th className="px-4 py-3">配送收货地址</th>
-                <th className="px-4 py-3">门店联系人</th>
-                <th className="px-4 py-3">状态</th>
-                <th className="px-4 py-3 text-right">操作</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-              {filteredStores.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="text-center py-12 text-zinc-400">
-                    暂无符合条件的门店档案
-                  </td>
-                </tr>
-              ) : (
-                filteredStores.map((s) => (
-                  <tr
-                    key={s.storeCode}
-                    className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors"
-                  >
-                    <td className="px-4 py-3 font-mono font-medium text-xs text-zinc-900 dark:text-zinc-100">
-                      {s.storeCode}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
-                      {s.storeName}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5 text-xs text-zinc-900 dark:text-zinc-100">
-                        <Building2 className="size-3.5 text-zinc-400" />
-                        <span>
-                          {s.customer?.customerName || s.customerCode}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-xs">
-                      <div className="font-mono text-zinc-700 dark:text-zinc-300">
-                        {s.regionCode}
-                      </div>
-                      <div className="text-zinc-400">
-                        {deliveryPeriodLabels[s.deliveryPeriod] ||
-                          s.deliveryPeriod ||
-                          "未设"}
-                      </div>
-                    </td>
-                    <td
-                      className="px-4 py-3 text-xs max-w-xs truncate text-zinc-600 dark:text-zinc-400"
-                      title={s.address}
-                    >
-                      {s.address}
-                    </td>
-                    <td className="px-4 py-3 text-xs">
-                      <div>{s.contactPerson}</div>
-                      <div className="text-zinc-400">{s.contactPhone}</div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          s.status === "ACTIVE"
-                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
-                            : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
-                        }`}
-                      >
-                        {s.status === "ACTIVE" ? "正常" : "已停用"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right space-x-2">
-                      <button
-                        onClick={() =>
-                          handleToggleStatus(s.storeCode, s.status)
-                        }
-                        className="text-xs text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 underline"
-                      >
-                        {s.status === "ACTIVE" ? "停用" : "启用"}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(s.storeCode)}
-                        className="text-xs text-red-600 hover:text-red-700 dark:text-red-400 underline"
-                      >
-                        删除
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* 新建门店弹窗 */}
+      {/* 新建门店模态框 */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 rounded-xl max-w-2xl w-full p-6 border border-zinc-200 dark:border-zinc-800 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-4">
-              新建门店履约档案
+          <div className="bg-card text-card-foreground rounded-xl max-w-2xl w-full p-6 border shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-base font-bold text-foreground mb-4">
+              新建履约门店档案
             </h3>
             <form onSubmit={handleCreateStore} className="space-y-4 text-sm">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  <label className="block text-xs font-medium text-foreground mb-1">
                     所属客户企业 *
                   </label>
                   <select
                     required
                     value={customerCode}
                     onChange={(e) => setCustomerCode(e.target.value)}
-                    className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-transparent text-sm"
+                    className="w-full h-9 px-3 border border-input rounded-md bg-background text-foreground text-sm"
                   >
                     {customers.map((c) => (
-                      <option
-                        key={c.customerCode}
-                        value={c.customerCode}
-                        disabled={c.status === "DISABLED"}
-                      >
-                        {c.customerName}{" "}
-                        {c.status === "DISABLED" ? " (已停用)" : ""}
+                      <option key={c.customerCode} value={c.customerCode}>
+                        {c.customerName} ({c.customerCode})
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  <label className="block text-xs font-medium text-foreground mb-1">
                     门店名称 *
                   </label>
-                  <input
+                  <Input
                     required
                     value={storeName}
                     onChange={(e) => setStoreName(e.target.value)}
-                    placeholder="如: 海淀中关村一店"
-                    className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-transparent text-sm"
+                    placeholder="如: 绿叶餐饮(西湖银泰店)"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  配送收货地址 *
+                <label className="block text-xs font-medium text-foreground mb-1">
+                  配送收货详细地址 *
                 </label>
-                <input
+                <Input
                   required
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="详细配送送货地址"
-                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-transparent text-sm"
+                  placeholder="如: 杭州市上城区延安路98号B1层后厨收货通道"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                    现场收货联系人 *
+                  <label className="block text-xs font-medium text-foreground mb-1">
+                    门店现场联系人 *
                   </label>
-                  <input
+                  <Input
                     required
                     value={contactPerson}
                     onChange={(e) => setContactPerson(e.target.value)}
-                    placeholder="如: 李店长"
-                    className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-transparent text-sm"
+                    placeholder="如: 李厨师长"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                    联系人电话 *
+                  <label className="block text-xs font-medium text-foreground mb-1">
+                    联系人联系电话 *
                   </label>
-                  <input
+                  <Input
                     required
                     value={contactPhone}
                     onChange={(e) => setContactPhone(e.target.value)}
-                    placeholder="如: 13911223344"
-                    className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-transparent text-sm"
+                    placeholder="如: 13912345678"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                    所属区域编码 (必填，用于区域报价匹配) *
+                  <label className="block text-xs font-medium text-foreground mb-1">
+                    配送所属网格/区域 *
                   </label>
-                  <input
-                    required
+                  <select
                     value={regionCode}
                     onChange={(e) => setRegionCode(e.target.value)}
-                    placeholder="如: REGION_BJ_01"
-                    className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-transparent text-sm"
-                  />
+                    className="w-full h-9 px-3 border border-input rounded-md bg-background text-foreground text-sm"
+                  >
+                    <option value="REGION_BJ_01">华北北京核心城区网格</option>
+                    <option value="REGION_HD_01">华东杭州生鲜直配网格</option>
+                    <option value="REGION_DEFAULT">通用默认配送网格</option>
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                    配送时段
+                  <label className="block text-xs font-medium text-foreground mb-1">
+                    首选配送时段 *
                   </label>
                   <select
                     value={deliveryPeriod}
                     onChange={(e) => setDeliveryPeriod(e.target.value)}
-                    className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-transparent text-sm"
+                    className="w-full h-9 px-3 border border-input rounded-md bg-background text-foreground text-sm"
                   >
                     <option value="MORNING">早间配送 (05:00-08:00)</option>
                     <option value="NOON">午间配送 (10:00-12:00)</option>
@@ -410,44 +456,44 @@ export function StoreView({ initialStores, customers }: Props) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                    结款联系人 (选填)
+                  <label className="block text-xs font-medium text-foreground mb-1">
+                    财务对账对接人
                   </label>
-                  <input
+                  <Input
                     value={billingContact}
                     onChange={(e) => setBillingContact(e.target.value)}
-                    placeholder="财务结款联系人姓名"
-                    className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-transparent text-sm"
+                    placeholder="对账会计姓名(选填)"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                    结款人电话
+                  <label className="block text-xs font-medium text-foreground mb-1">
+                    财务对接电话
                   </label>
-                  <input
+                  <Input
                     value={billingPhone}
                     onChange={(e) => setBillingPhone(e.target.value)}
-                    placeholder="财务结款人电话"
-                    className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-transparent text-sm"
+                    placeholder="对账联系电话(选填)"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                <button
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border border-zinc-200 dark:border-zinc-700 text-sm font-medium rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800"
                 >
                   取消
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
+                  size="sm"
                   disabled={loading}
-                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-50 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 text-sm font-medium rounded-lg"
+                  className="font-semibold"
                 >
-                  {loading ? "保存中..." : "保存门店档案"}
-                </button>
+                  {loading ? "保存中..." : "创建门店档案"}
+                </Button>
               </div>
             </form>
           </div>

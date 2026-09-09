@@ -16,5 +16,11 @@
     "@types/node": "^20.19.43",
     "tsx": "^4.20.6",
     "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.23",
+    "decimal.js": "^10.6.0",
+    "radash": "^12.1.1",
+    "superjson": "^2.2.6"
   }
 }

@@ -1,6 +1,9 @@
 /**
  * @chenrun/shared - 企业级数值、货币、日期与容量格式化工具
+ * 基于成熟 dayjs 与原生 Intl.NumberFormat 深度优化
  */
+
+import dayjs from "dayjs";
 
 export interface FormatCurrencyOptions {
  /** 货币符号，默认为 "¥" */
@@ -13,6 +16,7 @@ export interface FormatCurrencyOptions {
 
 /**
  * 格式化货币金额 (支持千分位与小数控制，如 "¥ 123,456.78")
+ * 底层基于原生高效高性能的 Intl.NumberFormat
  */
 export function formatCurrency(
  amount: number | string | { toString(): string } | null | undefined,
@@ -31,12 +35,11 @@ export function formatCurrency(
  const isNegative = num < 0;
  const absNum = Math.abs(num);
 
- const fixed = absNum.toFixed(decimals);
- const [intPart, decPart] = fixed.split(".");
- const formattedInt = (intPart || "0").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+ const formattedNum = new Intl.NumberFormat("zh-CN", {
+  minimumFractionDigits: decimals,
+  maximumFractionDigits: decimals,
+ }).format(absNum);
 
- const formattedNum =
-  decPart === undefined ? formattedInt : `${formattedInt}.${decPart}`;
  const prefix = isNegative ? `-${symbol}` : symbol;
  const separator = space ? " " : "";
 
@@ -66,6 +69,7 @@ export function formatPercent(
 
 /**
  * 格式化通用数值千分位
+ * 底层基于原生 Intl.NumberFormat
  */
 export function formatNumber(
  value: number | string | null | undefined,
@@ -80,51 +84,34 @@ export function formatNumber(
   return "0";
  }
 
- if (decimals !== undefined) {
-  const fixed = num.toFixed(decimals);
-  const [intPart, decPart] = fixed.split(".");
-  const formattedInt = (intPart || "0").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return decPart === undefined ? formattedInt : `${formattedInt}.${decPart}`;
- }
-
- const [intPart, decPart] = String(num).split(".");
- const formattedInt = (intPart || "0").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
- return decPart === undefined ? formattedInt : `${formattedInt}.${decPart}`;
+ return new Intl.NumberFormat("zh-CN", {
+  minimumFractionDigits: decimals ?? 0,
+  maximumFractionDigits: decimals ?? 20,
+ }).format(num);
 }
 
 /**
- * 格式化标准日期 (默认 YYYY-MM-DD)
+ * 格式化标准日期 (基于成熟稳定的 dayjs，默认 YYYY-MM-DD)
  */
 export function formatDate(
  date: Date | string | number | null | undefined,
+ template: string = "YYYY-MM-DD",
 ): string {
  if (!date) return "";
- const d = date instanceof Date ? date : new Date(date);
- if (Number.isNaN(d.getTime())) return "";
-
- const y = d.getFullYear();
- const m = String(d.getMonth() + 1).padStart(2, "0");
- const day = String(d.getDate()).padStart(2, "0");
- return `${y}-${m}-${day}`;
+ const d = dayjs(date);
+ return d.isValid() ? d.format(template) : "";
 }
 
 /**
- * 格式化日期与时间 (默认 YYYY-MM-DD HH:mm:ss)
+ * 格式化日期与时间 (基于成熟稳定的 dayjs，默认 YYYY-MM-DD HH:mm:ss)
  */
 export function formatDateTime(
  date: Date | string | number | null | undefined,
+ template: string = "YYYY-MM-DD HH:mm:ss",
 ): string {
  if (!date) return "";
- const d = date instanceof Date ? date : new Date(date);
- if (Number.isNaN(d.getTime())) return "";
-
- const y = d.getFullYear();
- const m = String(d.getMonth() + 1).padStart(2, "0");
- const day = String(d.getDate()).padStart(2, "0");
- const h = String(d.getHours()).padStart(2, "0");
- const min = String(d.getMinutes()).padStart(2, "0");
- const s = String(d.getSeconds()).padStart(2, "0");
- return `${y}-${m}-${day} ${h}:${min}:${s}`;
+ const d = dayjs(date);
+ return d.isValid() ? d.format(template) : "";
 }
 
 /**

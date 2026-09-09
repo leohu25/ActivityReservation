@@ -14,6 +14,8 @@ export * from "./components/AuthorizedField";
 export * from "./components/BusinessTableWorkspace";
 export * from "./components/ThemeProvider";
 export * from "./components/ThemeToggle";
+export * from "./components/tabs";
+export * from "./components/DictionarySectionCard";
 
 import React from "react";
 import {

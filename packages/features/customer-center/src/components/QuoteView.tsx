@@ -2,23 +2,46 @@
 
 import React, { useState } from "react";
 import { Plus, Search, ShieldAlert, Trash2 } from "lucide-react";
+import {
+  BusinessTableWorkspace,
+  Button,
+  Input,
+  Badge,
+  type BusinessTableColumn,
+} from "@chenrun/ui";
 import { createQuoteAction, updateQuoteStatusAction } from "../actions";
-import type { CreateQuoteItemInput } from "../types";
+import { CustomerQuoteSubject } from "../permissions";
+import type {
+  CreateQuoteItemInput,
+  QuoteListItem,
+  CustomerListItem,
+  StoreListItem,
+} from "../types";
 
+/**
+ * 报价单中心组件入参属性契约
+ */
 interface Props {
-  initialQuotes: any[];
-  customers: any[];
-  stores: any[];
+  /** 初始报价单列表数据 */
+  initialQuotes: QuoteListItem[];
+  /** 可选客户字典列表 */
+  customers: CustomerListItem[];
+  /** 可选门店字典列表 */
+  stores: StoreListItem[];
 }
 
+/**
+ * 客户中心 - 客户阶梯价与报价单中心工作台
+ * 遵循现代数智工业风规范，全面接入 BusinessTableWorkspace 体系
+ */
 export function QuoteView({ initialQuotes, customers, stores }: Props) {
-  const [quotes] = useState(initialQuotes);
+  const [quotes] = useState<QuoteListItem[]>(initialQuotes);
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 新建报价单模态框
+  // 新建报价单模态框表单状态
   const [showModal, setShowModal] = useState(false);
   const [scopeType, setScopeType] = useState<"CUSTOMER" | "STORE" | "REGION">(
     "STORE",
@@ -35,7 +58,7 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
   const [expiryDate, setExpiryDate] = useState("");
   const [displayName, setDisplayName] = useState("");
 
-  // 明细行列表
+  // 明细行条目列表
   const [items, setItems] = useState<CreateQuoteItemInput[]>([
     {
       itemCode: "ITEM_VEG_001",
@@ -50,6 +73,9 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
     },
   ]);
 
+  /**
+   * 客户端条件筛选逻辑
+   */
   const filteredQuotes = quotes.filter((q) => {
     if (statusFilter && q.status !== statusFilter) return false;
     if (keyword) {
@@ -62,6 +88,9 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
     return true;
   });
 
+  /**
+   * 添加明细行
+   */
   const handleAddItem = () => {
     setItems([
       ...items,
@@ -79,44 +108,50 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
     ]);
   };
 
+  /**
+   * 移除指定明细行
+   */
   const handleRemoveItem = (index: number) => {
     if (items.length <= 1) {
-      alert("报价单至少需要保留一行商品明细");
+      alert("报价单至少保留一条品项明细");
       return;
     }
     setItems(items.filter((_, i) => i !== index));
   };
 
+  /**
+   * 修改明细行字段值并联动含税单价计算
+   */
   const handleItemChange = (
     index: number,
     field: keyof CreateQuoteItemInput,
-    value: any,
+    val: string | number | null,
   ) => {
     const updated = [...items];
-    updated[index] = { ...updated[index], [field]: value };
+    const curr = { ...updated[index], [field]: val };
 
-    // 含税价与不含税价动态联动
-    if (field === "unitPriceExclTax") {
-      const rate = updated[index].taxRate || 9;
-      updated[index].unitPriceInclTax = parseFloat(
-        (Number(value) * (1 + rate / 100)).toFixed(2),
-      );
-    } else if (field === "taxRate") {
-      const excl = updated[index].unitPriceExclTax || 0;
-      updated[index].unitPriceInclTax = parseFloat(
-        (Number(excl) * (1 + Number(value) / 100)).toFixed(2),
-      );
+    // 自动按税率推导含税单价
+    if (field === "unitPriceExclTax" || field === "taxRate") {
+      const excl = Number(curr.unitPriceExclTax) || 0;
+      const rate = Number(curr.taxRate) || 0;
+      curr.unitPriceInclTax = parseFloat((excl * (1 + rate / 100)).toFixed(2));
     }
 
+    updated[index] = curr;
     setItems(updated);
   };
 
-  const handleCreateQuote = async (e: React.FormEvent) => {
+  /**
+   * 提交拟定新报价单
+   */
+  const handleCreateQuote = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
     try {
       const payload = {
+        scopeType,
         customerCode:
           scopeType === "CUSTOMER" || scopeType === "STORE"
             ? customerCode
@@ -138,13 +173,16 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
       } else {
         setError(res.error || "创建报价单失败");
       }
-    } catch (err: any) {
-      setError(err.message || "请求异常");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "请求异常");
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * 更新报价单状态（审核生效 / 作废）
+   */
   const handleUpdateStatus = async (
     quoteId: string,
     status: "ACTIVE" | "VOIDED",
@@ -163,203 +201,229 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
     }
   };
 
-  const statusBadge = (status: string) => {
+  /**
+   * 状态语义化徽章组件渲染
+   */
+  const renderStatusBadge = (status: string) => {
     switch (status) {
       case "DRAFT":
         return (
-          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+          <Badge variant="warning" size="sm">
             草稿
-          </span>
+          </Badge>
         );
       case "ACTIVE":
         return (
-          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+          <Badge variant="success" size="sm">
             已生效
-          </span>
+          </Badge>
         );
       case "VOIDED":
         return (
-          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+          <Badge variant="secondary" size="sm">
             已作废
-          </span>
+          </Badge>
         );
       case "EXPIRED":
         return (
-          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400">
+          <Badge variant="destructive" size="sm">
             已过期
-          </span>
+          </Badge>
         );
       default:
         return (
-          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-zinc-100">
+          <Badge variant="outline" size="sm">
             {status}
-          </span>
+          </Badge>
         );
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center pb-4 border-b border-zinc-200 dark:border-zinc-800">
-        <div>
-          <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
-            门店报价单管理
-          </h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            按门店、客户、区域维护商品报价明细。报价优先级：门店报价 &gt;
-            客户报价 &gt; 区域报价。
-          </p>
+  /**
+   * 标准表格列定义（强类型化，无 any 逃逸）
+   */
+  const columns: BusinessTableColumn<QuoteListItem>[] = [
+    {
+      id: "quoteId",
+      header: "报价单号",
+      width: 150,
+      cell: (q) => (
+        <span className="font-mono text-xs font-semibold text-foreground">
+          {q.quoteId}
+        </span>
+      ),
+    },
+    {
+      id: "displayName",
+      header: "对外简称",
+      cell: (q) => (
+        <div className="font-medium text-foreground">
+          {q.displayName || "标准定价单"}
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-50 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 text-sm font-medium rounded-lg shadow-sm transition-colors"
-        >
-          <Plus className="size-4" />
-          拟定新报价单
-        </button>
-      </div>
+      ),
+    },
+    {
+      id: "scope",
+      header: "定价适用维度",
+      width: 200,
+      cell: (q) => {
+        if (q.storeCode) {
+          return (
+            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+              【门店专价】{q.storeCode}
+            </span>
+          );
+        }
+        if (q.customerCode) {
+          return (
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+              【客户通用】{q.customer?.customerName || q.customerCode}
+            </span>
+          );
+        }
+        return (
+          <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+            【区域通用】{q.regionCode}
+          </span>
+        );
+      },
+    },
+    {
+      id: "validity",
+      header: "生效有效期",
+      width: 170,
+      cell: (q) => (
+        <div className="text-xs">
+          <div>自: {new Date(q.effectiveDate).toLocaleDateString()}</div>
+          <div className="text-muted-foreground">
+            至:{" "}
+            {q.expiryDate
+              ? new Date(q.expiryDate).toLocaleDateString()
+              : "长期有效"}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: "itemCount",
+      header: "明细品项数",
+      width: 120,
+      align: "center",
+      cell: (q) => (
+        <span className="font-mono text-xs text-foreground font-medium">
+          {q.items?.length || 0} 个品项
+        </span>
+      ),
+    },
+    {
+      id: "status",
+      header: "状态",
+      width: 90,
+      align: "center",
+      cell: (q) => renderStatusBadge(q.status),
+    },
+  ];
 
+  return (
+    <div className="space-y-4">
+      {/* 错误提示浮层 */}
       {error && (
-        <div className="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-lg flex items-center gap-2 text-red-700 dark:text-red-400 text-sm">
+        <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg flex items-center gap-2 text-destructive text-sm">
           <ShieldAlert className="size-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* 筛选栏 */}
-      <div className="flex flex-wrap items-center gap-3 bg-zinc-50 dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 text-sm">
-        <div className="relative flex-1 min-w-[240px]">
-          <Search className="absolute left-3 top-2.5 size-4 text-zinc-400" />
-          <input
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="搜索报价单号、对外简称..."
-            className="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-sm outline-none"
-          />
-        </div>
-
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-sm"
-        >
-          <option value="">全部状态</option>
-          <option value="DRAFT">草稿</option>
-          <option value="ACTIVE">已生效</option>
-          <option value="VOIDED">已作废</option>
-          <option value="EXPIRED">已过期</option>
-        </select>
-      </div>
-
-      {/* 报价单列表 */}
-      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-zinc-700 dark:text-zinc-300">
-            <thead className="bg-zinc-100/70 dark:bg-zinc-800/60 text-xs font-semibold text-zinc-500 uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-800">
-              <tr>
-                <th className="px-4 py-3">报价单号</th>
-                <th className="px-4 py-3">对外名称</th>
-                <th className="px-4 py-3">定价适用维度</th>
-                <th className="px-4 py-3">生效有效期</th>
-                <th className="px-4 py-3">明细品项数</th>
-                <th className="px-4 py-3">状态</th>
-                <th className="px-4 py-3 text-right">操作</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-              {filteredQuotes.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-zinc-400">
-                    暂无符合条件的报价单
-                  </td>
-                </tr>
-              ) : (
-                filteredQuotes.map((q) => (
-                  <tr
-                    key={q.quoteId}
-                    className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors"
-                  >
-                    <td className="px-4 py-3 font-mono font-medium text-xs text-zinc-900 dark:text-zinc-100">
-                      {q.quoteId}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
-                      {q.displayName || "标准定价单"}
-                    </td>
-                    <td className="px-4 py-3 text-xs">
-                      {q.storeCode ? (
-                        <span className="text-purple-600 dark:text-purple-400 font-medium">
-                          【门店专价】{q.store?.storeName || q.storeCode}
-                        </span>
-                      ) : q.customerCode ? (
-                        <span className="text-blue-600 dark:text-blue-400 font-medium">
-                          【客户通用】
-                          {q.customer?.customerName || q.customerCode}
-                        </span>
-                      ) : (
-                        <span className="text-amber-600 dark:text-amber-400 font-medium">
-                          【区域通用】{q.regionCode}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-xs">
-                      <div>
-                        自: {new Date(q.effectiveDate).toLocaleDateString()}
-                      </div>
-                      <div className="text-zinc-400">
-                        至:{" "}
-                        {q.expiryDate
-                          ? new Date(q.expiryDate).toLocaleDateString()
-                          : "长期有效"}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs">
-                      {q.items?.length || q.itemCount} 个商品
-                    </td>
-                    <td className="px-4 py-3">{statusBadge(q.status)}</td>
-                    <td className="px-4 py-3 text-right space-x-2">
-                      {q.status === "DRAFT" && (
-                        <button
-                          onClick={() =>
-                            handleUpdateStatus(q.quoteId, "ACTIVE")
-                          }
-                          className="text-xs text-emerald-600 hover:text-emerald-700 font-medium underline"
-                        >
-                          审核生效
-                        </button>
-                      )}
-                      {q.status === "ACTIVE" && (
-                        <button
-                          onClick={() =>
-                            handleUpdateStatus(q.quoteId, "VOIDED")
-                          }
-                          className="text-xs text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 underline"
-                        >
-                          作废
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* 企业级标准表格工作台 */}
+      <BusinessTableWorkspace<QuoteListItem>
+        subject={CustomerQuoteSubject}
+        title="客户阶梯价与报价单中心"
+        description="按门店、客户、区域维护商品报价明细。报价优先级：门店专属报价 > 客户通用报价 > 区域保底报价。"
+        extraHeader={
+          <Button
+            size="sm"
+            onClick={() => setShowModal(true)}
+            className="font-semibold shadow-xs"
+          >
+            <Plus className="size-4 mr-1" />
+            <span>拟定新报价单</span>
+          </Button>
+        }
+        searchFilters={
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
+              <Input
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                placeholder="搜索报价单号、对外简称..."
+                className="h-8 w-64 pl-8 text-xs"
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-8 px-2.5 rounded-md border border-input bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              <option value="">全部状态</option>
+              <option value="DRAFT">草稿</option>
+              <option value="ACTIVE">已生效</option>
+              <option value="VOIDED">已作废</option>
+              <option value="EXPIRED">已过期</option>
+            </select>
+          </div>
+        }
+        onReset={() => {
+          setKeyword("");
+          setStatusFilter("");
+        }}
+        data={filteredQuotes}
+        columns={columns}
+        rowKey={(q) => q.quoteId}
+        selectable={false}
+        rowActionsHeader="操作"
+        rowActions={(q) => (
+          <div className="flex items-center justify-end gap-1">
+            {q.status === "DRAFT" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={loading}
+                onClick={() => handleUpdateStatus(q.quoteId, "ACTIVE")}
+                className="h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 font-semibold"
+              >
+                审核生效
+              </Button>
+            )}
+            {q.status === "ACTIVE" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={loading}
+                onClick={() => handleUpdateStatus(q.quoteId, "VOIDED")}
+                className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                作废
+              </Button>
+            )}
+          </div>
+        )}
+      />
 
       {/* 新增报价单抽屉/模态框 */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 rounded-xl max-w-4xl w-full p-6 border border-zinc-200 dark:border-zinc-800 shadow-2xl max-h-[92vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-4">
+          <div className="bg-card text-card-foreground rounded-xl max-w-4xl w-full p-6 border shadow-2xl max-h-[92vh] overflow-y-auto">
+            <h3 className="text-base font-bold text-foreground mb-4">
               拟定新报价单
             </h3>
             <form onSubmit={handleCreateQuote} className="space-y-4 text-sm">
-              <div className="p-4 bg-zinc-50 dark:bg-zinc-800/40 rounded-lg border border-zinc-200 dark:border-zinc-700/60 space-y-3">
-                <div className="font-semibold text-xs text-zinc-500 uppercase tracking-wider">
+              <div className="p-4 bg-muted/40 rounded-lg border space-y-3">
+                <div className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">
                   适用范围设定 (三选一)
                 </div>
                 <div className="flex gap-4">
-                  <label className="inline-flex items-center gap-1.5 text-xs cursor-pointer">
+                  <label className="inline-flex items-center gap-1.5 text-xs cursor-pointer text-foreground">
                     <input
                       type="radio"
                       name="scopeType"
@@ -368,7 +432,7 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
                     />
                     门店专属报价 (优先级最高)
                   </label>
-                  <label className="inline-flex items-center gap-1.5 text-xs cursor-pointer">
+                  <label className="inline-flex items-center gap-1.5 text-xs cursor-pointer text-foreground">
                     <input
                       type="radio"
                       name="scopeType"
@@ -377,7 +441,7 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
                     />
                     客户全门店通用
                   </label>
-                  <label className="inline-flex items-center gap-1.5 text-xs cursor-pointer">
+                  <label className="inline-flex items-center gap-1.5 text-xs cursor-pointer text-foreground">
                     <input
                       type="radio"
                       name="scopeType"
@@ -391,13 +455,13 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
                 <div className="grid grid-cols-2 gap-4 pt-2">
                   {scopeType !== "REGION" && (
                     <div>
-                      <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                      <label className="block text-xs font-medium text-foreground mb-1">
                         所属客户 *
                       </label>
                       <select
                         value={customerCode}
                         onChange={(e) => setCustomerCode(e.target.value)}
-                        className="w-full px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-transparent text-sm"
+                        className="w-full h-9 px-3 border border-input rounded-md bg-background text-foreground text-sm"
                       >
                         {customers.map((c) => (
                           <option key={c.customerCode} value={c.customerCode}>
@@ -410,13 +474,13 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
 
                   {scopeType === "STORE" && (
                     <div>
-                      <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                      <label className="block text-xs font-medium text-foreground mb-1">
                         所属门店 *
                       </label>
                       <select
                         value={storeCode}
                         onChange={(e) => setStoreCode(e.target.value)}
-                        className="w-full px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-transparent text-sm"
+                        className="w-full h-9 px-3 border border-input rounded-md bg-background text-foreground text-sm"
                       >
                         {stores.map((s) => (
                           <option key={s.storeCode} value={s.storeCode}>
@@ -429,53 +493,49 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
 
                   {scopeType === "REGION" && (
                     <div>
-                      <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                      <label className="block text-xs font-medium text-foreground mb-1">
                         区域编码 *
                       </label>
-                      <input
+                      <Input
                         value={regionCode}
                         onChange={(e) => setRegionCode(e.target.value)}
                         placeholder="如: REGION_BJ_01"
-                        className="w-full px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-transparent text-sm"
                       />
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    <label className="block text-xs font-medium text-foreground mb-1">
                       对外简称 (给客户看)
                     </label>
-                    <input
+                    <Input
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       placeholder="如: 2026秋季净菜直供报价单"
-                      className="w-full px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-transparent text-sm"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    <label className="block text-xs font-medium text-foreground mb-1">
                       价格生效日期 *
                     </label>
-                    <input
+                    <Input
                       type="date"
                       required
                       value={effectiveDate}
                       onChange={(e) => setEffectiveDate(e.target.value)}
-                      className="w-full px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-transparent text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    <label className="block text-xs font-medium text-foreground mb-1">
                       失效日期 (为空则长期有效)
                     </label>
-                    <input
+                    <Input
                       type="date"
                       value={expiryDate}
                       onChange={(e) => setExpiryDate(e.target.value)}
-                      className="w-full px-3 py-1.5 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-transparent text-sm"
                     />
                   </div>
                 </div>
@@ -484,36 +544,38 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
               {/* 明细行维护 */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-semibold text-zinc-900 dark:text-zinc-100 text-xs uppercase tracking-wider">
+                  <h4 className="font-semibold text-foreground text-xs uppercase tracking-wider">
                     报价明细条目 ({items.length})
                   </h4>
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={handleAddItem}
-                    className="inline-flex items-center gap-1 text-xs px-2.5 py-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded font-medium"
+                    className="h-7 text-xs"
                   >
-                    <Plus className="size-3" />
+                    <Plus className="size-3 mr-1" />
                     添加商品
-                  </button>
+                  </Button>
                 </div>
 
-                <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-x-auto">
+                <div className="border rounded-lg overflow-x-auto bg-card">
                   <table className="w-full text-xs">
-                    <thead className="bg-zinc-50 dark:bg-zinc-800 text-zinc-500 uppercase">
+                    <thead className="bg-muted/50 text-muted-foreground uppercase border-b">
                       <tr>
-                        <th className="p-2">商品编码</th>
-                        <th className="p-2">商品名称</th>
-                        <th className="p-2">单位</th>
-                        <th className="p-2">不含税单价</th>
-                        <th className="p-2">税率(%)</th>
-                        <th className="p-2">含税单价</th>
-                        <th className="p-2">最小起订</th>
-                        <th className="p-2">操作</th>
+                        <th className="p-2 text-left">商品编码</th>
+                        <th className="p-2 text-left">商品名称</th>
+                        <th className="p-2 text-left">单位</th>
+                        <th className="p-2 text-right">不含税单价</th>
+                        <th className="p-2 text-right">税率(%)</th>
+                        <th className="p-2 text-right">含税单价</th>
+                        <th className="p-2 text-right">最小起订</th>
+                        <th className="p-2 text-center">操作</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                    <tbody className="divide-y">
                       {items.map((item, idx) => (
-                        <tr key={idx}>
+                        <tr key={idx} className="hover:bg-muted/30">
                           <td className="p-2">
                             <input
                               value={item.itemCode}
@@ -524,7 +586,7 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
                                   e.target.value,
                                 )
                               }
-                              className="w-24 px-1.5 py-1 border rounded bg-transparent text-xs"
+                              className="w-24 px-1.5 py-1 border border-input rounded bg-background text-foreground text-xs"
                             />
                           </td>
                           <td className="p-2">
@@ -537,7 +599,7 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
                                   e.target.value,
                                 )
                               }
-                              className="w-36 px-1.5 py-1 border rounded bg-transparent text-xs"
+                              className="w-36 px-1.5 py-1 border border-input rounded bg-background text-foreground text-xs"
                             />
                           </td>
                           <td className="p-2">
@@ -550,10 +612,10 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
                                   e.target.value,
                                 )
                               }
-                              className="w-12 px-1.5 py-1 border rounded bg-transparent text-xs"
+                              className="w-12 px-1.5 py-1 border border-input rounded bg-background text-foreground text-xs"
                             />
                           </td>
-                          <td className="p-2">
+                          <td className="p-2 text-right">
                             <input
                               type="number"
                               step="0.01"
@@ -565,10 +627,10 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
                                   parseFloat(e.target.value) || 0,
                                 )
                               }
-                              className="w-20 px-1.5 py-1 border rounded bg-transparent text-xs"
+                              className="w-20 px-1.5 py-1 border border-input rounded bg-background text-foreground text-xs text-right"
                             />
                           </td>
-                          <td className="p-2">
+                          <td className="p-2 text-right">
                             <input
                               type="number"
                               step="0.01"
@@ -580,13 +642,13 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
                                   parseFloat(e.target.value) || 0,
                                 )
                               }
-                              className="w-16 px-1.5 py-1 border rounded bg-transparent text-xs"
+                              className="w-16 px-1.5 py-1 border border-input rounded bg-background text-foreground text-xs text-right"
                             />
                           </td>
-                          <td className="p-2 font-mono font-medium text-emerald-600 dark:text-emerald-400">
+                          <td className="p-2 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
                             ¥{item.unitPriceInclTax}
                           </td>
-                          <td className="p-2">
+                          <td className="p-2 text-right">
                             <input
                               type="number"
                               value={item.minQty || ""}
@@ -598,17 +660,19 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
                                 )
                               }
                               placeholder="起订量"
-                              className="w-16 px-1.5 py-1 border rounded bg-transparent text-xs"
+                              className="w-16 px-1.5 py-1 border border-input rounded bg-background text-foreground text-xs text-right"
                             />
                           </td>
                           <td className="p-2 text-center">
-                            <button
+                            <Button
                               type="button"
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleRemoveItem(idx)}
-                              className="text-red-500 hover:text-red-700"
+                              className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                             >
                               <Trash2 className="size-3.5" />
-                            </button>
+                            </Button>
                           </td>
                         </tr>
                       ))}
@@ -617,21 +681,23 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                <button
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border border-zinc-200 dark:border-zinc-700 text-sm font-medium rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800"
                 >
                   取消
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
+                  size="sm"
                   disabled={loading}
-                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-50 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 text-sm font-medium rounded-lg"
+                  className="font-semibold"
                 >
                   {loading ? "保存中..." : "创建报价单 (保存为草稿)"}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
