@@ -16,9 +16,14 @@
     "test": "turbo run test",
     "migrate": "pnpm --filter @chenrun/tenant-migrate migrate",
     "migrate:gen": "pnpm --filter @chenrun/tenant-migrate migrate generate",
-    "migrate:up": "pnpm --filter @chenrun/tenant-migrate migrate up",
+    "migrate:up": "pnpm --filter @chenrun/tenant-migrate migrate up --all",
     "migrate:status": "pnpm --filter @chenrun/tenant-migrate migrate status",
-    "migrate:retry": "pnpm --filter @chenrun/tenant-migrate migrate retry"
+    "migrate:retry": "pnpm --filter @chenrun/tenant-migrate migrate retry",
+    "db:control:diff": "pnpm --filter @chenrun/db-control db:diff",
+    "db:control:diff:sql": "pnpm --filter @chenrun/db-control db:diff:sql",
+    "db:control:push": "pnpm --filter @chenrun/db-control db:push",
+    "db:control:status": "pnpm --filter @chenrun/db-control db:status",
+    "db:control:gen": "pnpm --filter @chenrun/db-control generate"
   },
   "devDependencies": {
     "turbo": "^2.4.4",

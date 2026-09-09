@@ -29,7 +29,8 @@ import {
   Badge,
   Input,
   Button,
-  PermissionField,
+  AuthorizedField,
+  type AbilityLike,
 } from "@chenrun/ui";
 import {
   Building2,
@@ -65,13 +66,21 @@ interface EmployeeProfileWithRelations {
 /**
  * 租户会话未激活提示卡片
  */
-function TenantUnauthenticatedCard({ message, isNoOrg }: { message: string; isNoOrg: boolean }) {
+function TenantUnauthenticatedCard({
+  message,
+  isNoOrg,
+}: {
+  message: string;
+  isNoOrg: boolean;
+}) {
   return (
     <Card className="border-amber-200 bg-amber-50/50 shadow-xs dark:border-amber-900/40 dark:bg-amber-950/20">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
           <ShieldAlert className="size-5 text-amber-600" />
-          <span>{isNoOrg ? "尚未选择或激活任何 ERP 租户组织" : "租户会话未激活"}</span>
+          <span>
+            {isNoOrg ? "尚未选择或激活任何 ERP 租户组织" : "租户会话未激活"}
+          </span>
         </CardTitle>
         <CardDescription className="text-amber-700 dark:text-amber-300">
           晨润 ERP 采用严格的 Database-per-Tenant 物理隔离机制。
@@ -85,7 +94,13 @@ function TenantUnauthenticatedCard({ message, isNoOrg }: { message: string; isNo
 /**
  * 租户业务准入受限拦截卡片
  */
-function TenantAccessBlockedCard({ message, status }: { message: string; status?: string }) {
+function TenantAccessBlockedCard({
+  message,
+  status,
+}: {
+  message: string;
+  status?: string;
+}) {
   return (
     <div className="space-y-6">
       <Card className="border-rose-200 bg-rose-50/60 p-6 shadow-xs dark:border-rose-900/50 dark:bg-rose-950/30">
@@ -102,9 +117,12 @@ function TenantAccessBlockedCard({ message, status }: { message: string; status?
                 {status ?? "NO_PROFILE"}
               </Badge>
             </div>
-            <p className="text-sm text-rose-700 dark:text-rose-300">{message}</p>
+            <p className="text-sm text-rose-700 dark:text-rose-300">
+              {message}
+            </p>
             <p className="text-xs text-rose-600/80 dark:text-rose-400/80">
-              根据 SaaS 最高宪法，当租户内员工档案处于停用或离职状态时，严格执行 Fail-Closed 阻断策略。您仍可在其他正常租户中使用平台账号。
+              根据 SaaS 最高宪法，当租户内员工档案处于停用或离职状态时，严格执行
+              Fail-Closed 阻断策略。您仍可在其他正常租户中使用平台账号。
             </p>
           </div>
         </div>
@@ -154,7 +172,9 @@ function WorkbenchHeaderBanner({
             <span className="text-slate-300 dark:text-slate-700">|</span>
             <UserCheck className="size-3.5 text-slate-400" />
             <span>当前用户:</span>
-            <span className="font-bold text-slate-800 dark:text-slate-200">{userName}</span>
+            <span className="font-bold text-slate-800 dark:text-slate-200">
+              {userName}
+            </span>
             <span className="text-slate-300 dark:text-slate-700">|</span>
             <span>系统角色:</span>
             <Badge variant="process" size="sm">
@@ -162,7 +182,9 @@ function WorkbenchHeaderBanner({
             </Badge>
             <span className="text-slate-300 dark:text-slate-700">|</span>
             <span>权限版本:</span>
-            <span className="font-mono text-slate-700 dark:text-slate-300">v{authVersion}</span>
+            <span className="font-mono text-slate-700 dark:text-slate-300">
+              v{authVersion}
+            </span>
           </div>
         </div>
 
@@ -201,7 +223,9 @@ function EmployeeProfileMetricsGrid({
             <Users className="size-5" />
           </div>
           <div>
-            <div className="text-[11px] font-medium text-slate-400">员工档案编号</div>
+            <div className="text-[11px] font-medium text-slate-400">
+              员工档案编号
+            </div>
             <div className="text-sm font-bold text-slate-800 dark:text-slate-100">
               {profile?.employeeNo || "未分配工号"}
             </div>
@@ -218,12 +242,16 @@ function EmployeeProfileMetricsGrid({
             <Building className="size-5" />
           </div>
           <div>
-            <div className="text-[11px] font-medium text-slate-400">所属组织部门</div>
+            <div className="text-[11px] font-medium text-slate-400">
+              所属组织部门
+            </div>
             <div className="text-sm font-bold text-slate-800 dark:text-slate-100">
               {profile?.department?.name || "未分配部门"}
             </div>
             <div className="text-[11px] text-slate-500 font-mono">
-              {profile?.department?.code ? `编码: ${profile.department.code}` : "未关联拓扑节点"}
+              {profile?.department?.code
+                ? `编码: ${profile.department.code}`
+                : "未关联拓扑节点"}
             </div>
           </div>
         </div>
@@ -235,7 +263,9 @@ function EmployeeProfileMetricsGrid({
             <Briefcase className="size-5" />
           </div>
           <div>
-            <div className="text-[11px] font-medium text-slate-400">岗位职务 (Position)</div>
+            <div className="text-[11px] font-medium text-slate-400">
+              岗位职务 (Position)
+            </div>
             <div className="text-sm font-bold text-slate-800 dark:text-slate-100">
               {profile?.position?.name || profile?.jobTitle || "企业成员"}
             </div>
@@ -252,7 +282,9 @@ function EmployeeProfileMetricsGrid({
             <GitFork className="size-5" />
           </div>
           <div>
-            <div className="text-[11px] font-medium text-slate-400">数据管辖范围</div>
+            <div className="text-[11px] font-medium text-slate-400">
+              数据管辖范围
+            </div>
             <div className="text-sm font-bold text-slate-800 dark:text-slate-100">
               {treeCount > 0 ? `${treeCount} 个部门节点` : "个人范围 / 无部门"}
             </div>
@@ -271,22 +303,18 @@ function EmployeeProfileMetricsGrid({
  */
 function PermissionAnalysisPanels({
   sqlWhere,
+  ability,
   canReadOrder,
   canCreateOrder,
   canAuditOrder,
   canExportOrder,
-  canEditSupplier,
-  canReadCostPrice,
-  canEditCostPrice,
 }: {
   sqlWhere: unknown;
+  ability: AbilityLike;
   canReadOrder: boolean;
   canCreateOrder: boolean;
   canAuditOrder: boolean;
   canExportOrder: boolean;
-  canEditSupplier: boolean;
-  canReadCostPrice: boolean;
-  canEditCostPrice: boolean;
 }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -303,7 +331,8 @@ function PermissionAnalysisPanels({
             </Badge>
           </div>
           <CardDescription>
-            由当前登录员工档案部门拓扑与 CASL 角色规则动态编译生成的 Prisma Where 查询条件：
+            由当前登录员工档案部门拓扑与 CASL 角色规则动态编译生成的 Prisma
+            Where 查询条件：
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -315,7 +344,9 @@ function PermissionAnalysisPanels({
               </span>
               <span>自驱装配结果</span>
             </div>
-            <pre className="leading-relaxed">{JSON.stringify(sqlWhere, null, 2)}</pre>
+            <pre className="leading-relaxed">
+              {JSON.stringify(sqlWhere, null, 2)}
+            </pre>
           </div>
 
           <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
@@ -325,20 +356,44 @@ function PermissionAnalysisPanels({
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
               <div className="flex items-center gap-1.5">
-                {canReadOrder ? <Check className="size-3.5 text-emerald-600" /> : <X className="size-3.5 text-rose-500" />}
-                <span className="text-slate-600 dark:text-slate-400">查看单据</span>
+                {canReadOrder ? (
+                  <Check className="size-3.5 text-emerald-600" />
+                ) : (
+                  <X className="size-3.5 text-rose-500" />
+                )}
+                <span className="text-slate-600 dark:text-slate-400">
+                  查看单据
+                </span>
               </div>
               <div className="flex items-center gap-1.5">
-                {canCreateOrder ? <Check className="size-3.5 text-emerald-600" /> : <X className="size-3.5 text-rose-500" />}
-                <span className="text-slate-600 dark:text-slate-400">新建采购</span>
+                {canCreateOrder ? (
+                  <Check className="size-3.5 text-emerald-600" />
+                ) : (
+                  <X className="size-3.5 text-rose-500" />
+                )}
+                <span className="text-slate-600 dark:text-slate-400">
+                  新建采购
+                </span>
               </div>
               <div className="flex items-center gap-1.5">
-                {canAuditOrder ? <Check className="size-3.5 text-emerald-600" /> : <X className="size-3.5 text-rose-500" />}
-                <span className="text-slate-600 dark:text-slate-400">单据审核</span>
+                {canAuditOrder ? (
+                  <Check className="size-3.5 text-emerald-600" />
+                ) : (
+                  <X className="size-3.5 text-rose-500" />
+                )}
+                <span className="text-slate-600 dark:text-slate-400">
+                  单据审核
+                </span>
               </div>
               <div className="flex items-center gap-1.5">
-                {canExportOrder ? <Check className="size-3.5 text-emerald-600" /> : <X className="size-3.5 text-rose-500" />}
-                <span className="text-slate-600 dark:text-slate-400">数据导出</span>
+                {canExportOrder ? (
+                  <Check className="size-3.5 text-emerald-600" />
+                ) : (
+                  <X className="size-3.5 text-rose-500" />
+                )}
+                <span className="text-slate-600 dark:text-slate-400">
+                  数据导出
+                </span>
               </div>
             </div>
           </div>
@@ -350,37 +405,57 @@ function PermissionAnalysisPanels({
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
               <SlidersHorizontal className="size-4 text-blue-600" />
-              <span>字段策略三态保护 (PermissionField 自动感知)</span>
+              <span>字段策略三态保护 (AuthorizedField 自动感知)</span>
             </CardTitle>
             <Badge variant="default" size="sm">
-              动态策略生效
+              CASL 实时推导生效
             </Badge>
           </div>
           <CardDescription>
-            基于角色字段策略与 CASL Ability 动态呈现可编辑 (EDITABLE) 或只读 (READONLY) 状态：
+            全自动感应 CASL 角色策略，自动推导可编辑 (EDITABLE)、只读 (READONLY)
+            或隐藏 (HIDDEN)：
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <PermissionField
+          <AuthorizedField
+            ability={ability}
+            subject="PurchaseOrder"
+            field="supplierName"
             label="供应商全称 (supplierName)"
-            mode={canEditSupplier ? "EDITABLE" : "READONLY"}
           >
             <Input defaultValue="晨润精密设备供应链有限公司" />
-          </PermissionField>
+          </AuthorizedField>
 
-          <PermissionField
+          <AuthorizedField
+            ability={ability}
+            subject="PurchaseOrder"
+            field="costPrice"
             label="采购成本价 (costPrice) —— 核心保密资产"
-            mode={canReadCostPrice ? (canEditCostPrice ? "EDITABLE" : "READONLY") : "HIDDEN"}
+            fallback={
+              <div className="rounded-xl border border-dashed border-rose-200 bg-rose-50/60 p-3 text-xs text-rose-600 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-400">
+                🔒 采购成本价属于企业核心机密，当前角色已被字段策略隐藏剥离
+              </div>
+            }
           >
             <Input
               defaultValue="¥ 246,800.00"
               className="font-semibold text-emerald-600 tabular-nums dark:text-emerald-400"
             />
-          </PermissionField>
+          </AuthorizedField>
+
+          <AuthorizedField
+            ability={ability}
+            subject="PurchaseOrder"
+            field="quantity"
+            label="采购批次数量 (quantity)"
+          >
+            <Input defaultValue="1,200" />
+          </AuthorizedField>
 
           <div className="text-[11px] text-slate-400 leading-relaxed bg-slate-50/80 p-3 rounded-xl dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
             💡 字段三态策略直接绑定自 Control DB 的 OrganizationRole 策略定义。
-            管理员在【系统管理 / 权限管理】中调整字段四维矩阵后，页面将自动响应隐藏、只读或编辑模式。
+            管理员在【系统管理 /
+            权限管理】中调整字段四维矩阵后，页面将自动响应隐藏、只读或编辑模式。
           </div>
         </CardContent>
       </Card>
@@ -427,8 +502,11 @@ export default async function WorkbenchPage() {
   try {
     assertTenantAccessGate(profile);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "员工档案状态异常，业务准入受限";
-    return <TenantAccessBlockedCard message={message} status={profile?.status} />;
+    const message =
+      err instanceof Error ? err.message : "员工档案状态异常，业务准入受限";
+    return (
+      <TenantAccessBlockedCard message={message} status={profile?.status} />
+    );
   }
 
   const topology: ResolvedDepartmentTopology = await resolveEmployeeTopology(
@@ -446,7 +524,9 @@ export default async function WorkbenchPage() {
           },
         }),
       findAllDepartments: async () =>
-        tenantPrisma.department.findMany({ select: { id: true, parentId: true } }),
+        tenantPrisma.department.findMany({
+          select: { id: true, parentId: true },
+        }),
     },
     { userId: tenantCtx.user.id, memberId: tenantCtx.member.id },
   );
@@ -481,19 +561,11 @@ export default async function WorkbenchPage() {
 
       <PermissionAnalysisPanels
         sqlWhere={sqlWhere}
+        ability={prismaAbility}
         canReadOrder={prismaAbility.can("read", "PurchaseOrder")}
         canCreateOrder={prismaAbility.can("create", "PurchaseOrder")}
         canAuditOrder={prismaAbility.can("audit", "PurchaseOrder")}
         canExportOrder={prismaAbility.can("export", "PurchaseOrder")}
-        canEditSupplier={
-          prismaAbility.can("create", "PurchaseOrder", "supplierName") ||
-          prismaAbility.can("update", "PurchaseOrder", "supplierName")
-        }
-        canReadCostPrice={prismaAbility.can("read", "PurchaseOrder", "costPrice")}
-        canEditCostPrice={
-          prismaAbility.can("create", "PurchaseOrder", "costPrice") ||
-          prismaAbility.can("update", "PurchaseOrder", "costPrice")
-        }
       />
     </div>
   );

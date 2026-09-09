@@ -10,6 +10,8 @@ import {
   Input,
   Button,
   Badge,
+  AuthorizedField,
+  type AbilityLike,
 } from "@chenrun/ui";
 import { Building2, Save, CheckCircle2, AlertCircle } from "lucide-react";
 import type { CompanyProfileData, UpdateCompanyProfileInput } from "../types";
@@ -18,6 +20,7 @@ import { updateCompanyProfileAction } from "../actions";
 export interface CompanySettingsViewProps {
   readonly initialData: CompanyProfileData;
   readonly isReadOnly?: boolean;
+  readonly ability?: AbilityLike | null;
 }
 
 /**
@@ -26,6 +29,7 @@ export interface CompanySettingsViewProps {
 export function CompanySettingsView({
   initialData,
   isReadOnly = false,
+  ability,
 }: CompanySettingsViewProps) {
   const [formData, setFormData] = useState<UpdateCompanyProfileInput>({
     companyName: initialData.companyName || "",
@@ -46,7 +50,10 @@ export function CompanySettingsView({
 
   const [isPending, startTransition] = useTransition();
 
-  const handleChange = (field: keyof UpdateCompanyProfileInput, value: string) => {
+  const handleChange = (
+    field: keyof UpdateCompanyProfileInput,
+    value: string,
+  ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (feedback) setFeedback(null);
   };
@@ -85,7 +92,10 @@ export function CompanySettingsView({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-slate-500 font-mono text-[11px]">
+          <Badge
+            variant="outline"
+            className="text-slate-500 font-mono text-[11px]"
+          >
             {initialData.id ? `ID: ${initialData.id}` : "初始档案未固化"}
           </Badge>
         </div>
@@ -120,54 +130,70 @@ export function CompanySettingsView({
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                企业法定全称 <span className="text-rose-500">*</span>
-              </label>
+            <AuthorizedField
+              ability={ability}
+              subject="CompanyProfile"
+              field="companyName"
+              action="update"
+              mode={isReadOnly ? "READONLY" : undefined}
+              label="企业法定全称 *"
+            >
               <Input
                 value={formData.companyName}
                 onChange={(e) => handleChange("companyName", e.target.value)}
                 placeholder="例如：杭州宸润数智工贸有限公司"
-                disabled={isReadOnly || isPending}
+                disabled={isPending}
                 required
               />
-            </div>
+            </AuthorizedField>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                企业品牌简称
-              </label>
+            <AuthorizedField
+              ability={ability}
+              subject="CompanyProfile"
+              field="shortName"
+              action="update"
+              mode={isReadOnly ? "READONLY" : undefined}
+              label="企业品牌简称"
+            >
               <Input
                 value={formData.shortName || ""}
                 onChange={(e) => handleChange("shortName", e.target.value)}
                 placeholder="例如：宸润数智"
-                disabled={isReadOnly || isPending}
+                disabled={isPending}
               />
-            </div>
+            </AuthorizedField>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                统一社会信用代码
-              </label>
+            <AuthorizedField
+              ability={ability}
+              subject="CompanyProfile"
+              field="creditCode"
+              action="update"
+              mode={isReadOnly ? "READONLY" : undefined}
+              label="统一社会信用代码"
+            >
               <Input
                 value={formData.creditCode || ""}
                 onChange={(e) => handleChange("creditCode", e.target.value)}
                 placeholder="18位统一社会信用代码"
-                disabled={isReadOnly || isPending}
+                disabled={isPending}
               />
-            </div>
+            </AuthorizedField>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                法定代表人 / 负责人
-              </label>
+            <AuthorizedField
+              ability={ability}
+              subject="CompanyProfile"
+              field="legalPerson"
+              action="update"
+              mode={isReadOnly ? "READONLY" : undefined}
+              label="法定代表人 / 负责人"
+            >
               <Input
                 value={formData.legalPerson || ""}
                 onChange={(e) => handleChange("legalPerson", e.target.value)}
                 placeholder="姓名"
-                disabled={isReadOnly || isPending}
+                disabled={isPending}
               />
-            </div>
+            </AuthorizedField>
           </CardContent>
         </Card>
 
@@ -182,41 +208,55 @@ export function CompanySettingsView({
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                业务联系电话
-              </label>
+            <AuthorizedField
+              ability={ability}
+              subject="CompanyProfile"
+              field="contactPhone"
+              action="update"
+              mode={isReadOnly ? "READONLY" : undefined}
+              label="业务联系电话"
+            >
               <Input
                 value={formData.contactPhone || ""}
                 onChange={(e) => handleChange("contactPhone", e.target.value)}
                 placeholder="座机或手机号码"
-                disabled={isReadOnly || isPending}
+                disabled={isPending}
               />
-            </div>
+            </AuthorizedField>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                官方联系邮箱
-              </label>
+            <AuthorizedField
+              ability={ability}
+              subject="CompanyProfile"
+              field="contactEmail"
+              action="update"
+              mode={isReadOnly ? "READONLY" : undefined}
+              label="官方联系邮箱"
+            >
               <Input
                 type="email"
                 value={formData.contactEmail || ""}
                 onChange={(e) => handleChange("contactEmail", e.target.value)}
                 placeholder="contact@company.com"
-                disabled={isReadOnly || isPending}
+                disabled={isPending}
               />
-            </div>
+            </AuthorizedField>
 
-            <div className="space-y-1.5 md:col-span-2">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                经营注册地址
-              </label>
-              <Input
-                value={formData.address || ""}
-                onChange={(e) => handleChange("address", e.target.value)}
-                placeholder="省、市、区及详细门牌号"
-                disabled={isReadOnly || isPending}
-              />
+            <div className="md:col-span-2">
+              <AuthorizedField
+                ability={ability}
+                subject="CompanyProfile"
+                field="address"
+                action="update"
+                mode={isReadOnly ? "READONLY" : undefined}
+                label="经营注册地址"
+              >
+                <Input
+                  value={formData.address || ""}
+                  onChange={(e) => handleChange("address", e.target.value)}
+                  placeholder="省、市、区及详细门牌号"
+                  disabled={isPending}
+                />
+              </AuthorizedField>
             </div>
           </CardContent>
         </Card>

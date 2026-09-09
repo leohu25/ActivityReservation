@@ -47,5 +47,19 @@ export function createReactAbilityAdapter<
     );
   }
 
-  return { Can, Permission };
+  /**
+   * 强类型当前权限能力钩子
+   */
+  function usePermission() {
+    const ability = useAbility();
+    return {
+      ability,
+      can: (action: Action, subject: Subject, field?: string) =>
+        ability.can(action as string, subject as string, field),
+      cannot: (action: Action, subject: Subject, field?: string) =>
+        ability.cannot(action as string, subject as string, field),
+    };
+  }
+
+  return { Can, Permission, usePermission };
 }

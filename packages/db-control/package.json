@@ -5,13 +5,20 @@
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
+  "bin": {
+    "control-migrate": "./src/cli.ts"
+  },
   "exports": {
     ".": "./src/index.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",
+    "cli": "tsx src/cli.ts",
     "generate": "prisma generate --config prisma.config.ts",
-    "db:push": "prisma db push --config prisma.config.ts",
+    "db:diff": "tsx src/cli.ts diff",
+    "db:diff:sql": "tsx src/cli.ts diff:sql",
+    "db:push": "tsx src/cli.ts push",
+    "db:status": "tsx src/cli.ts status",
     "prisma:validate": "prisma validate --config prisma.config.ts",
     "test": "tsx --test src/*.test.ts"
   },

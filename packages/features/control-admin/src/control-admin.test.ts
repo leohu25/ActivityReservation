@@ -58,9 +58,20 @@ test("ControlAdminService 租户开通逻辑、初始凭证、预置角色与状
     string,
     { id: string; email: string; name: string }
   >();
-  const memberList: Array<{ id: string; organizationId: string; userId: string; role: string }> = [];
-  const accountMap = new Map<string, { id: string; userId: string; password?: string | null }>();
-  const roleMap = new Map<string, { id: string; organizationId: string; role: string; permission: string }>();
+  const memberList: Array<{
+    id: string;
+    organizationId: string;
+    userId: string;
+    role: string;
+  }> = [];
+  const accountMap = new Map<
+    string,
+    { id: string; userId: string; password?: string | null }
+  >();
+  const roleMap = new Map<
+    string,
+    { id: string; organizationId: string; role: string; permission: string }
+  >();
   const dbMap = new Map<string, TenantDatabaseRecord>();
 
   const fakePrisma = {
@@ -89,7 +100,12 @@ test("ControlAdminService 租户开通逻辑、初始凭证、预置角色与状
           members?: { create?: { id: string; userId: string; role: string } };
         };
       }) {
-        const org = { id: data.id, name: data.name, slug: data.slug, createdAt: new Date() };
+        const org = {
+          id: data.id,
+          name: data.name,
+          slug: data.slug,
+          createdAt: new Date(),
+        };
         orgMap.set(data.id, org);
         if (data.members?.create) {
           memberList.push({
@@ -116,14 +132,36 @@ test("ControlAdminService 租户开通逻辑、初始凭证、预置角色与状
       },
     },
     account: {
-      async findFirst({ where }: { where: { userId: string; providerId: string } }) {
+      async findFirst({
+        where,
+      }: {
+        where: { userId: string; providerId: string };
+      }) {
         return accountMap.get(`${where.userId}:${where.providerId}`) ?? null;
       },
-      async create({ data }: { data: { id: string; accountId: string; providerId: string; userId: string; password?: string } }) {
+      async create({
+        data,
+      }: {
+        data: {
+          id: string;
+          accountId: string;
+          providerId: string;
+          userId: string;
+          password?: string;
+        };
+      }) {
         accountMap.set(`${data.userId}:${data.providerId}`, data);
         return data;
       },
-      async update({ where, data }: { where: { providerId_accountId: { providerId: string; accountId: string } }; data: { password?: string } }) {
+      async update({
+        where,
+        data,
+      }: {
+        where: {
+          providerId_accountId: { providerId: string; accountId: string };
+        };
+        data: { password?: string };
+      }) {
         const key = `${where.providerId_accountId.accountId}:${where.providerId_accountId.providerId}`;
         const current = accountMap.get(key);
         if (!current) throw new Error("not found");
@@ -138,8 +176,15 @@ test("ControlAdminService 租户开通逻辑、初始凭证、预置角色与状
         create,
         update,
       }: {
-        where: { organizationId_role: { organizationId: string; role: string } };
-        create: { id: string; organizationId: string; role: string; permission: string };
+        where: {
+          organizationId_role: { organizationId: string; role: string };
+        };
+        create: {
+          id: string;
+          organizationId: string;
+          role: string;
+          permission: string;
+        };
         update: { permission: string };
       }) {
         const key = `${where.organizationId_role.organizationId}:${where.organizationId_role.role}`;
@@ -150,7 +195,9 @@ test("ControlAdminService 租户开通逻辑、初始凭证、预置角色与状
     },
     member: {
       async findMany({ where }: { where: { organizationId: string } }) {
-        return memberList.filter((m) => m.organizationId === where.organizationId);
+        return memberList.filter(
+          (m) => m.organizationId === where.organizationId,
+        );
       },
     },
     tenantDatabase: {
@@ -231,7 +278,9 @@ test("ControlAdminService 租户开通逻辑、初始凭证、预置角色与状
   assert.equal(provisionResult.initialPassword, "Admin123456!");
 
   // 验证 R-01 规则：超管绝对不成为租户 Member，Owner User 才是唯一 Member
-  const members = memberList.filter((m) => m.organizationId === provisionResult.organizationId);
+  const members = memberList.filter(
+    (m) => m.organizationId === provisionResult.organizationId,
+  );
   assert.equal(members.length, 1);
   assert.equal(members[0]?.role, "owner");
   const ownerUser = userMap.get("admin@tenant-test.com");
@@ -325,9 +374,20 @@ test("ControlAdminService 开通租户串联物理库创建、基线迁移与数
   } as unknown as TenantProvisioner;
 
   const orgMap = new Map<string, { id: string; name: string; slug: string }>();
-  const userMap = new Map<string, { id: string; email: string; name: string }>();
-  const memberList: Array<{ id: string; organizationId: string; userId: string; role: string }> = [];
-  const accountMap = new Map<string, { id: string; userId: string; password?: string | null }>();
+  const userMap = new Map<
+    string,
+    { id: string; email: string; name: string }
+  >();
+  const memberList: Array<{
+    id: string;
+    organizationId: string;
+    userId: string;
+    role: string;
+  }> = [];
+  const accountMap = new Map<
+    string,
+    { id: string; userId: string; password?: string | null }
+  >();
   const roleMap = new Map<string, unknown>();
 
   const fakePrisma = {
@@ -335,7 +395,16 @@ test("ControlAdminService 开通租户串联物理库创建、基线迁移与数
       async findUnique() {
         return null;
       },
-      async create({ data }: { data: { id: string; name: string; slug: string; members?: { create?: { id: string; userId: string; role: string } } } }) {
+      async create({
+        data,
+      }: {
+        data: {
+          id: string;
+          name: string;
+          slug: string;
+          members?: { create?: { id: string; userId: string; role: string } };
+        };
+      }) {
         orgMap.set(data.id, data);
         if (data.members?.create) {
           memberList.push({ ...data.members.create, organizationId: data.id });
@@ -347,7 +416,11 @@ test("ControlAdminService 开通租户串联物理库创建、基线迁移与数
       async findUnique() {
         return null;
       },
-      async create({ data }: { data: { id: string; email: string; name: string } }) {
+      async create({
+        data,
+      }: {
+        data: { id: string; email: string; name: string };
+      }) {
         userMap.set(data.email, data);
         return data;
       },
@@ -356,7 +429,17 @@ test("ControlAdminService 开通租户串联物理库创建、基线迁移与数
       async findFirst() {
         return null;
       },
-      async create({ data }: { data: { id: string; accountId: string; providerId: string; userId: string; password?: string } }) {
+      async create({
+        data,
+      }: {
+        data: {
+          id: string;
+          accountId: string;
+          providerId: string;
+          userId: string;
+          password?: string;
+        };
+      }) {
         accountMap.set(`${data.userId}:${data.providerId}`, data);
         return data;
       },
@@ -367,8 +450,15 @@ test("ControlAdminService 开通租户串联物理库创建、基线迁移与数
         create,
         update,
       }: {
-        where: { organizationId_role: { organizationId: string; role: string } };
-        create: { id: string; organizationId: string; role: string; permission: string };
+        where: {
+          organizationId_role: { organizationId: string; role: string };
+        };
+        create: {
+          id: string;
+          organizationId: string;
+          role: string;
+          permission: string;
+        };
         update: { permission: string };
       }) {
         const key = `${where.organizationId_role.organizationId}:${where.organizationId_role.role}`;
@@ -378,7 +468,9 @@ test("ControlAdminService 开通租户串联物理库创建、基线迁移与数
     },
     member: {
       async findMany({ where }: { where: { organizationId: string } }) {
-        return memberList.filter((m) => m.organizationId === where.organizationId);
+        return memberList.filter(
+          (m) => m.organizationId === where.organizationId,
+        );
       },
     },
     tenantDatabase: {
@@ -414,7 +506,13 @@ test("ControlAdminService 开通租户串联物理库创建、基线迁移与数
   assert.equal(capturedProvisionInput.organizationId, result.organizationId);
   assert.equal(capturedProvisionInput.databaseName, "tenant_factory_chenrun");
   assert.ok(capturedProvisionInput.seedInput);
-  assert.equal(capturedProvisionInput.seedInput.organizationName, "新开通制造工厂");
-  assert.equal(capturedProvisionInput.seedInput.ownerEmail, "factory_owner@chenrun.com");
+  assert.equal(
+    capturedProvisionInput.seedInput.organizationName,
+    "新开通制造工厂",
+  );
+  assert.equal(
+    capturedProvisionInput.seedInput.ownerEmail,
+    "factory_owner@chenrun.com",
+  );
   assert.equal(capturedProvisionInput.seedInput.ownerName, "李厂长");
 });

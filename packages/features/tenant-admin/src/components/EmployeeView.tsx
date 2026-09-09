@@ -43,6 +43,7 @@ import {
   transferPositionAction,
   transferRolesAction,
 } from "../actions";
+import { flattenTree } from "@chenrun/shared";
 
 export interface EmployeeViewProps {
   readonly initialEmployees: readonly EmployeeItem[];
@@ -52,25 +53,9 @@ export interface EmployeeViewProps {
 }
 
 /** 扁平化部门树，供下拉选择 */
-interface FlatDeptOption {
-  readonly id: string;
-  readonly name: string;
-  readonly depth: number;
-}
-
-function flattenTree(
-  nodes: readonly DepartmentTreeNode[],
-  depth = 0,
-): FlatDeptOption[] {
-  const result: FlatDeptOption[] = [];
-  for (const n of nodes) {
-    result.push({ id: n.id, name: n.name, depth });
-    if (n.children && n.children.length > 0) {
-      result.push(...flattenTree(n.children, depth + 1));
-    }
-  }
-  return result;
-}
+type FlatDeptOption = ReturnType<
+  typeof flattenTree<DepartmentTreeNode>
+>[number];
 
 /**
  * 员工档案与人事调动中心面板组件 (现代数智工业风)
@@ -110,8 +95,9 @@ export function EmployeeView({
   const [transferPosEmp, setTransferPosEmp] = useState<EmployeeItem | null>(
     null,
   );
-  const [transferRolesEmp, setTransferRolesEmp] =
-    useState<EmployeeItem | null>(null);
+  const [transferRolesEmp, setTransferRolesEmp] = useState<EmployeeItem | null>(
+    null,
+  );
 
   // 新增员工表单状态
   const [createForm, setCreateForm] = useState<{
@@ -413,7 +399,8 @@ export function EmployeeView({
             员工档案与人事调动
           </h1>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            维护企业内部员工档案。支持直接建号（免邮件直接在职激活），调部门即刻联动 CASL 权限下推范围，调岗不改变权限。
+            维护企业内部员工档案。支持直接建号（免邮件直接在职激活），调部门即刻联动
+            CASL 权限下推范围，调岗不改变权限。
           </p>
         </div>
         <Button
@@ -980,7 +967,8 @@ export function EmployeeView({
             </h2>
             <p className="mt-1 text-xs text-slate-500">
               为员工 [{transferDeptEmp.name}]
-              重新指派部门。系统将自动自增权限版本号，CASL 数据下推范围立即生效。
+              重新指派部门。系统将自动自增权限版本号，CASL
+              数据下推范围立即生效。
             </p>
 
             <div className="mt-5 space-y-4">

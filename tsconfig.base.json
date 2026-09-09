@@ -24,7 +24,11 @@
       "@chenrun/ui": ["packages/ui/src/index.ts"],
       "@chenrun/feature-control-admin": ["packages/features/control-admin/src/index.ts"],
       "@chenrun/feature-control-admin/*": ["packages/features/control-admin/src/*"],
-      "@chenrun/feature-procurement-center": ["packages/features/procurement-center/src/index.ts"]
+      "@chenrun/feature-procurement-center": ["packages/features/procurement-center/src/index.ts"],
+      "@chenrun/feature-procurement-center/*": ["packages/features/procurement-center/src/*"],
+      "@chenrun/feature-tenant-admin": ["packages/features/tenant-admin/src/index.ts"],
+      "@chenrun/feature-tenant-admin/*": ["packages/features/tenant-admin/src/*"],
+      "@chenrun/tenant-migrate": ["tooling/tenant-migrate/src/index.ts"]
     }
   },
   "exclude": ["node_modules"]

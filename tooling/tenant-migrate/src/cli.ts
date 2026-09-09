@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import {
@@ -77,6 +78,66 @@ function printHelp(): void {
 }
 
 /**
+ * 安全解析并载入 env 文件（不覆盖已存在的 process.env，优先使用原生 loadEnvFile）
+ */
+function loadEnvFileSafe(filePath: string): boolean {
+  try {
+    if (!fs.existsSync(filePath)) return false;
+    if (typeof process.loadEnvFile === "function") {
+      process.loadEnvFile(filePath);
+      return true;
+    }
+    const content = fs.readFileSync(filePath, "utf-8");
+    for (const line of content.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eqIdx = trimmed.indexOf("=");
+      if (eqIdx > 0) {
+        const key = trimmed.slice(0, eqIdx).trim();
+        let val = trimmed.slice(eqIdx + 1).trim();
+        if (
+          (val.startsWith('"') && val.endsWith('"')) ||
+          (val.startsWith("'") && val.endsWith("'"))
+        ) {
+          val = val.slice(1, -1);
+        }
+        if (process.env[key] === undefined) {
+          process.env[key] = val;
+        }
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 自动向上扫描并加载环境变量配置文件
+ */
+function autoLoadEnvironment(
+  workspaceRoot: string,
+  packageDir: string,
+): string[] {
+  const candidates = [
+    path.join(workspaceRoot, ".env.local"),
+    path.join(workspaceRoot, ".env"),
+    path.join(packageDir, ".env.local"),
+    path.join(packageDir, ".env"),
+    path.join(workspaceRoot, "apps/tenant/.env.local"),
+    path.join(workspaceRoot, "apps/control/.env.local"),
+  ];
+
+  const loadedFiles: string[] = [];
+  for (const file of candidates) {
+    if (loadEnvFileSafe(file)) {
+      loadedFiles.push(file);
+    }
+  }
+  return loadedFiles;
+}
+
+/**
  * 默认环境变量与 Secret 解析器 (遵循项目安全隔离规范)
  */
 class DefaultEnvSecretResolver implements SecretResolver {
@@ -111,14 +172,14 @@ async function main(): Promise<void> {
   const cliDir = import.meta.dirname;
   const packageDir = path.resolve(cliDir, "..");
   const workspaceRoot = path.resolve(packageDir, "../..");
-  const defaultMigrationsDir = path.join(
-    packageDir,
-    "migrations",
-  );
+  const defaultMigrationsDir = path.join(packageDir, "migrations");
   const defaultSchemaPath = path.join(
     workspaceRoot,
     "packages/db-tenant/prisma/schema.prisma",
   );
+
+  // 自动从当前目录及工作区根目录检索并加载 .env 与 .env.local
+  const loadedEnvFiles = autoLoadEnvironment(workspaceRoot, packageDir);
 
   // 1. generate 实体扫描自动生成命令 (开发期/CI 无需连接数据库)
   if (command === "generate") {
@@ -166,7 +227,14 @@ async function main(): Promise<void> {
   const controlDbUrl = process.env.CONTROL_DATABASE_URL;
   if (!controlDbUrl) {
     console.error(
-      "错误: 缺少 CONTROL_DATABASE_URL 环境变量，无法连接 Control DB 账本",
+      "错误: 缺少 CONTROL_DATABASE_URL 环境变量，无法连接 Control DB 账本。\n" +
+        "已扫描以下环境配置文件，未发现有效的 CONTROL_DATABASE_URL:\n" +
+        (loadedEnvFiles.length > 0
+          ? loadedEnvFiles.map((f) => `  • ${f}`).join("\n")
+          : "  • (未找到任何 .env 或 .env.local 配置文件)") +
+        "\n\n" +
+        "请在项目根目录创建或补充 .env.local 文件:\n" +
+        '  CONTROL_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/chenrun_control?schema=public"\n',
     );
     process.exit(1);
   }
@@ -188,8 +256,16 @@ async function main(): Promise<void> {
     switch (command) {
       case "up": {
         const tenantId = options.tenant as string | undefined;
-        const isAll = Boolean(options.all);
+        let isAll = Boolean(options.all);
         const targetVersion = options.target as string | undefined;
+
+        // 如果用户既未指定 --tenant 也未指定 --all，则默认执行全量活跃租户批量升级
+        if (!tenantId && !isAll) {
+          console.log(
+            "提示: 未指定 --tenant <orgId>，默认对所有活跃租户执行升级 (等同于 --all)",
+          );
+          isAll = true;
+        }
 
         if (tenantId) {
           console.log(`>>> 正在针对单租户 [${tenantId}] 执行迁移升级...`);
