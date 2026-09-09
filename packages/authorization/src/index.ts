@@ -1,5 +1,6 @@
 /** 基于 CASL 的功能授权、数据范围 (Data Scope) 与字段策略 (Field Policy) 核心导出 */
 
+export { StandardAction } from "./actions";
 export {
   AbilityFactoryError,
   CaslAbilityFactory,
@@ -28,7 +29,9 @@ export {
 export {
   DataScope,
   DataScopeError,
+  DEPT_DATA_SCOPES,
   resolveDataScopeConditions,
+  STANDARD_DATA_SCOPES,
   type DataScopeFieldMapping,
   type DataScopeType,
   type PrismaQueryCondition,
@@ -40,6 +43,7 @@ export {
   FieldPolicy,
   FieldPolicyError,
   getFieldMode,
+  getFieldVisibility,
   getReadableFields,
   getEditableFields,
   pickReadableFields,

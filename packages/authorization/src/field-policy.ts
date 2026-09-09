@@ -140,3 +140,25 @@ export function assertEditableFields<T extends Record<string, unknown>>(
   throw error;
  }
 }
+
+/**
+ * 通用字段可见性生成器 (Field Visibility Map Generator)
+ * 遍历指定 Subject 的目标受控字段清单，调用 CASL Ability 的 can('read', subject, field)
+ * 快速生成强类型的字段可读性状态映射对象 { [field]: boolean }，供前端页面或视图层直接解构消费。
+ *
+ * @param ability 具有 can(action, subject, field) 接口的 Ability 实例
+ * @param subject 目标实体 Subject 标识 (如 "PurchaseOrder")
+ * @param fields 目标受控字段名称数组
+ * @returns 字段可见性映射对象
+ */
+export function getFieldVisibility<TField extends string>(
+ ability: { can(action: string, subject: string, field?: string): boolean },
+ subject: string,
+ fields: readonly TField[],
+): Record<TField, boolean> {
+ const visibility = {} as Record<TField, boolean>;
+ for (const field of fields) {
+  visibility[field] = ability.can("read", subject, field);
+ }
+ return visibility;
+}

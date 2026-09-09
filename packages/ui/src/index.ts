@@ -1,6 +1,7 @@
 export * from "./lib/utils";
 export * from "./components/button";
 export * from "./components/card";
+export * from "./components/table";
 export * from "./components/input";
 export * from "./components/badge";
 export * from "./components/MetricCard";
@@ -10,6 +11,7 @@ export * from "./components/layout/DashboardShell";
 export * from "./components/layout/TopHeader";
 export * from "./components/layout/Sidebar";
 export * from "./components/AuthorizedField";
+export * from "./components/BusinessTableWorkspace";
 
 import React from "react";
 import {

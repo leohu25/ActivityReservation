@@ -17,6 +17,24 @@ export const DataScope = {
 export type DataScopeType = (typeof DataScope)[keyof typeof DataScope];
 
 /**
+ * 常用数据权限范围预设常量集合，供各业务模块 Catalog 定义使用：
+ * - STANDARD_DATA_SCOPES: 标准 4 级范围（本人、本部门、本部门及下级、全租户），常用于 read/export 等查看类操作
+ * - DEPT_DATA_SCOPES: 组织层级 3 级范围（本部门、本部门及下级、全租户），常用于 audit 等审批类操作
+ */
+export const STANDARD_DATA_SCOPES = [
+  DataScope.SELF,
+  DataScope.DEPT,
+  DataScope.DEPT_TREE,
+  DataScope.ALL,
+] as const;
+
+export const DEPT_DATA_SCOPES = [
+  DataScope.DEPT,
+  DataScope.DEPT_TREE,
+  DataScope.ALL,
+] as const;
+
+/**
  * 角色数据范围配置契约
  */
 export interface RoleDataScopeConfig {

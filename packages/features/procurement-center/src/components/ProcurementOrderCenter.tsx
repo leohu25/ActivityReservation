@@ -3,355 +3,221 @@
 import React, { useState } from "react";
 import type { FieldAccessMode } from "@chenrun/authorization";
 import {
-        Card,
-        CardHeader,
-        CardTitle,
-        CardDescription,
-        CardContent,
-        Badge,
-        Button,
+  Badge,
+  Button,
+  BusinessTableWorkspace,
+  type ColumnDef,
 } from "@chenrun/ui";
-import {
-        PackageCheck,
-        CheckCheck,
-        Code2,
-        ShieldCheck,
-        Building2,
-        AlertCircle,
-        FileSpreadsheet,
-} from "lucide-react";
-import { ProcurementOrderStatus } from "../permissions";
+import { CheckCheck, PackageCheck } from "lucide-react";
+import { ProcurementOrderStatus, ProcurementSubject } from "../permissions";
 import type {
-        ProcurementOrderItem,
-        ProcurementAnyAbility,
-        ProcurementFieldVisibility,
+  ProcurementOrderItem,
+  ProcurementAnyAbility,
+  ProcurementFieldVisibility,
 } from "../types";
 import { CreateOrderDialog } from "./CreateOrderDialog";
 import { AuditOrderModal } from "./AuditOrderModal";
 
 export interface ProcurementOrderCenterProps {
-        readonly orders: readonly ProcurementOrderItem[];
-        readonly sqlWhere: Record<string, unknown>;
-        readonly activeOrgId: string;
-        readonly departmentName?: string | null;
-        readonly canCreate: boolean;
-        readonly canExport: boolean;
-        readonly fieldVisibility: ProcurementFieldVisibility;
-        readonly currentUserId: string;
-        readonly ability?: ProcurementAnyAbility;
-        readonly createFieldModes?: Record<string, FieldAccessMode>;
+  readonly orders: readonly ProcurementOrderItem[];
+  readonly sqlWhere: Record<string, unknown>;
+  readonly activeOrgId: string;
+  readonly departmentName?: string | null;
+  readonly canCreate: boolean;
+  readonly canExport: boolean;
+  readonly fieldVisibility: ProcurementFieldVisibility;
+  readonly currentUserId: string;
+  readonly ability?: ProcurementAnyAbility;
+  readonly createFieldModes?: Record<string, FieldAccessMode>;
 }
 
 export function ProcurementOrderCenter({
-        orders,
-        sqlWhere,
-        activeOrgId,
-        departmentName,
-        canCreate,
-        canExport,
-        fieldVisibility,
-        ability,
-        createFieldModes,
+  orders,
+  sqlWhere,
+  activeOrgId,
+  departmentName,
+  canCreate,
+  canExport,
+  fieldVisibility,
+  ability,
+  createFieldModes,
 }: ProcurementOrderCenterProps) {
-        const [selectedAuditOrder, setSelectedAuditOrder] =
-                useState<ProcurementOrderItem | null>(null);
+  const [selectedAuditOrder, setSelectedAuditOrder] =
+    useState<ProcurementOrderItem | null>(null);
 
-        const handleExportDummy = () => {
-                alert(
-                        "采购数据导出遵循当前角色字段脱敏策略，成本价将依权决定是否包含在导出文件中。",
-                );
-        };
+  const handleExportDummy = () => {
+    alert(
+      "采购数据导出遵循当前角色字段脱敏策略，成本价将依权决定是否包含在导出文件中。",
+    );
+  };
 
-        return (
-                <div className="space-y-6">
-                        {/* 顶部操作与标题栏 */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-5 dark:border-slate-800">
-                                <div>
-                                        <div className="flex items-center gap-2">
-                                                <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">
-                                                        采购订单中心
-                                                </h1>
-                                                <Badge
-                                                        variant="default"
-                                                        size="sm"
-                                                >
-                                                        <PackageCheck className="size-3 mr-1" />
-                                                        <span>
-                                                                CASL 动态守卫 +
-                                                                物理库直连
-                                                        </span>
-                                                </Badge>
-                                        </div>
-                                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                                按钮依权限展示、敏感成本价依字段策略控制、查询结果遵循
-                                                PostgreSQL
-                                                动态数据范围下推，审核执行【禁止自审】红线。
-                                        </p>
-                                </div>
+  // 定义业务列契约（自动关联 fieldVisibility，保留原有脱敏与显隐特性）
+  const allColumns: ColumnDef<ProcurementOrderItem>[] = [
+    {
+      id: "orderNo",
+      header: "订单编号",
+      cell: (order) => (
+        <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+          {order.orderNo}
+        </span>
+      ),
+    },
+    {
+      id: "supplierName",
+      header: "供应商名称",
+      cell: (order) => (
+        <span className="font-medium text-slate-800 dark:text-slate-200">
+          {order.supplierName}
+        </span>
+      ),
+    },
+    {
+      id: "quantity",
+      header: "采购数量",
+      cell: (order) => (
+        <span className="text-slate-600 dark:text-slate-400 tabular-nums">
+          {order.quantity} 件
+        </span>
+      ),
+    },
+    {
+      id: "costPrice",
+      header: "采购单价 (敏感资产)",
+      cell: (order) => (
+        <span className="font-bold text-emerald-600 tabular-nums dark:text-emerald-400">
+          {order.costPrice}
+        </span>
+      ),
+    },
+    {
+      id: "department",
+      header: "归属部门",
+      cell: (order) => (
+        <span className="text-slate-600 dark:text-slate-400">
+          {order.departmentName || order.deptId}
+        </span>
+      ),
+    },
+    {
+      id: "status",
+      header: "状态",
+      cell: (order) => (
+        <Badge
+          variant={
+            order.status === ProcurementOrderStatus.APPROVED
+              ? "success"
+              : order.status === ProcurementOrderStatus.REJECTED
+                ? "destructive"
+                : "warning"
+          }
+          size="sm"
+        >
+          {order.status === ProcurementOrderStatus.APPROVED
+            ? "已通过"
+            : order.status === ProcurementOrderStatus.REJECTED
+              ? "已驳回"
+              : "待审核"}
+        </Badge>
+      ),
+    },
+    {
+      id: "auditComment",
+      header: "审核意见",
+      cell: (order) => (
+        <span className="text-slate-500 dark:text-slate-400">
+          {order.auditComment || "-"}
+        </span>
+      ),
+    },
+  ];
 
-                                {/* 权限受控操作按钮组 */}
-                                <div className="flex items-center gap-2.5">
-                                        {canExport && (
-                                                <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={
-                                                                handleExportDummy
-                                                        }
-                                                        className="text-slate-600 hover:text-slate-900 dark:text-slate-300"
-                                                >
-                                                        <FileSpreadsheet className="size-3.5 mr-1" />
-                                                        <span>导出订单</span>
-                                                </Button>
-                                        )}
+  // 严格依据传入的 fieldVisibility 过滤可见列（保证与服务端推导一致）
+  const activeColumns = allColumns.filter((col) => {
+    if (col.id === "orderNo") return fieldVisibility.orderNo;
+    if (col.id === "supplierName") return fieldVisibility.supplierName;
+    if (col.id === "quantity") return fieldVisibility.quantity;
+    if (col.id === "costPrice") return fieldVisibility.costPrice;
+    if (col.id === "status") return fieldVisibility.status;
+    if (col.id === "auditComment") return fieldVisibility.auditComment;
+    return true; // 部门等公共列默认展示
+  });
 
-                                        {canCreate && (
-                                                <CreateOrderDialog
-                                                        ability={ability}
-                                                        fieldModes={
-                                                                createFieldModes
-                                                        }
-                                                        departmentName={
-                                                                departmentName
-                                                        }
-                                                />
-                                        )}
-                                </div>
-                        </div>
+  return (
+    <>
+      <BusinessTableWorkspace<ProcurementOrderItem>
+        subject={ProcurementSubject}
+        ability={ability}
+        title="采购订单中心"
+        description="按钮依权限展示、敏感成本价依字段策略控制、查询结果遵循 PostgreSQL 动态数据范围下推，审核执行【禁止自审】红线。"
+        extraHeader={
+          <div className="flex items-center gap-2.5">
+            <Badge variant="default" size="sm">
+              <PackageCheck className="size-3 mr-1" />
+              <span>CASL 动态守卫 + 物理库直连</span>
+            </Badge>
+            {canCreate && (
+              <CreateOrderDialog
+                ability={ability}
+                fieldModes={createFieldModes}
+                departmentName={departmentName}
+              />
+            )}
+          </div>
+        }
+        moreActions={{
+          onExport: canExport ? handleExportDummy : undefined,
+        }}
+        debugQueryClause={{
+          title: "Prisma accessibleBy 实时下推查询条件",
+          content: JSON.stringify(sqlWhere, null, 2),
+          tenantInfo: `当前租户: ${activeOrgId}`,
+        }}
+        data={orders}
+        columns={activeColumns}
+        rowKey={(order) => order.id}
+        selectable={false}
+        rowActionsHeader="操作"
+        rowActions={(order) => {
+          if (order.canAuditThisOrder) {
+            return (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedAuditOrder(order)}
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-bold dark:text-blue-400"
+              >
+                <CheckCheck className="size-3.5 mr-1" />
+                <span>审批</span>
+              </Button>
+            );
+          }
+          if (order.isSelfAuditBlocked) {
+            return (
+              <span
+                title="您是本单据创建人，依据内控规范禁止自审"
+                className="inline-flex items-center text-[11px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 dark:bg-amber-950/40 dark:border-amber-900/50 dark:text-amber-400 cursor-help"
+              >
+                禁止自审
+              </span>
+            );
+          }
+          return <span className="text-slate-400 text-xs">-</span>;
+        }}
+      />
 
-                        {/* 实时下推与字段权限说明看板 */}
-                        <Card className="border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900">
-                                <CardHeader className="pb-3">
-                                        <div className="flex items-center justify-between">
-                                                <CardTitle className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
-                                                        <ShieldCheck className="size-3.5 text-blue-600" />
-                                                        <span>
-                                                                Prisma
-                                                                accessibleBy
-                                                                实时下推查询条件
-                                                        </span>
-                                                </CardTitle>
-                                                <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                                                        <Building2 className="size-3" />
-                                                        <span>
-                                                                当前租户:{" "}
-                                                                {activeOrgId}
-                                                        </span>
-                                                </div>
-                                        </div>
-                                        <CardDescription>
-                                                根据当前登录成员在当前租户库关联的部门树拓扑，自动下推
-                                                SQL WHERE 隔离过滤：
-                                        </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                        <div className="rounded-xl bg-slate-900 p-3 font-mono text-xs text-emerald-400 overflow-x-auto dark:bg-slate-950 border border-slate-800">
-                                                <div className="flex items-center gap-1.5 pb-2 mb-2 border-b border-slate-800 text-[10px] text-slate-500">
-                                                        <Code2 className="size-3" />
-                                                        <span>
-                                                                {
-                                                                        "// Generated Prisma Where Clause via CASL Data Scope"
-                                                                }
-                                                        </span>
-                                                </div>
-                                                <pre className="leading-relaxed">
-                                                        {JSON.stringify(
-                                                                sqlWhere,
-                                                                null,
-                                                                2,
-                                                        )}
-                                                </pre>
-                                        </div>
-                                </CardContent>
-                        </Card>
-
-                        {/* 业务订单表格 (遵循现代轻量 SaaS 表格规范) */}
-                        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
-                                <table className="w-full text-left text-xs">
-                                        <thead className="border-b border-slate-200/80 bg-slate-50/80 text-slate-500 dark:border-slate-800 dark:bg-slate-800/60">
-                                                <tr>
-                                                        {fieldVisibility.orderNo ? (
-                                                                <th className="px-5 py-3 font-bold">
-                                                                        订单编号
-                                                                </th>
-                                                        ) : null}
-                                                        {fieldVisibility.supplierName ? (
-                                                                <th className="px-5 py-3 font-bold">
-                                                                        供应商名称
-                                                                </th>
-                                                        ) : null}
-                                                        {fieldVisibility.quantity ? (
-                                                                <th className="px-5 py-3 font-bold">
-                                                                        采购数量
-                                                                </th>
-                                                        ) : null}
-                                                        {fieldVisibility.costPrice ? (
-                                                                <th className="px-5 py-3 font-bold">
-                                                                        采购单价
-                                                                        (敏感资产)
-                                                                </th>
-                                                        ) : null}
-                                                        <th className="px-5 py-3 font-bold">
-                                                                归属部门
-                                                        </th>
-                                                        {fieldVisibility.status ? (
-                                                                <th className="px-5 py-3 font-bold">
-                                                                        状态
-                                                                </th>
-                                                        ) : null}
-                                                        {fieldVisibility.auditComment ? (
-                                                                <th className="px-5 py-3 font-bold">
-                                                                        审核意见
-                                                                </th>
-                                                        ) : null}
-                                                        <th className="px-5 py-3 font-bold text-right">
-                                                                操作
-                                                        </th>
-                                                </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                                {orders.length === 0 ? (
-                                                        <tr>
-                                                                <td
-                                                                        colSpan={
-                                                                                Object.values(
-                                                                                        fieldVisibility,
-                                                                                ).filter(
-                                                                                        Boolean,
-                                                                                )
-                                                                                        .length +
-                                                                                2
-                                                                        }
-                                                                        className="px-5 py-8 text-center text-slate-400"
-                                                                >
-                                                                        <div className="flex flex-col items-center justify-center gap-2">
-                                                                                <AlertCircle className="size-6 text-slate-300" />
-                                                                                <span>
-                                                                                        当前数据范围内暂无采购订单，可点击右上角新建订单
-                                                                                </span>
-                                                                        </div>
-                                                                </td>
-                                                        </tr>
-                                                ) : (
-                                                        orders.map((order) => (
-                                                                <tr
-                                                                        key={
-                                                                                order.id
-                                                                        }
-                                                                        className="hover:bg-blue-50/30 dark:hover:bg-slate-800/50 transition-colors"
-                                                                >
-                                                                        {fieldVisibility.orderNo ? (
-                                                                                <td className="px-5 py-3.5 font-mono font-bold text-slate-900 dark:text-slate-100">
-                                                                                        {
-                                                                                                order.orderNo
-                                                                                        }
-                                                                                </td>
-                                                                        ) : null}
-                                                                        {fieldVisibility.supplierName ? (
-                                                                                <td className="px-5 py-3.5 font-medium text-slate-800 dark:text-slate-200">
-                                                                                        {
-                                                                                                order.supplierName
-                                                                                        }
-                                                                                </td>
-                                                                        ) : null}
-                                                                        {fieldVisibility.quantity ? (
-                                                                                <td className="px-5 py-3.5 text-slate-600 dark:text-slate-400 tabular-nums">
-                                                                                        {
-                                                                                                order.quantity
-                                                                                        }{" "}
-                                                                                        件
-                                                                                </td>
-                                                                        ) : null}
-                                                                        {fieldVisibility.costPrice ? (
-                                                                                <td className="px-5 py-3.5">
-                                                                                        <span className="font-bold text-emerald-600 tabular-nums dark:text-emerald-400">
-                                                                                                {
-                                                                                                        order.costPrice
-                                                                                                }
-                                                                                        </span>
-                                                                                </td>
-                                                                        ) : null}
-                                                                        <td className="px-5 py-3.5 text-slate-600 dark:text-slate-400">
-                                                                                {order.departmentName ||
-                                                                                        order.deptId}
-                                                                        </td>
-                                                                        {fieldVisibility.status ? (
-                                                                                <td className="px-5 py-3.5">
-                                                                                        <Badge
-                                                                                                variant={
-                                                                                                        order.status ===
-                                                                                                        ProcurementOrderStatus.APPROVED
-                                                                                                                ? "success"
-                                                                                                                : order.status ===
-                                                                                                                    ProcurementOrderStatus.REJECTED
-                                                                                                                  ? "destructive"
-                                                                                                                  : "warning"
-                                                                                                }
-                                                                                                size="sm"
-                                                                                        >
-                                                                                                {order.status ===
-                                                                                                ProcurementOrderStatus.APPROVED
-                                                                                                        ? "已通过"
-                                                                                                        : order.status ===
-                                                                                                            ProcurementOrderStatus.REJECTED
-                                                                                                          ? "已驳回"
-                                                                                                          : "待审核"}
-                                                                                        </Badge>
-                                                                                </td>
-                                                                        ) : null}
-                                                                        {fieldVisibility.auditComment ? (
-                                                                                <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400">
-                                                                                        {order.auditComment ||
-                                                                                                "-"}
-                                                                                </td>
-                                                                        ) : null}
-                                                                        <td className="px-5 py-3.5 text-right">
-                                                                                {order.canAuditThisOrder ? (
-                                                                                        <Button
-                                                                                                variant="ghost"
-                                                                                                size="sm"
-                                                                                                onClick={() =>
-                                                                                                        setSelectedAuditOrder(
-                                                                                                                order,
-                                                                                                        )
-                                                                                                }
-                                                                                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-bold dark:text-blue-400"
-                                                                                        >
-                                                                                                <CheckCheck className="size-3.5 mr-1" />
-                                                                                                <span>
-                                                                                                        审批
-                                                                                                </span>
-                                                                                        </Button>
-                                                                                ) : order.isSelfAuditBlocked ? (
-                                                                                        <span
-                                                                                                title="您是本单据创建人，依据内控规范禁止自审"
-                                                                                                className="inline-flex items-center text-[11px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 dark:bg-amber-950/40 dark:border-amber-900/50 dark:text-amber-400 cursor-help"
-                                                                                        >
-                                                                                                禁止自审
-                                                                                        </span>
-                                                                                ) : (
-                                                                                        <span className="text-slate-400 text-xs">
-                                                                                                -
-                                                                                        </span>
-                                                                                )}
-                                                                        </td>
-                                                                </tr>
-                                                        ))
-                                                )}
-                                        </tbody>
-                                </table>
-                        </div>
-
-                        {selectedAuditOrder && (
-                                <AuditOrderModal
-                                        order={selectedAuditOrder}
-                                        isOpen={true}
-                                        fieldVisibility={fieldVisibility}
-                                        onClose={() =>
-                                                setSelectedAuditOrder(null)
-                                        }
-                                />
-                        )}
-                </div>
-        );
+      {/* 审核弹窗 */}
+      {selectedAuditOrder && (
+        <AuditOrderModal
+          order={selectedAuditOrder}
+          isOpen={Boolean(selectedAuditOrder)}
+          fieldVisibility={fieldVisibility}
+          onClose={() => setSelectedAuditOrder(null)}
+          onAudited={() => {
+            setSelectedAuditOrder(null);
+            window.location.reload();
+          }}
+        />
+      )}
+    </>
+  );
 }
