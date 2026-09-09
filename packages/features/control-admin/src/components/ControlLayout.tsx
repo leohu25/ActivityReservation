@@ -11,6 +11,7 @@ import {
   LogOut,
   Loader2,
   Cpu,
+  Database,
 } from "lucide-react";
 
 export interface ControlLayoutProps {
@@ -40,6 +41,13 @@ const NAV_ITEMS: readonly NavItem[] = [
     href: "/tenants",
     icon: <Building2 className="size-4.5" />,
     description: "多租户开通与物理库生命周期",
+  },
+  {
+    id: "migrations",
+    name: "数据架构与迁移",
+    href: "/migrations",
+    icon: <Database className="size-4.5" />,
+    description: "平台底座与租户舰队版本升级",
   },
 ];
 

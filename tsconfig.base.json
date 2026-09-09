@@ -28,7 +28,10 @@
       "@chenrun/feature-procurement-center/*": ["packages/features/procurement-center/src/*"],
       "@chenrun/feature-tenant-admin": ["packages/features/tenant-admin/src/index.ts"],
       "@chenrun/feature-tenant-admin/*": ["packages/features/tenant-admin/src/*"],
-      "@chenrun/tenant-migrate": ["tooling/tenant-migrate/src/index.ts"]
+      "@chenrun/feature-customer-center": ["packages/features/customer-center/src/index.ts"],
+      "@chenrun/feature-customer-center/*": ["packages/features/customer-center/src/*"],
+      "@chenrun/tenant-migrate": ["tooling/tenant-migrate/src/index.ts"],
+      "@chenrun/platform-migrate": ["tooling/platform-migrate/src/index.ts"]
     }
   },
   "exclude": ["node_modules"]

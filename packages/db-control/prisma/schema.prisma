@@ -11,10 +11,10 @@ model User {
   id            String       @id
   name          String
   email         String       @unique
-  emailVerified Boolean      @default(false)
+  emailVerified Boolean      @default(false) @map("email_verified")
   image         String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
   sessions      Session[]
   accounts      Account[]
   memberships   Member[]
@@ -25,14 +25,14 @@ model User {
 
 model Session {
   id                   String   @id
-  expiresAt            DateTime
+  expiresAt            DateTime @map("expires_at")
   token                String   @unique
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-  ipAddress            String?
-  userAgent            String?
-  userId               String
-  activeOrganizationId String?
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+  ipAddress            String?  @map("ip_address")
+  userAgent            String?  @map("user_agent")
+  userId               String   @map("user_id")
+  activeOrganizationId String?  @map("active_organization_id")
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -42,18 +42,18 @@ model Session {
 
 model Account {
   id                    String    @id
-  accountId             String
-  providerId            String
-  userId                String
-  accessToken           String?
-  refreshToken          String?
-  idToken               String?
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
   scope                 String?
   password              String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([providerId, accountId])
@@ -65,9 +65,9 @@ model Verification {
   id         String   @id
   identifier String
   value      String
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   @@index([identifier])
   @@map("verification")
@@ -78,9 +78,9 @@ model Organization {
   name                 String
   slug                 String          @unique
   logo                 String?
-  createdAt            DateTime        @default(now())
+  createdAt            DateTime        @default(now()) @map("created_at")
   metadata             String?
-  authorizationVersion Int             @default(1)
+  authorizationVersion Int             @default(1) @map("authorization_version")
   members              Member[]
   invitations          Invitation[]
   roles                OrganizationRole[]
@@ -92,10 +92,10 @@ model Organization {
 
 model Member {
   id             String       @id
-  organizationId String
-  userId         String
+  organizationId String       @map("organization_id")
+  userId         String       @map("user_id")
   role           String       @default("member")
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime     @default(now()) @map("created_at")
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -106,13 +106,13 @@ model Member {
 
 model Invitation {
   id             String       @id
-  organizationId String
+  organizationId String       @map("organization_id")
   email          String
   role           String?
   status         String       @default("pending")
-  expiresAt      DateTime
-  createdAt      DateTime     @default(now())
-  inviterId      String
+  expiresAt      DateTime     @map("expires_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  inviterId      String       @map("inviter_id")
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   inviter        User         @relation("InvitationInviter", fields: [inviterId], references: [id], onDelete: Cascade)
 
@@ -123,29 +123,29 @@ model Invitation {
 
 model OrganizationRole {
   id             String       @id
-  organizationId String
+  organizationId String       @map("organization_id")
   role           String
   permission     String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime?    @updatedAt
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime?    @updatedAt @map("updated_at")
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, role])
   @@index([organizationId])
   @@index([role])
-  @@map("organizationRole")
+  @@map("organization_role")
 }
 
 model TenantDatabase {
   id             String               @id @default(cuid())
-  organizationId String               @unique
-  clusterCode    String
-  databaseName   String
-  secretRef      String
-  schemaVersion  String
+  organizationId String               @unique @map("organization_id")
+  clusterCode    String               @map("cluster_code")
+  databaseName   String               @map("database_name")
+  secretRef      String               @map("secret_ref")
+  schemaVersion  String               @map("schema_version")
   status         TenantDatabaseStatus @default(PROVISIONING)
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
   organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([clusterCode, status])
@@ -169,18 +169,18 @@ enum TenantMigrationStatus {
 
 model TenantMigration {
   id              String                @id @default(cuid())
-  organizationId  String
-  migrationName   String
+  organizationId  String                @map("organization_id")
+  migrationName   String                @map("migration_name")
   version         String
-  batchId         String?
+  batchId         String?               @map("batch_id")
   status          TenantMigrationStatus @default(PENDING)
-  appliedSteps    Int                   @default(0)
-  errorMessage    String?
-  executionTimeMs Int?
-  startedAt       DateTime?
-  finishedAt      DateTime?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  appliedSteps    Int                   @default(0) @map("applied_steps")
+  errorMessage    String?               @map("error_message")
+  executionTimeMs Int?                  @map("execution_time_ms")
+  startedAt       DateTime?             @map("started_at")
+  finishedAt      DateTime?             @map("finished_at")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
   organization    Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])

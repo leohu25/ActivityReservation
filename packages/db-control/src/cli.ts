@@ -176,7 +176,12 @@ async function main(): Promise<void> {
         console.log(
           ">>> 正在将 schema.prisma 的最新定义同步至 Control 物理数据库...",
         );
-        execFileSync(prismaBin, ["db", "push", "--config", configPath], {
+        const forceReset = process.argv.includes("--force-reset");
+        const pushArgs = ["db", "push", "--config", configPath];
+        if (forceReset) {
+          pushArgs.push("--force-reset");
+        }
+        execFileSync(prismaBin, pushArgs, {
           env: process.env,
           stdio: "inherit",
         });

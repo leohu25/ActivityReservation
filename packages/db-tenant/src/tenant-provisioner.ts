@@ -51,6 +51,16 @@ export interface ProvisionTenantDatabaseResult {
 }
 
 /**
+ * 租户全量建表与基线对齐初始化器契约
+ */
+export interface TenantFullInitializer {
+  initializeFullTenant(
+    tenantDatabaseUrl: string,
+    organizationId: string,
+  ): Promise<{ appliedCount: number; latestVersion: string }>;
+}
+
+/**
  * 租户物理数据库自动化开通引擎 (Tenant DB Provisioner)
  * 实现独立数据库物理创建（CREATE DATABASE tenant_xxx）与基线结构初始化
  */
@@ -60,6 +70,7 @@ export class TenantProvisioner {
     private readonly sqlExecutorFactory: TenantSqlExecutorFactory,
     private readonly migrationRunner: TenantMigrationRunner,
     private readonly seeder?: TenantDatabaseSeeder,
+    private readonly fullInitializer?: TenantFullInitializer,
   ) {}
 
   /**
@@ -106,24 +117,38 @@ export class TenantProvisioner {
         status: "PROVISIONING",
       });
 
-    // 4. 调用迁移引擎执行初始化基线迁移
+    // 4. 调用迁移引擎执行初始化基线迁移或全量 Schema 初始化
     let appliedCount = 0;
     try {
-      const migrationResults = await this.migrationRunner.migrateTenant(
-        input.organizationId,
-        {
-          targetVersion: input.targetVersion,
-        },
-      );
-      appliedCount = migrationResults.length;
+      let finalVersion = initialRecord.schemaVersion;
+      const tenantUrl =
+        input.tenantDatabaseUrl ??
+        this.resolveTenantDatabaseUrl(input.adminDatabaseUrl, safeDbName);
 
-      // 5. 迁移成功后更新租户库状态为 ACTIVE
-      const latestSuccess = await this.repository.findLatestSuccessfulMigration(
-        input.organizationId,
-      );
+      if (this.fullInitializer) {
+        const fullInitResult = await this.fullInitializer.initializeFullTenant(
+          tenantUrl,
+          input.organizationId,
+        );
+        appliedCount = fullInitResult.appliedCount;
+        finalVersion = fullInitResult.latestVersion;
+      } else {
+        const migrationResults = await this.migrationRunner.migrateTenant(
+          input.organizationId,
+          {
+            targetVersion: input.targetVersion,
+          },
+        );
+        appliedCount = migrationResults.length;
 
-      const finalVersion =
-        latestSuccess?.version ?? initialRecord.schemaVersion;
+        // 5. 迁移成功后更新租户库状态为 ACTIVE
+        const latestSuccess =
+          await this.repository.findLatestSuccessfulMigration(
+            input.organizationId,
+          );
+        finalVersion = latestSuccess?.version ?? initialRecord.schemaVersion;
+      }
+
       await this.repository.updateTenantDatabaseStatus(
         input.organizationId,
         "ACTIVE",
@@ -133,9 +158,6 @@ export class TenantProvisioner {
       // 6. 若配置了种子初始化参数与 Seeder，执行基线种子数据填充
       let seedResult: TenantSeedResult | undefined;
       if (input.seedInput && this.seeder) {
-        const tenantUrl =
-          input.tenantDatabaseUrl ??
-          this.resolveTenantDatabaseUrl(input.adminDatabaseUrl, safeDbName);
         const tenantExecutor = await this.sqlExecutorFactory(tenantUrl);
         try {
           seedResult = await this.seeder.seedTenant(

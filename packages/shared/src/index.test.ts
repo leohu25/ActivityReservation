@@ -23,6 +23,9 @@ import {
   // 格式化
   formatCurrency,
   formatPercent,
+  compareMigrationVersions,
+  computeSha256,
+  parseMigrationFolderName,
   formatNumber,
   formatDate,
   formatDateTime,
@@ -126,6 +129,30 @@ test("企业级格式化工具：货币、百分比、日期与容量", () => {
     "-$5,000.00",
   );
   assert.equal(formatCurrency(null), "¥ 0.00");
+
+  test("迁移工具套件：版本号排序、哈希校验与文件夹解析", () => {
+    const versions = ["20260909155730", "202609080001", "202609080002"];
+    versions.sort(compareMigrationVersions);
+    assert.deepEqual(versions, [
+      "202609080001",
+      "202609080002",
+      "20260909155730",
+    ]);
+
+    const hash = computeSha256("SELECT 1;");
+    assert.equal(typeof hash, "string");
+    assert.equal(hash.length, 64);
+
+    const parsed = parseMigrationFolderName(
+      "202609080001_initial_tenant_schema",
+    );
+    assert.deepEqual(parsed, {
+      version: "202609080001",
+      name: "initial_tenant_schema",
+    });
+
+    assert.equal(parseMigrationFolderName("invalid_folder"), null);
+  });
 
   assert.equal(formatPercent(0.125), "12.50%");
   assert.equal(formatPercent(15), "15.00%");

@@ -6,3 +6,5 @@ export * from "./OverviewPage";
 export * from "./TenantsView";
 export * from "./TenantsPage";
 export * from "./ControlLogin";
+export * from "./MigrationsView";
+export * from "./MigrationsPage";

@@ -5,6 +5,8 @@
 - compose.local.yaml
 - .gitignore
 - package.json
+- tsconfig.base.json
+- packages/shared/**
 - packages/db-control/**
 - packages/db-tenant/**
 - packages/features/**

@@ -7,3 +7,4 @@ export * from "./tree";
 export * from "./mask";
 export * from "./collection";
 export * from "./validation";
+export * from "./migration";

@@ -1,14 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import crypto from "node:crypto";
+import { computeSha256, parseMigrationFolderName } from "@chenrun/shared";
 import type { TenantMigrationDefinition } from "@chenrun/db-tenant";
-
-/**
- * 计算文件的 SHA-256 摘要哈希（用于版本防篡改审计）
- */
-function computeSha256(content: string): string {
-  return crypto.createHash("sha256").update(content, "utf8").digest("hex");
-}
 
 /**
  * 扫描并加载指定目录下的版本化迁移定义列表（类似 Alembic versions 目录扫描）
@@ -29,16 +22,12 @@ export function loadMigrationsFromDirectory(
     }
 
     const folderName = entry.name;
-    // 匹配版本目录命名规范：<版本号/时间戳>_<迁移名称>
-    const match = folderName.match(
-      /^([0-9]{8,14}|v?[0-9]+\.[0-9]+\.[0-9]+)_(.+)$/,
-    );
-    if (!match) {
+    const parsed = parseMigrationFolderName(folderName);
+    if (!parsed) {
       continue;
     }
 
-    const version = match[1];
-    const migrationName = match[2];
+    const { version, name: migrationName } = parsed;
     const folderPath = path.join(migrationsDir, folderName);
     const sqlFile = path.join(folderPath, "migration.sql");
 

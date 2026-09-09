@@ -114,7 +114,7 @@ export class TenantDatabaseSeeder {
       rootDeptId = "dept_root";
       await executor.execute(
         `INSERT INTO "department" (
-          "id", "name", "code", "parentId", "leaderMemberId", "sort", "status", "createdAt", "updatedAt"
+          "id", "name", "code", "parent_id", "leader_member_id", "sort", "status", "created_at", "updated_at"
         ) VALUES (
           $1, $2, $3, NULL, $4, 0, 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
         )`,
@@ -133,7 +133,7 @@ export class TenantDatabaseSeeder {
       if (existingPos.length === 0) {
         await executor.execute(
           `INSERT INTO "position" (
-            "id", "name", "code", "description", "sort", "status", "createdAt", "updatedAt"
+            "id", "name", "code", "description", "sort", "status", "created_at", "updated_at"
           ) VALUES (
             $1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
           )`,
@@ -143,9 +143,9 @@ export class TenantDatabaseSeeder {
       }
     }
 
-    // 3. Owner 员工档案 (EmployeeProfile): 检查是否已存在 memberId=ownerMemberId 的档案
+    // 3. Owner 员工档案 (EmployeeProfile): 检查是否已存在 member_id=ownerMemberId 的档案
     const existingProfiles = await executor.query<{ id: string }>(
-      'SELECT id FROM "employee_profile" WHERE "memberId" = $1 LIMIT 1',
+      'SELECT id FROM "employee_profile" WHERE "member_id" = $1 LIMIT 1',
       [input.ownerMemberId],
     );
 
@@ -157,9 +157,9 @@ export class TenantDatabaseSeeder {
       const now = new Date();
       await executor.execute(
         `INSERT INTO "employee_profile" (
-          "id", "userId", "memberId", "employeeNo", "departmentId",
-          "positionId", "nameSnapshot", "emailSnapshot", "jobTitle",
-          "status", "joinedAt", "createdAt", "updatedAt"
+          "id", "user_id", "member_id", "employee_no", "department_id",
+          "position_id", "name_snapshot", "email_snapshot", "job_title",
+          "status", "joined_at", "created_at", "updated_at"
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
         )`,

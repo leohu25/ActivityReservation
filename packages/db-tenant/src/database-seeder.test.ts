@@ -86,7 +86,7 @@ class MemoryTenantSqlExecutor implements TenantSqlExecutor {
 
     if (
       cleanSql.includes(
-        'SELECT id FROM "employee_profile" WHERE "memberId" = $1',
+        'SELECT id FROM "employee_profile" WHERE "member_id" = $1',
       )
     ) {
       const memberId = params?.[0];

@@ -5,3 +5,5 @@
 
 export * from "./loader";
 export * from "./generator";
+export * from "./schema-scanner";
+export * from "./provisioner";

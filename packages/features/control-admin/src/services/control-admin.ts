@@ -1,3 +1,4 @@
+import path from "node:path";
 import {
   PrismaControlDbRepository,
   type ControlPrismaClient,
@@ -10,8 +11,17 @@ import {
   TenantDatabaseSeeder,
   createDefaultPgSqlExecutorFactory,
   type ProvisionTenantDatabaseResult,
-  type TenantMigrationDefinition,
 } from "@chenrun/db-tenant";
+import {
+  loadMigrationsFromDirectory,
+  DefaultTenantFullInitializer,
+  findMonorepoRoot,
+} from "@chenrun/tenant-migrate";
+import {
+  PlatformMigrationRunner,
+  loadPlatformMigrationsFromDirectory,
+} from "@chenrun/platform-migrate";
+import { compareMigrationVersions } from "@chenrun/shared";
 import { hashPassword } from "better-auth/crypto";
 import {
   FieldPolicy,
@@ -24,6 +34,8 @@ import type {
   ControlStats,
   ProvisionTenantInput,
   ProvisionTenantResult,
+  TenantFleetItem,
+  MigrationDashboardData,
 } from "../types";
 
 /**
@@ -35,6 +47,8 @@ export interface ControlAdminServiceOptions {
   readonly adminDatabaseUrl?: string;
   readonly provisioner?: TenantProvisioner;
   readonly seeder?: TenantDatabaseSeeder;
+  readonly workspaceRoot?: string;
+  readonly migrationsDir?: string;
 }
 
 /**
@@ -45,7 +59,10 @@ export class ControlAdminService {
   constructor(
     private readonly prisma: ControlPrismaClient,
     private readonly provisioner?: TenantProvisioner,
-    private readonly seeder?: TenantDatabaseSeeder,
+    readonly seeder?: TenantDatabaseSeeder,
+    private readonly migrationRunner?: TenantMigrationRunner,
+    private readonly workspaceRoot: string = process.cwd(),
+    private readonly adminDbUrl?: string,
   ) {}
 
   /**
@@ -68,115 +85,24 @@ export class ControlAdminService {
     const sqlExecutorFactory = createDefaultPgSqlExecutorFactory();
     const seeder =
       options.seeder ?? new TenantDatabaseSeeder(sqlExecutorFactory);
-    const baseMigrations: readonly TenantMigrationDefinition[] = [
-      {
-        version: "202609080001",
-        name: "initial_tenant_schema",
-        steps: [
-          {
-            name: "initial_tables",
-            up: `
-              CREATE TABLE IF NOT EXISTS "department" (
-                "id" TEXT NOT NULL,
-                "name" TEXT NOT NULL,
-                "code" TEXT NOT NULL,
-                "parentId" TEXT,
-                "leaderMemberId" TEXT,
-                "sort" INTEGER NOT NULL DEFAULT 0,
-                "status" TEXT NOT NULL DEFAULT 'ACTIVE',
-                "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                CONSTRAINT "department_pkey" PRIMARY KEY ("id")
-              );
-              CREATE UNIQUE INDEX IF NOT EXISTS "department_code_key" ON "department"("code");
-              CREATE INDEX IF NOT EXISTS "department_status_idx" ON "department"("status");
-              CREATE TABLE IF NOT EXISTS "position" (
-                "id" TEXT NOT NULL,
-                "name" TEXT NOT NULL,
-                "code" TEXT NOT NULL,
-                "description" TEXT,
-                "sort" INTEGER NOT NULL DEFAULT 0,
-                "status" TEXT NOT NULL DEFAULT 'ACTIVE',
-                "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                CONSTRAINT "position_pkey" PRIMARY KEY ("id")
-              );
-              CREATE UNIQUE INDEX IF NOT EXISTS "position_code_key" ON "position"("code");
-              CREATE INDEX IF NOT EXISTS "position_status_idx" ON "position"("status");
-              CREATE TABLE IF NOT EXISTS "purchase_order" (
-                "id" TEXT NOT NULL,
-                "orderNo" TEXT NOT NULL,
-                "supplierName" TEXT NOT NULL,
-                "quantity" INTEGER NOT NULL,
-                "costPrice" DECIMAL(12,2) NOT NULL,
-                "deptId" TEXT NOT NULL,
-                "createdById" TEXT NOT NULL,
-                "status" TEXT NOT NULL DEFAULT 'PENDING',
-                "auditComment" TEXT,
-                "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                CONSTRAINT "purchase_order_pkey" PRIMARY KEY ("id")
-              );
-              CREATE UNIQUE INDEX IF NOT EXISTS "purchase_order_orderNo_key" ON "purchase_order"("orderNo");
-              CREATE INDEX IF NOT EXISTS "purchase_order_deptId_idx" ON "purchase_order"("deptId");
-              CREATE INDEX IF NOT EXISTS "purchase_order_createdById_idx" ON "purchase_order"("createdById");
-              CREATE INDEX IF NOT EXISTS "purchase_order_status_idx" ON "purchase_order"("status");
-              CREATE TABLE IF NOT EXISTS "employee_profile" (
-                "id" TEXT NOT NULL,
-                "memberId" TEXT,
-                "userId" TEXT,
-                "invitationId" TEXT,
-                "employeeNo" TEXT,
-                "departmentId" TEXT,
-                "positionId" TEXT,
-                "managerEmployeeId" TEXT,
-                "nameSnapshot" TEXT NOT NULL DEFAULT '',
-                "emailSnapshot" TEXT NOT NULL DEFAULT '',
-                "jobTitle" TEXT,
-                "status" TEXT NOT NULL DEFAULT 'ACTIVE',
-                "joinedAt" TIMESTAMP(3),
-                "terminatedAt" TIMESTAMP(3),
-                "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                CONSTRAINT "employee_profile_pkey" PRIMARY KEY ("id")
-              );
-              CREATE UNIQUE INDEX IF NOT EXISTS "employee_profile_memberId_key" ON "employee_profile"("memberId");
-              CREATE UNIQUE INDEX IF NOT EXISTS "employee_profile_employeeNo_key" ON "employee_profile"("employeeNo");
-              CREATE INDEX IF NOT EXISTS "employee_profile_departmentId_idx" ON "employee_profile"("departmentId");
-              CREATE INDEX IF NOT EXISTS "employee_profile_positionId_idx" ON "employee_profile"("positionId");
-              CREATE INDEX IF NOT EXISTS "employee_profile_managerEmployeeId_idx" ON "employee_profile"("managerEmployeeId");
-              CREATE INDEX IF NOT EXISTS "employee_profile_memberId_idx" ON "employee_profile"("memberId");
-              CREATE INDEX IF NOT EXISTS "employee_profile_status_idx" ON "employee_profile"("status");
-              CREATE TABLE IF NOT EXISTS "company_profile" (
-                "id" TEXT NOT NULL,
-                "companyName" TEXT NOT NULL,
-                "shortName" TEXT,
-                "creditCode" TEXT,
-                "legalPerson" TEXT,
-                "contactPhone" TEXT,
-                "contactEmail" TEXT,
-                "address" TEXT,
-                "timezone" TEXT NOT NULL DEFAULT 'Asia/Shanghai',
-                "currency" TEXT NOT NULL DEFAULT 'CNY',
-                "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                CONSTRAINT "company_profile_pkey" PRIMARY KEY ("id")
-              );
-            `,
-            down: `
-              DROP TABLE IF EXISTS "company_profile";
-              DROP TABLE IF EXISTS "purchase_order";
-              DROP TABLE IF EXISTS "employee_profile";
-              DROP TABLE IF EXISTS "position";
-              DROP TABLE IF EXISTS "department";
-            `,
-          },
-        ],
-      },
-    ];
+
+    const workspaceRoot = findMonorepoRoot(
+      options.workspaceRoot ?? process.env.WORKSPACE_ROOT ?? process.cwd(),
+    );
+    const migrationsDir =
+      options.migrationsDir ??
+      path.join(workspaceRoot, "tooling/tenant-migrate/migrations");
+    const baseMigrations = loadMigrationsFromDirectory(migrationsDir);
 
     const repo =
       options.repository ?? new PrismaControlDbRepository(options.prisma);
+
+    const fullInitializer = new DefaultTenantFullInitializer(
+      workspaceRoot,
+      repo,
+      sqlExecutorFactory,
+      migrationsDir,
+    );
 
     const migrationRunner = new TenantMigrationRunner(
       repo,
@@ -207,9 +133,17 @@ export class ControlAdminService {
       sqlExecutorFactory,
       migrationRunner,
       seeder,
+      fullInitializer,
     );
 
-    return new ControlAdminService(options.prisma, provisioner, seeder);
+    return new ControlAdminService(
+      options.prisma,
+      provisioner,
+      seeder,
+      migrationRunner,
+      workspaceRoot,
+      adminDbUrl,
+    );
   }
 
   /**
@@ -497,6 +431,7 @@ export class ControlAdminService {
     const clusterCode = input.clusterCode ?? "primary";
     const databaseName = `tenant_${cleanSlug.replace(/-/g, "_")}`;
     const adminDbUrl =
+      this.adminDbUrl ??
       process.env.CONTROL_DATABASE_URL ??
       "postgresql://postgres:postgres@localhost:5432/saas_control";
 
@@ -583,5 +518,147 @@ export class ControlAdminService {
     });
 
     return updated.status;
+  }
+
+  /**
+   * 获取平台与租户数据架构迁移看板全景数据
+   */
+  async getMigrationDashboard(operatorUser: {
+    email?: string | null;
+  }): Promise<MigrationDashboardData> {
+    assertControlAdmin(operatorUser);
+
+    // 1. 平台库迁移状态
+    const platformMigrationsDir = path.join(
+      this.workspaceRoot,
+      "tooling/platform-migrate/migrations",
+    );
+    const platformMigrations = loadPlatformMigrationsFromDirectory(
+      platformMigrationsDir,
+    );
+
+    const adminDbUrl =
+      this.adminDbUrl ??
+      process.env.CONTROL_DATABASE_URL ??
+      "postgresql://postgres:postgres@localhost:5432/saas_control";
+
+    const platformRunner = new PlatformMigrationRunner(adminDbUrl);
+    const platformStatus = await platformRunner.getStatus(platformMigrations);
+
+    const latestPlatformAvailable = platformMigrations.at(-1)?.version;
+
+    // 2. 租户舰队迁移状态
+    const tenantMigrationsDir = path.join(
+      this.workspaceRoot,
+      "tooling/tenant-migrate/migrations",
+    );
+    const tenantMigrations = loadMigrationsFromDirectory(tenantMigrationsDir);
+    const latestTenantAvailable = tenantMigrations.at(-1)?.version ?? "0";
+
+    const orgsWithDb = await this.prisma.organization.findMany({
+      where: {
+        tenantDatabase: { isNot: null },
+      },
+      include: {
+        tenantDatabase: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const fleetItems: TenantFleetItem[] = [];
+    for (const org of orgsWithDb) {
+      const db = org.tenantDatabase;
+      if (!db) continue;
+      const isUpToDate =
+        compareMigrationVersions(db.schemaVersion, latestTenantAvailable) >= 0;
+      const pendingCount = isUpToDate
+        ? 0
+        : tenantMigrations.filter(
+            (m) => compareMigrationVersions(m.version, db.schemaVersion) > 0,
+          ).length;
+
+      fleetItems.push({
+        organizationId: org.id,
+        organizationName: org.name,
+        slug: org.slug,
+        databaseName: db.databaseName,
+        currentVersion: db.schemaVersion,
+        isUpToDate,
+        status: db.status,
+        pendingVersionCount: pendingCount,
+      });
+    }
+
+    const upToDateCount = fleetItems.filter((i) => i.isUpToDate).length;
+
+    return {
+      platform: {
+        currentVersion: platformStatus.currentVersion,
+        latestAvailableVersion: latestPlatformAvailable,
+        isUpToDate: platformStatus.pendingMigrations.length === 0,
+        pendingCount: platformStatus.pendingMigrations.length,
+      },
+      fleet: {
+        latestAvailableVersion: latestTenantAvailable,
+        totalCount: fleetItems.length,
+        upToDateCount,
+        pendingCount: fleetItems.length - upToDateCount,
+        items: fleetItems,
+      },
+    };
+  }
+
+  /**
+   * 平台管理员触发平台数据库升级
+   */
+  async upgradePlatformDatabase(operatorUser: {
+    email?: string | null;
+  }): Promise<{ appliedCount: number; appliedVersions: string[] }> {
+    assertControlAdmin(operatorUser);
+
+    const platformMigrationsDir = path.join(
+      this.workspaceRoot,
+      "tooling/platform-migrate/migrations",
+    );
+    const platformMigrations = loadPlatformMigrationsFromDirectory(
+      platformMigrationsDir,
+    );
+
+    const adminDbUrl =
+      this.adminDbUrl ??
+      process.env.CONTROL_DATABASE_URL ??
+      "postgresql://postgres:postgres@localhost:5432/saas_control";
+
+    const platformRunner = new PlatformMigrationRunner(adminDbUrl);
+    return platformRunner.up(platformMigrations);
+  }
+
+  /**
+   * 平台管理员触发租户舰队批量升级或指定租户升级
+   */
+  async upgradeTenantFleet(
+    operatorUser: { email?: string | null },
+    targetOrgId?: string,
+  ): Promise<{ upgradedCount: number; failedCount: number }> {
+    assertControlAdmin(operatorUser);
+
+    if (!this.migrationRunner) {
+      throw new Error("未配置 TenantMigrationRunner，无法执行舰队升级");
+    }
+
+    if (targetOrgId) {
+      const results = await this.migrationRunner.migrateTenant(targetOrgId);
+      const isFailed = results.some((r) => !r.success);
+      return {
+        upgradedCount: isFailed ? 0 : 1,
+        failedCount: isFailed ? 1 : 0,
+      };
+    }
+
+    const batch = await this.migrationRunner.migrateAllTenants();
+    return {
+      upgradedCount: batch.successCount,
+      failedCount: batch.failureCount,
+    };
   }
 }
