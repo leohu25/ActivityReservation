@@ -13,12 +13,7 @@ import {
   Input,
   Button,
 } from "@chenrun/ui";
-import {
-  ArrowLeft,
-  Loader2,
-  Building2,
-  ChevronRight,
-} from "lucide-react";
+import { ArrowLeft, Loader2, Building2, ChevronRight } from "lucide-react";
 
 interface OrgItem {
   id: string;

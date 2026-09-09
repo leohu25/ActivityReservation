@@ -51,9 +51,15 @@ export default async function DashboardLayout({
       </div>
       <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
         <span>{activeOrg.name}</span>
-        <span className="font-mono text-[10px] text-slate-400">({activeOrg.slug})</span>
+        <span className="font-mono text-[10px] text-slate-400">
+          ({activeOrg.slug})
+        </span>
       </div>
-      <Badge variant="outline" size="sm" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-semibold dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+      <Badge
+        variant="outline"
+        size="sm"
+        className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-semibold dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
+      >
         当前企业
       </Badge>
     </div>
@@ -61,12 +67,7 @@ export default async function DashboardLayout({
 
   return (
     <DashboardShell
-      header={
-        <TopHeader
-          user={user}
-          orgSwitcherSlot={orgBadgeSlot}
-        />
-      }
+      header={<TopHeader user={user} orgSwitcherSlot={orgBadgeSlot} />}
       sidebar={<Sidebar />}
     >
       {children}
