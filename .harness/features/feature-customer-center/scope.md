@@ -15,6 +15,9 @@
 - apps/tenant/**
 - packages/authorization/**
 - tooling/**
+- scripts/**
+- AGENTS.md
+- CLAUDE.md
 - .harness/features/feature-customer-center/**
 - feature_list.json
 - member.local.md

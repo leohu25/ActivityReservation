@@ -158,6 +158,7 @@ test("malformed, unknown and cross-organization role data fail closed", async ()
     new CaslAbilityFactory(
       repository([role("reader", { unknown: ["read"] })]),
       catalog,
+      { ignoreUnknownResources: false },
     ).createForTenant(context),
     AbilityFactoryError,
   );

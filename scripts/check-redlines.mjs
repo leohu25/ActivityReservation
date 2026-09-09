@@ -119,6 +119,72 @@ for (const filePath of allFiles) {
   }
 }
 
+// 规则 4：严禁引入跨包幽灵依赖 (Ghost Dependency)
+// 源码中引用了 @chenrun/* 内部包，但该包所在模块的 package.json 中未显式声明依赖
+const workspacePackages = [];
+function findPackageJsonDirs(dir) {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      const pkgPath = path.join(full, "package.json");
+      if (fs.existsSync(pkgPath)) {
+        try {
+          const pkgJson = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+          workspacePackages.push({
+            dir: full,
+            relDir: path.relative(workspaceRoot, full).replace(/\\/g, "/"),
+            name: pkgJson.name,
+            declaredDeps: new Set([
+              ...Object.keys(pkgJson.dependencies || {}),
+              ...Object.keys(pkgJson.devDependencies || {}),
+              ...Object.keys(pkgJson.peerDependencies || {}),
+            ]),
+          });
+        } catch {}
+      }
+      findPackageJsonDirs(full);
+    }
+  }
+}
+
+for (const root of scanRoots) {
+  const fullRoot = path.join(workspaceRoot, root);
+  if (fs.existsSync(fullRoot)) {
+    findPackageJsonDirs(fullRoot);
+  }
+}
+
+const internalImportRegex =
+  /from\s+["'](@chenrun\/[^"'/]+)(?:\/[^"']*)?["']|import\s+["'](@chenrun\/[^"'/]+)(?:\/[^"']*)?["']/g;
+
+for (const pkg of workspacePackages) {
+  const pkgFiles = allFiles.filter((f) => {
+    const rel = path.relative(workspaceRoot, f).replace(/\\/g, "/");
+    return rel.startsWith(pkg.relDir + "/");
+  });
+
+  for (const filePath of pkgFiles) {
+    const relPath = path.relative(workspaceRoot, filePath).replace(/\\/g, "/");
+    const content = fs.readFileSync(filePath, "utf-8");
+    let match;
+    internalImportRegex.lastIndex = 0;
+    while ((match = internalImportRegex.exec(content)) !== null) {
+      const importedPkg = match[1] || match[2];
+      if (importedPkg === pkg.name) continue;
+      if (!pkg.declaredDeps.has(importedPkg)) {
+        violations.push({
+          file: relPath,
+          line: 1,
+          rule: `严禁跨包幽灵依赖：源码引用了 [${importedPkg}]，但所在模块 [${pkg.name}] 的 package.json 未声明该依赖！(必须显式声明并在根目录运行 pnpm install)`,
+          code: `import from "${importedPkg}"`,
+        });
+      }
+    }
+  }
+}
+
 if (violations.length > 0) {
   process.stderr.write(
     `\x1b[31m✗ [Redline Violations] 发现 ${violations.length} 处违背架构红线代码:\x1b[0m\n`,

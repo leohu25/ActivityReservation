@@ -291,9 +291,7 @@ export async function updateDepartmentAction(
 }
 
 /** 删除部门 Server Action (Fail-Closed) */
-export async function deleteDepartmentAction(
-  id: string,
-): Promise<{
+export async function deleteDepartmentAction(id: string): Promise<{
   success: boolean;
   error?: string;
 }> {
@@ -383,9 +381,7 @@ export async function updatePositionAction(
 }
 
 /** 切换岗位启用停用状态 Server Action */
-export async function togglePositionStatusAction(
-  id: string,
-): Promise<{
+export async function togglePositionStatusAction(id: string): Promise<{
   success: boolean;
   data?: PositionItem;
   error?: string;
@@ -405,9 +401,7 @@ export async function togglePositionStatusAction(
 }
 
 /** 删除岗位 Server Action */
-export async function deletePositionAction(
-  id: string,
-): Promise<{
+export async function deletePositionAction(id: string): Promise<{
   success: boolean;
   error?: string;
 }> {
@@ -538,9 +532,7 @@ export async function transferPositionAction(
 }
 
 /** 调换员工系统角色 Server Action */
-export async function transferRolesAction(
-  input: TransferRolesInput,
-): Promise<{
+export async function transferRolesAction(input: TransferRolesInput): Promise<{
   success: boolean;
   error?: string;
 }> {
@@ -549,11 +541,7 @@ export async function transferRolesAction(
     const controlPrisma = getControlPrismaClient();
     const service = getEmployeeManagementService();
 
-    await service.transferRoles(
-      controlPrisma,
-      session.organizationId,
-      input,
-    );
+    await service.transferRoles(controlPrisma, session.organizationId, input);
     revalidatePath("/organization/employees");
     return { success: true };
   } catch (err: unknown) {
@@ -563,9 +551,7 @@ export async function transferRolesAction(
 }
 
 /** 停用员工业务访问 Server Action */
-export async function suspendEmployeeAction(
-  employeeId: string,
-): Promise<{
+export async function suspendEmployeeAction(employeeId: string): Promise<{
   success: boolean;
   error?: string;
 }> {
@@ -590,9 +576,7 @@ export async function suspendEmployeeAction(
 }
 
 /** 恢复员工业务访问 Server Action */
-export async function resumeEmployeeAction(
-  employeeId: string,
-): Promise<{
+export async function resumeEmployeeAction(employeeId: string): Promise<{
   success: boolean;
   error?: string;
 }> {
@@ -615,4 +599,3 @@ export async function resumeEmployeeAction(
     return { success: false, error: message };
   }
 }
-

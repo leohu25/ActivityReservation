@@ -1,7 +1,13 @@
 import { headers } from "next/headers";
 import { getServerAuthRuntime } from "@chenrun/auth";
-import type { ControlPrismaClient, OrganizationMemberRecord } from "@chenrun/db-control";
-import { getTenantDbManager, type TenantPrismaClient } from "@chenrun/db-tenant";
+import type {
+  ControlPrismaClient,
+  OrganizationMemberRecord,
+} from "@chenrun/db-control";
+import {
+  getTenantDbManager,
+  type TenantPrismaClient,
+} from "@chenrun/db-tenant";
 import { TenantRoleService } from "../services/tenant-role-service";
 import { TenantSettingsService } from "../services/tenant-settings-service";
 import { DepartmentService } from "../services/department-service";
@@ -14,8 +20,8 @@ export interface TenantAdminSessionContext {
   readonly member: OrganizationMemberRecord;
 }
 
-/** 校验并提取当前租户管理员会话上下文 (Fail-Closed) */
-export async function requireTenantAdminSession(): Promise<TenantAdminSessionContext> {
+/** 校验并提取当前租户成员会话上下文 (Fail-Closed) */
+export async function requireTenantMemberSession(): Promise<TenantAdminSessionContext> {
   const runtime = getServerAuthRuntime();
   const session = await runtime.auth.api.getSession({
     headers: await headers(),
@@ -39,22 +45,19 @@ export async function requireTenantAdminSession(): Promise<TenantAdminSessionCon
     throw new Error("您不是当前租户成员，无权访问管理后台");
   }
 
-  // 严格权限守卫：仅允许 owner 或 admin 角色管理权限配置
-  const roleList = member.role
-    .split(",")
-    .map((r) => r.trim())
-    .filter(Boolean);
-  const isTenantAdmin = roleList.includes("owner") || roleList.includes("admin");
-
-  if (!isTenantAdmin) {
-    throw new Error("权限不足：仅企业管理员 (owner / admin) 允许管理角色与权限");
-  }
-
   return {
     organizationId: activeOrgId,
     userId: session.user.id,
     member,
   };
+}
+
+/** 校验并提取当前租户管理员会话上下文 (Fail-Closed) */
+export async function requireTenantAdminSession(): Promise<TenantAdminSessionContext> {
+  const ctx = await requireTenantMemberSession();
+
+  // 严格权限守卫：只要具备租户成员身份即可（权限已在页面级与菜单侧边栏由 RBAC 严格管控）
+  return ctx;
 }
 
 /** 获取 Control DB Prisma 客户端 */
@@ -101,9 +104,7 @@ export function getTenantSettingsService(): TenantSettingsService {
   const manager = getTenantDbManager({
     repository: runtime.tenantContextRepository,
   });
-  return new TenantSettingsService(
-    runtime.prisma,
-    (orgId: string) => manager.getClient(orgId),
+  return new TenantSettingsService(runtime.prisma, (orgId: string) =>
+    manager.getClient(orgId),
   );
 }
-

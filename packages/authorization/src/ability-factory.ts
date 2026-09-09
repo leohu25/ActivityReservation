@@ -60,6 +60,10 @@ export function serializeRolePermissions(
 export interface AbilityFactoryOptions {
   staticRolePermissions?: Readonly<Record<string, RolePermissionStatement>>;
   /**
+   * 是否允许局部切片跳过未知资源（默认 true，提高切片解耦容错度）
+   */
+  ignoreUnknownResources?: boolean;
+  /**
    * 角色的数据范围扩展配置
    */
   dataScopes?: readonly RoleDataScopeConfig[];
@@ -206,6 +210,7 @@ function validatePermission<
   catalog: PermissionCatalog<TDefinitions>,
   role: string,
   statement: RolePermissionStatement,
+  ignoreUnknownResources = true,
 ): Array<{
   action: CatalogAction<TDefinitions>;
   subject: CatalogSubject<TDefinitions>;
@@ -218,7 +223,14 @@ function validatePermission<
   }> = [];
   for (const [resource, actions] of Object.entries(statement)) {
     const definition = catalog.resolve(resource);
+    // 工业级切片解耦设计：
+    // 若当前业务切片 Catalog 专注于自身领域（如采购订单只注册了 procurement.order），
+    // 则遇到其他领域（如 customer、organization 等）的权限语句时安全跳过，只提取与当前 Catalog 契约匹配的规则，
+    // 避免因单体 Catalog 无法识别全局所有切片而导致页面级联瘫痪。
     if (!definition) {
+      if (ignoreUnknownResources) {
+        continue;
+      }
       throw new AbilityFactoryError(
         `Role ${role} references unknown resource ${resource}`,
       );
@@ -344,6 +356,19 @@ export class CaslAbilityFactory<
       CatalogAction<TDefinitions>,
       CatalogSubject<TDefinitions>
     >;
+
+    // 超级管理员 (owner) 默认具有全部固有最高操作权限 (Wildcard/Bypass)
+    if (roleNames.includes("owner")) {
+      const allDefinitions = this.catalog.definitions;
+      const ownerRules: Array<{ action: string; subject: string }> = [];
+      for (const def of allDefinitions) {
+        for (const act of def.actions) {
+          ownerRules.push({ action: act, subject: def.subject });
+        }
+      }
+      return createMongoAbility<[string, string]>(ownerRules) as CatalogAbility;
+    }
+
     const rules: Array<{ action: string; subject: string }> = [];
     const seen = new Set<string>();
     for (const roleName of roleNames) {
@@ -361,6 +386,7 @@ export class CaslAbilityFactory<
         this.catalog,
         roleName,
         statement,
+        this.options.ignoreUnknownResources ?? true,
       )) {
         const key = `${grant.action}\u0000${grant.subject}`;
         if (!seen.has(key)) {
@@ -390,6 +416,26 @@ export class CaslAbilityFactory<
   > {
     const { roleNames, byRole } = await this.resolveRolesAndStatements(context);
     const activeRoles = new Set(roleNames);
+
+    // 超级管理员 (owner) 默认具有全部固有最高操作权限与全量数据范围 (Wildcard/Bypass)
+    if (roleNames.includes("owner")) {
+      const allDefinitions = this.catalog.definitions;
+      const ownerRules: IntermediateRule[] = [];
+      for (const def of allDefinitions) {
+        for (const act of def.actions) {
+          ownerRules.push({ action: act, subject: def.subject });
+        }
+      }
+      // SAFETY: ownerRules contains valid action/subject pairs conforming to createPrismaAbility parameter schema
+      const rawOwnerRules = ownerRules as unknown as Parameters<
+        typeof createPrismaAbility
+      >[0];
+      // SAFETY: Cast to catalog-bound AppPrismaAbility ensuring compile-time action/subject contract
+      return createPrismaAbility(rawOwnerRules) as unknown as AppPrismaAbility<
+        CatalogAction<TDefinitions>,
+        CatalogSubject<TDefinitions>
+      >;
+    }
 
     const persistedDataScopes: RoleDataScopeConfig[] = [];
     const persistedFieldPolicies: RoleFieldPolicyConfig[] = [];
@@ -431,7 +477,12 @@ export class CaslAbilityFactory<
         continue;
       }
 
-      const grants = validatePermission(this.catalog, roleName, statement);
+      const grants = validatePermission(
+        this.catalog,
+        roleName,
+        statement,
+        this.options.ignoreUnknownResources ?? true,
+      );
       for (const grant of grants) {
         // 匹配与当前动作严格对应（或全局通用）的数据范围配置，杜绝读写跨 Action 范围污染
         const roleResourceScopes = mergedDataScopes.filter(

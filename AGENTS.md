@@ -35,13 +35,14 @@
 
 ---
 
-## 五大工程红线 (Zero-Tolerance Rules)
+## 六大工程红线 (Zero-Tolerance Rules)
 
 1. **严禁跨特性越权修改**：严格受限在对应特性的 `scope.md` 白名单文件内修改代码。
-2. **严禁带病开发与虚假完成**：类型错误未清零、测试失败或门禁不通过，严禁宣称完成。
-3. **严禁手写硬编码权限与绕过授权**：功能权限必须由 Better Auth `statement` 与 CASL 强类型判定，严禁手写魔术字符串。
-4. **严禁绕过租户隔离**：PostgreSQL Database-per-Tenant 物理隔离，业务数据必须由 Tenant Context 动态路由，严禁直拼连接串。
-5. **严禁破坏分层架构**：Server Components 直调 Application Service，严禁自发 HTTP 绕调内部 REST API。
+2. **严禁带病开发与虚假完成**：类型错误未清零、测试失败或门禁不通过，严禁宣称完成。严禁仅凭单测绿灯就宣称完成（单测运行器存在路径穿透假象），必须通过 `./scripts/verify.sh` 全栈门禁及真实构建。
+3. **严禁引入跨包幽灵依赖**：任何代码引用 `@chenrun/*` 内部兄弟包时，必须首先在当前模块的 `package.json` 中显式声明 `"workspace:*"` 依赖并执行 `pnpm install`；门禁脚本对此执行零容忍静态阻断。
+4. **严禁手写硬编码权限与绕过授权**：功能权限必须由 Better Auth `statement` 与 CASL 强类型判定，严禁手写魔术字符串。
+5. **严禁绕过租户隔离**：PostgreSQL Database-per-Tenant 物理隔离，业务数据必须由 Tenant Context 动态路由，严禁直拼连接串。
+6. **严禁破坏分层架构**：Server Components 直调 Application Service，严禁自发 HTTP 绕调内部 REST API。
 
 ---
 

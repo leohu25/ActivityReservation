@@ -2,20 +2,21 @@
 
 import React, { useState, useTransition } from "react";
 import {
-  ShieldCheck,
   Shield,
   Plus,
   Trash2,
   Save,
   CheckCircle2,
   AlertCircle,
-  Lock,
-  Layers,
+  ChevronDown,
+  ChevronRight,
+  UserCheck,
+  PackageCheck,
+  Users,
+  Settings,
+  ShieldCheck,
+  FileText,
   Sparkles,
-  Eye,
-  Edit,
-  Download,
-  Building,
 } from "lucide-react";
 import {
   Card,
@@ -30,66 +31,62 @@ import {
 import {
   DataScope,
   FieldPolicy,
+  StandardAction,
   type DataScopeType,
   type FieldAccessMode,
   type RolePermissionPayload,
 } from "@chenrun/authorization";
-import {
-  procurementConfigurableFields,
-  ProcurementPermission,
-  ProcurementSubject,
-} from "@chenrun/feature-procurement-center";
 import type { TenantRoleItem } from "../types";
 import {
   saveRolePermissionsAction,
   createRoleAction,
   deleteRoleAction,
 } from "../actions";
+import {
+  TENANT_PERMISSION_TREE,
+  DATA_SCOPE_SELECT_OPTIONS,
+  type ModulePermissionDescriptor,
+  type PagePermissionDescriptor,
+} from "../permission-registry";
 
 interface RolePermissionManagerProps {
   readonly initialRoles: readonly TenantRoleItem[];
   readonly activeOrgId: string;
 }
 
-const DATA_SCOPE_OPTIONS: Array<{
-  value: DataScopeType;
-  label: string;
-  desc: string;
-}> = [
-  {
-    value: DataScope.SELF,
-    label: "仅本人数据",
-    desc: "只允许访问由当前登录成员创建的业务单据",
-  },
-  {
-    value: DataScope.DEPT,
-    label: "本部门数据",
-    desc: "允许访问当前成员所属部门的全部业务单据",
-  },
-  {
-    value: DataScope.DEPT_TREE,
-    label: "本部门及下级部门",
-    desc: "包含本部门以及所有下属分支部门数据",
-  },
-  {
-    value: DataScope.ALL,
-    label: "全公司/全租户",
-    desc: "无部门范围约束，允许访问全租户组织业务数据",
-  },
-];
-
 export function RolePermissionManager({
   initialRoles,
 }: RolePermissionManagerProps) {
-  const [roles, setRoles] = useState<TenantRoleItem[]>([...initialRoles]);
-  const [selectedRoleCode, setSelectedRoleCode] = useState<string>(
-    initialRoles[0]?.role || "owner",
+  // 过滤掉任何可能混入的 owner 角色（双重保护）
+  const sanitizedInitialRoles = initialRoles.filter((r) => r.role !== "owner");
+  const [roles, setRoles] = useState<TenantRoleItem[]>([
+    ...sanitizedInitialRoles,
+  ]);
+  const [selectedRoleCode, setSelectedRoleCode] = useState(
+    sanitizedInitialRoles[0]?.role || "admin",
   );
   const [isPending, startTransition] = useTransition();
   const [notification, setNotification] = useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
+
+  // 模块展开/折叠状态，默认展开所有模块
+  const [expandedModules, setExpandedModules] = useState<
+    Record<string, boolean>
+  >({
+    customer: true,
+    procurement: true,
+    organization: true,
+    permissions: true,
+    settings: true,
+    audit: true,
+  });
+
+  // 展开字段控制抽屉/面板的页面 resource
+  const [expandedFieldPages, setExpandedFieldPages] = useState<
+    Record<string, boolean>
+  >({});
 
   // 新增角色模态框状态
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -99,142 +96,23 @@ export function RolePermissionManager({
 
   const selectedRole =
     roles.find((r) => r.role === selectedRoleCode) || roles[0];
-
-  // 内部编辑状态
-  const resource = ProcurementPermission.order.resource;
-  const currentStatement = selectedRole?.permissions.statement[resource] ?? [];
-
-  const hasWriteAction =
-    currentStatement.includes("update") || currentStatement.includes("create");
-  const hasReadAction = currentStatement.includes("read");
-
-  // 获取当前角色的数据范围 (默认 DEPT)
-  const currentScopeType: DataScopeType =
-    selectedRole?.permissions.dataScopes?.find(
-      (s) => s.resource === resource && (!s.action || s.action === "read"),
-    )?.scopeType ?? DataScope.DEPT;
-
-  // 获取当前角色的字段策略配置
-  const currentFieldPolicies = selectedRole?.permissions.fieldPolicies ?? [];
-
   const isSystemRole = selectedRole?.isSystem ?? false;
 
-  // 计算指定字段的生效访问状态 (对齐 SaaS Foundation 授权推导规则)
-  // 当 policy 为 undefined（即未受限/未单独配置字段策略）时：
-  // 若当前角色在 statement 中拥有当前模块的 'update' 或 'create' 动作，默认推导为 'EDITABLE'；
-  // 若仅有 'read' 动作，默认推导为 'READONLY'；若均无，则为 'HIDDEN'。
-  const getEffectiveFieldAccess = (fieldName: string): FieldAccessMode => {
-    const policy = currentFieldPolicies.find(
-      (p) => p.subject === ProcurementSubject && p.field === fieldName,
-    );
-    if (policy) {
-      return policy.access;
-    }
-    if (hasWriteAction) {
-      return FieldPolicy.EDITABLE;
-    }
-    if (hasReadAction) {
-      return FieldPolicy.READONLY;
-    }
-    return FieldPolicy.HIDDEN;
+  const toggleModuleExpand = (moduleKey: string) => {
+    setExpandedModules((prev) => ({
+      ...prev,
+      [moduleKey]: !prev[moduleKey],
+    }));
   };
 
-  // 切换动作开关
-  const handleToggleAction = (action: string) => {
-    if (!selectedRole) return;
-    const exists = currentStatement.includes(action);
-    const nextActions = exists
-      ? currentStatement.filter((a) => a !== action)
-      : [...currentStatement, action];
-
-    updateSelectedRolePermissions({
-      ...selectedRole.permissions,
-      statement: {
-        ...selectedRole.permissions.statement,
-        [resource]: nextActions,
-      },
-    });
+  const toggleFieldExpand = (resource: string) => {
+    setExpandedFieldPages((prev) => ({
+      ...prev,
+      [resource]: !prev[resource],
+    }));
   };
 
-  // 切换数据范围
-  const handleScopeChange = (scopeType: DataScopeType) => {
-    if (!selectedRole) return;
-    const existingScopes = (selectedRole.permissions.dataScopes ?? []).filter(
-      (s) => s.resource !== resource,
-    );
-    updateSelectedRolePermissions({
-      ...selectedRole.permissions,
-      dataScopes: [
-        ...existingScopes,
-        {
-          resource,
-          action: "read",
-          scopeType,
-        },
-      ],
-    });
-  };
-
-  // 切换字段读权限 (READONLY / HIDDEN)
-  const handleToggleFieldRead = (fieldName: string) => {
-    if (!selectedRole) return;
-    const currentAccess = getEffectiveFieldAccess(fieldName);
-    const nextPolicies = currentFieldPolicies.filter(
-      (p) => !(p.subject === ProcurementSubject && p.field === fieldName),
-    );
-
-    if (currentAccess === FieldPolicy.HIDDEN) {
-      // 当前 HIDDEN -> 转为 READONLY
-      nextPolicies.push({
-        subject: ProcurementSubject,
-        field: fieldName,
-        access: FieldPolicy.READONLY,
-      });
-    } else {
-      // 当前可读 -> 转为 HIDDEN
-      nextPolicies.push({
-        subject: ProcurementSubject,
-        field: fieldName,
-        access: FieldPolicy.HIDDEN,
-      });
-    }
-
-    updateSelectedRolePermissions({
-      ...selectedRole.permissions,
-      fieldPolicies: nextPolicies,
-    });
-  };
-
-  // 切换字段写权限 (EDITABLE vs READONLY)
-  const handleToggleFieldWrite = (fieldName: string) => {
-    if (!selectedRole) return;
-    const currentAccess = getEffectiveFieldAccess(fieldName);
-    const nextPolicies = currentFieldPolicies.filter(
-      (p) => !(p.subject === ProcurementSubject && p.field === fieldName),
-    );
-
-    if (currentAccess === FieldPolicy.EDITABLE) {
-      // 降级为只读
-      nextPolicies.push({
-        subject: ProcurementSubject,
-        field: fieldName,
-        access: FieldPolicy.READONLY,
-      });
-    } else {
-      // 提升为可写
-      nextPolicies.push({
-        subject: ProcurementSubject,
-        field: fieldName,
-        access: FieldPolicy.EDITABLE,
-      });
-    }
-
-    updateSelectedRolePermissions({
-      ...selectedRole.permissions,
-      fieldPolicies: nextPolicies,
-    });
-  };
-
+  // 角色权限变更辅助函数
   const updateSelectedRolePermissions = (
     nextPermissions: RolePermissionPayload,
   ) => {
@@ -248,7 +126,191 @@ export function RolePermissionManager({
     );
   };
 
-  // 保存当前角色权限
+  const isPageActionChecked = (resource: string, action: string): boolean => {
+    if (!selectedRole) return false;
+    const actions = selectedRole.permissions.statement[resource] ?? [];
+    return actions.includes(action);
+  };
+
+  const getPageDataScope = (resource: string): DataScopeType => {
+    if (!selectedRole) return DataScope.DEPT;
+    const scope = selectedRole.permissions.dataScopes?.find(
+      (s) => s.resource === resource && (!s.action || s.action === "read"),
+    );
+    return scope?.scopeType ?? DataScope.DEPT;
+  };
+
+  // --- 交互处理函数 ---
+
+  // 1. 切换单个页面的指定操作 Action
+  const handleTogglePageAction = (
+    page: PagePermissionDescriptor,
+    action: string,
+  ) => {
+    if (!selectedRole) return;
+    const currentActions =
+      selectedRole.permissions.statement[page.resource] ?? [];
+    const exists = currentActions.includes(action);
+    const nextActions = exists
+      ? currentActions.filter((a) => a !== action)
+      : [...currentActions, action];
+
+    const nextStatement = {
+      ...selectedRole.permissions.statement,
+      [page.resource]: nextActions,
+    };
+
+    updateSelectedRolePermissions({
+      ...selectedRole.permissions,
+      statement: nextStatement,
+    });
+  };
+
+  // 2. 切换整页全选/全不选
+  const handleTogglePageAll = (page: PagePermissionDescriptor) => {
+    if (!selectedRole) return;
+    const currentActions =
+      selectedRole.permissions.statement[page.resource] ?? [];
+    const isAllChecked = page.actions.every((a) =>
+      currentActions.includes(a.action),
+    );
+
+    const nextStatement = { ...selectedRole.permissions.statement };
+    if (isAllChecked) {
+      delete nextStatement[page.resource];
+    } else {
+      nextStatement[page.resource] = page.actions.map((a) => a.action);
+    }
+
+    updateSelectedRolePermissions({
+      ...selectedRole.permissions,
+      statement: nextStatement,
+    });
+  };
+
+  // 3. 模块整组快捷全选/清空
+  const handleToggleModuleAll = (mod: ModulePermissionDescriptor) => {
+    if (!selectedRole) return;
+    const nextStatement = { ...selectedRole.permissions.statement };
+    const allPagesChecked = mod.pages.every((p) => {
+      const actions = nextStatement[p.resource] ?? [];
+      return p.actions.every((a) => actions.includes(a.action));
+    });
+
+    if (allPagesChecked) {
+      // 模块全清空
+      for (const p of mod.pages) {
+        delete nextStatement[p.resource];
+      }
+    } else {
+      // 模块全选
+      for (const p of mod.pages) {
+        nextStatement[p.resource] = p.actions.map((a) => a.action);
+      }
+    }
+
+    updateSelectedRolePermissions({
+      ...selectedRole.permissions,
+      statement: nextStatement,
+    });
+  };
+
+  // 4. 切换数据范围
+  const handleDataScopeChange = (
+    resource: string,
+    nextScope: DataScopeType,
+  ) => {
+    if (!selectedRole) return;
+    const existing = (selectedRole.permissions.dataScopes ?? []).filter(
+      (s) => s.resource !== resource,
+    );
+    updateSelectedRolePermissions({
+      ...selectedRole.permissions,
+      dataScopes: [
+        ...existing,
+        {
+          resource,
+          action: "read",
+          scopeType: nextScope,
+        },
+      ],
+    });
+  };
+
+  // 5. 字段策略推导与修改
+  const getFieldAccess = (
+    subject: string,
+    field: string,
+    resource: string,
+  ): FieldAccessMode => {
+    const policies = selectedRole?.permissions.fieldPolicies ?? [];
+    const found = policies.find(
+      (p) => p.subject === subject && p.field === field,
+    );
+    if (found) return found.access;
+
+    const statement = selectedRole?.permissions.statement[resource] ?? [];
+    const hasWrite =
+      statement.includes(StandardAction.CREATE) ||
+      statement.includes(StandardAction.UPDATE);
+    const hasRead = statement.includes(StandardAction.READ);
+
+    if (hasWrite) return FieldPolicy.EDITABLE;
+    if (hasRead) return FieldPolicy.READONLY;
+    return FieldPolicy.HIDDEN;
+  };
+
+  const handleToggleFieldAccess = (
+    subject: string,
+    field: string,
+    resource: string,
+    targetMode: "read" | "write",
+  ) => {
+    if (!selectedRole) return;
+    const currentAccess = getFieldAccess(subject, field, resource);
+    const policies = (selectedRole.permissions.fieldPolicies ?? []).filter(
+      (p) => !(p.subject === subject && p.field === field),
+    );
+
+    if (targetMode === "read") {
+      // 切换读状态 (HIDDEN <-> READONLY/EDITABLE)
+      if (currentAccess === FieldPolicy.HIDDEN) {
+        policies.push({
+          subject,
+          field,
+          access: FieldPolicy.READONLY,
+        });
+      } else {
+        policies.push({
+          subject,
+          field,
+          access: FieldPolicy.HIDDEN,
+        });
+      }
+    } else {
+      // 切换写状态 (READONLY <-> EDITABLE)
+      if (currentAccess === FieldPolicy.EDITABLE) {
+        policies.push({
+          subject,
+          field,
+          access: FieldPolicy.READONLY,
+        });
+      } else {
+        policies.push({
+          subject,
+          field,
+          access: FieldPolicy.EDITABLE,
+        });
+      }
+    }
+
+    updateSelectedRolePermissions({
+      ...selectedRole.permissions,
+      fieldPolicies: policies,
+    });
+  };
+
+  // 6. 保存角色权限
   const handleSave = () => {
     if (!selectedRole) return;
     setNotification(null);
@@ -260,7 +322,7 @@ export function RolePermissionManager({
       if (res.success && res.data) {
         setNotification({
           type: "success",
-          message: `角色 [${selectedRole.name}] 权限配置已成功持久化生效！`,
+          message: `角色 [${selectedRole.name}] 权限配置已成功保存生效！`,
         });
       } else {
         setNotification({
@@ -271,7 +333,7 @@ export function RolePermissionManager({
     });
   };
 
-  // 提交创建角色
+  // 7. 新增自定义角色
   const handleCreateRole = () => {
     if (!newRoleCode.trim()) return;
     setNotification(null);
@@ -301,7 +363,7 @@ export function RolePermissionManager({
     });
   };
 
-  // 删除自定义角色
+  // 8. 删除自定义角色
   const handleDeleteRole = (roleToDelete: string) => {
     if (
       !window.confirm(`确认删除业务角色 [${roleToDelete}] 吗？此操作无法撤销。`)
@@ -313,7 +375,7 @@ export function RolePermissionManager({
       const res = await deleteRoleAction(roleToDelete);
       if (res.success) {
         setRoles((prev) => prev.filter((r) => r.role !== roleToDelete));
-        setSelectedRoleCode("owner");
+        setSelectedRoleCode("admin");
         setNotification({
           type: "success",
           message: `角色 [${roleToDelete}] 已成功删除`,
@@ -327,23 +389,43 @@ export function RolePermissionManager({
     });
   };
 
+  // 辅助渲染模块图标
+  const renderModuleIcon = (iconName: string) => {
+    switch (iconName) {
+      case "UserCheck":
+        return <UserCheck className="size-3.5 text-blue-600" />;
+      case "PackageCheck":
+        return <PackageCheck className="size-3.5 text-emerald-600" />;
+      case "Users":
+        return <Users className="size-3.5 text-indigo-600" />;
+      case "ShieldCheck":
+        return <ShieldCheck className="size-3.5 text-amber-600" />;
+      case "Settings":
+        return <Settings className="size-3.5 text-slate-600" />;
+      case "FileText":
+        return <FileText className="size-3.5 text-rose-600" />;
+      default:
+        return <Shield className="size-3.5 text-blue-600" />;
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* 顶部标题横幅 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-5 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 pb-3.5 dark:border-slate-800">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+            <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">
               角色与权限配置中心
             </h1>
-            <Badge variant="default" size="sm">
-              <ShieldCheck className="size-3" />
-              <span>四层权限矩阵驱动</span>
+            <Badge variant="default" size="sm" className="font-mono">
+              <Shield className="size-3" />
+              <span>RBAC 矩阵树驱动</span>
             </Badge>
           </div>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            遵循 SaaS 工业级权限方案：功能 Actions 勾选、数据 Scope
-            下推与字段三态矩阵 (查看/修改/导出) 全闭环。
+            遵循工业级最佳实践：侧边栏大菜单由子页面权限自动推导展示/隐藏，支持页面操作细粒度勾选、Prisma
+            数据范围隔离与敏感字段三态策略。
           </p>
         </div>
 
@@ -351,17 +433,17 @@ export function RolePermissionManager({
           variant="default"
           size="sm"
           onClick={() => setShowCreateModal(true)}
-          className="shadow-sm shadow-blue-600/25"
+          className="shadow-xs"
         >
           <Plus className="size-3.5" />
-          <span>新建自定义角色</span>
+          <span>新建角色</span>
         </Button>
       </div>
 
-      {/* 提示反馈栏 */}
+      {/* 提示通知反馈栏 */}
       {notification && (
         <div
-          className={`flex items-center gap-2 rounded-xl p-3.5 text-xs font-semibold border ${
+          className={`flex items-center gap-2 rounded-lg p-2.5 text-xs font-semibold border ${
             notification.type === "success"
               ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300"
               : "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-300"
@@ -376,47 +458,49 @@ export function RolePermissionManager({
         </div>
       )}
 
-      {/* 核心主从工作台 (左侧角色选择，右侧四层权限配置矩阵) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* 左侧：角色列表侧栏卡片 */}
-        <Card className="lg:col-span-4 border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900 flex flex-col">
-          <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
-            <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
-              <Shield className="size-4 text-blue-600" />
-              <span>租户角色列表</span>
-            </CardTitle>
-            <CardDescription className="text-xs">
-              包含系统内置角色与自定义扩展角色
-            </CardDescription>
+      {/* 紧凑型主从工作台 (左侧角色列表 3 列，右侧权限矩阵 9 列) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+        {/* 左侧：角色列表导航 */}
+        <Card className="lg:col-span-3 border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-xs">
+          <CardHeader className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xs font-bold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+                <Shield className="size-3.5 text-blue-600" />
+                <span>租户企业角色</span>
+              </CardTitle>
+              <span className="text-[11px] font-mono text-slate-400">
+                {roles.length} 个角色
+              </span>
+            </div>
           </CardHeader>
-          <CardContent className="p-3 space-y-1.5 flex-1">
+          <CardContent className="p-2 space-y-1">
             {roles.map((r) => {
               const active = r.role === selectedRoleCode;
               return (
                 <div
                   key={r.role}
                   onClick={() => setSelectedRoleCode(r.role)}
-                  className={`group flex items-center justify-between rounded-xl px-3.5 py-3 text-xs cursor-pointer transition-all border ${
+                  className={`group flex items-center justify-between rounded-lg px-2.5 py-2 text-xs cursor-pointer transition-all border ${
                     active
-                      ? "border-blue-600/30 bg-blue-50/70 text-blue-900 shadow-xs dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-100"
-                      : "border-transparent hover:bg-slate-50 text-slate-700 dark:text-slate-300 dark:hover:bg-slate-800/60"
+                      ? "border-blue-600/30 bg-blue-50/80 text-blue-900 font-bold shadow-xs dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-100"
+                      : "border-transparent hover:bg-slate-50 text-slate-700 dark:text-slate-300 dark:hover:bg-slate-800/50"
                   }`}
                 >
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-1.5 font-bold">
-                      <span>{r.name}</span>
+                  <div className="min-w-0 pr-2">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className="truncate">{r.name}</span>
                       {r.isSystem && (
                         <Badge
                           variant="outline"
                           size="sm"
-                          className="text-[10px] py-0"
+                          className="text-[10px] px-1 py-0 h-4 border-slate-200 dark:border-slate-700 text-slate-500 font-normal shrink-0"
                         >
                           内置
                         </Badge>
                       )}
                     </div>
-                    <div className="font-mono text-[11px] text-slate-400">
-                      code: {r.role}
+                    <div className="font-mono text-[10px] text-slate-400 truncate">
+                      {r.role}
                     </div>
                   </div>
 
@@ -428,9 +512,9 @@ export function RolePermissionManager({
                         e.stopPropagation();
                         handleDeleteRole(r.role);
                       }}
-                      className="opacity-0 group-hover:opacity-100 size-7 p-0 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                      className="opacity-0 group-hover:opacity-100 size-6 p-0 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 shrink-0"
                     >
-                      <Trash2 className="size-3.5" />
+                      <Trash2 className="size-3" />
                     </Button>
                   )}
                 </div>
@@ -439,26 +523,24 @@ export function RolePermissionManager({
           </CardContent>
         </Card>
 
-        {/* 右侧：四层权限配置矩阵视图 */}
-        <Card className="lg:col-span-8 border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900">
-          <CardHeader className="pb-4 border-b border-slate-100 dark:border-slate-800">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-base font-black text-slate-900 dark:text-slate-100">
-                    {selectedRole?.name}
-                  </CardTitle>
-                  <Badge
-                    variant={isSystemRole ? "default" : "secondary"}
-                    size="sm"
-                  >
-                    {isSystemRole ? "系统保留角色" : "自定义业务角色"}
-                  </Badge>
-                </div>
-                <CardDescription className="text-xs">
-                  {selectedRole?.description ||
-                    "配置该角色在租户内部的功能、数据与字段细粒度授权。"}
-                </CardDescription>
+        {/* 右侧：权限配置表格与折叠树矩阵 (已移除多余的模块可见列) */}
+        <Card className="lg:col-span-9 border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-xs">
+          <CardHeader className="p-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                  {selectedRole?.name}
+                </CardTitle>
+                <Badge
+                  variant={isSystemRole ? "default" : "secondary"}
+                  size="sm"
+                  className="text-[10px] h-5"
+                >
+                  {isSystemRole ? "系统内置" : "自定义角色"}
+                </Badge>
+                <span className="text-xs text-slate-400 truncate hidden sm:inline">
+                  {selectedRole?.description || "细粒度权限配置"}
+                </span>
               </div>
 
               <Button
@@ -466,292 +548,450 @@ export function RolePermissionManager({
                 size="sm"
                 onClick={handleSave}
                 disabled={isPending}
-                className="shadow-sm shadow-blue-600/25"
+                className="shadow-xs shrink-0"
               >
                 <Save className="size-3.5" />
-                <span>{isPending ? "保存生效中..." : "保存权限配置"}</span>
+                <span>{isPending ? "保存中..." : "保存权限"}</span>
               </Button>
             </div>
           </CardHeader>
 
-          <CardContent className="p-6 space-y-8">
-            {/* 第一层：功能操作权限 (Actions) */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
-                <Layers className="size-4 text-blue-600" />
-                <span>一、功能按钮与操作权限 (Actions)</span>
-              </div>
-              <div className="rounded-xl border border-slate-200/80 p-4 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-800/30">
-                <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2.5">
-                  采购订单管理 (procurement.order)
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                  {[
-                    { action: "read", label: "查看订单" },
-                    { action: "create", label: "新建订单" },
-                    { action: "update", label: "修改订单" },
-                    { action: "audit", label: "审批订单" },
-                    { action: "export", label: "导出数据" },
-                  ].map((act) => {
-                    const checked = currentStatement.includes(act.action);
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-200/80 bg-slate-100/60 dark:border-slate-800 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 font-bold">
+                    <th className="py-2.5 px-3 w-[280px]">功能模块 / 页面</th>
+                    <th className="py-2.5 px-3 text-left">
+                      功能操作权限 (Actions)
+                    </th>
+                    <th className="py-2.5 px-3 text-center w-[140px]">
+                      数据过滤范围
+                    </th>
+                    <th className="py-2.5 px-2 text-center w-[90px]">
+                      字段策略
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  {TENANT_PERMISSION_TREE.map((mod) => {
+                    const isExpanded = expandedModules[mod.moduleKey] ?? true;
+                    // 只要模块下有任意一个页面拥有 read 权限，侧边栏自动点亮
+                    const hasAnyPageVisible = mod.pages.some((p) => {
+                      const actions =
+                        selectedRole?.permissions.statement[p.resource] ?? [];
+                      return actions.includes(StandardAction.READ);
+                    });
+
                     return (
-                      <label
-                        key={act.action}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium cursor-pointer transition-colors ${
-                          checked
-                            ? "border-blue-500 bg-white text-blue-700 shadow-xs dark:bg-slate-900 dark:text-blue-300 dark:border-blue-600"
-                            : "border-slate-200 bg-transparent text-slate-600 dark:border-slate-700 dark:text-slate-400"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => handleToggleAction(act.action)}
-                          className="size-3.5 rounded-sm text-blue-600 focus:ring-blue-500 border-slate-300"
-                        />
-                        <span>{act.label}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* 第二层：数据访问范围 (Data Scope) */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
-                <Building className="size-4 text-blue-600" />
-                <span>二、数据过滤范围 (Data Scope)</span>
-              </div>
-              <div className="rounded-xl border border-slate-200/80 p-4 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-800/30 space-y-2">
-                <div className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-                  决定拥有该角色的员工在查询采购单列表时，Prisma
-                  自动下推的过滤范围：
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {DATA_SCOPE_OPTIONS.map((opt) => {
-                    const selected = currentScopeType === opt.value;
-                    return (
-                      <div
-                        key={opt.value}
-                        onClick={() => handleScopeChange(opt.value)}
-                        className={`p-3 rounded-xl border text-xs cursor-pointer transition-all ${
-                          selected
-                            ? "border-blue-600 bg-white text-blue-900 shadow-xs dark:bg-slate-900 dark:border-blue-500 dark:text-blue-100"
-                            : "border-slate-200 hover:bg-white text-slate-700 dark:border-slate-700 dark:hover:bg-slate-800/50 dark:text-slate-300"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between font-bold mb-1">
-                          <span>{opt.label}</span>
-                          <span className="font-mono text-[10px] text-slate-400">
-                            {opt.value}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
-                          {opt.desc}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* 第三层：字段权限四维控制矩阵 (Field Matrix) */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
-                <Sparkles className="size-4 text-blue-600" />
-                <span>三、字段权限控制矩阵 (Field Permissions Matrix)</span>
-              </div>
-              <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
-                <table className="w-full text-left text-xs">
-                  <thead className="border-b border-slate-200/80 bg-slate-50/80 text-slate-500 dark:border-slate-800 dark:bg-slate-800/60">
-                    <tr>
-                      <th className="px-4 py-3 font-bold">字段名与资产说明</th>
-                      <th className="px-4 py-3 font-bold text-center">
-                        <span className="inline-flex items-center gap-1">
-                          <Eye className="size-3" /> 查看权限
-                        </span>
-                      </th>
-                      <th className="px-4 py-3 font-bold text-center">
-                        <span className="inline-flex items-center gap-1">
-                          <Edit className="size-3" /> 允许修改
-                        </span>
-                      </th>
-                      <th className="px-4 py-3 font-bold text-center">
-                        <span className="inline-flex items-center gap-1">
-                          <Download className="size-3" /> 导出包含
-                        </span>
-                      </th>
-                      <th className="px-4 py-3 font-bold text-right">
-                        推导前端状态
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {procurementConfigurableFields.map((row) => {
-                      const effectiveAccess = getEffectiveFieldAccess(
-                        row.field,
-                      );
-                      const isHidden = effectiveAccess === FieldPolicy.HIDDEN;
-                      const isEditable =
-                        effectiveAccess === FieldPolicy.EDITABLE;
-
-                      return (
-                        <tr
-                          key={row.field}
-                          className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors"
-                        >
-                          <td className="px-4 py-3">
-                            <div className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                              <span>{row.label}</span>
-                              {row.isSensitive && (
-                                <Badge
-                                  variant="warning"
-                                  size="sm"
-                                  className="text-[10px] py-0"
+                      <React.Fragment key={mod.moduleKey}>
+                        {/* 顶级模块分类行 */}
+                        <tr className="bg-slate-50/70 dark:bg-slate-800/30 font-semibold border-t border-slate-200/60 dark:border-slate-800">
+                          <td className="py-2.5 px-3">
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  toggleModuleExpand(mod.moduleKey)
+                                }
+                                className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500"
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="size-3.5" />
+                                ) : (
+                                  <ChevronRight className="size-3.5" />
+                                )}
+                              </button>
+                              <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+                                {renderModuleIcon(mod.iconName)}
+                                <span className="font-bold">{mod.label}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleModuleAll(mod)}
+                                  className="text-[10px] text-slate-400 hover:text-blue-600 font-normal ml-1 underline"
                                 >
-                                  <Lock className="size-2.5" />
-                                  <span>敏感资产</span>
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="font-mono text-[11px] text-slate-400">
-                              {row.field}
+                                  全模块切换
+                                </button>
+                              </div>
                             </div>
                           </td>
 
-                          {/* 查看权限勾选 */}
-                          <td className="px-4 py-3 text-center">
-                            <input
-                              type="checkbox"
-                              checked={!isHidden}
-                              onChange={() => handleToggleFieldRead(row.field)}
-                              className="size-4 rounded-sm text-blue-600 focus:ring-blue-500 border-slate-300"
-                            />
-                          </td>
-
-                          {/* 修改权限勾选 */}
-                          <td className="px-4 py-3 text-center">
-                            <input
-                              type="checkbox"
-                              checked={isEditable}
-                              disabled={isHidden}
-                              onChange={() => handleToggleFieldWrite(row.field)}
-                              className="size-4 rounded-sm text-blue-600 focus:ring-blue-500 border-slate-300 disabled:opacity-30"
-                            />
-                          </td>
-
-                          {/* 导出权限 */}
-                          <td className="px-4 py-3 text-center">
-                            <input
-                              type="checkbox"
-                              checked={!isHidden}
-                              disabled={isHidden}
-                              readOnly
-                              className="size-4 rounded-sm text-blue-600 focus:ring-blue-500 border-slate-300 disabled:opacity-30"
-                            />
-                          </td>
-
-                          {/* 推导状态标签 */}
-                          <td className="px-4 py-3 text-right">
-                            {isHidden ? (
-                              <Badge variant="destructive" size="sm">
-                                隐藏 (HIDDEN)
-                              </Badge>
-                            ) : isEditable ? (
-                              <Badge variant="success" size="sm">
-                                可编辑 (EDITABLE)
-                              </Badge>
+                          <td
+                            className="py-2.5 px-3 text-slate-400 text-[11px]"
+                            colSpan={3}
+                          >
+                            {hasAnyPageVisible ? (
+                              <span className="text-emerald-600 font-medium">
+                                ● 侧边栏已激活展示（已勾选该模块下页面）
+                              </span>
                             ) : (
-                              <Badge variant="outline" size="sm">
-                                只读 (READONLY)
-                              </Badge>
+                              <span className="text-slate-400">
+                                ○ 侧边栏自动收起（该模块下无任何可访问页面）
+                              </span>
                             )}
                           </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+
+                        {/* 模块下属页面行列表 */}
+                        {isExpanded &&
+                          mod.pages.map((page) => {
+                            const currentActions =
+                              selectedRole?.permissions.statement[
+                                page.resource
+                              ] ?? [];
+                            const isAllChecked = page.actions.every((a) =>
+                              currentActions.includes(a.action),
+                            );
+                            const hasRead = currentActions.includes(
+                              StandardAction.READ,
+                            );
+                            const scope = getPageDataScope(page.resource);
+                            const supportsScope = page.actions.some(
+                              (a) =>
+                                a.supportedScopes &&
+                                a.supportedScopes.length > 0,
+                            );
+                            const hasFields =
+                              page.configurableFields &&
+                              page.configurableFields.length > 0;
+                            const isFieldExpanded =
+                              expandedFieldPages[page.resource] ?? false;
+
+                            return (
+                              <React.Fragment key={page.resource}>
+                                <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                                  {/* 页面名称与全选操作 */}
+                                  <td className="py-2.5 px-3 pl-8">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-slate-300 dark:text-slate-600 font-mono">
+                                        └─
+                                      </span>
+                                      <span
+                                        className={`font-medium ${
+                                          hasRead
+                                            ? "text-slate-900 dark:text-slate-100 font-bold"
+                                            : "text-slate-500 dark:text-slate-400"
+                                        }`}
+                                      >
+                                        {page.label}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleTogglePageAll(page)
+                                        }
+                                        className="text-[10px] text-slate-400 hover:text-blue-600 underline font-normal ml-1"
+                                      >
+                                        {isAllChecked ? "清空" : "全选"}
+                                      </button>
+                                    </div>
+                                  </td>
+
+                                  {/* 动作 Action 多选 Checkboxes */}
+                                  <td className="py-2.5 px-3">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      {page.actions.map((act) => {
+                                        const checked = isPageActionChecked(
+                                          page.resource,
+                                          act.action,
+                                        );
+                                        return (
+                                          <label
+                                            key={act.action}
+                                            className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-[11px] cursor-pointer transition-colors ${
+                                              checked
+                                                ? "border-blue-300 bg-blue-50/60 text-blue-800 dark:bg-blue-950/40 dark:border-blue-700 dark:text-blue-200 font-medium"
+                                                : "border-slate-200 bg-transparent text-slate-500 dark:border-slate-700 dark:text-slate-400"
+                                            }`}
+                                          >
+                                            <input
+                                              type="checkbox"
+                                              checked={checked}
+                                              onChange={() =>
+                                                handleTogglePageAction(
+                                                  page,
+                                                  act.action,
+                                                )
+                                              }
+                                              className="size-3 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
+                                            />
+                                            <span>{act.label}</span>
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+                                  </td>
+
+                                  {/* 数据范围下拉选择 */}
+                                  <td className="py-2.5 px-3 text-center">
+                                    {supportsScope && hasRead ? (
+                                      <select
+                                        value={scope}
+                                        onChange={(e) =>
+                                          handleDataScopeChange(
+                                            page.resource,
+                                            e.target.value as DataScopeType,
+                                          )
+                                        }
+                                        className="h-7 text-xs rounded border border-slate-200 bg-white px-2 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                      >
+                                        {DATA_SCOPE_SELECT_OPTIONS.map(
+                                          (opt) => (
+                                            <option
+                                              key={opt.value}
+                                              value={opt.value}
+                                            >
+                                              {opt.label}
+                                            </option>
+                                          ),
+                                        )}
+                                      </select>
+                                    ) : (
+                                      <span className="text-[11px] text-slate-400 font-mono">
+                                        -
+                                      </span>
+                                    )}
+                                  </td>
+
+                                  {/* 字段策略配置按钮 (若有受控字段) */}
+                                  <td className="py-2.5 px-2 text-center">
+                                    {hasFields ? (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          toggleFieldExpand(page.resource)
+                                        }
+                                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border transition-colors ${
+                                          isFieldExpanded
+                                            ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                                            : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300"
+                                        }`}
+                                      >
+                                        <Sparkles className="size-3" />
+                                        <span>
+                                          {isFieldExpanded ? "收起" : "配置"}
+                                        </span>
+                                      </button>
+                                    ) : (
+                                      <span className="text-[11px] text-slate-400 font-mono">
+                                        -
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+
+                                {/* 字段细粒度展开矩阵抽屉 */}
+                                {isFieldExpanded && page.configurableFields && (
+                                  <tr className="bg-slate-50/80 dark:bg-slate-800/40">
+                                    <td colSpan={4} className="p-3 pl-12">
+                                      <div className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 space-y-2">
+                                        <div className="flex items-center justify-between text-xs">
+                                          <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                            <Sparkles className="size-3.5 text-blue-600" />
+                                            <span>
+                                              【{page.label}】敏感资产与字段策略
+                                            </span>
+                                          </span>
+                                          <span className="text-[11px] text-slate-400">
+                                            字段三态策略：可读、可写、隐藏
+                                          </span>
+                                        </div>
+
+                                        <table className="w-full text-xs border-collapse">
+                                          <thead>
+                                            <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 text-[11px]">
+                                              <th className="py-1.5 text-left font-medium">
+                                                字段名称
+                                              </th>
+                                              <th className="py-1.5 text-center font-medium w-[80px]">
+                                                查看权限
+                                              </th>
+                                              <th className="py-1.5 text-center font-medium w-[80px]">
+                                                编辑权限
+                                              </th>
+                                              <th className="py-1.5 text-right font-medium w-[100px]">
+                                                生效状态
+                                              </th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                            {page.configurableFields.map(
+                                              (f) => {
+                                                const mode = getFieldAccess(
+                                                  page.subject,
+                                                  f.field,
+                                                  page.resource,
+                                                );
+                                                const canRead =
+                                                  mode !== FieldPolicy.HIDDEN;
+                                                const canWrite =
+                                                  mode === FieldPolicy.EDITABLE;
+
+                                                return (
+                                                  <tr key={f.field}>
+                                                    <td className="py-1.5">
+                                                      <span className="font-medium text-slate-700 dark:text-slate-300">
+                                                        {f.label}
+                                                      </span>
+                                                      <span className="font-mono text-[10px] text-slate-400 ml-1.5">
+                                                        ({f.field})
+                                                      </span>
+                                                      {f.sensitive && (
+                                                        <Badge
+                                                          variant="outline"
+                                                          size="sm"
+                                                          className="ml-1.5 text-[9px] px-1 py-0 text-amber-600 border-amber-200"
+                                                        >
+                                                          敏感
+                                                        </Badge>
+                                                      )}
+                                                    </td>
+                                                    <td className="py-1.5 text-center">
+                                                      <input
+                                                        type="checkbox"
+                                                        checked={canRead}
+                                                        onChange={() =>
+                                                          handleToggleFieldAccess(
+                                                            page.subject,
+                                                            f.field,
+                                                            page.resource,
+                                                            "read",
+                                                          )
+                                                        }
+                                                        className="size-3.5 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
+                                                      />
+                                                    </td>
+                                                    <td className="py-1.5 text-center">
+                                                      <input
+                                                        type="checkbox"
+                                                        checked={canWrite}
+                                                        disabled={!canRead}
+                                                        onChange={() =>
+                                                          handleToggleFieldAccess(
+                                                            page.subject,
+                                                            f.field,
+                                                            page.resource,
+                                                            "write",
+                                                          )
+                                                        }
+                                                        className="size-3.5 rounded text-blue-600 focus:ring-blue-500 border-slate-300 disabled:opacity-30"
+                                                      />
+                                                    </td>
+                                                    <td className="py-1.5 text-right font-mono text-[10px]">
+                                                      {mode ===
+                                                        FieldPolicy.EDITABLE && (
+                                                        <span className="text-emerald-600 font-bold">
+                                                          EDITABLE
+                                                        </span>
+                                                      )}
+                                                      {mode ===
+                                                        FieldPolicy.READONLY && (
+                                                        <span className="text-blue-600 font-bold">
+                                                          READONLY
+                                                        </span>
+                                                      )}
+                                                      {mode ===
+                                                        FieldPolicy.HIDDEN && (
+                                                        <span className="text-rose-500 font-bold">
+                                                          HIDDEN
+                                                        </span>
+                                                      )}
+                                                    </td>
+                                                  </tr>
+                                                );
+                                              },
+                                            )}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* 新增角色弹窗 */}
+      {/* 创建新角色模态框 */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 space-y-4">
-            <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                新建租户业务角色
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                创建专属于您企业的业务岗位角色，并配置四层权限。
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  角色标识编码 (Role Code) *
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <Card className="w-full max-w-md border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-xl">
+            <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Shield className="size-4 text-blue-600" />
+                <span>新建租户业务角色</span>
+              </CardTitle>
+              <CardDescription className="text-xs">
+                角色编码创建后不可修改，请遵循小写字母下划线规范
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  角色标识代码 (Role Code) *
                 </label>
                 <Input
-                  placeholder="例如: buyer, warehouse_lead"
+                  placeholder="例如: customer_manager, buyer_leader"
                   value={newRoleCode}
-                  onChange={(e) => setNewRoleCode(e.target.value.toLowerCase())}
-                  className="mt-1"
+                  onChange={(e) => setNewRoleCode(e.target.value)}
+                  className="font-mono text-xs"
                 />
-                <p className="text-[11px] text-slate-400 mt-1">
-                  仅允许小写英文、数字与下划线，保存后不可更改。
+                <p className="text-[10px] text-slate-400">
+                  小写字母开头，由 2-31 位小写字母、数字或下划线组成
                 </p>
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  角色显示名称
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  角色显示名称 (Role Name)
                 </label>
                 <Input
-                  placeholder="例如: 采购专员"
+                  placeholder="例如: 客户业务经理"
                   value={newRoleName}
                   onChange={(e) => setNewRoleName(e.target.value)}
-                  className="mt-1"
+                  className="text-xs"
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  职责说明
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  职责描述 (Description)
                 </label>
                 <Input
-                  placeholder="岗位职责简述"
+                  placeholder="该角色在业务流程中的职责说明"
                   value={newRoleDesc}
                   onChange={(e) => setNewRoleDesc(e.target.value)}
-                  className="mt-1"
+                  className="text-xs"
                 />
               </div>
-            </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCreateModal(false)}
-              >
-                取消
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleCreateRole}
-                disabled={!newRoleCode.trim() || isPending}
-              >
-                {isPending ? "创建中..." : "确认创建"}
-              </Button>
-            </div>
-          </div>
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowCreateModal(false)}
+                >
+                  取消
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleCreateRole}
+                  disabled={isPending || !newRoleCode.trim()}
+                >
+                  {isPending ? "创建中..." : "确认创建"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

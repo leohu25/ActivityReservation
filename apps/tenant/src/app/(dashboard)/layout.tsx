@@ -1,9 +1,11 @@
 import React from "react";
 import { headers } from "next/headers";
-import { getServerAuthRuntime } from "@chenrun/auth";
+import { getServerAuthRuntime, getCurrentTenantContext } from "@chenrun/auth";
+import { CaslAbilityFactory } from "@chenrun/authorization";
 import { TopHeader, Sidebar, DashboardShell, Badge } from "@chenrun/ui";
 import { redirect } from "next/navigation";
 import { Building2 } from "lucide-react";
+import { globalTenantCatalog } from "@/lib/global-catalog";
 
 interface DashboardLayoutProps {
   readonly children: React.ReactNode;
@@ -17,9 +19,10 @@ interface DashboardLayoutProps {
 export default async function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
+  const reqHeaders = await headers();
   const runtime = getServerAuthRuntime();
   const session = await runtime.auth.api.getSession({
-    headers: await headers(),
+    headers: reqHeaders,
   });
 
   // 未登录拦截
@@ -65,10 +68,32 @@ export default async function DashboardLayout({
     </div>
   ) : null;
 
+  // 获取当前租户授权规则数组 (序列化可传给 Client Component Sidebar)
+  let allowedPermissions: string[] | undefined;
+  try {
+    const tenantCtx = await getCurrentTenantContext(reqHeaders);
+    const factory = new CaslAbilityFactory(
+      runtime.tenantContextRepository,
+      globalTenantCatalog,
+    );
+    const ability = await factory.createForTenant(tenantCtx);
+    const permissions: string[] = [];
+    for (const def of globalTenantCatalog.definitions) {
+      for (const act of def.actions) {
+        if (ability.can(act, def.subject)) {
+          permissions.push(`${act}:${def.subject}`);
+        }
+      }
+    }
+    allowedPermissions = permissions;
+  } catch {
+    // 若无法解析租户上下文则默认由未登录拦截处理
+  }
+
   return (
     <DashboardShell
       header={<TopHeader user={user} orgSwitcherSlot={orgBadgeSlot} />}
-      sidebar={<Sidebar />}
+      sidebar={<Sidebar allowedPermissions={allowedPermissions} />}
     >
       {children}
     </DashboardShell>

@@ -46,6 +46,8 @@ export interface SidebarProps {
   readonly navItems?: readonly NavItem[];
   readonly currentPath?: string;
   readonly can?: (action: string, subject: string) => boolean;
+  /** 允许的服务端序列化权限规则数组或白名单 key 集合 (例如: ['read:CustomerModule', 'read:Customer']) */
+  readonly allowedPermissions?: readonly string[];
   readonly LinkComponent?: ComponentType<{
     href: string;
     className?: string;
@@ -133,16 +135,22 @@ export const DEFAULT_NAV_SECTIONS: readonly NavSection[] = [
             id: "org-employees",
             label: "员工管理",
             href: "/organization/employees",
+            requiredAction: "read",
+            requiredSubject: "Employee",
           },
           {
             id: "org-departments",
             label: "部门管理",
             href: "/organization/departments",
+            requiredAction: "read",
+            requiredSubject: "Department",
           },
           {
             id: "org-positions",
             label: "岗位管理",
             href: "/organization/positions",
+            requiredAction: "read",
+            requiredSubject: "Position",
           },
         ],
       },
@@ -155,6 +163,8 @@ export const DEFAULT_NAV_SECTIONS: readonly NavSection[] = [
             id: "settings-roles",
             label: "角色权限管理",
             href: "/settings/roles",
+            requiredAction: "read",
+            requiredSubject: "RoleManagement",
           },
         ],
       },
@@ -167,16 +177,22 @@ export const DEFAULT_NAV_SECTIONS: readonly NavSection[] = [
             id: "settings-company",
             label: "企业信息",
             href: "/settings/company",
+            requiredAction: "read",
+            requiredSubject: "CompanyProfile",
           },
           {
             id: "settings-general",
             label: "基础设置",
             href: "/settings/general",
+            requiredAction: "read",
+            requiredSubject: "GeneralSettings",
           },
           {
             id: "settings-security",
             label: "安全设置",
             href: "/settings/security",
+            requiredAction: "read",
+            requiredSubject: "SecuritySettings",
           },
         ],
       },
@@ -190,16 +206,22 @@ export const DEFAULT_NAV_SECTIONS: readonly NavSection[] = [
             id: "audit-operations",
             label: "操作日志",
             href: "/audit/operations",
+            requiredAction: "read",
+            requiredSubject: "AuditLogOperation",
           },
           {
             id: "audit-logins",
             label: "登录日志",
             href: "/audit/logins",
+            requiredAction: "read",
+            requiredSubject: "AuditLogLogin",
           },
           {
             id: "audit-permissions",
             label: "权限变更日志",
             href: "/audit/permissions",
+            requiredAction: "read",
+            requiredSubject: "AuditLogPermission",
           },
         ],
       },
@@ -240,16 +262,27 @@ const DefaultLink = ({
 function isItemVisible(
   item: NavItem,
   can?: (action: string, subject: string) => boolean,
+  allowedPermissionsSet?: Set<string>,
 ): boolean {
-  if (item.requiredAction && item.requiredSubject && can) {
-    if (!can(item.requiredAction, item.requiredSubject)) {
+  if (item.requiredAction && item.requiredSubject) {
+    if (can && !can(item.requiredAction, item.requiredSubject)) {
+      return false;
+    }
+    if (
+      allowedPermissionsSet &&
+      !allowedPermissionsSet.has(
+        `${item.requiredAction}:${item.requiredSubject}`,
+      )
+    ) {
       return false;
     }
   }
 
   const subItems = item.items ?? item.children;
   if (subItems && subItems.length > 0) {
-    return subItems.some((child) => isItemVisible(child, can));
+    return subItems.some((child) =>
+      isItemVisible(child, can, allowedPermissionsSet),
+    );
   }
 
   return true;
@@ -259,17 +292,22 @@ function isItemVisible(
 function filterVisibleItems(
   items: readonly NavItem[],
   can?: (action: string, subject: string) => boolean,
+  allowedPermissionsSet?: Set<string>,
 ): NavItem[] {
   const result: NavItem[] = [];
 
   for (const item of items) {
-    if (!isItemVisible(item, can)) {
+    if (!isItemVisible(item, can, allowedPermissionsSet)) {
       continue;
     }
 
     const subItems = item.items ?? item.children;
     if (subItems && subItems.length > 0) {
-      const visibleSubItems = filterVisibleItems(subItems, can);
+      const visibleSubItems = filterVisibleItems(
+        subItems,
+        can,
+        allowedPermissionsSet,
+      );
       result.push({
         ...item,
         items: visibleSubItems,
@@ -312,9 +350,13 @@ export function Sidebar({
   navItems,
   currentPath: propCurrentPath,
   can,
+  allowedPermissions,
   LinkComponent = DefaultLink,
 }: SidebarProps) {
   const Link = LinkComponent;
+  const allowedPermissionsSet = allowedPermissions
+    ? new Set(allowedPermissions)
+    : undefined;
 
   // 1. 确定当前路径：优先使用显式 prop，未提供时在浏览器端自适应 window.location.pathname
   const [currentPath, setCurrentPath] = useState<string>(propCurrentPath ?? "");
@@ -371,7 +413,11 @@ export function Sidebar({
         {/* 导航分区块列表 */}
         <div className="space-y-4">
           {effectiveSections.map((section) => {
-            const visibleItems = filterVisibleItems(section.items, can);
+            const visibleItems = filterVisibleItems(
+              section.items,
+              can,
+              allowedPermissionsSet,
+            );
             if (visibleItems.length === 0) {
               return null;
             }

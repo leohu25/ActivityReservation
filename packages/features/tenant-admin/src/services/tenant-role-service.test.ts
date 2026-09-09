@@ -31,7 +31,9 @@ function createMockRepo(initialRoles: OrganizationRoleRecord[] = []): {
           (r) => r.organizationId === orgId && roleNames.includes(r.role),
         );
       },
-      async listOrganizationRoles(orgId: string): Promise<OrganizationRoleRecord[]> {
+      async listOrganizationRoles(
+        orgId: string,
+      ): Promise<OrganizationRoleRecord[]> {
         return roles.filter((r) => r.organizationId === orgId);
       },
       async upsertOrganizationRole(input: {
@@ -40,10 +42,14 @@ function createMockRepo(initialRoles: OrganizationRoleRecord[] = []): {
         permission: string;
       }): Promise<OrganizationRoleRecord> {
         const existingIdx = roles.findIndex(
-          (r) => r.organizationId === input.organizationId && r.role === input.role,
+          (r) =>
+            r.organizationId === input.organizationId && r.role === input.role,
         );
         const record: OrganizationRoleRecord = {
-          id: existingIdx >= 0 ? roles[existingIdx].id : `role_${roles.length + 1}`,
+          id:
+            existingIdx >= 0
+              ? roles[existingIdx].id
+              : `role_${roles.length + 1}`,
           organizationId: input.organizationId,
           role: input.role,
           permission: input.permission,
@@ -88,14 +94,14 @@ test("listTenantRoles 默认按规范列出内置角色并追加持久化自定�
   const service = new TenantRoleService(repo);
   const list = await service.listTenantRoles("org_test");
 
-  assert.equal(list.length, 4);
-  assert.equal(list[0].role, "owner");
+  assert.equal(list.length, 3);
+  assert.equal(list[0].role, "admin");
   assert.equal(list[0].isSystem, true);
-  assert.equal(list[1].role, "admin");
-  assert.equal(list[2].role, "member");
-  assert.equal(list[3].role, "procurement_auditor");
-  assert.equal(list[3].isSystem, false);
-  assert.deepEqual(list[3].permissions.statement["procurement.order"], [
+  assert.equal(list[1].role, "member");
+  assert.equal(list[1].isSystem, true);
+  assert.equal(list[2].role, "procurement_auditor");
+  assert.equal(list[2].isSystem, false);
+  assert.deepEqual(list[2].permissions.statement["procurement.order"], [
     "read",
     "audit",
   ]);

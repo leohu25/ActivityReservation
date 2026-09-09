@@ -24,6 +24,7 @@
     "@chenrun/authorization": "workspace:*",
     "@chenrun/db-control": "workspace:*",
     "@chenrun/db-tenant": "workspace:*",
+    "@chenrun/feature-customer-center": "workspace:*",
     "@chenrun/feature-procurement-center": "workspace:*",
     "@chenrun/shared": "workspace:*",
     "@chenrun/ui": "workspace:*",

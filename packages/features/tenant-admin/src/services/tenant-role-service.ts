@@ -43,36 +43,13 @@ export class TenantRoleService {
 
     const items: TenantRoleItem[] = [];
 
-    // 1. 确保内置核心角色在前排列
+    // 1. 确保可配置的核心内置角色在前排列（明确排除 owner，因为超级管理员具备所有权限且租户管理员不得管理超管）
     const builtInDefaults: Array<{
       role: BuiltInRole;
       name: string;
       description: string;
       defaultPayload: RolePermissionPayload;
     }> = [
-      {
-        role: "owner",
-        name: "超级管理员 (Owner)",
-        description: "拥有当前租户企业的全部最高操作权限与数据范围",
-        defaultPayload: {
-          statement: {
-            "procurement.order": [
-              "read",
-              "create",
-              "update",
-              "audit",
-              "export",
-            ],
-          },
-          dataScopes: [
-            {
-              resource: "procurement.order",
-              scopeType: "ALL",
-            },
-          ],
-          fieldPolicies: [],
-        },
-      },
       {
         role: "admin",
         name: "租户管理员 (Admin)",
@@ -86,11 +63,44 @@ export class TenantRoleService {
               "audit",
               "export",
             ],
+            customer: ["read", "create", "update", "delete"],
+            customer_store: ["read", "create", "update", "delete"],
+            customer_category_tag: ["read", "create", "update", "delete"],
+            customer_quote: ["read", "create", "update", "audit"],
+            // 组织架构
+            "organization.employee": ["read", "create", "update", "delete"],
+            "organization.department": ["read", "create", "update", "delete"],
+            "organization.position": ["read", "create", "update", "delete"],
+            // 权限管理
+            "system.roles": ["read", "update"],
+            // 企业设置
+            "settings.company": ["read", "update"],
+            "settings.general": ["read", "update"],
+            "settings.security": ["read", "update"],
+            // 审计日志
+            "audit.operations": ["read", "export"],
+            "audit.logins": ["read", "export"],
+            "audit.permissions": ["read", "export"],
           },
           dataScopes: [
             {
               resource: "procurement.order",
               scopeType: "DEPT_TREE",
+            },
+            {
+              resource: "customer",
+              action: "read",
+              scopeType: "ALL",
+            },
+            {
+              resource: "customer_store",
+              action: "read",
+              scopeType: "ALL",
+            },
+            {
+              resource: "customer_quote",
+              action: "read",
+              scopeType: "ALL",
             },
           ],
           fieldPolicies: [],
@@ -103,12 +113,30 @@ export class TenantRoleService {
         defaultPayload: {
           statement: {
             "procurement.order": ["read"],
+            customer: ["read"],
+            customer_store: ["read"],
+            customer_quote: ["read"],
           },
           dataScopes: [
             {
               resource: "procurement.order",
               action: "read",
               scopeType: "DEPT",
+            },
+            {
+              resource: "customer",
+              action: "read",
+              scopeType: "DEPT",
+            },
+            {
+              resource: "customer_store",
+              action: "read",
+              scopeType: "DEPT",
+            },
+            {
+              resource: "customer_quote",
+              action: "read",
+              scopeType: "SELF",
             },
           ],
           fieldPolicies: [
@@ -122,7 +150,7 @@ export class TenantRoleService {
       },
     ];
 
-    const handledRoles = new Set<string>();
+    const handledRoles = new Set<string>(["owner"]); // owner 内部吸收，对外彻底屏蔽
 
     for (const builtIn of builtInDefaults) {
       handledRoles.add(builtIn.role);
@@ -188,6 +216,11 @@ export class TenantRoleService {
     }
     if (!input.role.trim()) {
       throw new TenantRoleServiceError("角色编码不能为空");
+    }
+    if (input.role.trim() === "owner") {
+      throw new TenantRoleServiceError(
+        "超级管理员 (Owner) 拥有全局固有权限，不可在此修改",
+      );
     }
 
     const permissionJson = serializeRolePermissions(input.payload);
