@@ -41,6 +41,23 @@ export function OrgSwitcher({ activeOrgId, onOrgChanged }: OrgSwitcherProps) {
   // SAFETY: Better Auth 官方 organizationClient 插件返回包含 id, name, slug 的租户列表结构
   const orgList = (orgListData ?? []) as unknown as OrgItem[];
 
+  // 核心体验自动修复：当服务端 Session 未激活租户，而用户名下恰好有可用租户时，自动静默激活首个租户并刷新页面
+  React.useEffect(() => {
+    if (!isPending && !activeOrgId && orgList.length > 0) {
+      const targetOrg = orgList[0];
+      if (targetOrg?.id) {
+        authClient.organization
+          .setActive({ organizationId: targetOrg.id })
+          .then(() => {
+            window.location.reload();
+          })
+          .catch(() => {
+            // 忽略非阻塞异常
+          });
+      }
+    }
+  }, [isPending, activeOrgId, orgList]);
+
   const handleSelectOrg = async (orgId: string) => {
     if (orgId === activeOrgId) return;
     setLoading(true);
@@ -201,6 +218,11 @@ export function OrgSwitcher({ activeOrgId, onOrgChanged }: OrgSwitcherProps) {
           disabled={loading}
           className="h-9 rounded-xl border border-zinc-200 bg-zinc-50/80 px-3 pr-8 text-xs font-semibold text-zinc-800 shadow-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 cursor-pointer"
         >
+          {!activeOrgId && (
+            <option value="" disabled>
+              ⚠️ 请点击选择激活租户
+            </option>
+          )}
           {orgList.length === 0 && <option value="">暂无租户组织</option>}
           {orgList.map((org) => (
             <option key={org.id} value={org.id}>

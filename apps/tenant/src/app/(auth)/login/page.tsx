@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { signIn, signUp } from "@chenrun/auth/client";
+import { signIn, signUp, authClient } from "@chenrun/auth/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -52,6 +52,27 @@ export default function LoginPage() {
         if (res.error) {
           setError(res.error.message || "登录失败，账号或密码错误");
         } else {
+          // 登录成功后，主动拉取用户的租户列表并自动激活租户上下文
+          try {
+            const orgsRes = await authClient.organization.list();
+            const orgList = orgsRes.data || [];
+            if (orgList.length === 1 && orgList[0]?.id) {
+              // 唯一定点租户：静默无感自动激活
+              await authClient.organization.setActive({
+                organizationId: orgList[0].id,
+              });
+            } else if (orgList.length > 1) {
+              // 多租户：默认激活首个租户保障页面立即可用
+              const firstOrg = orgList[0];
+              if (firstOrg?.id) {
+                await authClient.organization.setActive({
+                  organizationId: firstOrg.id,
+                });
+              }
+            }
+          } catch {
+            // 忽略非阻塞的组织查询异常
+          }
           router.push("/workbench");
         }
       }
