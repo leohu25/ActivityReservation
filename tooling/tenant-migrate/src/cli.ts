@@ -173,10 +173,10 @@ async function main(): Promise<void> {
   const packageDir = path.resolve(cliDir, "..");
   const workspaceRoot = path.resolve(packageDir, "../..");
   const defaultMigrationsDir = path.join(packageDir, "migrations");
-  const defaultSchemaPath = path.join(
-    workspaceRoot,
-    "packages/db-tenant/prisma/schema.prisma",
-  );
+  // 支持通过 --schema 指定需要扫描迁移的业务 feature schema 路径，缺省退回基础租户模型 packages/db-tenant
+  const defaultSchemaPath = options.schema
+    ? path.resolve(workspaceRoot, options.schema as string)
+    : path.join(workspaceRoot, "packages/db-tenant/prisma/schema.prisma");
 
   // 自动从当前目录及工作区根目录检索并加载 .env 与 .env.local
   const loadedEnvFiles = autoLoadEnvironment(workspaceRoot, packageDir);

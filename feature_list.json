@@ -152,7 +152,7 @@
       "name": "【P1】租户三维审计安全体系 (Tenant 3D Audit Logs)",
       "description": "第二梯队合规保障：Tenant DB 建立 OperationAuditLog 与 PermissionAuditLog，Control DB / Tenant DB 建立 LoginAuditLog；在采购订单核心流转处拦截插入操作流水；在角色与权限配置变更处拦截记录四层策略 JSON Diff；落地 /audit/operations（操作日志）、/audit/logins（登录日志）与 /audit/permissions（权限变更 Diff 对比抽屉）查询控制台",
       "dependencies": ["p0-tenant-workbench-real-topology"],
-      "status": "pending",
+      "status": "暂不实施",
       "owner": "implementer"
     },
     {
@@ -160,7 +160,7 @@
       "name": "【P1】租户全生命周期管控与排期安全清理 (Tenant Full Lifecycle Governance & Clean Purge)",
       "description": "第二梯队租户运维：落地 TenantLifecycleService，实现租户 PROVISIONING -> ACTIVE -> SUSPENDED -> PENDING_DELETE -> DELETED 完整流转；租户停用仅阻断本租户物理库访问，严禁封禁全局 User（遵循 R-04）；建立排期删除 30 天冷静保留期与物理安全清理（备份 -> Drop 租户库 -> 清理 Control 映射 -> 留存审计账本，遵循第 60 节顺序）",
       "dependencies": ["p1-tenant-audit-logs"],
-      "status": "pending",
+      "status": "暂不实施",
       "owner": "implementer"
     },
     {
@@ -168,7 +168,7 @@
       "name": "【P2】成员邮件邀请与激活绑定流 (Member Email Invitation & Acceptance Flow)",
       "description": "第三梯队外部协同：对接 SMTP / 外部邮件服务，启用 Better Auth Organization 邀请插件与 afterAcceptInvitation Hook；在租户后台提供 /access/invitations 待加入成员列表管理（重发邀请、撤回取消）；员工点击邮件 Token 激活或注册，Hook 自动将对应预置档案由 INVITED 翻转为 ACTIVE 并绑定 memberId/userId",
       "dependencies": ["p1-tenant-lifecycle-governance"],
-      "status": "pending",
+      "status": "暂不实施",
       "owner": "implementer"
     },
     {
@@ -176,8 +176,17 @@
       "name": "【P2】租户所有权移交与复杂离职批量单据交接 (Tenant Ownership Transfer & Batch Offboarding Handover)",
       "description": "第三梯队高级运维：落地 TenantOwnershipService，当前 Owner 经过密码二次验证后，原子提升新 Owner 并降级原 Owner，严格保持唯一 Primary Owner；落地员工离职时的未完结业务单据（未审核采购单等）批量交接过户流程并生成交接归档清单",
       "dependencies": ["p2-tenant-member-invitation-flow"],
-      "status": "pending",
+      "status": "暂不实施",
       "owner": "implementer"
+    },
+    {
+      "id": "feature-customer-center",
+      "name": "【P0】客户中心业务特性闭环 (Customer Center Feature)",
+      "description": "客户中心完整业务链路：数据模型内聚在 packages/features/customer-center 独立维护；包含客户档案（PROC-CUS-001）、门店档案（PROC-CUS-001）、分类与标签设置（PROC-CUS-002）与门店报价单（PROC-CUS-003）；左侧导航升级顶级手风琴菜单；支持客户停用级联门店、防误删除保护、三级报价优先级匹配与工业风UI",
+      "dependencies": ["p0-tenant-workbench-real-topology"],
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "完成 packages/features/customer-center 独立特性包与内聚 Prisma Schema 建模（所有表及字段全中文三斜杠注释）；落地多级分类树、标签字典、客户档案、门店档案及门店报价单领域服务；实现客户停用级联门店停用、已有单据防删除保护与三级报价优先级匹配算法（门店>客户>区域）；左侧导航升级为顶级手风琴【客户中心】；完成 /customer/categories-tags、/customer/customers、/customer/stores、/customer/quotes 4张受控页面与交互；全仓 13 个包类型检查 0 错误、单测 100% 通过、全栈门禁 verify.sh 全绿"
     }
   ]
 }

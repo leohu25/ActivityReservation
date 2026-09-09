@@ -72,7 +72,7 @@ export function generateMigrationFromSchema(
   const targetFolder = path.join(input.migrationsDir, folderName);
 
   // 检查现有迁移目录
-  const existingMigrations = fs.existsSync(input.migrationsDir)
+  const _existingMigrations = fs.existsSync(input.migrationsDir)
     ? fs.readdirSync(input.migrationsDir).filter((f) => {
         const full = path.join(input.migrationsDir, f);
         return (
@@ -83,27 +83,35 @@ export function generateMigrationFromSchema(
     : [];
 
   let diffSql = "";
+  let downSql = "";
 
-  const schemaDir = path.dirname(input.schemaPath);
-  const packageDir = path.dirname(schemaDir);
+  const cliDir = import.meta.dirname;
+  const toolingDir = path.resolve(cliDir, "..");
+  const workspaceRoot = path.resolve(toolingDir, "../..");
 
   try {
-    if (existingMigrations.length === 0) {
-      // 首次生成：从空基线对比当前 Schema (指定包含 prisma.config.ts 的包目录为 cwd)
-      const cmd = `pnpm exec prisma migrate diff --from-empty --to-schema "${input.schemaPath}" --script`;
-      diffSql = execSync(cmd, {
-        cwd: packageDir,
+    const configPath = path.join(toolingDir, "prisma.config.ts");
+    const configFlag = ` --config "${configPath}"`;
+
+    // 1. 生成升序迁移 DDL (from-empty -> to-schema)
+    const cmdUp = `pnpm exec prisma migrate diff --from-empty --to-schema "${input.schemaPath}" --script${configFlag}`;
+    diffSql = execSync(cmdUp, {
+      cwd: workspaceRoot,
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    // 2. 自动生成对应的降级回滚 DDL (from-schema -> to-empty)
+    try {
+      const cmdDown = `pnpm exec prisma migrate diff --from-schema "${input.schemaPath}" --to-empty --script${configFlag}`;
+      downSql = execSync(cmdDown, {
+        cwd: workspaceRoot,
         encoding: "utf-8",
         stdio: ["pipe", "pipe", "pipe"],
       });
-    } else {
-      // 增量生成：从已有迁移历史对比当前 Schema
-      const cmd = `pnpm exec prisma migrate diff --from-migrations "${input.migrationsDir}" --to-schema "${input.schemaPath}" --script`;
-      diffSql = execSync(cmd, {
-        cwd: packageDir,
-        encoding: "utf-8",
-        stdio: ["pipe", "pipe", "pipe"],
-      });
+    } catch {
+      // 若降级逆向分析失败则降级为注释模板
+      downSql = "";
     }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
@@ -111,6 +119,7 @@ export function generateMigrationFromSchema(
   }
 
   const trimmedSql = diffSql.trim();
+  const trimmedDownSql = downSql.trim();
   const isEmpty =
     trimmedSql.length === 0 ||
     trimmedSql.includes("-- This is an empty migration.");
@@ -129,11 +138,15 @@ export function generateMigrationFromSchema(
     "utf-8",
   );
 
-  // 生成配套降级回滚脚手架文件 down.sql
+  // 自动生成逆向回滚脚本 down.sql
   const downFilePath = path.join(targetFolder, "down.sql");
+  const downBanner = `-- 自动生成的降级回滚脚本: ${folderName}\n-- 生成时间: ${new Date().toISOString()}\n\n`;
   fs.writeFileSync(
     downFilePath,
-    `-- 自动生成的降级回滚模板: ${folderName}\n-- 请根据业务需求补齐逆向 DDL 操作\n`,
+    downBanner +
+      (trimmedDownSql.length > 0
+        ? trimmedDownSql
+        : "-- 未能自动推导逆向回滚 DDL，请根据业务需要手工补充\n"),
     "utf-8",
   );
 

@@ -1,0 +1,24 @@
+# 特性范围文件白名单 (Scope Whitelist)
+
+## 允许修改
+
+- compose.local.yaml
+- .gitignore
+- package.json
+- packages/db-control/**
+- packages/db-tenant/**
+- packages/features/**
+- packages/ui/**
+- apps/control/**
+- apps/tenant/**
+- packages/authorization/**
+- tooling/**
+- .harness/features/feature-customer-center/**
+- feature_list.json
+- member.local.md
+- pnpm-lock.yaml
+- pnpm-workspace.yaml
+
+## 禁止修改
+
+- 其他不相关业务包与底层驱动

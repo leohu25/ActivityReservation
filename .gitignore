@@ -18,7 +18,7 @@ build/
 .env
 .env*.local
 member.local.md
-compose.local.yaml
+# compose.local.yaml 已纳入版本控制（含本地数据卷挂载配置）
 compose.local.yml
 docker-compose.local.yaml
 docker-compose.local.yml

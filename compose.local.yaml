@@ -1,0 +1,25 @@
+services:
+  gemini-saas-control-postgres:
+    image: postgres:17-alpine
+    container_name: chenrun-gemini-saas-control-postgres
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:55433:5432"
+    environment:
+      # 当前 gemini worktree 专属本地数据库容器凭证（已纳入版本控制；仅限本地开发，严禁用于任何非本地环境）
+      POSTGRES_DB: saas_control
+      POSTGRES_USER: gemini_local
+      POSTGRES_PASSWORD: gemini_local_only
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gemini_local -d saas_control"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    volumes:
+      # 命名卷挂载：保证容器/Docker 重启后数据不丢失（严禁改为匿名卷或 bind mount 临时目录）
+      - gemini_saas_control_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  gemini_saas_control_postgres_data:
+    name: chenrun_gemini_saas_control_postgres_data
