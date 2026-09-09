@@ -5,6 +5,7 @@
 - `apps/tenant/**`
 - `packages/ui/**`
 - `packages/authorization/**`
+- `packages/features/**`
 - `.gitignore`
 - `pnpm-lock.yaml`
 - `feature_list.json`

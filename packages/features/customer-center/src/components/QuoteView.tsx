@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, Search, ShieldAlert, Trash2 } from "lucide-react";
+import { Plus, ShieldAlert, Trash2, FileSpreadsheet } from "lucide-react";
 import {
-  BusinessTableWorkspace,
+  DataTable,
   Button,
   Input,
   Badge,
-  type BusinessTableColumn,
+  DataTableRowActions,
+  type ColumnDef,
 } from "@chenrun/ui";
 import { createQuoteAction, updateQuoteStatusAction } from "../actions";
 import { CustomerQuoteSubject } from "../permissions";
@@ -242,12 +243,12 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
   /**
    * 标准表格列定义（强类型化，无 any 逃逸）
    */
-  const columns: BusinessTableColumn<QuoteListItem>[] = [
+  const columns: ColumnDef<QuoteListItem>[] = [
     {
       id: "quoteId",
       header: "报价单号",
       width: 150,
-      cell: (q) => (
+      cell: (q: QuoteListItem) => (
         <span className="font-mono text-xs font-semibold text-foreground">
           {q.quoteId}
         </span>
@@ -256,7 +257,7 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
     {
       id: "displayName",
       header: "对外简称",
-      cell: (q) => (
+      cell: (q: QuoteListItem) => (
         <div className="font-medium text-foreground">
           {q.displayName || "标准定价单"}
         </div>
@@ -266,7 +267,7 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
       id: "scope",
       header: "定价适用维度",
       width: 200,
-      cell: (q) => {
+      cell: (q: QuoteListItem) => {
         if (q.storeCode) {
           return (
             <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
@@ -292,7 +293,7 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
       id: "validity",
       header: "生效有效期",
       width: 170,
-      cell: (q) => (
+      cell: (q: QuoteListItem) => (
         <div className="text-xs">
           <div>自: {new Date(q.effectiveDate).toLocaleDateString()}</div>
           <div className="text-muted-foreground">
@@ -309,7 +310,7 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
       header: "明细品项数",
       width: 120,
       align: "center",
-      cell: (q) => (
+      cell: (q: QuoteListItem) => (
         <span className="font-mono text-xs text-foreground font-medium">
           {q.items?.length || 0} 个品项
         </span>
@@ -320,7 +321,41 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
       header: "状态",
       width: 90,
       align: "center",
-      cell: (q) => renderStatusBadge(q.status),
+      cell: (q: QuoteListItem) => renderStatusBadge(q.status),
+    },
+    {
+      id: "actions",
+      header: "操作",
+      width: 90,
+      align: "right",
+      cell: (q: QuoteListItem) => (
+        <DataTableRowActions
+          record={q}
+          extraActions={[
+            ...(q.status === "DRAFT"
+              ? [
+                  {
+                    label: "审核生效",
+                    onClick: () => handleUpdateStatus(q.quoteId, "ACTIVE"),
+                  },
+                ]
+              : []),
+            ...(q.status === "ACTIVE"
+              ? [
+                  {
+                    label: "作废报价单",
+                    variant: "destructive" as const,
+                    onClick: () => handleUpdateStatus(q.quoteId, "VOIDED"),
+                    confirm: {
+                      title: `确认作废报价单 "${q.displayName || q.quoteId}"？`,
+                      description: "作废后客户下单将不再匹配此单据定价。",
+                    },
+                  },
+                ]
+              : []),
+          ]}
+        />
+      ),
     },
   ];
 
@@ -334,81 +369,99 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
         </div>
       )}
 
-      {/* 企业级标准表格工作台 */}
-      <BusinessTableWorkspace<QuoteListItem>
-        subject={CustomerQuoteSubject}
-        title="客户阶梯价与报价单中心"
-        description="按门店、客户、区域维护商品报价明细。报价优先级：门店专属报价 > 客户通用报价 > 区域保底报价。"
-        extraHeader={
-          <Button
-            size="sm"
-            onClick={() => setShowModal(true)}
-            className="font-semibold shadow-xs"
-          >
-            <Plus className="size-4 mr-1" />
-            <span>拟定新报价单</span>
-          </Button>
-        }
-        searchFilters={
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
-              <Input
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                placeholder="搜索报价单号、对外简称..."
-                className="h-8 w-64 pl-8 text-xs"
-              />
-            </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-8 px-2.5 rounded-md border border-input bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-            >
-              <option value="">全部状态</option>
-              <option value="DRAFT">草稿</option>
-              <option value="ACTIVE">已生效</option>
-              <option value="VOIDED">已作废</option>
-              <option value="EXPIRED">已过期</option>
-            </select>
+      {/* 头部标题与新建按钮 */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-border/60">
+        <div>
+          <div className="flex items-center gap-2">
+            <FileSpreadsheet className="size-5 text-primary" />
+            <h1 className="text-lg font-bold text-foreground">
+              客户阶梯价与报价单中心
+            </h1>
           </div>
-        }
-        onReset={() => {
-          setKeyword("");
-          setStatusFilter("");
-        }}
+          <p className="text-xs text-muted-foreground mt-0.5">
+            按门店、客户、区域维护商品报价明细。报价优先级：门店专属报价 &gt;
+            客户通用报价 &gt; 区域保底报价。
+          </p>
+        </div>
+        <Button
+          size="sm"
+          onClick={() => setShowModal(true)}
+          className="font-semibold shadow-xs"
+        >
+          <Plus className="size-4 mr-1" />
+          <span>拟定新报价单</span>
+        </Button>
+      </div>
+
+      {/* 复合积木化 DataTable */}
+      <DataTable.Root
         data={filteredQuotes}
         columns={columns}
-        rowKey={(q) => q.quoteId}
-        selectable={false}
-        rowActionsHeader="操作"
-        rowActions={(q) => (
-          <div className="flex items-center justify-end gap-1">
-            {q.status === "DRAFT" && (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={loading}
-                onClick={() => handleUpdateStatus(q.quoteId, "ACTIVE")}
-                className="h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 font-semibold"
-              >
-                审核生效
-              </Button>
-            )}
-            {q.status === "ACTIVE" && (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={loading}
-                onClick={() => handleUpdateStatus(q.quoteId, "VOIDED")}
-                className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-              >
-                作废
-              </Button>
-            )}
+        rowKey={(q: QuoteListItem) => q.quoteId}
+        subject={CustomerQuoteSubject}
+        total={filteredQuotes.length}
+      >
+        <DataTable.Toolbar>
+          <div className="flex flex-wrap items-center gap-2">
+            <DataTable.Search
+              value={keyword}
+              onChange={setKeyword}
+              placeholder="搜索报价单号、对外简称..."
+            />
+            <DataTable.FacetedFilter
+              title="单据状态"
+              options={[
+                { label: "草稿", value: "DRAFT" },
+                { label: "已生效", value: "ACTIVE" },
+                { label: "已作废", value: "VOIDED" },
+                { label: "已过期", value: "EXPIRED" },
+              ]}
+              selectedValues={statusFilter ? [statusFilter] : []}
+              onSelect={(vals) => setStatusFilter(vals[0] || "")}
+              multiple={false}
+            />
           </div>
-        )}
-      />
+        </DataTable.Toolbar>
+
+        <DataTable.Content
+          renderExpandedRow={(q: QuoteListItem) => (
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <span>商品定价明细清单</span>
+                <span className="font-mono text-muted-foreground font-normal">
+                  ({q.items?.length || 0} 个品项)
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                {q.items?.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="p-2.5 rounded border border-border/70 bg-card text-xs flex justify-between items-center"
+                  >
+                    <div>
+                      <div className="font-medium text-foreground">
+                        {item.itemName}
+                      </div>
+                      <div className="font-mono text-[10px] text-muted-foreground">
+                        {item.itemCode}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-mono font-semibold text-primary">
+                        ¥{Number(item.unitPriceInclTax || 0).toFixed(2)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        单位: {item.salesUnit}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        />
+        <DataTable.Pagination />
+      </DataTable.Root>
 
       {/* 新增报价单抽屉/模态框 */}
       {showModal && (

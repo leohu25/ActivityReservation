@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Button } from "../button";
+import { Button } from "../primitives/button";
 import { ThemeToggle } from "../ThemeToggle";
 import { Loader2 } from "lucide-react";
 

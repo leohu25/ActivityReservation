@@ -1,6 +1,6 @@
 import React, { type ReactNode } from "react";
 import { cn } from "../lib/utils";
-import { Badge, type BadgeProps } from "./badge";
+import { Badge, type BadgeProps } from "./primitives/badge";
 
 export interface ExceptionItem {
       readonly id: string;

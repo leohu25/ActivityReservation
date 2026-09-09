@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, Search, ShieldAlert, Building2 } from "lucide-react";
+import { Plus, ShieldAlert, Building2, Store } from "lucide-react";
 import {
-  BusinessTableWorkspace,
+  DataTable,
   Button,
   Input,
   Badge,
-  type BusinessTableColumn,
+  DataTableRowActions,
+  type ColumnDef,
 } from "@chenrun/ui";
 import {
   createStoreAction,
@@ -167,12 +168,12 @@ export function StoreView({ initialStores, customers }: Props) {
   /**
    * 标准表格列定义（强类型化，无 any 逃逸）
    */
-  const columns: BusinessTableColumn<StoreListItem>[] = [
+  const columns: ColumnDef<StoreListItem>[] = [
     {
       id: "storeCode",
       header: "门店编码",
       width: 140,
-      cell: (s) => (
+      cell: (s: StoreListItem) => (
         <span className="font-mono text-xs font-semibold text-foreground">
           {s.storeCode}
         </span>
@@ -181,7 +182,7 @@ export function StoreView({ initialStores, customers }: Props) {
     {
       id: "storeName",
       header: "门店名称",
-      cell: (s) => (
+      cell: (s: StoreListItem) => (
         <div className="font-medium text-foreground">{s.storeName}</div>
       ),
     },
@@ -189,7 +190,7 @@ export function StoreView({ initialStores, customers }: Props) {
       id: "customer",
       header: "所属客户",
       width: 170,
-      cell: (s) => (
+      cell: (s: StoreListItem) => (
         <div className="flex items-center gap-1.5 text-xs text-foreground">
           <Building2 className="size-3.5 text-muted-foreground shrink-0" />
           <span className="truncate">
@@ -202,7 +203,7 @@ export function StoreView({ initialStores, customers }: Props) {
       id: "regionDelivery",
       header: "区域 / 配送时段",
       width: 180,
-      cell: (s) => (
+      cell: (s: StoreListItem) => (
         <div className="text-xs">
           <div className="font-mono text-muted-foreground">{s.regionCode}</div>
           <div className="text-foreground mt-0.5">
@@ -216,7 +217,7 @@ export function StoreView({ initialStores, customers }: Props) {
     {
       id: "address",
       header: "配送收货地址",
-      cell: (s) => (
+      cell: (s: StoreListItem) => (
         <div
           className="text-xs text-muted-foreground max-w-xs truncate"
           title={s.address}
@@ -229,7 +230,7 @@ export function StoreView({ initialStores, customers }: Props) {
       id: "contact",
       header: "门店联系人",
       width: 150,
-      cell: (s) => (
+      cell: (s: StoreListItem) => (
         <div className="text-xs">
           <div className="font-medium text-foreground">{s.contactPerson}</div>
           <div className="text-muted-foreground font-mono">
@@ -243,13 +244,35 @@ export function StoreView({ initialStores, customers }: Props) {
       header: "状态",
       width: 90,
       align: "center",
-      cell: (s) => (
+      cell: (s: StoreListItem) => (
         <Badge
           variant={s.status === "ACTIVE" ? "success" : "secondary"}
           size="sm"
         >
           {s.status === "ACTIVE" ? "正常" : "已停用"}
         </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      header: "操作",
+      width: 80,
+      align: "right",
+      cell: (s: StoreListItem) => (
+        <DataTableRowActions
+          record={s}
+          extraActions={[
+            {
+              label: s.status === "ACTIVE" ? "停用门店" : "启用门店",
+              onClick: () => handleToggleStatus(s.storeCode, s.status),
+            },
+          ]}
+          onDelete={() => handleDelete(s.storeCode)}
+          deleteConfirm={{
+            title: `确认删除门店 "${s.storeName}"？`,
+            description: "删除后该履约门店的信息将无法恢复。",
+          }}
+        />
       ),
     },
   ];
@@ -264,88 +287,68 @@ export function StoreView({ initialStores, customers }: Props) {
         </div>
       )}
 
-      {/* 企业级标准表格工作台 */}
-      <BusinessTableWorkspace<StoreListItem>
-        subject={CustomerStoreSubject}
-        title="门店档案管理"
-        description="门店是订单订货、物流配送、现场签收与对账的最小履约单元，必须归属于有效客户并绑定区域。"
-        extraHeader={
-          <Button
-            size="sm"
-            onClick={() => setShowModal(true)}
-            className="font-semibold shadow-xs"
-          >
-            <Plus className="size-4 mr-1" />
-            <span>新建门店</span>
-          </Button>
-        }
-        searchFilters={
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
-              <Input
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                placeholder="搜索门店名称、编码、收货地址..."
-                className="h-8 w-64 pl-8 text-xs"
-              />
-            </div>
-            <select
-              value={selectedCust}
-              onChange={(e) => setSelectedCust(e.target.value)}
-              className="h-8 px-2.5 rounded-md border border-input bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-            >
-              <option value="">全部所属客户</option>
-              {customers.map((c) => (
-                <option key={c.customerCode} value={c.customerCode}>
-                  {c.customerName}
-                </option>
-              ))}
-            </select>
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="h-8 px-2.5 rounded-md border border-input bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-            >
-              <option value="">全部状态</option>
-              <option value="ACTIVE">正常</option>
-              <option value="DISABLED">已停用</option>
-            </select>
+      {/* 头部标题与新建按钮 */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-border/60">
+        <div>
+          <div className="flex items-center gap-2">
+            <Store className="size-5 text-primary" />
+            <h1 className="text-lg font-bold text-foreground">门店档案管理</h1>
           </div>
-        }
-        onReset={() => {
-          setKeyword("");
-          setSelectedCust("");
-          setSelectedStatus("");
-        }}
+          <p className="text-xs text-muted-foreground mt-0.5">
+            门店是订单订货、物流配送、现场签收与对账的最小履约单元，必须归属于有效客户并绑定区域。
+          </p>
+        </div>
+        <Button
+          size="sm"
+          onClick={() => setShowModal(true)}
+          className="font-semibold shadow-xs"
+        >
+          <Plus className="size-4 mr-1" />
+          <span>新建门店</span>
+        </Button>
+      </div>
+
+      {/* 复合积木化 DataTable */}
+      <DataTable.Root
         data={filteredStores}
         columns={columns}
-        rowKey={(s) => s.storeCode}
-        selectable={false}
-        rowActionsHeader="操作"
-        rowActions={(s) => (
-          <div className="flex items-center justify-end gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={loading}
-              onClick={() => handleToggleStatus(s.storeCode, s.status)}
-              className="h-7 px-2 text-xs"
-            >
-              {s.status === "ACTIVE" ? "停用" : "启用"}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={loading}
-              onClick={() => handleDelete(s.storeCode)}
-              className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-            >
-              删除
-            </Button>
+        rowKey={(s: StoreListItem) => s.storeCode}
+        subject={CustomerStoreSubject}
+        total={filteredStores.length}
+      >
+        <DataTable.Toolbar>
+          <div className="flex flex-wrap items-center gap-2">
+            <DataTable.Search
+              value={keyword}
+              onChange={setKeyword}
+              placeholder="搜索门店名称、编码、收货地址..."
+            />
+            <DataTable.FacetedFilter
+              title="所属客户"
+              options={customers.map((c) => ({
+                label: c.customerName,
+                value: c.customerCode,
+              }))}
+              selectedValues={selectedCust ? [selectedCust] : []}
+              onSelect={(vals) => setSelectedCust(vals[0] || "")}
+              multiple={false}
+            />
+            <DataTable.FacetedFilter
+              title="状态"
+              options={[
+                { label: "正常", value: "ACTIVE" },
+                { label: "已停用", value: "DISABLED" },
+              ]}
+              selectedValues={selectedStatus ? [selectedStatus] : []}
+              onSelect={(vals) => setSelectedStatus(vals[0] || "")}
+              multiple={false}
+            />
           </div>
-        )}
-      />
+        </DataTable.Toolbar>
+
+        <DataTable.Content />
+        <DataTable.Pagination />
+      </DataTable.Root>
 
       {/* 新建门店模态框 */}
       {showModal && (

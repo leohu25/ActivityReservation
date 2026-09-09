@@ -89,3 +89,23 @@
   2. **官方正统依赖**：由于本项目核心架构即为 Next.js 16 App Router，`@chenrun/ui` 显式依赖 `next`，直接 `import Link from "next/link"` 与 `import { usePathname } from "next/navigation"`；
   3. **兼顾单测受控能力**：为纯 Node 环境的 `renderToString` 单测保留可选的 `currentPath` 覆盖入参（`const currentPath = propCurrentPath ?? routerPath ?? ""`），保证既有官方正统体验，又兼顾 100% 纯函数式测试能力；
   4. **局部骨架标配**：所有路由组必须在同级配置 `loading.tsx`，在 RSC 增量取数期间提供即时骨架屏（Instant Loading States），杜绝页面跳转卡顿错觉。
+
+## 10. 企业级数据列表积木体系 (Compound DataTable Pattern) 与原子组件引入规约
+
+- **痛点复盘**：
+  - 传统中后台常写出一个几千行的单体“大黑盒”表格组件（如 `<SuperTable ...props />`），将搜索、筛选、分页、权限、CRUD 弹窗死板地绑在一起；
+  - 这种单体组件 props 膨胀、内部 if-else 爆炸，且业务页面想要微调布局（如将搜索框移到侧边栏、定制行级动作）时完全无法插拔与扩展；
+  - 基础原子组件平铺在 `components/` 根目录下，混杂了业务逻辑，且容易随意手写样式，破坏了 shadcn 的纯正血统与设计令牌。
+- **解法与架构规范 (Compound Architecture Invariant)**：
+  1. **原子层与复合层严格分层 (primitives vs composite)**：
+     - `packages/ui/src/components/primitives/`：必须 100% 通过官方 shadcn CLI 命令（`pnpm ui:add <name>`）安装，严禁手写私有原子；
+     - `packages/ui/src/components/feedback/`：通用二次确认（`ConfirmDialog`）、空状态（`EmptyState`）；
+     - `packages/ui/src/components/composite/data-table/`：基于纯正原子组件拼装的企业级复合数据表格体系；
+  2. **自由插拔与全功能 CRUD 预置（Compound API）**：
+     - 开发者可像搭积木一样自由组合：`<DataTable.Root>`、`<DataTable.Toolbar>`、`<DataTable.Search>`、`<DataTable.FacetedFilter>`、`<DataTable.FilterDrawer>`、`<DataTable.Actions>`、`<DataTable.BatchBar>`、`<DataTable.Content>`、`<DataTable.Pagination>`；
+     - **详情与编辑弹窗插槽**：预置高灵活度的 `<DataTable.DetailDrawer>` 与 `<DataTable.FormModal>`，支持预置渲染、也支持自定义子节点 `children` 及自定义操作栏 `footer` 插槽；
+     - **行级与顶部操作扩展插槽**：`<DataTableRowActions>` 内置查看、编辑、删除（带二次防误删确认），并支持 `extraActions` 扩展项；顶部 `<DataTable.Actions>` 暴露当前表格上下文（`can(action, field)`、`selectedKeys`、`isAnySelected` 等）；
+  3. **现代化权限深度继承**：
+     - 彻底清理过时的旧字段权限兼容层（`PermissionField`）；
+     - 字段权限升级为与新积木套件深度结合的 `<AuthorizedField>`（可作为 `<DataTable.AuthorizedField>` 消费）；
+     - 在 `DataTable` 内部使用时，表格列根据 CASL ability 自动过滤隐藏、按钮动作根据 ability 自动判断、表单字段自动继承 `subject` 与 `ability` 实现三态控制（HIDDEN / READONLY / EDITABLE），无需重复传参。
