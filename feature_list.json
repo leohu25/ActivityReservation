@@ -186,7 +186,7 @@
       "dependencies": ["p0-tenant-workbench-real-topology"],
       "status": "completed",
       "owner": "implementer",
-      "evidence": "完成 packages/features/customer-center 独立特性包与内聚 Prisma Schema 建模（所有表及字段全中文三斜杠注释）；落地多级分类树、标签字典、客户档案、门店档案及门店报价单领域服务；实现客户停用级联门店停用、已有单据防删除保护与三级报价优先级匹配算法（门店>客户>区域）；左侧导航升级为顶级手风琴【客户中心】；完成 /customer/categories-tags、/customer/customers、/customer/stores、/customer/quotes 4张受控页面与交互；全仓 13 个包类型检查 0 错误、单测 100% 通过、全栈门禁 verify.sh 全绿"
+      "evidence": "完成 packages/features/customer-center 独立特性包与内聚 Prisma Schema 建模（所有表及字段全中文三斜杠注释）；落地多级分类树、标签字典、客户档案、门店档案及门店报价单领域服务；实现客户停用级联门店停用、已有单据防删除保护与三级报价优先级匹配算法（门店>客户>区域）；左侧导航升级为顶级手风琴【客户中心】；完成 /customer/categories-tags、/customer/customers、/customer/stores、/customer/quotes 4张受控页面与交互；重构全库命名规范为全小写蛇形命名（snake_case）；拆分平台迁移 (platform-migrate) 与租户数据舰队迁移 (tenant-migrate)；落地新租户动态全量 Schema 开通与基线版本对齐；控制台落地 /migrations 数据架构中枢；全仓 14 个包类型检查 0 错误、136 个单测 100% 通过、全栈门禁 verify.sh 全绿"
     }
   ]
 }

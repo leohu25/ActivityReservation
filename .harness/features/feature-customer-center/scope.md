@@ -18,6 +18,8 @@
 - .harness/features/feature-customer-center/**
 - feature_list.json
 - member.local.md
+- progress.md
+- session-handoff.md
 - pnpm-lock.yaml
 - pnpm-workspace.yaml
 
