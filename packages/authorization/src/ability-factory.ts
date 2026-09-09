@@ -237,24 +237,39 @@ function validatePermission<
 
 /**
  * 根据动作和字段策略计算允许的字段列表。
- * 对于读操作 (read)，允许 READONLY 和 EDITABLE；
- * 对于写操作 (create / update)，严格只允许 EDITABLE；
- * 其余非写非读操作，只要不是 HIDDEN 均允许。
+ * - catalogFields: 当前资源或动作在 PermissionCatalog 中声明的全部可用业务字段列表
+ * - policies: 当前角色针对该实体的字段策略配置
+ *
+ * 核心设计规则：
+ * 1. 若当前角色显式配置了某字段为 HIDDEN，则任何操作均剥离拒绝；
+ * 2. 写操作 (create / update) 严格只放行 access 为 EDITABLE 的字段（READONLY 与 HIDDEN 均拦截）；
+ * 3. 读操作 (read) 以及其他通用操作，放行非 HIDDEN 的字段；
+ * 4. 对于未在 fieldPolicies 中显式配置的常规业务字段，默认跟随动作授权放行，确保字段策略是增量约束，而非全部抹杀。
  */
 function computeAllowedFields(
   action: string,
+  catalogFields: readonly string[],
   policies: readonly RoleFieldPolicyConfig[],
 ): string[] {
-  return policies.flatMap((p) => {
-    if (action === "read") {
-      return p.access === "READONLY" || p.access === "EDITABLE"
-        ? [p.field]
-        : [];
+  const policyMap = new Map(policies.map((p) => [p.field, p.access]));
+
+  // 如果定义了受控字段清单，则以此为基准进行过滤
+  const candidateFields =
+    catalogFields.length > 0
+      ? catalogFields
+      : policies.map((p) => p.field);
+
+  return candidateFields.filter((field) => {
+    const access = policyMap.get(field);
+    // 1. 显式隐藏：彻底拒绝
+    if (access === "HIDDEN") {
+      return false;
     }
-    if (action === "update" || action === "create") {
-      return p.access === "EDITABLE" ? [p.field] : [];
+    // 2. 写操作：显式只读则不可写
+    if ((action === "create" || action === "update") && access === "READONLY") {
+      return false;
     }
-    return p.access === "HIDDEN" ? [] : [p.field];
+    return true;
   });
 }
 
@@ -444,8 +459,14 @@ export class CaslAbilityFactory<
           }
           rules.push(rule);
         } else {
+          // 获取当前动作在 Catalog 中定义的可控字段清单
+          const catalogFields = this.catalog.getActionFields(
+            grant.resource,
+            grant.action,
+          );
           const allowedFields = computeAllowedFields(
             grant.action,
+            catalogFields,
             roleSubjectPolicies,
           );
           if (allowedFields.length > 0) {
