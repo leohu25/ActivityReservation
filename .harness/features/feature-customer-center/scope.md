@@ -26,6 +26,8 @@
 - session-handoff.md
 - pnpm-lock.yaml
 - pnpm-workspace.yaml
+- init.sh
+- turbo.json
 
 ## 禁止修改
 

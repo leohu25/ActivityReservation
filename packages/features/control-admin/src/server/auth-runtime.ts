@@ -12,12 +12,18 @@ export function getControlAuthRuntime(): ServerAuthRuntime {
   if (controlAuthSingleton) {
     return controlAuthSingleton;
   }
-  const databaseUrl =
-    process.env.CONTROL_DATABASE_URL ??
-    "postgresql://postgres:postgres@localhost:5432/saas_control";
-  const secret =
-    process.env.BETTER_AUTH_SECRET ??
-    "control-default-auth-secret-32-chars-key";
+  const databaseUrl = process.env.CONTROL_DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error(
+      "缺少 CONTROL_DATABASE_URL 环境变量，数据库未连接！请检查 apps/control/.env.local 配置文件是否就绪。",
+    );
+  }
+  const secret = process.env.BETTER_AUTH_SECRET;
+  if (!secret) {
+    throw new Error(
+      "缺少 BETTER_AUTH_SECRET 环境变量！请检查 apps/control/.env.local 配置文件。",
+    );
+  }
   controlAuthSingleton = createServerAuth({
     databaseUrl,
     secret,

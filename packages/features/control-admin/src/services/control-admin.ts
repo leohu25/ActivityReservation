@@ -78,9 +78,13 @@ export class ControlAdminService {
     }
 
     const adminDbUrl =
-      options.adminDatabaseUrl ??
-      process.env.CONTROL_DATABASE_URL ??
-      "postgresql://postgres:postgres@localhost:5432/saas_control";
+      options.adminDatabaseUrl ?? process.env.CONTROL_DATABASE_URL;
+
+    if (!adminDbUrl) {
+      throw new Error(
+        "缺少 CONTROL_DATABASE_URL 环境变量，数据库未连接！请检查配置文件是否就绪。",
+      );
+    }
 
     const sqlExecutorFactory = createDefaultPgSqlExecutorFactory();
     const seeder =

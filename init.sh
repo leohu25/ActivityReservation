@@ -47,8 +47,22 @@ else
   echo -e "  • Git     : ${GREEN}就绪 (clean restartable)${NC}"
 fi
 
-# 3. 会话状态与沙盒检测
-echo -e "${BLUE}[3/3] 会话上下文:${NC}"
+# 3. 环境变量引导检查
+echo -e "${BLUE}[3/4] 环境变量检查:${NC}"
+if [ ! -f "${WORKSPACE_ROOT}/apps/tenant/.env.local" ]; then
+  echo -e "  • apps/tenant/.env.local : ${RED}未配置${NC} (可通过 cp apps/tenant/.env.example apps/tenant/.env.local 初始化)"
+else
+  echo -e "  • apps/tenant/.env.local : ${GREEN}已就绪${NC}"
+fi
+
+if [ ! -f "${WORKSPACE_ROOT}/apps/control/.env.local" ]; then
+  echo -e "  • apps/control/.env.local: ${RED}未配置${NC} (可通过 cp apps/control/.env.example apps/control/.env.local 初始化)"
+else
+  echo -e "  • apps/control/.env.local: ${GREEN}已就绪${NC}"
+fi
+
+# 4. 会话状态与沙盒检测
+echo -e "${BLUE}[4/4] 会话上下文:${NC}"
 node .harness/lifecycle/session-start.mjs
 
 echo -e "${GREEN}✔ 全部自检通过，环境就绪${NC}"

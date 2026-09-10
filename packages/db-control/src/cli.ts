@@ -40,20 +40,29 @@ function loadEnvFileSafe(filePath: string): boolean {
 }
 
 /**
- * 自动向上扫描并加载环境变量
+ * 加载环境变量：
+ * 优先使用外部注入的 process.env；
+ * 若未提供，按顺序检查当前 package、管控端应用 (apps/control) 或租户端应用 (apps/tenant) 的本地配置。
  */
 function autoLoadEnvironment(packageDir: string): void {
+  // 若环境已通过外部注入（如命令行或 CI），直接返回
+  if (process.env.CONTROL_DATABASE_URL) return;
+
   const workspaceRoot = path.resolve(packageDir, "../..");
+  // 遵循应用级隔离原则：优先在对应 App 查找配置
   const candidates = [
-    path.join(workspaceRoot, ".env.local"),
-    path.join(workspaceRoot, ".env"),
     path.join(packageDir, ".env.local"),
     path.join(packageDir, ".env"),
     path.join(workspaceRoot, "apps/control/.env.local"),
+    path.join(workspaceRoot, "apps/control/.env"),
+    path.join(workspaceRoot, "apps/tenant/.env.local"),
+    path.join(workspaceRoot, "apps/tenant/.env"),
   ];
 
   for (const file of candidates) {
-    loadEnvFileSafe(file);
+    if (loadEnvFileSafe(file) && process.env.CONTROL_DATABASE_URL) {
+      break;
+    }
   }
 }
 
@@ -90,7 +99,7 @@ async function main(): Promise<void> {
   if (!controlUrl && command !== "generate") {
     console.error(
       "\x1b[31m错误: 缺少 CONTROL_DATABASE_URL 环境变量，无法连接 Control DB。\x1b[0m\n" +
-        "请确保在项目根目录 .env.local 中配置了有效的 CONTROL_DATABASE_URL。",
+        "请确保在 apps/control/.env.local 或 apps/tenant/.env.local 中配置了有效的 CONTROL_DATABASE_URL，或通过环境变量直接注入。",
     );
     process.exit(1);
   }

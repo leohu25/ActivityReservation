@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { signIn, signUp } from "@chenrun/auth/client";
 import { useRouter } from "next/navigation";
+import { toast } from "@chenrun/ui";
 import {
   ShieldCheck,
   Mail,
@@ -16,6 +17,31 @@ import {
  * 平台控制平面超级管理员登录/注册页面组件 (FDD 自包含切片)
  * 遵循现代轻量工业数智风：极浅冷灰蓝底色、纯白浮动卡片、科技皇家蓝品牌色、全 Lucide 矢量图标
  */
+function parseFriendlyErrorMessage(err: unknown): string {
+  const message =
+    err instanceof Error ? err.message : typeof err === "string" ? err : "";
+
+  // 数据库连接失败（ECONNREFUSED / P1001 / 服务宕机）
+  if (
+    message.includes("ECONNREFUSED") ||
+    message.includes("Can't reach database server") ||
+    message.includes("P1001") ||
+    message.includes("database server at") ||
+    message.includes("fetch failed")
+  ) {
+    return "无法连接数据库：请确认本地数据库容器已启动，并已在 apps/control/.env.local 配置正确的 CONTROL_DATABASE_URL。";
+  }
+
+  if (
+    message.includes("Invalid login credentials") ||
+    message.includes("INVALID_EMAIL_OR_PASSWORD")
+  ) {
+    return "登录失败：超管邮箱或密码错误。";
+  }
+
+  return message || "认证服务网络异常，请检查数据库服务状态。";
+}
+
 export function ControlLogin(): React.JSX.Element {
   const router = useRouter();
   const [isRegister, setIsRegister] = useState(false);
@@ -30,6 +56,11 @@ export function ControlLogin(): React.JSX.Element {
     setError(null);
     setLoading(true);
 
+    const showError = (msg: string) => {
+      setError(msg);
+      toast.error(msg);
+    };
+
     try {
       if (isRegister) {
         const res = await signUp.email({
@@ -38,8 +69,14 @@ export function ControlLogin(): React.JSX.Element {
           name: name || email.split("@")[0],
         });
         if (res.error) {
-          setError(res.error.message || "注册失败，请检查输入格式");
+          const msg =
+            res.error.message?.includes("ECONNREFUSED") ||
+            res.error.message?.includes("Can't reach database")
+              ? "无法连接数据库：请确认本地数据库容器已启动且配置正确。"
+              : res.error.message || "注册失败，请检查输入格式";
+          showError(msg);
         } else {
+          toast.success("注册成功，正在进入控制平面...");
           router.push("/overview");
           router.refresh();
         }
@@ -49,14 +86,21 @@ export function ControlLogin(): React.JSX.Element {
           password,
         });
         if (res.error) {
-          setError(res.error.message || "登录失败，超管邮箱或密码错误");
+          const msg =
+            res.error.message?.includes("ECONNREFUSED") ||
+            res.error.message?.includes("Can't reach database")
+              ? "无法连接数据库：请确认本地数据库容器已启动且配置正确。"
+              : res.error.message || "登录失败，超管邮箱或密码错误";
+          showError(msg);
         } else {
+          toast.success("登录成功，欢迎回到控制平面");
           router.push("/overview");
           router.refresh();
         }
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "认证网络异常，请稍后重试");
+      const msg = parseFriendlyErrorMessage(err);
+      showError(msg);
     } finally {
       setLoading(false);
     }
