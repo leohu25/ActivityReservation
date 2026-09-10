@@ -196,6 +196,15 @@
       "status": "completed",
       "owner": "implementer",
       "evidence": "落地 scripts/sync-tenant-schema.mjs 自动聚合 Canonical Tenant Schema；packages/db-tenant 生成统一强类型 TenantPrismaClient 并由 TenantDbManager (基于 globalThis 防泄漏单例) 统一管理物理连接；物理删除 customer-center/src/db 与 procurement-center/src/db，彻底剥离业务包的 @prisma/adapter-pg 等驱动依赖；业务 Session 与所有 Service 方法签名直接使用 TenantPrismaClient，零兼容壳；全仓 13 包类型检查 100% 通过、139+ 单测全绿、Next.js 生产构建通过、全栈门禁 ./scripts/verify.sh 全绿"
+    },
+    {
+      "id": "arch-infra-packages-refactor",
+      "name": "【工程化重构】基础设施四大核心包内部结构治理与模块说明沉淀 (Infrastructure Packages Internal Governance & README Docs)",
+      "description": "对 packages/auth, packages/authorization, packages/db-control, packages/db-tenant 进行内部工程化分层治理。保持包边界物理隔离与外部导出完全平滑兼容，内部按职责细化模块目录（contracts, repositories, adapters, core, scopes, fields, pool 等），并为每个模块补齐高质量架构与使用指南 README.md 文档",
+      "dependencies": ["arch-tenant-db-client-consolidation"],
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "完成 packages/db-control (contracts/repositories/prisma 分层)、packages/db-tenant (pool 连接池治理与拓扑/迁移/种子规范导出)、packages/authorization (四层权限闭环) 与 packages/auth (双端隔离规范) 内部工程化重构；四大核心包全量补齐高规格自解释 README.md；经 reviewer 子智能体独立代码与架构审计通过；全仓 13 包类型检查 100% 通过、139+ 单测全绿、无破坏性变更"
     }
   ]
 }

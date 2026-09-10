@@ -5,7 +5,7 @@ import {
   seedTenantBaseline,
   type TenantSeedInput,
 } from "./database-seeder";
-import type { TenantSqlExecutor } from "./sql-executor";
+import type { TenantSqlExecutor } from "../migration/sql-executor";
 
 /**
  * 内存模拟 SQL 执行器，用于单测验证 Seeder 逻辑与幂等性

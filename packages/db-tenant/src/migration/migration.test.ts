@@ -15,7 +15,7 @@ import {
   compareMigrationVersions,
   type TenantMigrationDefinition,
   type TenantSqlExecutor,
-} from "./index";
+} from "../index";
 
 const testTime = new Date("2026-09-08T12:00:00.000Z");
 
@@ -353,9 +353,11 @@ test("TenantMigrationRunner 执行失败时阻断后续并标记 FAILED，且支
       await runner.migrateTenant("org-beta");
     },
     (err: unknown) => {
-      assert.ok(err instanceof TenantMigrationError);
-      assert.equal(err.version, "202609080001");
-      return true;
+      if (err instanceof TenantMigrationError) {
+        assert.equal(err.version, "202609080001");
+        return true;
+      }
+      return false;
     },
   );
 

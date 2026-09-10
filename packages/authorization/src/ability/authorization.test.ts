@@ -8,8 +8,11 @@ import type {
   OrganizationRoleRecord,
 } from "@chenrun/db-control";
 import { AbilityFactoryError, CaslAbilityFactory } from "./ability-factory";
-import { createPermissionCatalog, PermissionCatalogError } from "./catalog";
-import { createServerAbilityAdapter } from "./server";
+import {
+  createPermissionCatalog,
+  PermissionCatalogError,
+} from "../core/catalog";
+import { createServerAbilityAdapter } from "../adapters/server";
 
 const orderPermission = {
   resource: "test.order",
@@ -196,7 +199,7 @@ test("server guard and decorator-first wrapper require CASL ability", async () =
   const secured = serverAuthorization.RequireAbility(
     "read",
     orderPermission.subject,
-    async (_invocation, id: string) => id,
+    async (_invocation: unknown, id: string) => id,
   );
   assert.equal(await secured({ ability }, "order-1"), "order-1");
   await assert.rejects(secured(undefined, "order-1"));

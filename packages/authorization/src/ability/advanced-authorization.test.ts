@@ -7,13 +7,13 @@ import type {
   OrganizationRoleRecord,
 } from "@chenrun/db-control";
 import { CaslAbilityFactory } from "./ability-factory";
-import { createPermissionCatalog } from "./catalog";
+import { createPermissionCatalog } from "../core/catalog";
 import { getAccessibleWhere } from "./prisma-access";
 import {
   getFieldMode,
   getReadableFields,
   getEditableFields,
-} from "./field-policy";
+} from "../fields/field-policy";
 
 const orderPermission = {
   resource: "procurement.order",

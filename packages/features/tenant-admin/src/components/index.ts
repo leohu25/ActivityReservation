@@ -6,4 +6,5 @@ export * from "./DepartmentView";
 export * from "./PositionView";
 export * from "./EmployeeView";
 export * from "./WorkbenchView";
-
+export * from "./AuthModal";
+export * from "./OrgSwitcher";

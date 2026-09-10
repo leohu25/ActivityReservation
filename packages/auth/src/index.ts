@@ -4,7 +4,7 @@ export {
   createOrganizationAccessControl,
   type ApplicationPermissionStatement,
   type OrganizationAccessControl,
-} from "./access-control";
+} from "./server/access-control";
 export {
   closeServerAuth,
   createServerAuth,
@@ -13,12 +13,12 @@ export {
   getServerAuthRuntime,
   type ServerAuthOptions,
   type ServerAuthRuntime,
-} from "./server";
+} from "./server/server";
 export {
   createTrustedTenantContextResolver,
   type TrustedSessionReader,
   type TrustedTenantContextDependencies,
-} from "./trusted-tenant-context";
+} from "./context/trusted-tenant-context";
 export {
   TenantContextError,
   assertTenantAccessGate,
@@ -29,4 +29,4 @@ export {
   type EmployeeProfileStatusInput,
   type TenantContext,
   type TenantContextErrorCode,
-} from "./tenant-context";
+} from "./context/tenant-context";

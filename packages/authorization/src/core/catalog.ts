@@ -1,4 +1,4 @@
-import type { DataScopeType } from "./data-scope";
+import type { DataScopeType } from "../scopes/data-scope";
 
 /** 单个动作维度的自描述元数据 */
 export interface ActionMetadata {

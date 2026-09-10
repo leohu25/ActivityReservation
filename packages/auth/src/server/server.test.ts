@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { GET, POST } from "../../../apps/tenant/src/app/api/auth/[...all]/route";
+import {
+  GET,
+  POST,
+} from "../../../../apps/tenant/src/app/api/auth/[...all]/route";
 import {
   createServerAuth,
   getCurrentTenantContext,
   getServerAuth,
-} from "./index";
+} from "../index";
 
 test("createServerAuth constructs Better Auth with session and organization APIs", async () => {
   const runtime = createServerAuth({

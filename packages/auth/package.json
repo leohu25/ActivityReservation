@@ -11,12 +11,11 @@
   },
   "scripts": {
     "check": "tsc --noEmit",
-    "test": "tsx --test src/*.test.ts",
+    "test": "tsx --test src/**/*.test.ts",
     "test:integration": "tsx --test src/integration/*.integration.ts"
   },
   "dependencies": {
     "@chenrun/db-control": "workspace:*",
-    "@chenrun/ui": "workspace:*",
     "better-auth": "1.7.3"
   },
   "peerDependencies": {

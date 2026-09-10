@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
-import { createServerAuth } from "../server";
-import { createTrustedTenantContextResolver } from "../trusted-tenant-context";
+import { createServerAuth } from "../server/server";
+import { createTrustedTenantContextResolver } from "../context/trusted-tenant-context";
 
 const databaseUrl = process.env.CONTROL_DATABASE_URL;
 if (!databaseUrl) {
@@ -90,7 +90,8 @@ test("Better Auth Organization session resolves a real tenant context", {
 
     const resolveTrustedContext = createTrustedTenantContextResolver({
       sessionReader: {
-        getSession: (input) => runtime.auth.api.getSession(input),
+        getSession: (input: { headers: Headers }) =>
+          runtime.auth.api.getSession(input),
       },
       repository: runtime.tenantContextRepository,
     });

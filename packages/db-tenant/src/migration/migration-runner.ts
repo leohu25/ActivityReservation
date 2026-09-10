@@ -3,7 +3,7 @@ import type {
   TenantMigrationRecord,
   TenantMigrationRepository,
 } from "@chenrun/db-control";
-import type { SecretResolver } from "./index";
+import type { SecretResolver } from "../pool/manager";
 import type {
   TenantSqlExecutor,
   TenantSqlExecutorFactory,

@@ -14,8 +14,8 @@ const testPermission = {
 const testStatement = {
   [testPermission.resource]: testPermission.actions,
 } as const;
-import { CaslAbilityFactory } from "../ability-factory";
-import { createPermissionCatalog } from "../catalog";
+import { CaslAbilityFactory } from "../ability/ability-factory";
+import { createPermissionCatalog } from "../core/catalog";
 
 const databaseUrl = process.env.CONTROL_DATABASE_URL;
 if (!databaseUrl) {

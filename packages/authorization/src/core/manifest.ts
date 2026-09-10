@@ -1,4 +1,4 @@
-import type { DataScopeType } from "./data-scope";
+import type { DataScopeType } from "../scopes/data-scope";
 import type { PermissionDefinition } from "./catalog";
 import { createPermissionCatalog, type PermissionCatalog } from "./catalog";
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { authClient } from "../client";
+import { authClient } from "@chenrun/auth/client";
 import { Button, Input } from "@chenrun/ui";
 
 interface OrgItem {
@@ -67,7 +67,7 @@ export function OrgSwitcher({ activeOrgId, onOrgChanged }: OrgSwitcherProps) {
         organizationId: orgId,
       });
       onOrgChanged?.();
-      window.location.href = "/workbench";
+      window.location.assign("/workbench");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "切换租户失败");
     } finally {
@@ -108,7 +108,7 @@ export function OrgSwitcher({ activeOrgId, onOrgChanged }: OrgSwitcherProps) {
           await refetch();
         }
         onOrgChanged?.();
-        window.location.href = "/workbench";
+        window.location.assign("/workbench");
       }
     } catch (err: unknown) {
       setError(

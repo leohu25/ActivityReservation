@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createMongoAbility } from "@casl/ability";
 import { renderToStaticMarkup } from "react-dom/server";
-import { createPermissionCatalog } from "./catalog";
+import { createPermissionCatalog } from "../core/catalog";
 import { AbilityContext, createReactAbilityAdapter } from "./react";
 
 const permission = {

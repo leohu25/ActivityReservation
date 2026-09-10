@@ -1,11 +1,11 @@
 import { ForbiddenError } from "@casl/ability";
-import type { AppAbility } from "./ability-factory";
+import type { AppAbility } from "../ability/ability-factory";
 import type {
   CatalogAction,
   CatalogSubject,
   PermissionCatalog,
   PermissionDefinition,
-} from "./catalog";
+} from "../core/catalog";
 
 type AnyAppAbility = AppAbility<string, string>;
 

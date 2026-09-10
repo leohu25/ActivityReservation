@@ -1,8 +1,8 @@
 import React from "react";
-import type { AppAbility } from "./ability-factory";
+import type { AppAbility } from "../ability/ability-factory";
 import { createPermissionCatalog } from "./catalog";
-import { createReactAbilityAdapter } from "./react";
-import { createServerAbilityAdapter } from "./server";
+import { createReactAbilityAdapter } from "../adapters/react";
+import { createServerAbilityAdapter } from "../adapters/server";
 
 const definition = {
   resource: "contract.order",

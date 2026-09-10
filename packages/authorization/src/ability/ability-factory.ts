@@ -10,15 +10,18 @@ import type {
   CatalogSubject,
   PermissionCatalog,
   PermissionDefinition,
-} from "./catalog";
+} from "../core/catalog";
 import {
   type RoleDataScopeConfig,
   type UserDepartmentTopology,
   type DataScopeFieldMapping,
   type PrismaQueryCondition,
   resolveDataScopeConditions,
-} from "./data-scope";
-import { FieldPolicy, type RoleFieldPolicyConfig } from "./field-policy";
+} from "../scopes/data-scope";
+import {
+  FieldPolicy,
+  type RoleFieldPolicyConfig,
+} from "../fields/field-policy";
 
 export type AppAbility<
   TAction extends string,

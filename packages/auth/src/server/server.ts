@@ -9,12 +9,12 @@ import {
 import {
   createTrustedTenantContextResolver,
   type TrustedSessionReader,
-} from "./trusted-tenant-context";
+} from "../context/trusted-tenant-context";
 import {
   createOrganizationAccessControl,
   type OrganizationAccessControl,
 } from "./access-control";
-import type { TenantContext } from "./tenant-context";
+import type { TenantContext } from "../context/tenant-context";
 
 export interface ServerAuthOptions {
   databaseUrl: string;
@@ -61,7 +61,9 @@ export type ServerAuthRuntime = ReturnType<typeof createServerAuth>;
 let singleton: ServerAuthRuntime | undefined;
 
 /** Lazily initializes server auth so build-time module evaluation needs no secrets. */
-export function getServerAuthRuntime(options?: ServerAuthOptions): ServerAuthRuntime {
+export function getServerAuthRuntime(
+  options?: ServerAuthOptions,
+): ServerAuthRuntime {
   if (singleton) {
     return singleton;
   }
@@ -94,7 +96,8 @@ export async function getCurrentTenantContext(
 ): Promise<TenantContext> {
   const runtime = getServerAuthRuntime();
   const sessionReader: TrustedSessionReader = {
-    getSession: (input) => runtime.auth.api.getSession(input),
+    getSession: (input: { headers: Headers }) =>
+      runtime.auth.api.getSession(input),
   };
   return createTrustedTenantContextResolver({
     sessionReader,

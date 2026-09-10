@@ -1,7 +1,7 @@
 import type {
   TenantSqlExecutor,
   TenantSqlExecutorFactory,
-} from "./sql-executor";
+} from "../migration/sql-executor";
 
 /**
  * 租户独立物理数据库基线种子初始化输入契约

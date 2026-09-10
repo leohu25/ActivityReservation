@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { signIn, signUp } from "../client";
+import { signIn, signUp } from "@chenrun/auth/client";
 
 export interface AuthModalProps {
   readonly isOpen: boolean;

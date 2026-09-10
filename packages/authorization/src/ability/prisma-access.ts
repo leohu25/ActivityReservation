@@ -1,5 +1,5 @@
 import { accessibleBy, type PrismaAbility } from "@casl/prisma";
-import type { PrismaQueryCondition } from "./data-scope";
+import type { PrismaQueryCondition } from "../scopes/data-scope";
 
 interface CanCheckable {
   can(action: string, subject: string): boolean;

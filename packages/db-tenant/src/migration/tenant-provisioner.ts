@@ -8,7 +8,7 @@ import type {
   TenantDatabaseSeeder,
   TenantSeedInput,
   TenantSeedResult,
-} from "./database-seeder";
+} from "../seed/database-seeder";
 
 /**
  * 租户物理库开通参数契约
