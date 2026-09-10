@@ -3,6 +3,7 @@
 ## 允许修改的文件范围
 
 - `packages/db-tenant/**`
+- `packages/db-control/**`
 - `packages/features/customer-center/**`
 - `packages/features/procurement-center/**`
 - `tooling/db-migrate/**`

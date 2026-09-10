@@ -9,8 +9,20 @@ import {
 } from "./core/paths";
 import { loadLatestBaseline, loadMigrationArtifacts } from "./core/artifacts";
 import { buildCanonicalSchema } from "./schema/aggregate";
+import { validateScopeComments } from "./schema/validate-comments";
 
 function checkScope(workspaceRoot: string, scope: MigrationScope): void {
+  // 校验模型与字段注释规范
+  const commentErrors = validateScopeComments(workspaceRoot, scope);
+  if (commentErrors.length > 0) {
+    const errorDetails = commentErrors
+      .map((e) => `  - ${e.message}`)
+      .join("\n");
+    throw new Error(
+      `[Schema 注释门禁] ${scope} 存在未按规范编写注释的模型或字段：\n${errorDetails}\n请在对应 schema.prisma 中为表和每个字段补齐 /// 文档注释。`,
+    );
+  }
+
   const baseline = loadLatestBaseline(workspaceRoot, scope);
   const baselineSchema = fs.readFileSync(
     path.join(

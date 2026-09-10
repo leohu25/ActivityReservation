@@ -88,6 +88,7 @@ export default function LoginPage() {
 
       // 登录/注册成功后，主动拉取名下企业租户列表
       const orgsRes = await authClient.organization.list();
+      // SAFETY: Better Auth organization.list() 返回的列表项符合 OrgItem 接口契约
       const orgList = ((orgsRes?.data ?? []) as unknown as OrgItem[]) || [];
 
       if (orgList.length === 1 && orgList[0]?.id) {
@@ -112,7 +113,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#F4F7FB] p-6 dark:bg-slate-950 font-sans">
-      <Card className="w-full max-w-md border-slate-200/80 bg-white p-2 shadow-lg shadow-slate-200/50 dark:border-slate-800 dark:bg-slate-900 dark:shadow-none animate-in fade-in zoom-in-95 duration-200">
+      <Card className="w-full max-w-md border-slate-200/80 bg-white py-6 shadow-lg shadow-slate-200/50 dark:border-slate-800 dark:bg-slate-900 dark:shadow-none animate-in fade-in zoom-in-95 duration-200">
         <CardHeader className="text-center pb-4">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 text-white font-black text-lg shadow-md shadow-blue-500/25 ring-1 ring-blue-500/20">
             CR

@@ -17,6 +17,11 @@ import {
 } from "../core/paths";
 import { detectMigrationRisks, assertRiskApproval } from "../core/risk";
 import { buildCanonicalSchema } from "../schema/aggregate";
+import {
+  extractSchemaComments,
+  generatePostgresCommentsSql,
+} from "../schema/comments";
+import { diffCommentsSql } from "../schema/diff-comments";
 import { runPrismaDiff, validatePrismaSchema } from "./prisma";
 import { loadLatestBaseline, loadMigrationArtifacts } from "../core/artifacts";
 
@@ -75,11 +80,17 @@ export function generateBaseline(input: {
   if (fs.existsSync(folder)) {
     throw new Error(`Baseline already exists: ${input.scope}/${version}`);
   }
-  const sql = runPrismaDiff({
+  const rawSql = runPrismaDiff({
     workspaceRoot,
     fromEmpty: true,
     toSchema: schemaPath,
   });
+  const commentsSql = generatePostgresCommentsSql(
+    extractSchemaComments(schema),
+  );
+  const sql = commentsSql
+    ? `${rawSql.trim()}\n\n-- Database Comments\n${commentsSql}\n`
+    : rawSql;
   const manifest: BaselineManifest = {
     formatVersion: 1,
     scope: input.scope,
@@ -128,19 +139,45 @@ export function generateMigration(input: {
     workspaceRoot,
     input.scope,
   );
-  const sql = runPrismaDiff({
+  const rawSql = runPrismaDiff({
     workspaceRoot,
     fromSchema: baselineSchemaPath,
     toSchema: schemaPath,
   });
-  if (!sql.trim() || sql.includes("This is an empty migration")) {
+  const baselineSchema = fs.readFileSync(baselineSchemaPath, "utf-8");
+  const commentsDiffSql = diffCommentsSql(baselineSchema, schema);
+
+  const hasStructuralChange =
+    rawSql.trim() && !rawSql.includes("This is an empty migration");
+  const hasCommentsChange = Boolean(commentsDiffSql.trim());
+
+  if (!hasStructuralChange && !hasCommentsChange) {
     throw new Error(`No ${input.scope} schema change was detected`);
   }
-  const downSql = runPrismaDiff({
+
+  let sql = "";
+  if (hasStructuralChange) {
+    sql += rawSql.trim();
+  }
+  if (hasCommentsChange) {
+    if (sql) sql += "\n\n-- Comments Migration\n";
+    sql += `${commentsDiffSql.trim()}\n`;
+  }
+
+  const rawDownSql = runPrismaDiff({
     workspaceRoot,
     fromSchema: schemaPath,
     toSchema: baselineSchemaPath,
   });
+  const downCommentsDiffSql = diffCommentsSql(schema, baselineSchema);
+  let downSql = "";
+  if (rawDownSql.trim() && !rawDownSql.includes("This is an empty migration")) {
+    downSql += rawDownSql.trim();
+  }
+  if (downCommentsDiffSql.trim()) {
+    if (downSql) downSql += "\n\n-- Comments Rollback\n";
+    downSql += `${downCommentsDiffSql.trim()}\n`;
+  }
   const risks = detectMigrationRisks(sql);
   if (risks.length > 0 && !input.allowDestructive) {
     throw new Error(

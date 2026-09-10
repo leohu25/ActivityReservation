@@ -16,18 +16,29 @@ model Department {
   @@map("department")
 }
 
-// 采购订单业务模型 (核心 ERP 业务切片与 CASL 授权实体)
+/// 采购订单业务模型 (核心 ERP 业务切片与 CASL 授权实体)
 model PurchaseOrder {
+  /// 采购订单主键ID (CUID)
   id           String      @id @default(cuid())
+  /// 采购订单流水单号 (唯一)
   orderNo      String      @unique @map("order_no")
+  /// 供应商名称
   supplierName String      @map("supplier_name")
+  /// 采购商品总数量
   quantity     Int
+  /// 采购总成本金额
   costPrice    Decimal     @db.Decimal(12, 2) @map("cost_price")
+  /// 归属采购部门ID
   deptId       String      @map("dept_id")
+  /// 创建人用户ID
   createdById  String      @map("created_by_id")
+  /// 采购订单状态: PENDING(待审核) / APPROVED(已通过) / REJECTED(已驳回)
   status       String      @default("PENDING")
+  /// 审核意见或驳回备注
   auditComment String?     @map("audit_comment")
+  /// 订单创建时间
   createdAt    DateTime    @default(now()) @map("created_at")
+  /// 订单最后更新时间
   updatedAt    DateTime    @updatedAt @map("updated_at")
 
   department   Department  @relation(fields: [deptId], references: [id], onDelete: Restrict)

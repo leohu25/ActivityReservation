@@ -46,13 +46,13 @@ export function findSchemaFiles(
 function extractBlocks(sourcePath: string, schema: string): SchemaBlock[] {
   const blocks: SchemaBlock[] = [];
   const pattern =
-    /((?:\/\/[^\n]*\n\s*)*)(model|enum)\s+([A-Za-z0-9_]+)\s*\{([\s\S]*?)\n\}/g;
+    /((?:(?:^[ \t]*\/\/[^\n]*\n)|(?:^[ \t]*\/\/\/[^\n]*\n))*)[ \t]*(model|enum)\s+([A-Za-z0-9_]+)\s*\{([\s\S]*?)\n\}/gm;
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(schema)) !== null) {
     const comments = match[1] ?? "";
     const kind = match[2] as "model" | "enum";
     const name = match[3];
-    const content = `${kind} ${name} {${match[4]}\n}`;
+    const content = `${comments}${kind} ${name} {${match[4]}\n}`;
     const extensionTarget = TENANT_EXTENSION_PATTERN.exec(comments)?.[1];
     blocks.push({ kind, name, sourcePath, content, extensionTarget });
   }
@@ -63,7 +63,7 @@ function parseModelBody(block: string): {
   readonly fields: Map<string, string>;
   readonly attributes: Set<string>;
 } {
-  const body = /^model\s+[A-Za-z0-9_]+\s*\{([\s\S]*)\}$/.exec(block)?.[1];
+  const body = /model\s+[A-Za-z0-9_]+\s*\{([\s\S]*)\}$/.exec(block)?.[1];
   if (body === undefined)
     throw new Error(`Invalid Prisma model block: ${block}`);
   const fields = new Map<string, string>();
