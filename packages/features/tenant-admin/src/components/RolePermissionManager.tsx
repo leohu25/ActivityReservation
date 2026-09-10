@@ -41,6 +41,7 @@ import {
   saveRolePermissionsAction,
   createRoleAction,
   deleteRoleAction,
+  getSystemRoleDefaultsAction,
 } from "../actions";
 import {
   TENANT_PERMISSION_TREE,
@@ -320,6 +321,10 @@ export function RolePermissionManager({
         selectedRole.permissions,
       );
       if (res.success && res.data) {
+        const savedData = res.data;
+        setRoles((prev) =>
+          prev.map((r) => (r.role === savedData.role ? savedData : r)),
+        );
         setNotification({
           type: "success",
           message: `角色 [${selectedRole.name}] 权限配置已成功保存生效！`,
@@ -333,7 +338,28 @@ export function RolePermissionManager({
     });
   };
 
-  // 7. 新增自定义角色
+  // 7. 载入系统内置角色推荐权限模板 (需保存后生效)
+  const handleLoadSystemDefaults = () => {
+    if (!selectedRole || !selectedRole.isSystem) return;
+    setNotification(null);
+    startTransition(async () => {
+      const res = await getSystemRoleDefaultsAction(selectedRole.role);
+      if (res.success && res.data) {
+        updateSelectedRolePermissions(res.data);
+        setNotification({
+          type: "success",
+          message: `已载入 [${selectedRole.name}] 推荐权限模板。请确认配置并点击【保存权限】写入数据库生效。`,
+        });
+      } else {
+        setNotification({
+          type: "error",
+          message: res.error || "获取推荐模板失败",
+        });
+      }
+    });
+  };
+
+  // 8. 新增自定义角色
   const handleCreateRole = () => {
     if (!newRoleCode.trim()) return;
     setNotification(null);
@@ -363,7 +389,7 @@ export function RolePermissionManager({
     });
   };
 
-  // 8. 删除自定义角色
+  // 9. 删除自定义角色
   const handleDeleteRole = (roleToDelete: string) => {
     if (
       !window.confirm(`确认删除业务角色 [${roleToDelete}] 吗？此操作无法撤销。`)
@@ -498,6 +524,11 @@ export function RolePermissionManager({
                           内置
                         </Badge>
                       )}
+                      {!r.updatedAt && (
+                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-normal shrink-0">
+                          (未配置)
+                        </span>
+                      )}
                     </div>
                     <div className="font-mono text-[10px] text-slate-400 truncate">
                       {r.role}
@@ -538,21 +569,47 @@ export function RolePermissionManager({
                 >
                   {isSystemRole ? "系统内置" : "自定义角色"}
                 </Badge>
+                {!selectedRole?.updatedAt && (
+                  <Badge
+                    variant="outline"
+                    size="sm"
+                    className="text-[10px] h-5 border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 font-normal"
+                  >
+                    未配置权限 (Fail-Closed 拒绝访问)
+                  </Badge>
+                )}
                 <span className="text-xs text-slate-400 truncate hidden sm:inline">
                   {selectedRole?.description || "细粒度权限配置"}
                 </span>
               </div>
 
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleSave}
-                disabled={isPending}
-                className="shadow-xs shrink-0"
-              >
-                <Save className="size-3.5" />
-                <span>{isPending ? "保存中..." : "保存权限"}</span>
-              </Button>
+              <div className="flex items-center gap-2 shrink-0">
+                {isSystemRole && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    onClick={handleLoadSystemDefaults}
+                    disabled={isPending}
+                    className="text-xs text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/40"
+                    title="根据系统切片契约快速填充推荐权限模板，需保存后生效"
+                  >
+                    <Sparkles className="size-3.5" />
+                    <span className="hidden md:inline">载入推荐模板</span>
+                  </Button>
+                )}
+
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={isPending}
+                  className="shadow-xs shrink-0"
+                >
+                  <Save className="size-3.5" />
+                  <span>{isPending ? "保存中..." : "保存权限"}</span>
+                </Button>
+              </div>
             </div>
           </CardHeader>
 

@@ -33,6 +33,7 @@ import {
   getTenantSettingsService,
   requireTenantAdminSession,
 } from "./server/session";
+import { deriveBuiltInRoleDefaults } from "./services/tenant-role-service";
 
 /** 保存或更新角色四层权限 Server Action */
 export async function saveRolePermissionsAction(
@@ -96,6 +97,29 @@ export async function deleteRoleAction(
     return { success: true };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "删除角色失败";
+    return { success: false, error: message };
+  }
+}
+
+/** 获取系统内置角色推荐权限模板 Server Action */
+export async function getSystemRoleDefaultsAction(
+  role: string,
+): Promise<{ success: boolean; data?: RolePermissionPayload; error?: string }> {
+  try {
+    await requireTenantAdminSession();
+    const defaults = deriveBuiltInRoleDefaults();
+    if (role === "admin") {
+      return { success: true, data: defaults.admin };
+    }
+    if (role === "member") {
+      return { success: true, data: defaults.member };
+    }
+    return {
+      success: true,
+      data: { statement: {}, dataScopes: [], fieldPolicies: [] },
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "获取推荐权限模板失败";
     return { success: false, error: message };
   }
 }

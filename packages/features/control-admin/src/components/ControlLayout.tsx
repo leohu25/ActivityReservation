@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "@chenrun/auth/client";
 import {
   BarChart3,
   Building2,
@@ -61,11 +62,21 @@ export function ControlLayout({
   const pathname = usePathname();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
-    if (typeof window !== "undefined") {
-      window.location.assign("/api/auth/sign-out");
+    try {
+      await signOut();
+      if (typeof window !== "undefined") {
+        window.location.assign("/login");
+      }
+    } catch (error) {
+      console.error("退出控制台失败:", error);
+      if (typeof window !== "undefined") {
+        window.location.assign("/login");
+      }
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 

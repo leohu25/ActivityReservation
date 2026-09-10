@@ -195,7 +195,11 @@ export class TenantRoleService {
           name: builtIn.name,
           description: builtIn.description,
           isSystem: true,
-          permissions: builtIn.defaultPayload,
+          permissions: {
+            statement: {},
+            dataScopes: [],
+            fieldPolicies: [],
+          },
           updatedAt: null,
         });
       }
