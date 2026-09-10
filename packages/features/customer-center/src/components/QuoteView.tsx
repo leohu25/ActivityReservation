@@ -1,19 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
-import {
-  Plus,
-  ShieldAlert,
-  Trash2,
-  FileSpreadsheet,
-  Download,
-} from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Plus, Trash2, FileSpreadsheet, Download } from "lucide-react";
 import {
   DataTable,
   Button,
   Input,
   Badge,
   DataTableRowActions,
+  toast,
   type ColumnDef,
 } from "@chenrun/ui";
 import { createQuoteAction, updateQuoteStatusAction } from "../actions";
@@ -44,6 +40,14 @@ interface Props {
   };
 }
 
+function useSafeRouter() {
+  try {
+    return useRouter();
+  } catch {
+    return null;
+  }
+}
+
 /**
  * 客户中心 - 客户阶梯价与报价单中心工作台
  * 遵循现代数智工业风规范，全面接入 BusinessTableWorkspace 体系
@@ -68,11 +72,15 @@ export function QuoteView({
       },
     };
   }, [explicitAbility, permissions]);
-  const [quotes] = useState<QuoteListItem[]>(initialQuotes);
+  const router = useSafeRouter();
+  const [quotes, setQuotes] = useState<QuoteListItem[]>(initialQuotes);
+
+  useEffect(() => {
+    setQuotes(initialQuotes);
+  }, [initialQuotes]);
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // 新建报价单模态框表单状态
   const [showModal, setShowModal] = useState(false);
@@ -180,7 +188,6 @@ export function QuoteView({
   const handleCreateQuote = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
       const payload = {
@@ -201,13 +208,14 @@ export function QuoteView({
 
       const res = await createQuoteAction(payload);
       if (res.success) {
+        toast.success("报价单创建成功");
         setShowModal(false);
-        window.location.reload();
+        router?.refresh();
       } else {
-        setError(res.error || "创建报价单失败");
+        toast.error(res.error || "创建报价单失败");
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "请求异常");
+      toast.error(err instanceof Error ? err.message : "请求异常");
     } finally {
       setLoading(false);
     }
@@ -221,14 +229,21 @@ export function QuoteView({
     status: "ACTIVE" | "VOIDED",
   ) => {
     setLoading(true);
-    setError(null);
     try {
       const res = await updateQuoteStatusAction(quoteId, status);
       if (res.success) {
-        window.location.reload();
+        setQuotes((prev) =>
+          prev.map((item) =>
+            item.quoteId === quoteId ? { ...item, status } : item,
+          ),
+        );
+        toast.success(status === "ACTIVE" ? "报价单已生效" : "报价单已作废");
+        router?.refresh();
       } else {
-        setError(res.error || "操作失败");
+        toast.error(res.error || "操作失败");
       }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "更新报价单状态异常");
     } finally {
       setLoading(false);
     }
@@ -291,7 +306,7 @@ export function QuoteView({
       ),
     ].join("\n");
 
-    const blob = new Blob(["\uFEFF" + csvContent], {
+    const blob = new Blob([`\uFEFF${csvContent}`], {
       type: "text/csv;charset=utf-8;",
     });
     const url = URL.createObjectURL(blob);
@@ -459,6 +474,8 @@ export function QuoteView({
                     confirm: {
                       title: `确认作废报价单 "${q.displayName || q.quoteId}"？`,
                       description: "作废后客户下单将不再匹配此单据定价。",
+                      confirmText: "确认作废",
+                      cancelText: "取消",
                     },
                   },
                 ]
@@ -471,14 +488,6 @@ export function QuoteView({
 
   return (
     <div className="space-y-4">
-      {/* 错误提示浮层 */}
-      {error && (
-        <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg flex items-center gap-2 text-destructive text-sm">
-          <ShieldAlert className="size-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
       {/* 头部标题与新建按钮 */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-border/60">
         <div>

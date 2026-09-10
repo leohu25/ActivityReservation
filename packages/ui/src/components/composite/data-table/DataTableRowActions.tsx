@@ -22,6 +22,8 @@ export interface RowActionItem<TRecord> {
   confirm?: {
     title: string;
     description?: string;
+    confirmText?: string;
+    cancelText?: string;
   };
 }
 
@@ -37,6 +39,8 @@ export interface DataTableRowActionsProps<TRecord> {
   deleteConfirm?: {
     title?: string;
     description?: string;
+    confirmText?: string;
+    cancelText?: string;
   };
   /** 扩展菜单项 */
   extraActions?: readonly RowActionItem<TRecord>[];
@@ -52,6 +56,8 @@ export function DataTableRowActions<TRecord>({
 }: DataTableRowActionsProps<TRecord>) {
   const { subject, ability } = useDataTableContext();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [activeConfirmAction, setActiveConfirmAction] =
+    useState<RowActionItem<TRecord> | null>(null);
 
   // 校验是否有对应的操作权限 (严格遵循 Fail-Closed 原则)
   const canPerform = (actionName: string) => {
@@ -112,7 +118,13 @@ export function DataTableRowActions<TRecord>({
           {validExtraActions.map((item, idx) => (
             <DropdownMenuItem
               key={idx}
-              onClick={() => item.onClick(record)}
+              onClick={() => {
+                if (item.confirm) {
+                  setActiveConfirmAction(item);
+                } else {
+                  void item.onClick(record);
+                }
+              }}
               className={`gap-2 cursor-pointer ${
                 item.variant === "destructive" ? "text-destructive" : ""
               }`}
@@ -149,9 +161,34 @@ export function DataTableRowActions<TRecord>({
             deleteConfirm?.description ||
             "此操作无法撤销，数据删除后将无法恢复，请谨慎操作。"
           }
+          confirmText={deleteConfirm?.confirmText || "确认删除"}
+          cancelText={deleteConfirm?.cancelText || "取消"}
           variant="destructive"
           onConfirm={async () => {
             await onDelete?.(record);
+          }}
+        />
+      )}
+
+      {/* 扩展操作自定义二次确认弹窗 */}
+      {activeConfirmAction && (
+        <ConfirmDialog
+          open={Boolean(activeConfirmAction)}
+          onOpenChange={(open) => {
+            if (!open) setActiveConfirmAction(null);
+          }}
+          title={activeConfirmAction.confirm?.title || "请确认操作"}
+          description={activeConfirmAction.confirm?.description}
+          confirmText={activeConfirmAction.confirm?.confirmText || "确定"}
+          cancelText={activeConfirmAction.confirm?.cancelText || "取消"}
+          variant={
+            activeConfirmAction.variant === "destructive"
+              ? "destructive"
+              : "default"
+          }
+          onConfirm={async () => {
+            await activeConfirmAction.onClick(record);
+            setActiveConfirmAction(null);
           }}
         />
       )}

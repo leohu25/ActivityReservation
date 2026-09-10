@@ -1,6 +1,7 @@
 "use client";
 
-import React, { type ReactNode, useState } from "react";
+import * as React from "react";
+import { type ReactNode, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -39,7 +40,7 @@ export function ConfirmDialog({
   trigger,
   title,
   description,
-  confirmText = "确认删除",
+  confirmText = "确定",
   cancelText = "取消",
   variant = "destructive",
   onConfirm,

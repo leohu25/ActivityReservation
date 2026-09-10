@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { Plus, ShieldAlert, Store, Building2, Download } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Plus, Store, Building2, Download } from "lucide-react";
 import {
   DataTable,
   Button,
@@ -10,6 +11,7 @@ import {
   DataTableRowActions,
   DataTableDetailDrawer,
   DataTableFormModal,
+  toast,
   type ColumnDef,
 } from "@chenrun/ui";
 import {
@@ -37,6 +39,14 @@ interface Props {
   };
 }
 
+function useSafeRouter() {
+  try {
+    return useRouter();
+  } catch {
+    return null;
+  }
+}
+
 export function CustomerView({
   initialCustomers,
   categories,
@@ -57,12 +67,16 @@ export function CustomerView({
       },
     };
   }, [explicitAbility, permissions]);
-  const [customers] = useState(initialCustomers);
+  const router = useSafeRouter();
+  const [customers, setCustomers] = useState(initialCustomers);
+
+  useEffect(() => {
+    setCustomers(initialCustomers);
+  }, [initialCustomers]);
   const [keyword, setKeyword] = useState("");
   const [selectedCat, setSelectedCat] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // 新建/编辑客户表单与详情抽屉状态
   const [showModal, setShowModal] = useState(false);
@@ -106,7 +120,6 @@ export function CustomerView({
   const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
     try {
       const res = await createCustomerAction({
         customerName: name,
@@ -124,13 +137,14 @@ export function CustomerView({
       });
 
       if (res.success) {
+        toast.success("客户创建成功");
         setShowModal(false);
-        window.location.reload();
+        router?.refresh();
       } else {
-        setError(res.error || "创建客户失败");
+        toast.error(res.error || "创建客户失败");
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "请求失败");
+      toast.error(err instanceof Error ? err.message : "请求失败");
     } finally {
       setLoading(false);
     }
@@ -140,48 +154,45 @@ export function CustomerView({
     customerCode: string,
     currentStatus: string,
   ) => {
-    if (
-      currentStatus === "ACTIVE" &&
-      !confirm(
-        "警告：停用该客户将导致其名下所有关联门店强制同步停用！确认停用？",
-      )
-    ) {
-      return;
-    }
-
     setLoading(true);
-    setError(null);
     const nextStatus = currentStatus === "ACTIVE" ? "DISABLED" : "ACTIVE";
     try {
       const res = await updateCustomerStatusAction(customerCode, nextStatus);
       if (res.success) {
-        window.location.reload();
+        setCustomers((prev) =>
+          prev.map((item) =>
+            item.customerCode === customerCode
+              ? { ...item, status: nextStatus }
+              : item,
+          ),
+        );
+        toast.success(nextStatus === "ACTIVE" ? "客户已启用" : "客户已停用");
+        router?.refresh();
       } else {
-        setError(res.error || "更新状态失败");
+        toast.error(res.error || "更新状态失败");
       }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "更新状态异常");
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (customerCode: string) => {
-    if (
-      !confirm(
-        `确认尝试删除客户 [${customerCode}]？注意：已有门店或业务记录的客户系统将拒绝删除。`,
-      )
-    ) {
-      return;
-    }
-
     setLoading(true);
-    setError(null);
     try {
       const res = await deleteCustomerAction(customerCode);
       if (res.success) {
-        window.location.reload();
+        setCustomers((prev) =>
+          prev.filter((item) => item.customerCode !== customerCode),
+        );
+        toast.success("客户已成功删除");
+        router?.refresh();
       } else {
-        setError(res.error || "删除失败");
+        toast.error(res.error || "删除客户失败");
       }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "删除操作异常");
     } finally {
       setLoading(false);
     }
@@ -253,7 +264,7 @@ export function CustomerView({
       ),
     ].join("\n");
 
-    const blob = new Blob(["\uFEFF" + csvContent], {
+    const blob = new Blob([`\uFEFF${csvContent}`], {
       type: "text/csv;charset=utf-8;",
     });
     const url = URL.createObjectURL(blob);
@@ -387,7 +398,18 @@ export function CustomerView({
           extraActions={[
             {
               label: c.status === "ACTIVE" ? "停用客户" : "启用客户",
+              variant: c.status === "ACTIVE" ? "destructive" : "default",
               onClick: () => handleToggleStatus(c.customerCode, c.status),
+              confirm:
+                c.status === "ACTIVE"
+                  ? {
+                      title: `确认停用客户 "${c.customerName}"？`,
+                      description:
+                        "警告：停用该客户将导致其名下所有关联门店强制同步停用！",
+                      confirmText: "确认停用",
+                      cancelText: "取消",
+                    }
+                  : undefined,
             },
           ]}
           onDelete={() => handleDelete(c.customerCode)}
@@ -402,13 +424,6 @@ export function CustomerView({
 
   return (
     <div className="space-y-4">
-      {error && (
-        <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg flex items-center gap-2 text-destructive text-sm">
-          <ShieldAlert className="size-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
       {/* 头部标题与新建按钮 */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-border/60">
         <div>

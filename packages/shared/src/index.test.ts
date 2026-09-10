@@ -17,6 +17,7 @@ import {
   // API
   apiSuccess,
   apiError,
+  defineServerAction,
   // 分页
   normalizePagination,
   createPaginatedResult,
@@ -262,4 +263,39 @@ test("异常与枚举：AppError 继承与枚举完备性", () => {
   assert.equal(err.status, 404);
 
   assert.equal(FieldPolicy.EDITABLE, "EDITABLE");
+});
+
+test("defineServerAction: 统一安全包装与序列化，成功与异常全覆盖", async () => {
+  const { Decimal } = await import("decimal.js");
+
+  // 1. 成功且带 Decimal 的场景 (自动转换为 Plain Object)
+  const actionWithDecimal = defineServerAction(
+    async (prefix: string, rate: number) => {
+      return {
+        code: `${prefix}-001`,
+        taxRate: new Decimal(rate),
+        createdAt: new Date("2026-09-09T00:00:00.000Z"),
+      };
+    },
+  );
+
+  const successRes = await actionWithDecimal("CUST", 9.5);
+  assert.equal(successRes.success, true);
+  if (successRes.success) {
+    assert.equal(successRes.data.code, "CUST-001");
+    // 经由 toPlainData / superjson 序列化为 Plain 格式，不再是类实例
+    assert.equal(typeof successRes.data.taxRate, "string");
+    assert.equal(successRes.data.taxRate, "9.5");
+  }
+
+  // 2. 发生业务异常的场景 (自动捕获并返回标准错误契约)
+  const failingAction = defineServerAction(async () => {
+    throw new Error("客户编码已存在，禁止重复创建");
+  });
+
+  const failRes = await failingAction();
+  assert.equal(failRes.success, false);
+  if (!failRes.success) {
+    assert.equal(failRes.error, "客户编码已存在，禁止重复创建");
+  }
 });

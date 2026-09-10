@@ -19,6 +19,7 @@
 - AGENTS.md
 - CLAUDE.md
 - .harness/features/feature-customer-center/**
+- .agent/**
 - feature_list.json
 - member.local.md
 - progress.md

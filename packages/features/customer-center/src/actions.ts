@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { toPlainData } from "@chenrun/shared";
+import { defineServerAction } from "@chenrun/shared";
 import { getTenantCustomerContext } from "./server/session";
 import {
   CustomerCategoryTagService,
@@ -21,26 +21,18 @@ import type {
 // 客户分类与标签 Actions
 // ==========================================
 
-export async function getCategoryTreeAction() {
-  try {
-    const { client } = await getTenantCustomerContext();
-    const tree = await CustomerCategoryTagService.getCategoryTree(client);
-    return { success: true, data: toPlainData(tree) };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "获取分类树失败",
-    };
-  }
-}
+export const getCategoryTreeAction = defineServerAction(async () => {
+  const { client } = await getTenantCustomerContext();
+  return CustomerCategoryTagService.getCategoryTree(client);
+}, "获取分类树失败");
 
-export async function createCategoryAction(input: {
-  categoryCode: string;
-  categoryName: string;
-  parentCode?: string | null;
-  description?: string | null;
-}) {
-  try {
+export const createCategoryAction = defineServerAction(
+  async (input: {
+    categoryCode: string;
+    categoryName: string;
+    parentCode?: string | null;
+    description?: string | null;
+  }) => {
     const { client } = await getTenantCustomerContext();
     const created = await CustomerCategoryTagService.createCategory(
       client,
@@ -48,20 +40,13 @@ export async function createCategoryAction(input: {
     );
     revalidatePath("/customer/categories-tags");
     revalidatePath("/customer/customers");
-    return { success: true, data: created };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "创建分类失败",
-    };
-  }
-}
+    return created;
+  },
+  "创建分类失败",
+);
 
-export async function updateCategoryStatusAction(
-  categoryCode: string,
-  status: "ACTIVE" | "DISABLED",
-) {
-  try {
+export const updateCategoryStatusAction = defineServerAction(
+  async (categoryCode: string, status: "ACTIVE" | "DISABLED") => {
     const { client } = await getTenantCustomerContext();
     const updated = await CustomerCategoryTagService.updateCategoryStatus(
       client,
@@ -69,53 +54,34 @@ export async function updateCategoryStatusAction(
       status,
     );
     revalidatePath("/customer/categories-tags");
-    return { success: true, data: updated };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "变更分类状态失败",
-    };
-  }
-}
+    return updated;
+  },
+  "变更分类状态失败",
+);
 
-export async function listTagsAction(tagType?: string) {
-  try {
-    const { client } = await getTenantCustomerContext();
-    const tags = await CustomerCategoryTagService.listTags(client, tagType);
-    return { success: true, data: toPlainData(tags) };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "获取标签失败",
-    };
-  }
-}
+export const listTagsAction = defineServerAction(async (tagType?: string) => {
+  const { client } = await getTenantCustomerContext();
+  return CustomerCategoryTagService.listTags(client, tagType);
+}, "获取标签失败");
 
-export async function createTagAction(input: {
-  tagCode: string;
-  tagName: string;
-  tagType: string;
-  description?: string | null;
-}) {
-  try {
+export const createTagAction = defineServerAction(
+  async (input: {
+    tagCode: string;
+    tagName: string;
+    tagType: string;
+    description?: string | null;
+  }) => {
     const { client } = await getTenantCustomerContext();
     const created = await CustomerCategoryTagService.createTag(client, input);
     revalidatePath("/customer/categories-tags");
     revalidatePath("/customer/customers");
-    return { success: true, data: created };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "创建标签失败",
-    };
-  }
-}
+    return created;
+  },
+  "创建标签失败",
+);
 
-export async function updateTagStatusAction(
-  tagCode: string,
-  status: "ACTIVE" | "DISABLED",
-) {
-  try {
+export const updateTagStatusAction = defineServerAction(
+  async (tagCode: string, status: "ACTIVE" | "DISABLED") => {
     const { client } = await getTenantCustomerContext();
     const updated = await CustomerCategoryTagService.updateTagStatus(
       client,
@@ -123,56 +89,40 @@ export async function updateTagStatusAction(
       status,
     );
     revalidatePath("/customer/categories-tags");
-    return { success: true, data: updated };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "变更标签状态失败",
-    };
-  }
-}
+    return updated;
+  },
+  "变更标签状态失败",
+);
 
 // ==========================================
 // 客户档案 Actions
 // ==========================================
 
-export async function listCustomersAction(filter?: {
-  categoryCode?: string;
-  status?: string;
-  keyword?: string;
-  tagCode?: string;
-}) {
-  try {
+export const listCustomersAction = defineServerAction(
+  async (filter?: {
+    categoryCode?: string;
+    status?: string;
+    keyword?: string;
+    tagCode?: string;
+  }) => {
     const { client } = await getTenantCustomerContext();
-    const list = await CustomerService.listCustomers(client, filter);
-    return { success: true, data: toPlainData(list) };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "获取客户列表失败",
-    };
-  }
-}
+    return CustomerService.listCustomers(client, filter);
+  },
+  "获取客户列表失败",
+);
 
-export async function createCustomerAction(input: CreateCustomerInput) {
-  try {
+export const createCustomerAction = defineServerAction(
+  async (input: CreateCustomerInput) => {
     const { client } = await getTenantCustomerContext();
     const created = await CustomerService.createCustomer(client, input);
     revalidatePath("/customer/customers");
-    return { success: true, data: created };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "创建客户失败",
-    };
-  }
-}
+    return created;
+  },
+  "创建客户失败",
+);
 
-export async function updateCustomerAction(
-  customerCode: string,
-  input: UpdateCustomerInput,
-) {
-  try {
+export const updateCustomerAction = defineServerAction(
+  async (customerCode: string, input: UpdateCustomerInput) => {
     const { client } = await getTenantCustomerContext();
     const updated = await CustomerService.updateCustomer(
       client,
@@ -180,20 +130,13 @@ export async function updateCustomerAction(
       input,
     );
     revalidatePath("/customer/customers");
-    return { success: true, data: updated };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "更新客户失败",
-    };
-  }
-}
+    return updated;
+  },
+  "更新客户失败",
+);
 
-export async function updateCustomerStatusAction(
-  customerCode: string,
-  status: "ACTIVE" | "DISABLED",
-) {
-  try {
+export const updateCustomerStatusAction = defineServerAction(
+  async (customerCode: string, status: "ACTIVE" | "DISABLED") => {
     const { client } = await getTenantCustomerContext();
     const updated = await CustomerService.updateCustomerStatus(
       client,
@@ -202,71 +145,51 @@ export async function updateCustomerStatusAction(
     );
     revalidatePath("/customer/customers");
     revalidatePath("/customer/stores");
-    return { success: true, data: updated };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "更新客户状态失败",
-    };
-  }
-}
+    return updated;
+  },
+  "更新客户状态失败",
+);
 
-export async function deleteCustomerAction(customerCode: string) {
-  try {
+export const deleteCustomerAction = defineServerAction(
+  async (customerCode: string) => {
     const { client } = await getTenantCustomerContext();
     const deleted = await CustomerService.deleteCustomer(client, customerCode);
     revalidatePath("/customer/customers");
-    return { success: true, data: deleted };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "删除客户失败",
-    };
-  }
-}
+    return deleted;
+  },
+  "删除客户失败",
+);
 
 // ==========================================
 // 门店档案 Actions
 // ==========================================
 
-export async function listStoresAction(filter?: {
-  customerCode?: string;
-  regionCode?: string;
-  status?: string;
-  keyword?: string;
-}) {
-  try {
+export const listStoresAction = defineServerAction(
+  async (filter?: {
+    customerCode?: string;
+    regionCode?: string;
+    status?: string;
+    keyword?: string;
+  }) => {
     const { client } = await getTenantCustomerContext();
-    const list = await CustomerStoreService.listStores(client, filter);
-    return { success: true, data: toPlainData(list) };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "获取门店列表失败",
-    };
-  }
-}
+    return CustomerStoreService.listStores(client, filter);
+  },
+  "获取门店列表失败",
+);
 
-export async function createStoreAction(input: CreateStoreInput) {
-  try {
+export const createStoreAction = defineServerAction(
+  async (input: CreateStoreInput) => {
     const { client } = await getTenantCustomerContext();
     const created = await CustomerStoreService.createStore(client, input);
     revalidatePath("/customer/stores");
     revalidatePath("/customer/customers");
-    return { success: true, data: created };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "创建门店失败",
-    };
-  }
-}
+    return created;
+  },
+  "创建门店失败",
+);
 
-export async function updateStoreAction(
-  storeCode: string,
-  input: UpdateStoreInput,
-) {
-  try {
+export const updateStoreAction = defineServerAction(
+  async (storeCode: string, input: UpdateStoreInput) => {
     const { client } = await getTenantCustomerContext();
     const updated = await CustomerStoreService.updateStore(
       client,
@@ -274,20 +197,13 @@ export async function updateStoreAction(
       input,
     );
     revalidatePath("/customer/stores");
-    return { success: true, data: updated };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "更新门店失败",
-    };
-  }
-}
+    return updated;
+  },
+  "更新门店失败",
+);
 
-export async function updateStoreStatusAction(
-  storeCode: string,
-  status: "ACTIVE" | "DISABLED",
-) {
-  try {
+export const updateStoreStatusAction = defineServerAction(
+  async (storeCode: string, status: "ACTIVE" | "DISABLED") => {
     const { client } = await getTenantCustomerContext();
     const updated = await CustomerStoreService.updateStoreStatus(
       client,
@@ -295,70 +211,50 @@ export async function updateStoreStatusAction(
       status,
     );
     revalidatePath("/customer/stores");
-    return { success: true, data: updated };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "更新门店状态失败",
-    };
-  }
-}
+    return updated;
+  },
+  "更新门店状态失败",
+);
 
-export async function deleteStoreAction(storeCode: string) {
-  try {
+export const deleteStoreAction = defineServerAction(
+  async (storeCode: string) => {
     const { client } = await getTenantCustomerContext();
     const deleted = await CustomerStoreService.deleteStore(client, storeCode);
     revalidatePath("/customer/stores");
-    return { success: true, data: deleted };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "删除门店失败",
-    };
-  }
-}
+    return deleted;
+  },
+  "删除门店失败",
+);
 
 // ==========================================
 // 门店报价单 Actions
 // ==========================================
 
-export async function listQuotesAction(filter?: {
-  customerCode?: string;
-  storeCode?: string;
-  regionCode?: string;
-  status?: string;
-}) {
-  try {
+export const listQuotesAction = defineServerAction(
+  async (filter?: {
+    customerCode?: string;
+    storeCode?: string;
+    regionCode?: string;
+    status?: string;
+  }) => {
     const { client } = await getTenantCustomerContext();
-    const list = await CustomerQuoteService.listQuotes(client, filter);
-    return { success: true, data: toPlainData(list) };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "获取报价单列表失败",
-    };
-  }
-}
+    return CustomerQuoteService.listQuotes(client, filter);
+  },
+  "获取报价单列表失败",
+);
 
-export async function createQuoteAction(input: CreateQuoteInput) {
-  try {
+export const createQuoteAction = defineServerAction(
+  async (input: CreateQuoteInput) => {
     const { client } = await getTenantCustomerContext();
     const created = await CustomerQuoteService.createQuote(client, input);
     revalidatePath("/customer/quotes");
-    return { success: true, data: created };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "创建报价单失败",
-    };
-  }
-}
+    return created;
+  },
+  "创建报价单失败",
+);
 
-export async function updateQuoteStatusAction(
-  quoteId: string,
-  status: "ACTIVE" | "VOIDED",
-) {
-  try {
+export const updateQuoteStatusAction = defineServerAction(
+  async (quoteId: string, status: "ACTIVE" | "VOIDED") => {
     const { client } = await getTenantCustomerContext();
     const updated = await CustomerQuoteService.updateQuoteStatus(
       client,
@@ -366,11 +262,7 @@ export async function updateQuoteStatusAction(
       status,
     );
     revalidatePath("/customer/quotes");
-    return { success: true, data: updated };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "更新报价单状态失败",
-    };
-  }
-}
+    return updated;
+  },
+  "更新报价单状态失败",
+);

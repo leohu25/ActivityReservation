@@ -125,7 +125,7 @@
 | **协同总矩阵** | `.harness/agents/index.md` | Coordinator 编排流、四阶段流水线与协作铁律 |
 | **角色契约清单** | `.harness/agents/` | `coordinator`, `researcher`, `implementer`, `reviewer` |
 | **工具安全策略** | `.harness/tools/policies.md` | 工具权限沙盒、并发安全性与高危命令防护 |
-| **业务权限契约技能** | `.agent/skills/erp-feature-permissions/` | 新增/开发页面时的全链路权限 SSoT 与防脱节规范 |
+| **业务切片开发技能** | `.agent/skills/erp-feature-dev/` | 涵盖数据建模、权限契约、安全Action、UI交互与路由的切片开发标准 |
 
 ### 4. 团队持久记忆与生命周期 (`.harness/memory/` & `lifecycle/`)
 

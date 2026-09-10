@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import { ThemeProvider } from "@chenrun/ui";
+import { ThemeProvider, Toaster } from "@chenrun/ui";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,7 +24,10 @@ export default function RootLayout({
     className="min-h-screen bg-[#F4F7FB] text-slate-900 font-sans antialiased"
     suppressHydrationWarning
    >
-    <ThemeProvider>{children}</ThemeProvider>
+    <ThemeProvider>
+     {children}
+     <Toaster position="top-right" richColors closeButton />
+    </ThemeProvider>
    </body>
   </html>
  );

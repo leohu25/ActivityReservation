@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
-import { Plus, ShieldAlert, Building2, Store, Download } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Plus, Building2, Store, Download } from "lucide-react";
 import {
   DataTable,
   Button,
   Input,
   Badge,
   DataTableRowActions,
+  toast,
   type ColumnDef,
 } from "@chenrun/ui";
 import {
@@ -35,6 +37,14 @@ interface Props {
   };
 }
 
+function useSafeRouter() {
+  try {
+    return useRouter();
+  } catch {
+    return null;
+  }
+}
+
 /**
  * 客户中心 - 门店档案管理工作台
  * 遵循现代数智工业风规范，全面接入 BusinessTableWorkspace 标准表格体系
@@ -58,12 +68,16 @@ export function StoreView({
       },
     };
   }, [explicitAbility, permissions]);
-  const [stores] = useState<StoreListItem[]>(initialStores);
+  const router = useSafeRouter();
+  const [stores, setStores] = useState<StoreListItem[]>(initialStores);
+
+  useEffect(() => {
+    setStores(initialStores);
+  }, [initialStores]);
   const [keyword, setKeyword] = useState("");
   const [selectedCust, setSelectedCust] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // 新建门店模态框表单状态
   const [showModal, setShowModal] = useState(false);
@@ -106,7 +120,6 @@ export function StoreView({
   const handleCreateStore = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
     try {
       const res = await createStoreAction({
         customerCode,
@@ -123,13 +136,14 @@ export function StoreView({
       });
 
       if (res.success) {
+        toast.success("门店创建成功");
         setShowModal(false);
-        window.location.reload();
+        router?.refresh();
       } else {
-        setError(res.error || "创建门店失败");
+        toast.error(res.error || "创建门店失败");
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "请求异常");
+      toast.error(err instanceof Error ? err.message : "请求异常");
     } finally {
       setLoading(false);
     }
@@ -143,15 +157,24 @@ export function StoreView({
     currentStatus: "ACTIVE" | "DISABLED" | string,
   ) => {
     setLoading(true);
-    setError(null);
     const nextStatus = currentStatus === "ACTIVE" ? "DISABLED" : "ACTIVE";
     try {
       const res = await updateStoreStatusAction(storeCode, nextStatus);
       if (res.success) {
-        window.location.reload();
+        setStores((prev) =>
+          prev.map((item) =>
+            item.storeCode === storeCode
+              ? { ...item, status: nextStatus }
+              : item,
+          ),
+        );
+        toast.success(nextStatus === "ACTIVE" ? "门店已启用" : "门店已停用");
+        router?.refresh();
       } else {
-        setError(res.error || "变更门店状态失败");
+        toast.error(res.error || "变更门店状态失败");
       }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "变更状态异常");
     } finally {
       setLoading(false);
     }
@@ -161,23 +184,20 @@ export function StoreView({
    * 删除指定门店
    */
   const handleDelete = async (storeCode: string) => {
-    if (
-      !confirm(
-        `确认尝试删除门店 [${storeCode}]？已有报价单或订单记录的门店系统将拒绝删除。`,
-      )
-    ) {
-      return;
-    }
-
     setLoading(true);
-    setError(null);
     try {
       const res = await deleteStoreAction(storeCode);
       if (res.success) {
-        window.location.reload();
+        setStores((prev) =>
+          prev.filter((item) => item.storeCode !== storeCode),
+        );
+        toast.success("门店已成功删除");
+        router?.refresh();
       } else {
-        setError(res.error || "删除失败");
+        toast.error(res.error || "删除失败");
       }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "删除操作异常");
     } finally {
       setLoading(false);
     }
@@ -254,7 +274,7 @@ export function StoreView({
       ),
     ].join("\n");
 
-    const blob = new Blob(["\uFEFF" + csvContent], {
+    const blob = new Blob([`\uFEFF${csvContent}`], {
       type: "text/csv;charset=utf-8;",
     });
     const url = URL.createObjectURL(blob);
@@ -383,7 +403,17 @@ export function StoreView({
           extraActions={[
             {
               label: s.status === "ACTIVE" ? "停用门店" : "启用门店",
+              variant: s.status === "ACTIVE" ? "destructive" : "default",
               onClick: () => handleToggleStatus(s.storeCode, s.status),
+              confirm:
+                s.status === "ACTIVE"
+                  ? {
+                      title: `确认停用门店 "${s.storeName}"？`,
+                      description: "停用后该门店将无法继续下单或关联配送调度。",
+                      confirmText: "确认停用",
+                      cancelText: "取消",
+                    }
+                  : undefined,
             },
           ]}
           onDelete={() => handleDelete(s.storeCode)}
@@ -398,14 +428,6 @@ export function StoreView({
 
   return (
     <div className="space-y-4">
-      {/* 错误提示浮层 */}
-      {error && (
-        <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg flex items-center gap-2 text-destructive text-sm">
-          <ShieldAlert className="size-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
       {/* 头部标题与新建按钮 */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-border/60">
         <div>

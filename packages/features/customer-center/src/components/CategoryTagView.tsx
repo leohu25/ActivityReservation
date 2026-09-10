@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { FolderTree, Tag, Plus, ShieldAlert, LayoutGrid } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { FolderTree, Tag, Plus, LayoutGrid } from "lucide-react";
 import {
   DictionarySectionCard,
   Button,
@@ -10,6 +11,7 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
+  toast,
 } from "@chenrun/ui";
 import {
   createCategoryAction,
@@ -29,15 +31,32 @@ interface Props {
   initialTags: CustomerTagItem[];
 }
 
+function useSafeRouter() {
+  try {
+    return useRouter();
+  } catch {
+    return null;
+  }
+}
+
 /**
  * 客户中心 - 分类与标签字典管理工作台
  * 遵循现代数智工业风规范，全面基于 shadcn/ui 的 DictionarySectionCard、Tabs、Button、Input 等组件构建
  */
 export function CategoryTagView({ initialCategories, initialTags }: Props) {
-  const [categories] = useState<CustomerCategoryItem[]>(initialCategories);
-  const [tags] = useState<CustomerTagItem[]>(initialTags);
+  const router = useSafeRouter();
+  const [categories, setCategories] =
+    useState<CustomerCategoryItem[]>(initialCategories);
+  const [tags, setTags] = useState<CustomerTagItem[]>(initialTags);
+
+  useEffect(() => {
+    setCategories(initialCategories);
+  }, [initialCategories]);
+
+  useEffect(() => {
+    setTags(initialTags);
+  }, [initialTags]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // 新建分类模态框表单状态
   const [showCatModal, setShowCatModal] = useState(false);
@@ -59,7 +78,6 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
   const handleCreateCategory = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
     try {
       const res = await createCategoryAction({
         categoryCode: catCode,
@@ -68,17 +86,18 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
         description: catDesc || null,
       });
       if (res.success) {
+        toast.success("客户分类创建成功");
         setShowCatModal(false);
         setCatCode("");
         setCatName("");
         setParentCode("");
         setCatDesc("");
-        window.location.reload();
+        router?.refresh();
       } else {
-        setError(res.error || "创建分类失败");
+        toast.error(res.error || "创建分类失败");
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "请求异常");
+      toast.error(err instanceof Error ? err.message : "请求异常");
     } finally {
       setLoading(false);
     }
@@ -96,10 +115,20 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
     try {
       const res = await updateCategoryStatusAction(categoryCode, nextStatus);
       if (res.success) {
-        window.location.reload();
+        setCategories((prev) =>
+          prev.map((item) =>
+            item.categoryCode === categoryCode
+              ? { ...item, status: nextStatus }
+              : item,
+          ),
+        );
+        toast.success(nextStatus === "ACTIVE" ? "分类已启用" : "分类已停用");
+        router?.refresh();
       } else {
-        setError(res.error || "变更状态失败");
+        toast.error(res.error || "变更状态失败");
       }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "变更状态异常");
     } finally {
       setLoading(false);
     }
@@ -111,7 +140,6 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
   const handleCreateTag = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
     try {
       const res = await createTagAction({
         tagCode,
@@ -120,16 +148,17 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
         description: tagDesc || null,
       });
       if (res.success) {
+        toast.success("业务标签创建成功");
         setShowTagModal(false);
         setTagCode("");
         setTagName("");
         setTagDesc("");
-        window.location.reload();
+        router?.refresh();
       } else {
-        setError(res.error || "创建标签失败");
+        toast.error(res.error || "创建标签失败");
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "请求异常");
+      toast.error(err instanceof Error ? err.message : "请求异常");
     } finally {
       setLoading(false);
     }
@@ -147,10 +176,20 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
     try {
       const res = await updateTagStatusAction(tagCodeStr, nextStatus);
       if (res.success) {
-        window.location.reload();
+        setTags((prev) =>
+          prev.map((item) =>
+            item.tagCode === tagCodeStr
+              ? { ...item, status: nextStatus }
+              : item,
+          ),
+        );
+        toast.success(nextStatus === "ACTIVE" ? "标签已启用" : "标签已停用");
+        router?.refresh();
       } else {
-        setError(res.error || "变更标签状态失败");
+        toast.error(res.error || "变更标签状态失败");
       }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "变更标签状态异常");
     } finally {
       setLoading(false);
     }
@@ -225,14 +264,6 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
           </p>
         </div>
       </div>
-
-      {/* 错误提示框 */}
-      {error && (
-        <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg flex items-center gap-2 text-destructive text-sm">
-          <ShieldAlert className="size-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
 
       {/* 支持选项卡切换或并排双栏 */}
       <Tabs defaultValue="all" className="w-full">
