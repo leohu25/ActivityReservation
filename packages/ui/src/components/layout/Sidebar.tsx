@@ -21,7 +21,7 @@ import {
 export interface NavItem {
   readonly id: string;
   readonly label: string;
-  readonly icon?: ReactNode;
+  readonly icon?: ReactNode | string;
   readonly href?: string;
   readonly category?: string;
   readonly badge?: string;
@@ -29,6 +29,29 @@ export interface NavItem {
   readonly requiredSubject?: string;
   readonly items?: readonly NavItem[];
   readonly children?: readonly NavItem[];
+}
+
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  LayoutDashboard,
+  PackageCheck,
+  UserCheck,
+  Users,
+  ShieldCheck,
+  Settings,
+  FileText,
+  KeyRound,
+  Layers,
+};
+
+function renderNavIcon(icon: ReactNode | string | undefined): ReactNode {
+  if (!icon) {
+    return <LayoutDashboard className="size-4" />;
+  }
+  if (typeof icon === "string") {
+    const IconComponent = ICON_MAP[icon] || LayoutDashboard;
+    return <IconComponent className="size-4" />;
+  }
+  return icon;
 }
 
 /** 导航分组区块模型 (如业务中心、系统管理) */
@@ -431,9 +454,7 @@ export function Sidebar({
                                     : "text-slate-400 group-hover:text-slate-700 dark:text-slate-500 dark:group-hover:text-slate-300"
                                 }`}
                               >
-                                {item.icon || (
-                                  <LayoutDashboard className="size-4" />
-                                )}
+                                {renderNavIcon(item.icon)}
                               </span>
                               <span>{item.label}</span>
                               {item.badge ? (
@@ -506,9 +527,7 @@ export function Sidebar({
                                 : "text-slate-400 group-hover:text-slate-700 dark:text-slate-500 dark:group-hover:text-slate-300"
                             }`}
                           >
-                            {item.icon || (
-                              <LayoutDashboard className="size-4" />
-                            )}
+                            {renderNavIcon(item.icon)}
                           </span>
                           <span>{item.label}</span>
                         </div>

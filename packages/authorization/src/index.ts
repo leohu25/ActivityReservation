@@ -56,3 +56,18 @@ export {
   createReactAbilityAdapter,
   useAbility,
 } from "./react";
+export {
+  deriveCatalogDefinitions,
+  derivePermissionCatalog,
+  deriveNavSections,
+  derivePermissionTree,
+  filterNavSections,
+  type FeatureNavItem,
+  type FeatureNavGroup,
+  type FeatureNavSection,
+  type FeatureConfigurableField,
+  type FeatureActionConfigItem,
+  type FeaturePagePermissionDescriptor,
+  type FeatureModulePermissionDescriptor,
+  type TenantFeatureManifest,
+} from "./manifest";

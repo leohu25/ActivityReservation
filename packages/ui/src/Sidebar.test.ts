@@ -80,3 +80,30 @@ test("Sidebar 兼容扁平 navItems 传参模式", () => {
   assert.ok(html.includes("自定义单页"));
   assert.ok(html.includes('href="/custom/page"'));
 });
+
+test("Sidebar 支持传递字符串 icon 名称 (支持 RSC 跨端序列化)", () => {
+  const customSections = [
+    {
+      id: "sec-1",
+      items: [
+        {
+          id: "item-pkg",
+          label: "采购中心",
+          href: "/procurement/orders",
+          icon: "PackageCheck",
+        },
+      ],
+    },
+  ];
+
+  const html = renderToString(
+    React.createElement(Sidebar, {
+      sections: customSections,
+      currentPath: "/procurement/orders",
+    }),
+  );
+
+  assert.ok(html.includes("采购中心"));
+  assert.ok(html.includes('href="/procurement/orders"'));
+  assert.ok(html.includes("lucide-package-check"));
+});

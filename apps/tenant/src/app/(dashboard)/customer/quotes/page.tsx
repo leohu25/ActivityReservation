@@ -7,7 +7,7 @@ import {
   listStoresAction,
 } from "@chenrun/feature-customer-center";
 import { toPlainData } from "@chenrun/shared";
-import { getTenantSubjectPermissions } from "@/lib/get-tenant-ability";
+import { getTenantSubjectPermissions } from "@chenrun/feature-tenant-admin/server";
 
 export default async function QuotesPage() {
   const [quotesRes, custRes, storesRes, permissions] = await Promise.all([

@@ -6,6 +6,9 @@
 - `packages/ui/**`
 - `packages/authorization/**`
 - `packages/features/**`
+- `scripts/**`
+- `docs/**`
+- `package.json`
 - `.gitignore`
 - `pnpm-lock.yaml`
 - `feature_list.json`

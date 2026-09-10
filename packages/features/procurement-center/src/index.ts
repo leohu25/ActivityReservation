@@ -2,6 +2,7 @@ import { createPermissionCatalog } from "@chenrun/authorization";
 import { procurementPermissionDefinition } from "./permissions";
 
 export * from "./permissions";
+export * from "./manifest";
 export * from "./types";
 export * from "./services";
 export * from "./components";

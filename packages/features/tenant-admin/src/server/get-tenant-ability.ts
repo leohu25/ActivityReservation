@@ -2,11 +2,16 @@ import { headers } from "next/headers";
 import { getCurrentTenantContext, getServerAuthRuntime } from "@chenrun/auth";
 import {
   CaslAbilityFactory,
+  filterNavSections,
   parsePersistedPermissions,
+  type FeatureNavSection,
   type FieldAccessMode,
 } from "@chenrun/authorization";
 import { toPlainData } from "@chenrun/shared";
-import { globalTenantCatalog } from "./global-catalog";
+import {
+  globalTenantCatalog,
+  globalTenantNavSections,
+} from "../registry.generated";
 
 export interface TenantSubjectPermissions {
   readonly actions: readonly string[];
@@ -15,7 +20,7 @@ export interface TenantSubjectPermissions {
 
 /**
  * 在 Server Component 中获取当前登录用户针对特定 Subject 的强类型权限纯数据描述
- * 严格遵循 RSC 跨端序列化规范：仅返回纯 JSON 对象，杜绝传递不可序列化的函数！
+ * 严格遵循 RSC 跨端序列化规范：仅返回纯 JSON 对象，杜绝传递不可序列化的函数与类实例！
  * 严格遵循 Fail-Closed 原则：若未登录或未授权，默认空数组 (全部拒绝)
  */
 export async function getTenantSubjectPermissions(
@@ -84,5 +89,30 @@ export async function getTenantSubjectPermissions(
       actions: [],
       fieldPolicies: {},
     });
+  }
+}
+
+/**
+ * 服务端获取当前登录租户成员已授权的导航菜单区块 (Server-Side Navigation Engine)
+ * 使用 CASL Ability 过滤无权访问的项目与空分组，直接返回已裁切完毕的纯数据菜单
+ */
+export async function getAuthorizedTenantNavSections(): Promise<
+  FeatureNavSection[]
+> {
+  try {
+    const reqHeaders = await headers();
+    const runtime = getServerAuthRuntime();
+    const tenantCtx = await getCurrentTenantContext(reqHeaders);
+    const factory = new CaslAbilityFactory(
+      runtime.tenantContextRepository,
+      globalTenantCatalog,
+    );
+    const ability = await factory.createForTenant(tenantCtx);
+
+    return filterNavSections(globalTenantNavSections, (action, subject) =>
+      ability.can(action as never, subject as never),
+    );
+  } catch {
+    return [];
   }
 }
