@@ -44,56 +44,6 @@ export function deriveBuiltInRoleDefaults(
     NonNullable<RolePermissionPayload["dataScopes"]>[number]
   > = [];
 
-  for (const manifest of manifests) {
-    for (const def of manifest.permissions) {
-      adminStatement[def.resource] = [...def.actions];
-
-      let hasScopeConfigured = false;
-      if (def.actionMetadata) {
-        for (const [action, meta] of Object.entries(def.actionMetadata)) {
-          if (meta?.scopes && meta.scopes.length > 0) {
-            hasScopeConfigured = true;
-            const maxScope = meta.scopes.includes(DataScope.ALL)
-              ? DataScope.ALL
-              : meta.scopes.includes(DataScope.DEPT_TREE)
-                ? DataScope.DEPT_TREE
-                : meta.scopes[meta.scopes.length - 1];
-
-            adminDataScopes.push({
-              resource: def.resource,
-              action,
-              scopeType: maxScope,
-            });
-          }
-        }
-      }
-
-      if (!hasScopeConfigured && manifest.permissionModules) {
-        for (const mod of manifest.permissionModules) {
-          for (const page of mod.pages) {
-            if (page.resource === def.resource) {
-              for (const act of page.actions) {
-                if (act.supportedScopes && act.supportedScopes.length > 0) {
-                  hasScopeConfigured = true;
-                  const maxScope = act.supportedScopes.includes(DataScope.ALL)
-                    ? DataScope.ALL
-                    : act.supportedScopes.includes(DataScope.DEPT_TREE)
-                      ? DataScope.DEPT_TREE
-                      : act.supportedScopes[act.supportedScopes.length - 1];
-                  adminDataScopes.push({
-                    resource: def.resource,
-                    action: act.action,
-                    scopeType: maxScope,
-                  });
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
   // 2. Member: 仅赋予已注册切片的 read 动作，默认部门级受限查看，敏感字段默认只读保护
   const memberStatement: Record<string, string[]> = {};
   const memberDataScopes: Array<
@@ -104,54 +54,63 @@ export function deriveBuiltInRoleDefaults(
   > = [];
 
   for (const manifest of manifests) {
-    for (const def of manifest.permissions) {
-      if (def.actions.includes("read" as never)) {
-        memberStatement[def.resource] = ["read"];
+    if (!manifest.permissionModules) continue;
 
-        let readScopes: readonly string[] | undefined;
-        if (def.actionMetadata?.read?.scopes) {
-          readScopes = def.actionMetadata.read.scopes;
-        } else if (manifest.permissionModules) {
-          for (const mod of manifest.permissionModules) {
-            for (const page of mod.pages) {
-              if (page.resource === def.resource) {
-                const readAct = page.actions.find((a) => a.action === "read");
-                if (readAct?.supportedScopes) {
-                  readScopes = readAct.supportedScopes;
-                }
-              }
+    for (const mod of manifest.permissionModules) {
+      for (const page of mod.pages) {
+        // Admin 配置
+        adminStatement[page.resource] = page.actions.map((a) => a.action);
+
+        for (const act of page.actions) {
+          if (act.supportedScopes && act.supportedScopes.length > 0) {
+            const fallbackScope = act.supportedScopes[0];
+            let maxScope: (typeof act.supportedScopes)[number] =
+              act.supportedScopes.at(-1) ?? fallbackScope;
+            if (act.supportedScopes.includes(DataScope.ALL)) {
+              maxScope = DataScope.ALL;
+            } else if (act.supportedScopes.includes(DataScope.DEPT_TREE)) {
+              maxScope = DataScope.DEPT_TREE;
             }
+
+            adminDataScopes.push({
+              resource: page.resource,
+              action: act.action,
+              scopeType: maxScope,
+            });
           }
         }
 
-        if (readScopes && readScopes.length > 0) {
-          const memberScope = readScopes.includes(DataScope.DEPT)
-            ? DataScope.DEPT
-            : readScopes.includes(DataScope.SELF)
-              ? DataScope.SELF
-              : (readScopes[0] as typeof DataScope.DEPT);
+        // Member 配置
+        const readAct = page.actions.find((a) => a.action === "read");
+        if (readAct) {
+          memberStatement[page.resource] = ["read"];
 
-          memberDataScopes.push({
-            resource: def.resource,
-            action: "read",
-            scopeType: memberScope,
-          });
+          if (readAct.supportedScopes && readAct.supportedScopes.length > 0) {
+            let memberScope: (typeof readAct.supportedScopes)[number] =
+              readAct.supportedScopes[0];
+            if (readAct.supportedScopes.includes(DataScope.DEPT)) {
+              memberScope = DataScope.DEPT;
+            } else if (readAct.supportedScopes.includes(DataScope.SELF)) {
+              memberScope = DataScope.SELF;
+            }
+
+            memberDataScopes.push({
+              resource: page.resource,
+              action: "read",
+              scopeType: memberScope,
+            });
+          }
         }
-      }
-    }
 
-    if (manifest.permissionModules) {
-      for (const mod of manifest.permissionModules) {
-        for (const page of mod.pages) {
-          if (page.configurableFields) {
-            for (const f of page.configurableFields) {
-              if (f.sensitive) {
-                memberFieldPolicies.push({
-                  subject: page.subject,
-                  field: f.field,
-                  access: FieldPolicy.READONLY,
-                });
-              }
+        // 敏感字段只读保护
+        if (page.configurableFields) {
+          for (const f of page.configurableFields) {
+            if (f.sensitive) {
+              memberFieldPolicies.push({
+                subject: page.subject,
+                field: f.field,
+                access: FieldPolicy.READONLY,
+              });
             }
           }
         }

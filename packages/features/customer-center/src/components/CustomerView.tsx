@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, ShieldAlert, Store, Building2 } from "lucide-react";
+import { Plus, ShieldAlert, Store, Building2, Download } from "lucide-react";
 import {
   DataTable,
   Button,
@@ -17,7 +17,7 @@ import {
   updateCustomerStatusAction,
   deleteCustomerAction,
 } from "../actions";
-import { CustomerSubject, CustomerField } from "../permissions";
+import { CustomerField, customerPageContract } from "../contracts";
 import type {
   CustomerListItem,
   CustomerCategoryItem,
@@ -49,7 +49,7 @@ export function CustomerView({
     if (!permissions) return undefined;
     return {
       can(action: string, subject?: string, field?: string) {
-        if (subject && subject !== CustomerSubject) return false;
+        if (subject && subject !== customerPageContract.subject) return false;
         if (!permissions.actions.includes(action)) return false;
         if (field && permissions.fieldPolicies?.[field] === "HIDDEN")
           return false;
@@ -187,6 +187,88 @@ export function CustomerView({
     }
   };
 
+  const handleExport = () => {
+    const fieldKeys: Array<{
+      key: keyof CustomerListItem;
+      field?: string;
+      label: string;
+    }> = [
+      {
+        key: "customerCode",
+        field: CustomerField.CUSTOMER_CODE,
+        label: "客户编码",
+      },
+      {
+        key: "customerName",
+        field: CustomerField.CUSTOMER_NAME,
+        label: "客户名称",
+      },
+      {
+        key: "categoryCode",
+        field: CustomerField.CATEGORY,
+        label: "客户分类",
+      },
+      {
+        key: "contactPerson",
+        field: CustomerField.CONTACT_PERSON,
+        label: "联系人",
+      },
+      {
+        key: "contactPhone",
+        field: CustomerField.CONTACT_PHONE,
+        label: "联系电话",
+      },
+      {
+        key: "settlementMethod",
+        field: CustomerField.SETTLEMENT_METHOD,
+        label: "结算方式",
+      },
+      {
+        key: "defaultTaxRate",
+        field: CustomerField.DEFAULT_TAX_RATE,
+        label: "默认税率(%)",
+      },
+      {
+        key: "status",
+        field: CustomerField.STATUS,
+        label: "状态",
+      },
+    ];
+
+    const activeExportFields = fieldKeys.filter((f) => {
+      if (!ability || !f.field) return true;
+      return ability.can("read", customerPageContract.subject, f.field);
+    });
+
+    const csvContent = [
+      activeExportFields.map((f) => f.label).join(","),
+      ...filteredCustomers.map((c) =>
+        activeExportFields
+          .map((f) => {
+            const val = c[f.key];
+            if (val === null || val === undefined) return "";
+            return `"${String(val).replace(/"/g, '""')}"`;
+          })
+          .join(","),
+      ),
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `客户主数据_${new Date().toISOString().slice(0, 10)}.csv`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const settlementLabels: Record<string, string> = {
     MONTHLY: "月结",
     CASH: "现结",
@@ -196,6 +278,7 @@ export function CustomerView({
   const columns: ColumnDef<CustomerListItem>[] = [
     {
       id: "customerCode",
+      field: CustomerField.CUSTOMER_CODE,
       header: "客户编码",
       width: 140,
       cell: (c: CustomerListItem) => (
@@ -206,6 +289,7 @@ export function CustomerView({
     },
     {
       id: "customerName",
+      field: CustomerField.CUSTOMER_NAME,
       header: "客户名称",
       cell: (c: CustomerListItem) => (
         <div>
@@ -224,6 +308,7 @@ export function CustomerView({
     },
     {
       id: "category",
+      field: CustomerField.CATEGORY,
       header: "分类",
       width: 130,
       cell: (c: CustomerListItem) => (
@@ -276,6 +361,7 @@ export function CustomerView({
     },
     {
       id: "status",
+      field: CustomerField.STATUS,
       header: "状态",
       width: 90,
       align: "center",
@@ -334,16 +420,31 @@ export function CustomerView({
             维护企业客户主数据、结算方式、授信与服务时间。一个客户下可挂载多个履约门店。
           </p>
         </div>
-        {(!ability || ability.can("create", CustomerSubject)) && (
-          <Button
-            size="sm"
-            onClick={() => setShowModal(true)}
-            className="font-semibold shadow-xs"
-          >
-            <Plus className="size-4 mr-1" />
-            <span>新建客户</span>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {(!ability ||
+            ability.can("export", customerPageContract.subject)) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              className="font-semibold shadow-xs gap-1.5"
+            >
+              <Download className="size-4 text-muted-foreground" />
+              <span>导出数据</span>
+            </Button>
+          )}
+          {(!ability ||
+            ability.can("create", customerPageContract.subject)) && (
+            <Button
+              size="sm"
+              onClick={() => setShowModal(true)}
+              className="font-semibold shadow-xs"
+            >
+              <Plus className="size-4 mr-1" />
+              <span>新建客户</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* 复合积木化 DataTable */}
@@ -351,7 +452,7 @@ export function CustomerView({
         data={filteredCustomers}
         columns={columns}
         rowKey={(c: CustomerListItem) => c.customerCode}
-        subject={CustomerSubject}
+        subject={customerPageContract.subject}
         ability={ability}
         permissions={permissions}
         total={filteredCustomers.length}

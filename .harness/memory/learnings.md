@@ -109,3 +109,20 @@
      - 彻底清理过时的旧字段权限兼容层（`PermissionField`）；
      - 字段权限升级为与新积木套件深度结合的 `<AuthorizedField>`（可作为 `<DataTable.AuthorizedField>` 消费）；
      - 在 `DataTable` 内部使用时，表格列根据 CASL ability 自动过滤隐藏、按钮动作根据 ability 自动判断、表单字段自动继承 `subject` 与 `ability` 实现三态控制（HIDDEN / READONLY / EDITABLE），无需重复传参。
+
+## 11. 页面级纯数据契约 (SSoT Contract) 与权限前后台对齐规范
+
+- **痛点复盘**：
+  - 传统开发容易手写两套平行世界：`manifest.ts` 声明一套权限（actions/configurableFields），前台业务页面组件（`*View.tsx`）又手写一套列定义与按钮；
+  - 导致严重脱节：后台配置树上勾选了“导出数据”，前台页面代码根本没写这个按钮（幽灵权限）；或者后台把某字段设为 `HIDDEN`，前台表格列因遗漏挂载 `field` 属性而依然把数据完整泄露出来。
+- **解法与铁律 (Contract SSoT Invariant)**：
+  1. **页面契约单一事实源 (SSoT)**：
+     - 彻底废除平铺的 `permissions.ts`；
+     - 各业务页面在 `src/contracts/<page>.contract.ts` 中自包含维护自己的实体名（Subject）、资源名（Resource）、字段枚举（Field）、受控元数据与页面契约对象（`FeaturePagePermissionDescriptor`）；
+  2. **双端无损消费**：
+     - **切片清单 (`manifest.ts`)**：只负责组装各页面的契约对象，严禁手写重复的大对象字面量；
+     - **业务组件 (`*View.tsx`)**：表格列必须挂载契约声明的 `field: MyField.XXX`，受控按钮必须通过 `(!ability || ability.can("action", Subject))` 条件渲染；纯 UI 交互按钮无需进契约，自由书写；
+  3. **自动化对齐门禁**：
+     - 每个页面组件配套编写 `<Page>View.test.tsx`，断言契约动作与页面按钮 100% 呼应，断言 `HIDDEN` 字段列物理级剥离。
+  4. **专项 Skill 指南**：
+     - 详细操作步骤与代码样板已沉淀至项目专属 Skill：`.agent/skills/erp-feature-permissions/SKILL.md`。

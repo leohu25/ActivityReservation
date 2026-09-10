@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, ShieldAlert, Building2, Store } from "lucide-react";
+import { Plus, ShieldAlert, Building2, Store, Download } from "lucide-react";
 import {
   DataTable,
   Button,
@@ -15,7 +15,7 @@ import {
   updateStoreStatusAction,
   deleteStoreAction,
 } from "../actions";
-import { CustomerStoreSubject } from "../permissions";
+import { CustomerStoreField, storePageContract } from "../contracts";
 import type { StoreListItem, CustomerListItem } from "../types";
 
 /**
@@ -50,7 +50,7 @@ export function StoreView({
     if (!permissions) return undefined;
     return {
       can(action: string, subject?: string, field?: string) {
-        if (subject && subject !== CustomerStoreSubject) return false;
+        if (subject && subject !== storePageContract.subject) return false;
         if (!permissions.actions.includes(action)) return false;
         if (field && permissions.fieldPolicies?.[field] === "HIDDEN")
           return false;
@@ -183,6 +183,93 @@ export function StoreView({
     }
   };
 
+  const handleExport = () => {
+    const fieldKeys: Array<{
+      key: keyof StoreListItem;
+      field?: string;
+      label: string;
+    }> = [
+      {
+        key: "storeCode",
+        field: CustomerStoreField.STORE_CODE,
+        label: "门店编码",
+      },
+      {
+        key: "storeName",
+        field: CustomerStoreField.STORE_NAME,
+        label: "门店名称",
+      },
+      {
+        key: "customerCode",
+        field: CustomerStoreField.CUSTOMER_CODE,
+        label: "所属客户编码",
+      },
+      {
+        key: "regionCode",
+        field: CustomerStoreField.REGION_CODE,
+        label: "所属区域",
+      },
+      {
+        key: "deliveryPeriod",
+        field: CustomerStoreField.DELIVERY_PERIOD,
+        label: "配送时段",
+      },
+      {
+        key: "address",
+        field: CustomerStoreField.ADDRESS,
+        label: "配送收货地址",
+      },
+      {
+        key: "contactPerson",
+        field: CustomerStoreField.CONTACT_PERSON,
+        label: "联系人",
+      },
+      {
+        key: "contactPhone",
+        field: CustomerStoreField.CONTACT_PHONE,
+        label: "联系电话",
+      },
+      {
+        key: "status",
+        field: CustomerStoreField.STATUS,
+        label: "门店状态",
+      },
+    ];
+
+    const activeExportFields = fieldKeys.filter((f) => {
+      if (!ability || !f.field) return true;
+      return ability.can("read", storePageContract.subject, f.field);
+    });
+
+    const csvContent = [
+      activeExportFields.map((f) => f.label).join(","),
+      ...filteredStores.map((s) =>
+        activeExportFields
+          .map((f) => {
+            const val = s[f.key];
+            if (val === null || val === undefined) return "";
+            return `"${String(val).replace(/"/g, '""')}"`;
+          })
+          .join(","),
+      ),
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `门店档案_${new Date().toISOString().slice(0, 10)}.csv`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   // 配送时段语义化字典映射
   const deliveryPeriodLabels: Record<string, string> = {
     MORNING: "早间配送 (05:00-08:00)",
@@ -196,6 +283,7 @@ export function StoreView({
   const columns: ColumnDef<StoreListItem>[] = [
     {
       id: "storeCode",
+      field: CustomerStoreField.STORE_CODE,
       header: "门店编码",
       width: 140,
       cell: (s: StoreListItem) => (
@@ -206,6 +294,7 @@ export function StoreView({
     },
     {
       id: "storeName",
+      field: CustomerStoreField.STORE_NAME,
       header: "门店名称",
       cell: (s: StoreListItem) => (
         <div className="font-medium text-foreground">{s.storeName}</div>
@@ -213,6 +302,7 @@ export function StoreView({
     },
     {
       id: "customer",
+      field: CustomerStoreField.CUSTOMER_CODE,
       header: "所属客户",
       width: 170,
       cell: (s: StoreListItem) => (
@@ -226,6 +316,7 @@ export function StoreView({
     },
     {
       id: "regionDelivery",
+      field: CustomerStoreField.REGION_CODE,
       header: "区域 / 配送时段",
       width: 180,
       cell: (s: StoreListItem) => (
@@ -241,6 +332,7 @@ export function StoreView({
     },
     {
       id: "address",
+      field: CustomerStoreField.ADDRESS,
       header: "配送收货地址",
       cell: (s: StoreListItem) => (
         <div
@@ -253,6 +345,7 @@ export function StoreView({
     },
     {
       id: "contact",
+      field: CustomerStoreField.CONTACT_PHONE,
       header: "门店联系人",
       width: 150,
       cell: (s: StoreListItem) => (
@@ -266,6 +359,7 @@ export function StoreView({
     },
     {
       id: "status",
+      field: CustomerStoreField.STATUS,
       header: "状态",
       width: 90,
       align: "center",
@@ -323,16 +417,29 @@ export function StoreView({
             门店是订单订货、物流配送、现场签收与对账的最小履约单元，必须归属于有效客户并绑定区域。
           </p>
         </div>
-        {(!ability || ability.can("create", CustomerStoreSubject)) && (
-          <Button
-            size="sm"
-            onClick={() => setShowModal(true)}
-            className="font-semibold shadow-xs"
-          >
-            <Plus className="size-4 mr-1" />
-            <span>新建门店</span>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {(!ability || ability.can("export", storePageContract.subject)) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              className="font-semibold shadow-xs gap-1.5"
+            >
+              <Download className="size-4 text-muted-foreground" />
+              <span>导出门店</span>
+            </Button>
+          )}
+          {(!ability || ability.can("create", storePageContract.subject)) && (
+            <Button
+              size="sm"
+              onClick={() => setShowModal(true)}
+              className="font-semibold shadow-xs"
+            >
+              <Plus className="size-4 mr-1" />
+              <span>新建门店</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* 复合积木化 DataTable */}
@@ -340,7 +447,7 @@ export function StoreView({
         data={filteredStores}
         columns={columns}
         rowKey={(s: StoreListItem) => s.storeCode}
-        subject={CustomerStoreSubject}
+        subject={storePageContract.subject}
         ability={ability}
         total={filteredStores.length}
       >

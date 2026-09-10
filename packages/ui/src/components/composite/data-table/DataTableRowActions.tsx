@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useState } from "react";
+import React, { type ReactNode, useState } from "react";
 import { MoreHorizontal, Eye, Edit2, Trash2 } from "lucide-react";
 import {
   DropdownMenu,

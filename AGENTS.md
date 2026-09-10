@@ -106,6 +106,7 @@
 | **元数据 (Tier 1)** | `.harness/context/tier-1-metadata.md` | 技术栈选型、核心环境变量与基础基线配置 |
 | **领域拓扑 (Tier 2)** | `.harness/context/tier-2-domain-matrix.md` | Monorepo 目录职责、反平铺规约与应用解耦 |
 | **深度协议 (Tier 3)** | `.harness/context/tier-3-deep-dives.md` | 租户库物理隔离路由、四层鉴权、动态连接池协议 |
+| **字段权限设计资产** | `docs/Field_Level_Permission_Architecture_and_Implementation.md` | 字段三态控制、物理剥离、安全导出与组件拦截实战 |
 | **工业风设计系统** | `.harness/context/design-system.md` | UI/UX 工业风组件规范、设计令牌与响应式设计 |
 | **上下文配额** | `.harness/context/budget.md` | Token 预算、上下文 JIT 按需加载与剪枝策略 |
 
@@ -124,6 +125,7 @@
 | **协同总矩阵** | `.harness/agents/index.md` | Coordinator 编排流、四阶段流水线与协作铁律 |
 | **角色契约清单** | `.harness/agents/` | `coordinator`, `researcher`, `implementer`, `reviewer` |
 | **工具安全策略** | `.harness/tools/policies.md` | 工具权限沙盒、并发安全性与高危命令防护 |
+| **业务权限契约技能** | `.agent/skills/erp-feature-permissions/` | 新增/开发页面时的全链路权限 SSoT 与防脱节规范 |
 
 ### 4. 团队持久记忆与生命周期 (`.harness/memory/` & `lifecycle/`)
 

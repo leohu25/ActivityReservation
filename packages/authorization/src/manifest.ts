@@ -91,14 +91,13 @@ export interface TenantFeatureManifest {
   readonly order?: number;
   /** 切片贡献的导航区块与菜单项 */
   readonly navSections?: readonly FeatureNavSection[];
-  /** 切片贡献的 CASL 权限定义集合 */
-  readonly permissions: readonly PermissionDefinition[];
-  /** 切片贡献的角色权限树模块定义 */
+  /** 切片贡献的角色权限树与受控资源定义（全局唯一权限事实源） */
   readonly permissionModules?: readonly FeatureModulePermissionDescriptor[];
 }
 
 /**
  * 从 Feature Manifests 数组中提取并派生全局 CASL PermissionDefinition 数组
+ * 纯函数：从各切片的 permissionModules 中无损提取受控资源、动作及字段配置，消除双重声明
  */
 export function deriveCatalogDefinitions(
   manifests: readonly TenantFeatureManifest[],
@@ -110,10 +109,45 @@ export function deriveCatalogDefinitions(
   const seenResources = new Set<string>();
 
   for (const manifest of sorted) {
-    for (const def of manifest.permissions) {
-      if (!seenResources.has(def.resource)) {
-        seenResources.add(def.resource);
-        definitions.push(def);
+    if (!manifest.permissionModules) continue;
+
+    for (const mod of manifest.permissionModules) {
+      for (const page of mod.pages) {
+        if (seenResources.has(page.resource)) {
+          continue;
+        }
+        seenResources.add(page.resource);
+
+        const [firstAction, ...restActions] = page.actions.map((a) => a.action);
+        if (!firstAction) {
+          continue;
+        }
+        const actions: readonly [string, ...string[]] = [
+          firstAction,
+          ...restActions,
+        ];
+
+        const fields = page.configurableFields?.map((f) => f.field);
+
+        const actionMetadata = Object.fromEntries(
+          page.actions.map((act) => [
+            act.action,
+            {
+              label: act.label,
+              scopes: act.supportedScopes,
+              fields,
+            },
+          ]),
+        );
+
+        definitions.push({
+          resource: page.resource,
+          subject: page.subject,
+          label: page.label,
+          actions,
+          actionMetadata,
+          fields,
+        });
       }
     }
   }

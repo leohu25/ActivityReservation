@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import React, { type ReactNode } from "react";
 import { Check, PlusCircle } from "lucide-react";
 import {
   Popover,

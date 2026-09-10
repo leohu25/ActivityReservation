@@ -1,0 +1,88 @@
+import {
+  STANDARD_DATA_SCOPES,
+  StandardAction,
+  type FeaturePagePermissionDescriptor,
+} from "@chenrun/authorization";
+
+/** 客户主数据实体与资源标识 (SSoT) */
+export const CustomerSubject = "Customer";
+export const CustomerResource = "customer";
+
+/** 客户主数据受控字段字典 */
+export const CustomerField = {
+  CUSTOMER_CODE: "customerCode",
+  CUSTOMER_NAME: "customerName",
+  CATEGORY: "categoryCode",
+  CONTACT_PERSON: "contactPerson",
+  CONTACT_PHONE: "contactPhone",
+  SETTLEMENT_METHOD: "settlementMethod",
+  DEFAULT_TAX_RATE: "defaultTaxRate",
+  CREDIT_LIMIT: "creditLimit",
+  STATUS: "status",
+} as const;
+
+/** 客户主数据受控字段元数据定义 */
+export const customerConfigurableFields = [
+  { field: CustomerField.CUSTOMER_CODE, label: "客户编码", isSensitive: false },
+  { field: CustomerField.CUSTOMER_NAME, label: "客户名称", isSensitive: false },
+  { field: CustomerField.CATEGORY, label: "客户分类", isSensitive: false },
+  {
+    field: CustomerField.CONTACT_PERSON,
+    label: "联系人姓名",
+    isSensitive: false,
+  },
+  {
+    field: CustomerField.CONTACT_PHONE,
+    label: "联系人电话 (敏感)",
+    isSensitive: true,
+  },
+  {
+    field: CustomerField.SETTLEMENT_METHOD,
+    label: "结算方式",
+    isSensitive: false,
+  },
+  {
+    field: CustomerField.DEFAULT_TAX_RATE,
+    label: "默认税率",
+    isSensitive: false,
+  },
+  {
+    field: CustomerField.CREDIT_LIMIT,
+    label: "授信额度 (敏感资产)",
+    isSensitive: true,
+  },
+  { field: CustomerField.STATUS, label: "客户状态", isSensitive: false },
+] as const;
+
+/**
+ * 客户中心 - 客户档案页面纯数据权限契约 (SSoT)
+ *
+ * 规范：前台 CustomerView 页面组件与后台 manifest.ts 均唯一消费此契约，
+ * 杜绝前后台在受控按钮、数据范围与受控字段上的声明脱节。
+ */
+export const customerPageContract: FeaturePagePermissionDescriptor = {
+  resource: CustomerResource,
+  subject: CustomerSubject,
+  label: "客户档案",
+  path: "/customer/customers",
+  actions: [
+    {
+      action: StandardAction.READ,
+      label: "查看客户",
+      supportedScopes: STANDARD_DATA_SCOPES,
+    },
+    { action: StandardAction.CREATE, label: "新建客户" },
+    {
+      action: StandardAction.UPDATE,
+      label: "修改客户",
+      supportedScopes: STANDARD_DATA_SCOPES,
+    },
+    { action: StandardAction.DELETE, label: "删除客户" },
+    { action: StandardAction.EXPORT, label: "导出数据" },
+  ],
+  configurableFields: customerConfigurableFields.map((f) => ({
+    field: f.field,
+    label: f.label,
+    sensitive: f.isSensitive,
+  })),
+} as const;

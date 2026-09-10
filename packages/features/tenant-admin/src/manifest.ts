@@ -1,72 +1,7 @@
 import {
   StandardAction,
-  type PermissionDefinition,
   type TenantFeatureManifest,
 } from "@chenrun/authorization";
-
-export const tenantAdminPermissionDefinitions: readonly PermissionDefinition[] =
-  [
-    {
-      resource: "organization.employee",
-      subject: "Employee",
-      label: "员工管理",
-      actions: ["read", "create", "update", "delete"],
-    },
-    {
-      resource: "organization.department",
-      subject: "Department",
-      label: "部门管理",
-      actions: ["read", "create", "update", "delete"],
-    },
-    {
-      resource: "organization.position",
-      subject: "Position",
-      label: "岗位管理",
-      actions: ["read", "create", "update", "delete"],
-    },
-    {
-      resource: "system.roles",
-      subject: "RoleManagement",
-      label: "角色权限管理",
-      actions: ["read", "update"],
-    },
-    {
-      resource: "settings.company",
-      subject: "CompanyProfile",
-      label: "企业信息",
-      actions: ["read", "update"],
-    },
-    {
-      resource: "settings.general",
-      subject: "GeneralSettings",
-      label: "基础设置",
-      actions: ["read", "update"],
-    },
-    {
-      resource: "settings.security",
-      subject: "SecuritySettings",
-      label: "安全设置",
-      actions: ["read", "update"],
-    },
-    {
-      resource: "audit.operations",
-      subject: "AuditLogOperation",
-      label: "操作日志",
-      actions: ["read", "export"],
-    },
-    {
-      resource: "audit.logins",
-      subject: "AuditLogLogin",
-      label: "登录日志",
-      actions: ["read", "export"],
-    },
-    {
-      resource: "audit.permissions",
-      subject: "AuditLogPermission",
-      label: "权限变更日志",
-      actions: ["read", "export"],
-    },
-  ];
 
 export const tenantAdminManifest: TenantFeatureManifest = {
   id: "tenant-admin",
@@ -191,7 +126,6 @@ export const tenantAdminManifest: TenantFeatureManifest = {
       ],
     },
   ],
-  permissions: tenantAdminPermissionDefinitions,
   permissionModules: [
     {
       moduleKey: "organization",

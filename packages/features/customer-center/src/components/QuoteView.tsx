@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, ShieldAlert, Trash2, FileSpreadsheet } from "lucide-react";
+import {
+  Plus,
+  ShieldAlert,
+  Trash2,
+  FileSpreadsheet,
+  Download,
+} from "lucide-react";
 import {
   DataTable,
   Button,
@@ -11,7 +17,7 @@ import {
   type ColumnDef,
 } from "@chenrun/ui";
 import { createQuoteAction, updateQuoteStatusAction } from "../actions";
-import { CustomerQuoteSubject } from "../permissions";
+import { CustomerQuoteField, quotePageContract } from "../contracts";
 import type {
   CreateQuoteItemInput,
   QuoteListItem,
@@ -54,7 +60,7 @@ export function QuoteView({
     if (!permissions) return undefined;
     return {
       can(action: string, subject?: string, field?: string) {
-        if (subject && subject !== CustomerQuoteSubject) return false;
+        if (subject && subject !== quotePageContract.subject) return false;
         if (!permissions.actions.includes(action)) return false;
         if (field && permissions.fieldPolicies?.[field] === "HIDDEN")
           return false;
@@ -228,6 +234,79 @@ export function QuoteView({
     }
   };
 
+  const handleExport = () => {
+    const fieldKeys: Array<{
+      key: keyof QuoteListItem;
+      field?: string;
+      label: string;
+    }> = [
+      {
+        key: "quoteId",
+        field: CustomerQuoteField.QUOTE_ID,
+        label: "报价单号",
+      },
+      {
+        key: "displayName",
+        field: CustomerQuoteField.DISPLAY_NAME,
+        label: "对外简称",
+      },
+      {
+        key: "scopeType",
+        field: CustomerQuoteField.SCOPE_TYPE,
+        label: "适用维度",
+      },
+      {
+        key: "effectiveDate",
+        field: CustomerQuoteField.EFFECTIVE_DATE,
+        label: "生效日期",
+      },
+      {
+        key: "expiryDate",
+        field: CustomerQuoteField.EXPIRY_DATE,
+        label: "失效日期",
+      },
+      {
+        key: "status",
+        field: CustomerQuoteField.STATUS,
+        label: "状态",
+      },
+    ];
+
+    const activeExportFields = fieldKeys.filter((f) => {
+      if (!ability || !f.field) return true;
+      return ability.can("read", quotePageContract.subject, f.field);
+    });
+
+    const csvContent = [
+      activeExportFields.map((f) => f.label).join(","),
+      ...filteredQuotes.map((q) =>
+        activeExportFields
+          .map((f) => {
+            const val = q[f.key];
+            if (val === null || val === undefined) return "";
+            if (val instanceof Date) return val.toISOString().slice(0, 10);
+            return `"${String(val).replace(/"/g, '""')}"`;
+          })
+          .join(","),
+      ),
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `门店报价单_${new Date().toISOString().slice(0, 10)}.csv`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   /**
    * 状态语义化徽章组件渲染
    */
@@ -272,6 +351,7 @@ export function QuoteView({
   const columns: ColumnDef<QuoteListItem>[] = [
     {
       id: "quoteId",
+      field: CustomerQuoteField.QUOTE_ID,
       header: "报价单号",
       width: 150,
       cell: (q: QuoteListItem) => (
@@ -282,6 +362,7 @@ export function QuoteView({
     },
     {
       id: "displayName",
+      field: CustomerQuoteField.DISPLAY_NAME,
       header: "对外简称",
       cell: (q: QuoteListItem) => (
         <div className="font-medium text-foreground">
@@ -291,6 +372,7 @@ export function QuoteView({
     },
     {
       id: "scope",
+      field: CustomerQuoteField.SCOPE_TYPE,
       header: "定价适用维度",
       width: 200,
       cell: (q: QuoteListItem) => {
@@ -317,6 +399,7 @@ export function QuoteView({
     },
     {
       id: "validity",
+      field: CustomerQuoteField.EFFECTIVE_DATE,
       header: "生效有效期",
       width: 170,
       cell: (q: QuoteListItem) => (
@@ -344,6 +427,7 @@ export function QuoteView({
     },
     {
       id: "status",
+      field: CustomerQuoteField.STATUS,
       header: "状态",
       width: 90,
       align: "center",
@@ -409,16 +493,29 @@ export function QuoteView({
             客户通用报价 &gt; 区域保底报价。
           </p>
         </div>
-        {(!ability || ability.can("create", CustomerQuoteSubject)) && (
-          <Button
-            size="sm"
-            onClick={() => setShowModal(true)}
-            className="font-semibold shadow-xs"
-          >
-            <Plus className="size-4 mr-1" />
-            <span>拟定新报价单</span>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {(!ability || ability.can("export", quotePageContract.subject)) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              className="font-semibold shadow-xs gap-1.5"
+            >
+              <Download className="size-4 text-muted-foreground" />
+              <span>导出报价单</span>
+            </Button>
+          )}
+          {(!ability || ability.can("create", quotePageContract.subject)) && (
+            <Button
+              size="sm"
+              onClick={() => setShowModal(true)}
+              className="font-semibold shadow-xs"
+            >
+              <Plus className="size-4 mr-1" />
+              <span>拟定新报价单</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* 复合积木化 DataTable */}
@@ -426,7 +523,7 @@ export function QuoteView({
         data={filteredQuotes}
         columns={columns}
         rowKey={(q: QuoteListItem) => q.quoteId}
-        subject={CustomerQuoteSubject}
+        subject={quotePageContract.subject}
         ability={ability}
         permissions={permissions}
         total={filteredQuotes.length}

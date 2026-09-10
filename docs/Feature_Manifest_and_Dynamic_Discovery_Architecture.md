@@ -80,9 +80,7 @@ export interface TenantFeatureManifest {
   readonly order?: number;
   /** 切片贡献的导航区块与菜单项 */
   readonly navSections?: readonly FeatureNavSection[];
-  /** 切片贡献的 CASL 权限定义集合 */
-  readonly permissions: readonly PermissionDefinition[];
-  /** 切片贡献的角色权限管理树模块定义 */
+  /** 切片贡献的角色权限管理树与受控资源定义（全局唯一权限事实源） */
   readonly permissionModules?: readonly FeatureModulePermissionDescriptor[];
 }
 ```
@@ -124,7 +122,7 @@ export interface FeatureNavSection {
 
 | 派生工具函数 | 核心职责 | 消费场景 |
 | :--- | :--- | :--- |
-| `deriveCatalogDefinitions(manifests)` | 汇聚去重所有切片的 `permissions` | 供全局 `CaslAbilityFactory` 编译底层权限规则 |
+| `deriveCatalogDefinitions(manifests)` | 从各切片 `permissionModules` 纯函数展平提取受控实体与规则 | 供全局 `CaslAbilityFactory` 编译底层权限规则 |
 | `derivePermissionCatalog(manifests)` | 构建强类型 `PermissionCatalog` 实例 | 服务端与测试环境直接获取 CASL 实体校验目录 |
 | `deriveNavSections(manifests)` | 自动合并同 `sectionId` 的菜单并按序重排 | 生成系统完整的全量侧边栏菜单结构 |
 | `derivePermissionTree(manifests)` | 汇聚生成树形模块结构清单 | 供【角色权限管理】页面直接渲染 RBAC 权限矩阵 |
@@ -195,14 +193,6 @@ export const warehouseManifest: TenantFeatureManifest = {
           requiredSubject: "Inventory",
         },
       ],
-    },
-  ],
-  permissions: [
-    {
-      resource: "warehouse.inventory",
-      subject: "Inventory",
-      label: "库存管理",
-      actions: ["read", "create", "update", "export"],
     },
   ],
   permissionModules: [
