@@ -45,11 +45,11 @@ export function DataTableActionButton({
 
   const targetSubject = explicitSubject || contextSubject;
 
-  // 判定是否有权限执行该 action
+  // 判定是否有权限执行该 action (严格遵循 Fail-Closed 原则)
   const hasPermission = React.useMemo(() => {
-    if (!action || !ability || !targetSubject) {
-      return true; // 若未配置 action 或 ability，默认不受限
-    }
+    if (!action) return true;
+    if (!targetSubject) return true;
+    if (!ability) return false;
     return ability.can(action, targetSubject, field);
   }, [action, ability, targetSubject, field]);
 

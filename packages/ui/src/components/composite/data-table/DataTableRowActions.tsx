@@ -53,9 +53,10 @@ export function DataTableRowActions<TRecord>({
   const { subject, ability } = useDataTableContext();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
-  // 校验是否有对应的操作权限
+  // 校验是否有对应的操作权限 (严格遵循 Fail-Closed 原则)
   const canPerform = (actionName: string) => {
-    if (!ability || !subject) return true;
+    if (!subject) return true;
+    if (!ability) return false;
     return ability.can(actionName, subject);
   };
 

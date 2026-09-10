@@ -17,7 +17,7 @@ import {
   updateCustomerStatusAction,
   deleteCustomerAction,
 } from "../actions";
-import { CustomerSubject } from "../permissions";
+import { CustomerSubject, CustomerField } from "../permissions";
 import type {
   CustomerListItem,
   CustomerCategoryItem,
@@ -28,9 +28,12 @@ interface Props {
   initialCustomers: CustomerListItem[];
   categories: CustomerCategoryItem[];
   tags: CustomerTagItem[];
+  ability?: {
+    can(action: string, subject: string, field?: string): boolean;
+  };
 }
 
-export function CustomerView({ initialCustomers, categories, tags }: Props) {
+export function CustomerView({ initialCustomers, categories, tags, ability }: Props) {
   const [customers] = useState(initialCustomers);
   const [keyword, setKeyword] = useState("");
   const [selectedCat, setSelectedCat] = useState("");
@@ -209,6 +212,7 @@ export function CustomerView({ initialCustomers, categories, tags }: Props) {
     {
       id: "contact",
       header: "联系人 / 电话",
+      field: CustomerField.CONTACT_PHONE,
       width: 160,
       cell: (c: CustomerListItem) => (
         <div className="text-xs">
@@ -222,6 +226,7 @@ export function CustomerView({ initialCustomers, categories, tags }: Props) {
     {
       id: "settlement",
       header: "结算 / 税率",
+      field: CustomerField.SETTLEMENT_METHOD,
       width: 130,
       cell: (c: CustomerListItem) => (
         <div className="text-xs">
@@ -306,14 +311,16 @@ export function CustomerView({ initialCustomers, categories, tags }: Props) {
             维护企业客户主数据、结算方式、授信与服务时间。一个客户下可挂载多个履约门店。
           </p>
         </div>
-        <Button
-          size="sm"
-          onClick={() => setShowModal(true)}
-          className="font-semibold shadow-xs"
-        >
-          <Plus className="size-4 mr-1" />
-          <span>新建客户</span>
-        </Button>
+        {(!ability || ability.can("create", CustomerSubject)) && (
+          <Button
+            size="sm"
+            onClick={() => setShowModal(true)}
+            className="font-semibold shadow-xs"
+          >
+            <Plus className="size-4 mr-1" />
+            <span>新建客户</span>
+          </Button>
+        )}
       </div>
 
       {/* 复合积木化 DataTable */}
@@ -322,6 +329,7 @@ export function CustomerView({ initialCustomers, categories, tags }: Props) {
         columns={columns}
         rowKey={(c: CustomerListItem) => c.customerCode}
         subject={CustomerSubject}
+        ability={ability}
         total={filteredCustomers.length}
       >
         <DataTable.Toolbar>

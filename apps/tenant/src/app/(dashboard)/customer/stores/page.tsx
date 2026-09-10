@@ -1,15 +1,18 @@
 import React from "react";
 import {
   StoreView,
+  CustomerStoreSubject,
   listStoresAction,
   listCustomersAction,
 } from "@chenrun/feature-customer-center";
 import { toPlainData } from "@chenrun/shared";
+import { getTenantSubjectPermissions } from "@/lib/get-tenant-ability";
 
 export default async function StoresPage() {
-  const [storesRes, custRes] = await Promise.all([
+  const [storesRes, custRes, permissions] = await Promise.all([
     listStoresAction(),
     listCustomersAction(),
+    getTenantSubjectPermissions(CustomerStoreSubject),
   ]);
 
   const stores =
@@ -17,5 +20,11 @@ export default async function StoresPage() {
   const customers =
     custRes.success && custRes.data ? toPlainData(custRes.data) : [];
 
-  return <StoreView initialStores={stores} customers={customers} />;
+  return (
+    <StoreView
+      initialStores={stores}
+      customers={customers}
+      ability={permissions}
+    />
+  );
 }

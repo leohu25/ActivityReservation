@@ -1,17 +1,20 @@
 import React from "react";
 import {
   CustomerView,
+  CustomerSubject,
   listCustomersAction,
   getCategoryTreeAction,
   listTagsAction,
 } from "@chenrun/feature-customer-center";
 import { toPlainData } from "@chenrun/shared";
+import { getTenantSubjectPermissions } from "@/lib/get-tenant-ability";
 
 export default async function CustomersPage() {
-  const [custRes, catRes, tagsRes] = await Promise.all([
+  const [custRes, catRes, tagsRes, permissions] = await Promise.all([
     listCustomersAction(),
     getCategoryTreeAction(),
     listTagsAction(),
+    getTenantSubjectPermissions(CustomerSubject),
   ]);
 
   const customers =
@@ -25,6 +28,7 @@ export default async function CustomersPage() {
       initialCustomers={customers}
       categories={categories}
       tags={tags}
+      ability={permissions}
     />
   );
 }

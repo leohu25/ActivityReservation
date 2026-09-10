@@ -29,13 +29,16 @@ interface Props {
   customers: CustomerListItem[];
   /** 可选门店字典列表 */
   stores: StoreListItem[];
+  ability?: {
+    can(action: string, subject: string, field?: string): boolean;
+  };
 }
 
 /**
  * 客户中心 - 客户阶梯价与报价单中心工作台
  * 遵循现代数智工业风规范，全面接入 BusinessTableWorkspace 体系
  */
-export function QuoteView({ initialQuotes, customers, stores }: Props) {
+export function QuoteView({ initialQuotes, customers, stores, ability }: Props) {
   const [quotes] = useState<QuoteListItem[]>(initialQuotes);
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -383,14 +386,16 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
             客户通用报价 &gt; 区域保底报价。
           </p>
         </div>
-        <Button
-          size="sm"
-          onClick={() => setShowModal(true)}
-          className="font-semibold shadow-xs"
-        >
-          <Plus className="size-4 mr-1" />
-          <span>拟定新报价单</span>
-        </Button>
+        {(!ability || ability.can("create", CustomerQuoteSubject)) && (
+          <Button
+            size="sm"
+            onClick={() => setShowModal(true)}
+            className="font-semibold shadow-xs"
+          >
+            <Plus className="size-4 mr-1" />
+            <span>拟定新报价单</span>
+          </Button>
+        )}
       </div>
 
       {/* 复合积木化 DataTable */}
@@ -399,6 +404,7 @@ export function QuoteView({ initialQuotes, customers, stores }: Props) {
         columns={columns}
         rowKey={(q: QuoteListItem) => q.quoteId}
         subject={CustomerQuoteSubject}
+        ability={ability}
         total={filteredQuotes.length}
       >
         <DataTable.Toolbar>

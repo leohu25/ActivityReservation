@@ -26,13 +26,16 @@ interface Props {
   initialStores: StoreListItem[];
   /** 可选客户关联字典列表 */
   customers: CustomerListItem[];
+  ability?: {
+    can(action: string, subject: string, field?: string): boolean;
+  };
 }
 
 /**
  * 客户中心 - 门店档案管理工作台
  * 遵循现代数智工业风规范，全面接入 BusinessTableWorkspace 标准表格体系
  */
-export function StoreView({ initialStores, customers }: Props) {
+export function StoreView({ initialStores, customers, ability }: Props) {
   const [stores] = useState<StoreListItem[]>(initialStores);
   const [keyword, setKeyword] = useState("");
   const [selectedCust, setSelectedCust] = useState("");
@@ -298,14 +301,16 @@ export function StoreView({ initialStores, customers }: Props) {
             门店是订单订货、物流配送、现场签收与对账的最小履约单元，必须归属于有效客户并绑定区域。
           </p>
         </div>
-        <Button
-          size="sm"
-          onClick={() => setShowModal(true)}
-          className="font-semibold shadow-xs"
-        >
-          <Plus className="size-4 mr-1" />
-          <span>新建门店</span>
-        </Button>
+        {(!ability || ability.can("create", CustomerStoreSubject)) && (
+          <Button
+            size="sm"
+            onClick={() => setShowModal(true)}
+            className="font-semibold shadow-xs"
+          >
+            <Plus className="size-4 mr-1" />
+            <span>新建门店</span>
+          </Button>
+        )}
       </div>
 
       {/* 复合积木化 DataTable */}
@@ -314,6 +319,7 @@ export function StoreView({ initialStores, customers }: Props) {
         columns={columns}
         rowKey={(s: StoreListItem) => s.storeCode}
         subject={CustomerStoreSubject}
+        ability={ability}
         total={filteredStores.length}
       >
         <DataTable.Toolbar>

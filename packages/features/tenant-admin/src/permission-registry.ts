@@ -13,6 +13,9 @@ import {
   CustomerCategorySubject,
   CustomerQuoteResource,
   CustomerQuoteSubject,
+  customerConfigurableFields,
+  customerStoreConfigurableFields,
+  customerQuoteConfigurableFields,
 } from "@chenrun/feature-customer-center";
 import {
   ProcurementAction,
@@ -107,6 +110,11 @@ export const TENANT_PERMISSION_TREE: readonly ModulePermissionDescriptor[] = [
           { action: CustomerAction.UPDATE, label: "修改" },
           { action: CustomerAction.DELETE, label: "删除" },
         ],
+        configurableFields: customerConfigurableFields.map((f) => ({
+          field: f.field,
+          label: f.label,
+          sensitive: f.isSensitive,
+        })),
       },
       {
         resource: CustomerStoreResource,
@@ -128,6 +136,11 @@ export const TENANT_PERMISSION_TREE: readonly ModulePermissionDescriptor[] = [
           { action: CustomerAction.UPDATE, label: "修改" },
           { action: CustomerAction.DELETE, label: "删除" },
         ],
+        configurableFields: customerStoreConfigurableFields.map((f) => ({
+          field: f.field,
+          label: f.label,
+          sensitive: f.isSensitive,
+        })),
       },
       {
         resource: CustomerCategoryTagResource,
@@ -161,6 +174,11 @@ export const TENANT_PERMISSION_TREE: readonly ModulePermissionDescriptor[] = [
           { action: CustomerAction.UPDATE, label: "编辑" },
           { action: CustomerAction.AUDIT, label: "审核" },
         ],
+        configurableFields: customerQuoteConfigurableFields.map((f) => ({
+          field: f.field,
+          label: f.label,
+          sensitive: f.isSensitive,
+        })),
       },
     ],
   },
