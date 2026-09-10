@@ -28,6 +28,7 @@
 - pnpm-workspace.yaml
 - init.sh
 - turbo.json
+- README.md
 
 ## 禁止修改
 
