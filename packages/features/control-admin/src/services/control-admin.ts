@@ -1,4 +1,3 @@
-import path from "node:path";
 import {
   PrismaControlDbRepository,
   type ControlPrismaClient,
@@ -6,22 +5,14 @@ import {
   type TenantMigrationRepository,
 } from "@chenrun/db-control";
 import {
-  TenantProvisioner,
-  TenantMigrationRunner,
   TenantDatabaseSeeder,
   createDefaultPgSqlExecutorFactory,
-  type ProvisionTenantDatabaseResult,
 } from "@chenrun/db-tenant";
 import {
-  loadMigrationsFromDirectory,
-  DefaultTenantFullInitializer,
-  findMonorepoRoot,
-} from "@chenrun/tenant-migrate";
-import {
-  PlatformMigrationRunner,
-  loadPlatformMigrationsFromDirectory,
-} from "@chenrun/platform-migrate";
-import { compareMigrationVersions } from "@chenrun/shared";
+  DatabaseMigrationService,
+  TenantDatabaseProvisioner,
+  type ProvisionTenantDatabaseResult,
+} from "@chenrun/db-migrate";
 import { hashPassword } from "better-auth/crypto";
 import {
   FieldPolicy,
@@ -45,10 +36,9 @@ export interface ControlAdminServiceOptions {
   readonly prisma: ControlPrismaClient;
   readonly repository?: TenantMigrationRepository;
   readonly adminDatabaseUrl?: string;
-  readonly provisioner?: TenantProvisioner;
+  readonly provisioner?: TenantDatabaseProvisioner;
+  readonly migrationService?: DatabaseMigrationService;
   readonly seeder?: TenantDatabaseSeeder;
-  readonly workspaceRoot?: string;
-  readonly migrationsDir?: string;
 }
 
 /**
@@ -58,11 +48,9 @@ export interface ControlAdminServiceOptions {
 export class ControlAdminService {
   constructor(
     private readonly prisma: ControlPrismaClient,
-    private readonly provisioner?: TenantProvisioner,
+    private readonly provisioner?: TenantDatabaseProvisioner,
     readonly seeder?: TenantDatabaseSeeder,
-    private readonly migrationRunner?: TenantMigrationRunner,
-    private readonly workspaceRoot: string = process.cwd(),
-    private readonly adminDbUrl?: string,
+    private readonly migrationService?: DatabaseMigrationService,
   ) {}
 
   /**
@@ -74,6 +62,7 @@ export class ControlAdminService {
         options.prisma,
         options.provisioner,
         options.seeder,
+        options.migrationService,
       );
     }
 
@@ -90,63 +79,40 @@ export class ControlAdminService {
     const seeder =
       options.seeder ?? new TenantDatabaseSeeder(sqlExecutorFactory);
 
-    const workspaceRoot = findMonorepoRoot(
-      options.workspaceRoot ?? process.env.WORKSPACE_ROOT ?? process.cwd(),
-    );
-    const migrationsDir =
-      options.migrationsDir ??
-      path.join(workspaceRoot, "tooling/tenant-migrate/migrations");
-    const baseMigrations = loadMigrationsFromDirectory(migrationsDir);
-
     const repo =
       options.repository ?? new PrismaControlDbRepository(options.prisma);
-
-    const fullInitializer = new DefaultTenantFullInitializer(
-      workspaceRoot,
-      repo,
-      sqlExecutorFactory,
-      migrationsDir,
-    );
-
-    const migrationRunner = new TenantMigrationRunner(
-      repo,
-      {
-        resolveDatabaseUrl: async (secretRef: string): Promise<string> => {
-          if (secretRef.startsWith("env:")) {
-            const envKey = secretRef.slice(4);
-            return process.env[envKey] ?? "";
-          }
-          if (secretRef.startsWith("url:")) {
-            return secretRef.slice(4);
-          }
-          try {
-            const url = new URL(adminDbUrl);
-            url.pathname = `/${secretRef}`;
-            return url.toString();
-          } catch {
-            return "";
-          }
-        },
+    const secretResolver = {
+      resolveDatabaseUrl: async (secretRef: string): Promise<string> => {
+        if (secretRef.startsWith("env:")) {
+          return process.env[secretRef.slice(4)] ?? "";
+        }
+        if (secretRef.startsWith("url:")) {
+          return secretRef.slice(4);
+        }
+        try {
+          const url = new URL(adminDbUrl);
+          url.pathname = `/${secretRef}`;
+          return url.toString();
+        } catch {
+          return "";
+        }
       },
-      sqlExecutorFactory,
-      baseMigrations,
-    );
-
-    const provisioner = new TenantProvisioner(
-      repo,
-      sqlExecutorFactory,
-      migrationRunner,
-      seeder,
-      fullInitializer,
-    );
+    };
+    const migrationService =
+      options.migrationService ??
+      new DatabaseMigrationService({
+        controlDatabaseUrl: adminDbUrl,
+        repository: repo,
+        secretResolver,
+        sqlExecutorFactory,
+        seeder,
+      });
 
     return new ControlAdminService(
       options.prisma,
-      provisioner,
+      migrationService.tenantProvisioner,
       seeder,
-      migrationRunner,
-      workspaceRoot,
-      adminDbUrl,
+      migrationService,
     );
   }
 
@@ -435,7 +401,6 @@ export class ControlAdminService {
     const clusterCode = input.clusterCode ?? "primary";
     const databaseName = `tenant_${cleanSlug.replace(/-/g, "_")}`;
     const adminDbUrl =
-      this.adminDbUrl ??
       process.env.CONTROL_DATABASE_URL ??
       "postgresql://postgres:postgres@localhost:5432/saas_control";
 
@@ -451,7 +416,7 @@ export class ControlAdminService {
     // 7. 调用 TenantProvisioner 自动化创建物理数据库、应用基线 Schema 迁移并注入种子数据
     if (this.provisioner) {
       const provisionResult: ProvisionTenantDatabaseResult =
-        await this.provisioner.provisionTenantDatabase({
+        await this.provisioner.provision({
           organizationId: organization.id,
           clusterCode,
           databaseName,
@@ -532,32 +497,25 @@ export class ControlAdminService {
   }): Promise<MigrationDashboardData> {
     assertControlAdmin(operatorUser);
 
-    // 1. 平台库迁移状态
-    const platformMigrationsDir = path.join(
-      this.workspaceRoot,
-      "tooling/platform-migrate/migrations",
-    );
-    const platformMigrations = loadPlatformMigrationsFromDirectory(
-      platformMigrationsDir,
-    );
+    if (!this.migrationService) {
+      throw new Error("未配置 DatabaseMigrationService，无法读取迁移状态");
+    }
 
-    const adminDbUrl =
-      this.adminDbUrl ??
-      process.env.CONTROL_DATABASE_URL ??
-      "postgresql://postgres:postgres@localhost:5432/saas_control";
-
-    const platformRunner = new PlatformMigrationRunner(adminDbUrl);
-    const platformStatus = await platformRunner.getStatus(platformMigrations);
-
-    const latestPlatformAvailable = platformMigrations.at(-1)?.version;
-
-    // 2. 租户舰队迁移状态
-    const tenantMigrationsDir = path.join(
-      this.workspaceRoot,
-      "tooling/tenant-migrate/migrations",
-    );
-    const tenantMigrations = loadMigrationsFromDirectory(tenantMigrationsDir);
-    const latestTenantAvailable = tenantMigrations.at(-1)?.version ?? "0";
+    const platformStatus =
+      await this.migrationService.platformRunner.preflight();
+    const latestPlatformAvailable = platformStatus.targetVersion;
+    const tenantTargetVersion =
+      (
+        await Promise.all(
+          (
+            await this.prisma.tenantDatabase.findMany()
+          ).map((database) =>
+            this.migrationService!.tenantRunner.preflightTenant(
+              database.organizationId,
+            ),
+          ),
+        )
+      ).at(0)?.targetVersion ?? "0";
 
     const orgsWithDb = await this.prisma.organization.findMany({
       where: {
@@ -573,13 +531,10 @@ export class ControlAdminService {
     for (const org of orgsWithDb) {
       const db = org.tenantDatabase;
       if (!db) continue;
-      const isUpToDate =
-        compareMigrationVersions(db.schemaVersion, latestTenantAvailable) >= 0;
-      const pendingCount = isUpToDate
-        ? 0
-        : tenantMigrations.filter(
-            (m) => compareMigrationVersions(m.version, db.schemaVersion) > 0,
-          ).length;
+      const preflight =
+        await this.migrationService.tenantRunner.preflightTenant(org.id);
+      const isUpToDate = preflight.pendingVersions.length === 0;
+      const pendingCount = preflight.pendingVersions.length;
 
       fleetItems.push({
         organizationId: org.id,
@@ -597,13 +552,13 @@ export class ControlAdminService {
 
     return {
       platform: {
-        currentVersion: platformStatus.currentVersion,
+        currentVersion: platformStatus.currentVersion ?? undefined,
         latestAvailableVersion: latestPlatformAvailable,
-        isUpToDate: platformStatus.pendingMigrations.length === 0,
-        pendingCount: platformStatus.pendingMigrations.length,
+        isUpToDate: platformStatus.pendingVersions.length === 0,
+        pendingCount: platformStatus.pendingVersions.length,
       },
       fleet: {
-        latestAvailableVersion: latestTenantAvailable,
+        latestAvailableVersion: tenantTargetVersion,
         totalCount: fleetItems.length,
         upToDateCount,
         pendingCount: fleetItems.length - upToDateCount,
@@ -620,21 +575,14 @@ export class ControlAdminService {
   }): Promise<{ appliedCount: number; appliedVersions: string[] }> {
     assertControlAdmin(operatorUser);
 
-    const platformMigrationsDir = path.join(
-      this.workspaceRoot,
-      "tooling/platform-migrate/migrations",
-    );
-    const platformMigrations = loadPlatformMigrationsFromDirectory(
-      platformMigrationsDir,
-    );
-
-    const adminDbUrl =
-      this.adminDbUrl ??
-      process.env.CONTROL_DATABASE_URL ??
-      "postgresql://postgres:postgres@localhost:5432/saas_control";
-
-    const platformRunner = new PlatformMigrationRunner(adminDbUrl);
-    return platformRunner.up(platformMigrations);
+    if (!this.migrationService) {
+      throw new Error("未配置 DatabaseMigrationService，无法执行平台升级");
+    }
+    const result = await this.migrationService.platformRunner.migrate();
+    return {
+      appliedCount: result.appliedCount,
+      appliedVersions: [...result.appliedVersions],
+    };
   }
 
   /**
@@ -646,23 +594,9 @@ export class ControlAdminService {
   ): Promise<{ upgradedCount: number; failedCount: number }> {
     assertControlAdmin(operatorUser);
 
-    if (!this.migrationRunner) {
-      throw new Error("未配置 TenantMigrationRunner，无法执行舰队升级");
+    if (!this.migrationService) {
+      throw new Error("未配置 DatabaseMigrationService，无法执行舰队升级");
     }
-
-    if (targetOrgId) {
-      const results = await this.migrationRunner.migrateTenant(targetOrgId);
-      const isFailed = results.some((r) => !r.success);
-      return {
-        upgradedCount: isFailed ? 0 : 1,
-        failedCount: isFailed ? 1 : 0,
-      };
-    }
-
-    const batch = await this.migrationRunner.migrateAllTenants();
-    return {
-      upgradedCount: batch.successCount,
-      failedCount: batch.failureCount,
-    };
+    return this.migrationService.tenantRunner.migrateFleet(targetOrgId);
   }
 }

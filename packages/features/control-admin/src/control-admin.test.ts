@@ -12,12 +12,12 @@ import type {
   TenantDatabaseRecord,
   TenantDatabaseStatus,
 } from "@chenrun/db-control";
-import {
-  TenantProvisioner,
-  TenantDatabaseSeeder,
-  type ProvisionTenantDatabaseInput,
-  type ProvisionTenantDatabaseResult,
-} from "@chenrun/db-tenant";
+import { TenantDatabaseSeeder } from "@chenrun/db-tenant";
+import type {
+  ProvisionTenantDatabaseInput,
+  ProvisionTenantDatabaseResult,
+  TenantDatabaseProvisioner,
+} from "@chenrun/db-migrate";
 
 test("控制平面超管鉴权判定与断言守卫", () => {
   // 1. 默认邮箱白名单包含 admin@chenrun.com
@@ -354,16 +354,16 @@ test("ControlAdminService 开通租户串联物理库创建、基线迁移与数
   let capturedProvisionInput: ProvisionTenantDatabaseInput | undefined;
 
   const mockProvisioner = {
-    async provisionTenantDatabase(
+    async provision(
       input: ProvisionTenantDatabaseInput,
     ): Promise<ProvisionTenantDatabaseResult> {
       capturedProvisionInput = input;
       return {
         organizationId: input.organizationId,
         databaseName: `tenant_${input.organizationId}`,
-        schemaVersion: "202609080002",
+        schemaVersion: "202609100001",
         status: "ACTIVE",
-        appliedMigrationCount: 2,
+        appliedMigrationCount: 0,
         seedResult: {
           rootDepartmentId: "dept_root",
           seededPositionsCount: 3,
@@ -371,7 +371,7 @@ test("ControlAdminService 开通租户串联物理库创建、基线迁移与数
         },
       };
     },
-  } as unknown as TenantProvisioner;
+  } as unknown as TenantDatabaseProvisioner;
 
   const orgMap = new Map<string, { id: string; name: string; slug: string }>();
   const userMap = new Map<

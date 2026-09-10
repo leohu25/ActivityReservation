@@ -7,7 +7,8 @@ datasource db {
   provider = "postgresql"
 }
 
-// 关联的基础部门模型存根 (用于当前切片跨模块外键与导航定义，真实物理表位于 db-tenant)
+// 关联的基础部门模型扩展 (真实 owner 位于 db-tenant)
+// @db-migrate-extension Department
 model Department {
   id     String          @id
   orders PurchaseOrder[]

@@ -1,0 +1,347 @@
+// Generated canonical schema. Do not edit directly.
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+model CompanyProfile {
+  id           String   @id @default(cuid())
+  companyName  String   @map("company_name")
+  shortName    String?  @map("short_name")
+  creditCode   String?  @map("credit_code")
+  legalPerson  String?  @map("legal_person")
+  contactPhone String?  @map("contact_phone")
+  contactEmail String?  @map("contact_email")
+  address      String?
+  timezone     String   @default("Asia/Shanghai")
+  currency     String   @default("CNY")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("company_profile")
+}
+
+model Customer {
+  /// 客户全局唯一编码（系统自增生成，格式 CUST-YYYYMMDD-XXXX）
+  customerCode     String   @id @map("customer_code") @db.VarChar(30)
+  /// 客户企业名称
+  customerName     String   @map("customer_name") @db.VarChar(100)
+  /// 所属客户分类编码
+  categoryCode     String   @map("category_code") @db.VarChar(20)
+  /// 核心联系人姓名
+  contactPerson    String   @map("contact_person") @db.VarChar(50)
+  /// 联系电话
+  contactPhone     String   @map("contact_phone") @db.VarChar(20)
+  /// 结算方式：MONTHLY(月结) / CASH(现结) / PREPAID(预付)
+  settlementMethod String   @map("settlement_method") @db.VarChar(20)
+  /// 默认税率(%)，如 9.00 表示 9%
+  defaultTaxRate   Decimal? @map("default_tax_rate") @db.Decimal(5, 2)
+  /// 授信信用额度(元)
+  creditLimit      Decimal? @map("credit_limit") @db.Decimal(12, 2)
+  /// 客户标签摘要缓存（冗余字段，方便快速搜索展示）
+  customerTags     String?  @map("customer_tags") @db.VarChar(200)
+  /// 负责销售经理 / 业务员姓名或工号
+  salesPerson      String?  @map("sales_person") @db.VarChar(50)
+  /// 默认发货仓库标识
+  defaultWarehouse String?  @map("default_warehouse") @db.VarChar(50)
+  /// 付款周期：WEEKLY(周结) / BIWEEKLY(半月结) / MONTHLY(月结)
+  paymentCycle     String?  @map("payment_cycle") @db.VarChar(20)
+  /// 服务收货时间窗口（如：早8:00-10:00）
+  serviceTime      String?  @map("service_time") @db.VarChar(50)
+  /// 最近下单履约时间（系统只读自动更新）
+  lastOrderTime    DateTime? @map("last_order_time")
+  /// 客户状态：ACTIVE(正常) / DISABLED(停用)
+  status           String   @default("ACTIVE") @db.VarChar(10)
+  /// 创建时间
+  createdAt        DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  /// 所属分类关联
+  category         CustomerCategory @relation(fields: [categoryCode], references: [categoryCode], onDelete: Restrict)
+  /// 客户关联的多标签记录
+  tagAssignments   CustomerTagAssignment[]
+  /// 该客户下属的多个门店列表
+  stores           CustomerStore[]
+  /// 针对该客户的专属报价单列表
+  quotes           CustomerQuote[]
+
+  @@index([categoryCode])
+  @@index([status])
+  @@map("customer")
+}
+
+model CustomerCategory {
+  /// 分类编码（唯一主键标识，如 CUST_CAT_001）
+  categoryCode String   @id @map("category_code") @db.VarChar(20)
+  /// 分类名称（如：机关食堂、品牌连锁）
+  categoryName String   @map("category_name") @db.VarChar(50)
+  /// 父级分类编码（支持多级分类树，根级为空）
+  parentCode   String?  @map("parent_code") @db.VarChar(20)
+  /// 分类业务描述
+  description  String?  @db.VarChar(200)
+  /// 状态：ACTIVE(启用) / DISABLED(停用)
+  status       String   @default("ACTIVE") @db.VarChar(10)
+  /// 创建时间
+  createdAt    DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  /// 自引用：父级分类
+  parent       CustomerCategory?  @relation("CategoryHierarchy", fields: [parentCode], references: [categoryCode], onDelete: Restrict)
+  /// 自引用：子级分类列表
+  children     CustomerCategory[] @relation("CategoryHierarchy")
+  /// 该分类下的客户档案列表
+  customers    Customer[]
+
+  @@map("customer_category")
+}
+
+model CustomerQuote {
+  /// 报价单唯一单号（系统自动生成，格式 QUOT-YYYYMMDD-XXXX）
+  quoteId         String    @id @map("quote_id") @db.VarChar(30)
+  /// 适用客户编码（与 storeCode、regionCode 构成维度优先级）
+  customerCode    String?   @map("customer_code") @db.VarChar(30)
+  /// 适用门店编码（为空则适用于该客户下属所有门店）
+  storeCode       String?   @map("store_code") @db.VarChar(30)
+  /// 适用区域编码（客户与门店均为空时，作为该区域通用报价单）
+  regionCode      String?   @map("region_code") @db.VarChar(50)
+  /// 报价单拟定日期
+  quoteDate       DateTime  @map("quote_date") @db.Date
+  /// 价格生效日期
+  effectiveDate   DateTime  @map("effective_date") @db.Date
+  /// 价格失效日期（为空表示长期有效）
+  expiryDate      DateTime? @map("expiry_date") @db.Date
+  /// 报价单类型：STANDARD(普通报价单) / CYCLE(周期报价单)
+  quoteType       String    @default("STANDARD") @map("quote_type") @db.VarChar(20)
+  /// 对外展示简称（供客户查看核对的报价单名称）
+  displayName     String?   @map("display_name") @db.VarChar(100)
+  /// 包含的商品明细条目总数（系统自动汇总）
+  itemCount       Int       @default(0) @map("item_count")
+  /// 关联客户总数（只读统计）
+  customerCount   Int       @default(0) @map("customer_count")
+  /// 单据状态：DRAFT(草稿) / ACTIVE(已生效) / EXPIRED(已过期) / VOIDED(已作废)
+  status          String    @default("DRAFT") @db.VarChar(10)
+  /// 创建人姓名或工号
+  createdBy       String    @map("created_by") @db.VarChar(50)
+  /// 创建时间
+  createdAt       DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  /// 关联客户档案
+  customer        Customer?      @relation(fields: [customerCode], references: [customerCode], onDelete: Restrict)
+  /// 关联门店档案
+  store           CustomerStore? @relation(fields: [storeCode], references: [storeCode], onDelete: Restrict)
+  /// 报价单包含的商品明细列表
+  items           CustomerQuoteItem[]
+
+  @@index([customerCode])
+  @@index([storeCode])
+  @@index([regionCode])
+  @@index([status])
+  @@map("customer_quote")
+}
+
+model CustomerQuoteItem {
+  /// 报价明细行主键唯一标识
+  quoteDetailId     String   @id @map("quote_detail_id") @db.VarChar(50)
+  /// 所属报价单单号
+  quoteId           String   @map("quote_id") @db.VarChar(30)
+  /// 商品档案唯一编码（关联物料商品中心）
+  itemCode          String   @map("item_code") @db.VarChar(50)
+  /// 商品名称（如：特级上海青(净菜)）
+  itemName          String   @map("item_name") @db.VarChar(100)
+  /// 销售计量单位（如：kg、箱、袋）
+  salesUnit         String   @map("sales_unit") @db.VarChar(20)
+  /// 不含税单价（元）
+  unitPriceExclTax  Decimal  @map("unit_price_excl_tax") @db.Decimal(10, 2)
+  /// 含税销售单价（元）
+  unitPriceInclTax  Decimal  @map("unit_price_incl_tax") @db.Decimal(10, 2)
+  /// 适用增值税税率(%)，如 9.00
+  taxRate           Decimal  @map("tax_rate") @db.Decimal(5, 2)
+  /// 最小起订量限制
+  minQty            Decimal? @map("min_qty") @db.Decimal(10, 2)
+  /// 最大限购量限制
+  maxQty            Decimal? @map("max_qty") @db.Decimal(10, 2)
+  /// 明细备注说明
+  remark            String?  @db.VarChar(200)
+
+  /// 所属报价单主表关联
+  quote             CustomerQuote @relation(fields: [quoteId], references: [quoteId], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@index([itemCode])
+  @@map("customer_quote_item")
+}
+
+model CustomerStore {
+  /// 门店全局唯一编码（系统自动生成，格式 STOR-YYYYMMDD-XXXX）
+  storeCode       String   @id @map("store_code") @db.VarChar(30)
+  /// 所属客户编码（外键关联 Customer）
+  customerCode    String   @map("customer_code") @db.VarChar(30)
+  /// 门店详细名称（如：海淀中关村一店）
+  storeName       String   @map("store_name") @db.VarChar(100)
+  /// 门店配送收货详细地址
+  address         String   @db.VarChar(200)
+  /// 门店现场联系人
+  contactPerson   String   @map("contact_person") @db.VarChar(50)
+  /// 门店联系电话
+  contactPhone    String   @map("contact_phone") @db.VarChar(20)
+  /// 配送时段：MORNING(早) / NOON(中) / EVENING(晚)
+  deliveryPeriod  String?  @map("delivery_period") @db.VarChar(50)
+  /// 默认配送路线编码
+  defaultRoute    String?  @map("default_route") @db.VarChar(50)
+  /// 默认配送司机名称或工号
+  defaultDriver   String?  @map("default_driver") @db.VarChar(50)
+  /// 门店标签摘要（如 VIP门店、商圈旗舰）
+  storeTags       String?  @map("store_tags") @db.VarChar(200)
+  /// 所属区域编码（必填，用于区域报价匹配与物流调度）
+  regionCode      String   @map("region_code") @db.VarChar(50)
+  /// 结款财务联系人（门店现场收货人≠结款人时使用）
+  billingContact  String?  @map("billing_contact") @db.VarChar(50)
+  /// 结款财务联系人电话
+  billingPhone    String?  @map("billing_phone") @db.VarChar(20)
+  /// 门店状态：ACTIVE(正常) / DISABLED(停用)
+  status          String   @default("ACTIVE") @db.VarChar(10)
+  /// 创建时间
+  createdAt       DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  /// 所属客户
+  customer        Customer @relation(fields: [customerCode], references: [customerCode], onDelete: Restrict)
+  /// 针对该门店的独立报价单列表
+  quotes          CustomerQuote[]
+
+  @@index([customerCode])
+  @@index([regionCode])
+  @@index([status])
+  @@map("customer_store")
+}
+
+model CustomerTag {
+  /// 标签编码（如 TAG_DELIVERY_MORNING）
+  tagCode     String   @id @map("tag_code") @db.VarChar(20)
+  /// 标签名称（如：早间配送、VIP客户、学校食堂）
+  tagName     String   @map("tag_name") @db.VarChar(50)
+  /// 标签类型：DELIVERY(配送) / SETTLEMENT(结算) / CREDIT(信用) / OTHER(其他)
+  tagType     String   @map("tag_type") @db.VarChar(20)
+  /// 标签业务说明
+  description String?  @db.VarChar(200)
+  /// 状态：ACTIVE(启用) / DISABLED(停用)
+  status      String   @default("ACTIVE") @db.VarChar(10)
+  /// 创建时间
+  createdAt   DateTime @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  /// 关联的客户标签记录
+  assignments CustomerTagAssignment[]
+
+  @@map("customer_tag")
+}
+
+model CustomerTagAssignment {
+  /// 客户编码
+  customerCode String   @map("customer_code") @db.VarChar(30)
+  /// 标签编码
+  tagCode      String   @map("tag_code") @db.VarChar(20)
+  /// 关联打标时间
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  customer     Customer    @relation(fields: [customerCode], references: [customerCode], onDelete: Cascade)
+  tag          CustomerTag @relation(fields: [tagCode], references: [tagCode], onDelete: Cascade)
+
+  @@id([customerCode, tagCode])
+  @@map("customer_tag_assignment")
+}
+
+model Department {
+  id             String   @id
+  name           String
+  code           String   @unique
+  parentId       String?  @map("parent_id")
+  leaderMemberId String?  @map("leader_member_id")
+  sort           Int      @default(0)
+  status         String   @default("ACTIVE")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  employees      EmployeeProfile[]
+  orders PurchaseOrder[]
+  @@index([parentId])
+  @@index([status])
+  @@map("department")
+}
+
+model EmployeeProfile {
+  id                String           @id @default(cuid())
+  memberId          String?          @unique @map("member_id")
+  userId            String?          @map("user_id")
+  invitationId      String?          @map("invitation_id")
+  employeeNo        String?          @unique @map("employee_no")
+  departmentId      String?          @map("department_id")
+  positionId        String?          @map("position_id")
+  managerEmployeeId String?          @map("manager_employee_id")
+  nameSnapshot      String           @default("") @map("name_snapshot")
+  emailSnapshot     String           @default("") @map("email_snapshot")
+  jobTitle          String?          @map("job_title")
+  status            String           @default("ACTIVE")
+  joinedAt          DateTime?        @map("joined_at")
+  terminatedAt      DateTime?        @map("terminated_at")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  department        Department?      @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  position          Position?        @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  manager           EmployeeProfile? @relation("EmployeeManager", fields: [managerEmployeeId], references: [id], onDelete: SetNull)
+  subordinates      EmployeeProfile[] @relation("EmployeeManager")
+
+  @@index([departmentId])
+  @@index([positionId])
+  @@index([managerEmployeeId])
+  @@index([memberId])
+  @@index([status])
+  @@map("employee_profile")
+}
+
+model Position {
+  id          String            @id @default(cuid())
+  name        String
+  code        String            @unique
+  description String?
+  sort        Int               @default(0)
+  status      String            @default("ACTIVE")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  employees   EmployeeProfile[]
+
+  @@index([status])
+  @@map("position")
+}
+
+model PurchaseOrder {
+  id           String      @id @default(cuid())
+  orderNo      String      @unique @map("order_no")
+  supplierName String      @map("supplier_name")
+  quantity     Int
+  costPrice    Decimal     @db.Decimal(12, 2) @map("cost_price")
+  deptId       String      @map("dept_id")
+  createdById  String      @map("created_by_id")
+  status       String      @default("PENDING")
+  auditComment String?     @map("audit_comment")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  department   Department  @relation(fields: [deptId], references: [id], onDelete: Restrict)
+
+  @@index([deptId])
+  @@index([createdById])
+  @@index([status])
+  @@map("purchase_order")
+}

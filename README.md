@@ -106,17 +106,24 @@ pnpm run lint
 ./scripts/verify.sh
 ```
 
-### 数据库管理与迁移
+### 数据库管理与演进 (`tooling/db-migrate`)
+
+本项目采用 `@chenrun/db-migrate` 统一治理平台控制库与多租户舰队的数据库演进：
 
 ```bash
-# 平台 Control DB 结构比对
-pnpm run db:control:diff
+# 1. 一致性检查（校验当前所有 Schema 与已提交的迁移/基线/Catalog 是否一致）
+pnpm run db:migrate:check
 
-# 平台 Control DB 结构推送到物理库 (开发环境)
-pnpm run db:control:push
+# 2. 实体变更后显式生成增量迁移
+pnpm run db:migrate:generate --scope tenant --name add_xxx_field
+pnpm run db:migrate:generate --scope platform --name add_xxx_field
 
-# 租户物理库数据舰队全量迁移升级
-pnpm run migrate:tenant:up
+# 3. 重新生成或重置最新全量基线快照 (生成可审核的 baseline.sql)
+pnpm run db:migrate:baseline --scope tenant --reset
+pnpm run db:migrate:baseline --scope platform --reset
+
+# 4. 重新编译生成运行期只读 Catalog (generated/runtime-catalog.ts)
+pnpm run db:migrate:catalog
 ```
 
 ---
@@ -141,8 +148,7 @@ chenrun-erp-nextjs/
 │       ├── procurement-center/   # 采购中心业务切片 (订单、审批流、字段三态拦截)
 │       └── customer-center/      # 客户中心业务切片 (客户、门店、多级分类、报价单)
 ├── tooling/
-│   ├── platform-migrate/         # 平台库迁移版本管理工具
-│   └── tenant-migrate/           # 租户库舰队迁移升级版本管理工具
+│   └── db-migrate/               # 统一数据库迁移与多租户基线演进引擎 (@chenrun/db-migrate)
 ├── .harness/                     # 智能体协同工程最高宪法、沙盒边界与持久记忆库
 ├── compose.local.yaml            # 本地 PostgreSQL 容器编排
 └── turbo.json                    # Turborepo 任务编排与精准增量缓存配置

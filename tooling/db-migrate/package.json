@@ -1,0 +1,31 @@
+{
+  "name": "@chenrun/db-migrate",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "db-migrate": "./src/cli.ts"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "tsx src/cli.ts generate",
+    "baseline": "tsx src/cli.ts baseline",
+    "check": "tsx src/cli.ts check && tsc --noEmit",
+    "test": "tsx --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@chenrun/db-control": "workspace:*",
+    "@chenrun/db-tenant": "workspace:*",
+    "@chenrun/shared": "workspace:*",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "@types/pg": "^8.23.1",
+    "prisma": "7.10.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.8.2"
+  }
+}

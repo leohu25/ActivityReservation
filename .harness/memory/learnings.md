@@ -21,10 +21,12 @@
 - **痛点**：Next.js App Router 中 Server Component 内部 `fetch('/api/...')` 会产生自请求网络往返，且丢失 Cookie/Session 上下文。
 - **解法**：Server Component 必须直调 Application Service，Server Action 仅作为 Web Mutation 适配器。
 
-## 4. 多租户物理库迁移与 Alembic 式 Diff 生成
+## 4. 统一数据库演进：新库基线与老库增量升级
 
-- **痛点**：多租户物理隔离下若直接由 Next.js 服务启动时执行 `prisma db push`，会导致大量租户库并发死锁且无审计回滚账本。
-- **解法**：在 Control DB 维护 `TenantMigration` 账本模型；使用 `tooling/tenant-migrate generate` 基于 Prisma migrate diff 离线静态生成升级 SQL (`migration.sql` 与 `down.sql`)；运行时通过事务升级引擎与执行器实现幂等升级与失败断点阻断。
+- **痛点**：多租户物理隔离下若由 Next.js 服务在请求中动态调用 Prisma CLI 执行 Schema 扫描或 `prisma db push`，打包后因路径重写极易触发 `ENOENT`，且引发并发死锁；老租户库若无审计账本也无法追溯和重试。
+- **解法**：建立统一演进工具包 `@chenrun/db-migrate`：
+  - **新库开通**：直接执行预生成并经过哈希校验的最新版本全量 Baseline SQL，0 秒初始化并注入基础 Seed，彻底与运行期 Prisma CLI 解耦；
+  - **老库升级**：在 Control DB 维护 `TenantMigration` 集中账本；通过 `pnpm db:migrate:generate` 显式生成带风险审查元数据的增量迁移补丁；生产环境通过带 PostgreSQL Advisory Lock 的事务升级引擎受控批量执行。
 
 ## 5. 消除状态双写与沙盒单源治理 (Single Source of Truth)
 

@@ -23,8 +23,7 @@ packages/
 └── shared/                  # 通用工具函数、枚举与错误码
 
 tooling/
-├── tenant-migrate/          # Database-per-Tenant 数据库 Alembic 式迁移 CLI
-└── boundary-check/          # 架构边界静态检查器
+└── db-migrate/              # 统一数据库演进与多租户基线引擎 (@chenrun/db-migrate)
 ```
 
 ## 二、 包目录组织与反平铺规约 (Anti-Flat Directory Guidelines)

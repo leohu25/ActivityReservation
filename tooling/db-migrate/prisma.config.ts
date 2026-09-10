@@ -1,0 +1,9 @@
+import { defineConfig } from "prisma/config";
+
+export default defineConfig({
+  datasource: {
+    url:
+      globalThis.process?.env.CONTROL_DATABASE_URL ??
+      "postgresql://postgres:postgres@127.0.0.1:5432/postgres",
+  },
+});
