@@ -2,11 +2,104 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToString } from "react-dom/server";
-import { Sidebar } from "./components/layout/Sidebar";
+import { Sidebar, type NavSection } from "./components/layout/Sidebar";
 
-test("Sidebar 默认渲染出标准多级导航与各核心菜单分组", () => {
+const mockSections: readonly NavSection[] = [
+  {
+    id: "base",
+    items: [
+      {
+        id: "workbench",
+        label: "工作台",
+        href: "/workbench",
+      },
+    ],
+  },
+  {
+    id: "biz",
+    title: "业务中心",
+    items: [
+      {
+        id: "procurement",
+        label: "采购订单中心",
+        href: "/procurement/orders",
+        requiredAction: "read",
+        requiredSubject: "PurchaseOrder",
+      },
+    ],
+  },
+  {
+    id: "system",
+    title: "系统管理",
+    items: [
+      {
+        id: "group-organization",
+        label: "组织架构",
+        items: [
+          {
+            id: "org-employees",
+            label: "员工管理",
+            href: "/organization/employees",
+            requiredAction: "read",
+            requiredSubject: "Employee",
+          },
+        ],
+      },
+      {
+        id: "group-permissions",
+        label: "权限管理",
+        items: [
+          {
+            id: "settings-roles",
+            label: "角色权限管理",
+            href: "/settings/roles",
+            requiredAction: "read",
+            requiredSubject: "RoleManagement",
+          },
+        ],
+      },
+      {
+        id: "group-settings",
+        label: "企业设置",
+        items: [
+          {
+            id: "settings-company",
+            label: "企业信息",
+            href: "/settings/company",
+          },
+          {
+            id: "settings-general",
+            label: "基础设置",
+            href: "/settings/general",
+          },
+          {
+            id: "settings-security",
+            label: "安全设置",
+            href: "/settings/security",
+          },
+        ],
+      },
+      {
+        id: "group-audit",
+        label: "审计日志",
+        items: [
+          {
+            id: "audit-operations",
+            label: "操作日志",
+            href: "/audit/operations",
+          },
+        ],
+      },
+    ],
+  },
+];
+
+test("Sidebar 正确渲染传入的导航区块与各多级菜单分组", () => {
   const html = renderToString(
-    React.createElement(Sidebar, { currentPath: "/workbench" }),
+    React.createElement(Sidebar, {
+      sections: mockSections,
+      currentPath: "/workbench",
+    }),
   );
 
   // 验证基础顶级菜单
@@ -28,7 +121,10 @@ test("Sidebar 默认渲染出标准多级导航与各核心菜单分组", () => 
 
 test("Sidebar 依据当前路由自动展开所属父级分组并高亮对应子项", () => {
   const html = renderToString(
-    React.createElement(Sidebar, { currentPath: "/settings/company" }),
+    React.createElement(Sidebar, {
+      sections: mockSections,
+      currentPath: "/settings/company",
+    }),
   );
 
   assert.ok(html.includes("企业信息"));
@@ -51,6 +147,7 @@ test("Sidebar 支持通过 can 回调执行功能权限过滤", () => {
 
   const html = renderToString(
     React.createElement(Sidebar, {
+      sections: mockSections,
       currentPath: "/workbench",
       can: canMock,
     }),
