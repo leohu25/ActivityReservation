@@ -140,11 +140,13 @@ for (const line of lines) {
   }
 }
 
-// 5. 注入通用合规放行项 (协同元数据、特性沙盒与公共记忆库)
+// 5. 注入通用合规放行项 (协同元数据、特性沙盒与公共记忆库、智能体生态技能)
 const universalAllowed = [
   "member.local.md",
   "member.local.example.md",
   "feature_list.json",
+  "skills-lock.json",
+  ".agents/skills/**",
   ".harness/memory/**",
   `.harness/features/${activeFeature}/**`,
 ];

@@ -14,3 +14,6 @@
 - `packages/auth/**`
 - `apps/**`
 - `packages/features/**`
+- `skills-lock.json`
+- `.agents/skills/**`
+- `scripts/check-boundary.mjs`
