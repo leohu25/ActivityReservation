@@ -1,5 +1,5 @@
 // 租户独立物理数据库 Schema (Database-per-Tenant)
-// 包含租户内部的业务实体模型（如采购订单、部门等）
+// 包含租户内部的基础组织与系统配置模型 (部门、岗位、员工档案等)
 generator client {
   provider = "prisma-client-js"
   output   = "../node_modules/@prisma/client-tenant"
@@ -21,7 +21,6 @@ model Department {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  orders         PurchaseOrder[]
   employees      EmployeeProfile[]
 
   @@index([parentId])
@@ -94,26 +93,4 @@ model CompanyProfile {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("company_profile")
-}
-
-// 采购订单业务模型 (核心 ERP 业务切片与 CASL 授权实体)
-model PurchaseOrder {
-  id           String      @id @default(cuid())
-  orderNo      String      @unique @map("order_no")
-  supplierName String      @map("supplier_name")
-  quantity     Int
-  costPrice    Decimal     @db.Decimal(12, 2) @map("cost_price")
-  deptId       String      @map("dept_id")
-  createdById  String      @map("created_by_id")
-  status       String      @default("PENDING")
-  auditComment String?     @map("audit_comment")
-  createdAt    DateTime    @default(now()) @map("created_at")
-  updatedAt    DateTime    @updatedAt @map("updated_at")
-
-  department   Department  @relation(fields: [deptId], references: [id], onDelete: Restrict)
-
-  @@index([deptId])
-  @@index([createdById])
-  @@index([status])
-  @@map("purchase_order")
 }

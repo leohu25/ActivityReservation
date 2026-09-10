@@ -3,6 +3,7 @@
 ## 允许修改的文件与目录
 
 - `packages/features/procurement-center/**`
+- `packages/features/tenant-admin/**`
 - `packages/features/control-admin/**`
 - `packages/db-tenant/**`
 - `tooling/tenant-migrate/**`

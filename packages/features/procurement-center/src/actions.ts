@@ -29,7 +29,7 @@ export async function createOrderAction(
     }
 
     const created = await service.createOrder(
-      ctx.prisma,
+      ctx.procurementPrisma,
       ctx.ability,
       {
         userId: ctx.userId,
@@ -58,7 +58,7 @@ export async function auditOrderAction(
     const service = getProcurementOrderService();
 
     const audited = await service.auditOrder(
-      ctx.prisma,
+      ctx.procurementPrisma,
       ctx.ability,
       {
         userId: ctx.userId,

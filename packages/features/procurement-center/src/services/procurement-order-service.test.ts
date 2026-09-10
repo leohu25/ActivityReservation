@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createMongoAbility } from "@casl/ability";
 import { createPrismaAbility } from "@casl/prisma";
-import type { TenantPrismaClient } from "@chenrun/db-tenant";
+import type { ProcurementPrismaClient } from "../db/client";
 import type { ProcurementAnyAbility } from "../types";
 import { ProcurementOrderService } from "./procurement-order-service";
 
@@ -74,7 +74,7 @@ function createMockPrisma(initialOrders: Array<Record<string, unknown>> = []) {
         return orders[idx];
       },
     },
-  } as unknown as TenantPrismaClient;
+  } as unknown as ProcurementPrismaClient;
 }
 
 test("ProcurementOrderService.listOrders 依据 CASL 数据范围过滤并彻底剥离隐藏字段", async () => {

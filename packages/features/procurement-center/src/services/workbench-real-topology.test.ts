@@ -9,7 +9,7 @@ import {
   type AppPrismaAbility,
 } from "@chenrun/authorization";
 import { procurementCatalog } from "../index";
-import type { ProcurementAction } from "../permissions";
+import type { ProcurementAction } from "../contracts";
 
 function findMonorepoRoot(startDir: string): string {
   let cur = startDir;

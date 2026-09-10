@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/client-procurement"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 关联的基础部门模型存根 (用于当前切片跨模块外键与导航定义，真实物理表位于 db-tenant)
+model Department {
+  id     String          @id
+  orders PurchaseOrder[]
+
+  @@map("department")
+}
+
+// 采购订单业务模型 (核心 ERP 业务切片与 CASL 授权实体)
+model PurchaseOrder {
+  id           String      @id @default(cuid())
+  orderNo      String      @unique @map("order_no")
+  supplierName String      @map("supplier_name")
+  quantity     Int
+  costPrice    Decimal     @db.Decimal(12, 2) @map("cost_price")
+  deptId       String      @map("dept_id")
+  createdById  String      @map("created_by_id")
+  status       String      @default("PENDING")
+  auditComment String?     @map("audit_comment")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  department   Department  @relation(fields: [deptId], references: [id], onDelete: Restrict)
+
+  @@index([deptId])
+  @@index([createdById])
+  @@index([status])
+  @@map("purchase_order")
+}

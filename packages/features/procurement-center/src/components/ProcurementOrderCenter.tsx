@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import type { FieldAccessMode } from "@chenrun/authorization";
 import { Badge, Button, DataTable, type ColumnDef } from "@chenrun/ui";
 import { CheckCheck, PackageCheck, ShoppingCart, Download } from "lucide-react";
-import { ProcurementOrderStatus, ProcurementSubject } from "../permissions";
+import {
+  ProcurementOrderField,
+  ProcurementOrderStatus,
+  procurementOrderPageContract,
+} from "../contracts";
 import type {
   ProcurementOrderItem,
   ProcurementAnyAbility,
@@ -15,41 +19,140 @@ import { AuditOrderModal } from "./AuditOrderModal";
 
 export interface ProcurementOrderCenterProps {
   readonly orders: readonly ProcurementOrderItem[];
-  readonly sqlWhere: Record<string, unknown>;
-  readonly activeOrgId: string;
+  readonly sqlWhere?: Record<string, unknown>;
+  readonly activeOrgId?: string;
   readonly departmentName?: string | null;
-  readonly canCreate: boolean;
-  readonly canExport: boolean;
-  readonly fieldVisibility: ProcurementFieldVisibility;
-  readonly currentUserId: string;
+  readonly canCreate?: boolean;
+  readonly canExport?: boolean;
+  readonly fieldVisibility?: ProcurementFieldVisibility;
+  readonly currentUserId?: string;
   readonly ability?: ProcurementAnyAbility;
   readonly createFieldModes?: Record<string, FieldAccessMode>;
+  readonly permissions?: {
+    readonly actions: readonly string[];
+    readonly fieldPolicies?: Readonly<Record<string, string>>;
+  };
 }
 
 export function ProcurementOrderCenter({
   orders,
-  sqlWhere,
-  activeOrgId,
+  sqlWhere = {},
+  activeOrgId = "",
   departmentName,
-  canCreate,
-  canExport,
+  canCreate: explicitCanCreate,
+  canExport: explicitCanExport,
   fieldVisibility,
-  ability,
+  ability: explicitAbility,
   createFieldModes,
+  permissions,
 }: ProcurementOrderCenterProps) {
   const [selectedAuditOrder, setSelectedAuditOrder] =
     useState<ProcurementOrderItem | null>(null);
 
-  const handleExportDummy = () => {
-    alert(
-      "采购数据导出遵循当前角色字段脱敏策略，成本价将依权决定是否包含在导出文件中。",
-    );
+  // 依据 skill 规范，标准化解析 ability 守卫
+  const ability = React.useMemo(() => {
+    if (explicitAbility) return explicitAbility;
+    if (!permissions) return undefined;
+    return {
+      can(action: string, subject?: string, field?: string) {
+        if (subject && subject !== procurementOrderPageContract.subject)
+          return false;
+        if (!permissions.actions.includes(action)) return false;
+        if (field && permissions.fieldPolicies?.[field] === "HIDDEN")
+          return false;
+        return true;
+      },
+    };
+  }, [explicitAbility, permissions]);
+
+  // 受控操作按钮鉴权：优先通过 ability 计算，也可兼容服务端显式传入的 props
+  const canExport =
+    explicitCanExport === undefined
+      ? !ability || ability.can("export", procurementOrderPageContract.subject)
+      : explicitCanExport;
+
+  const canCreate =
+    explicitCanCreate === undefined
+      ? !ability || ability.can("create", procurementOrderPageContract.subject)
+      : explicitCanCreate;
+
+  const handleExport = () => {
+    const fieldKeys = [
+      {
+        key: "orderNo" as const,
+        field: ProcurementOrderField.ORDER_NO,
+        label: "订单编号",
+      },
+      {
+        key: "supplierName" as const,
+        field: ProcurementOrderField.SUPPLIER_NAME,
+        label: "供应商名称",
+      },
+      {
+        key: "quantity" as const,
+        field: ProcurementOrderField.QUANTITY,
+        label: "采购数量",
+      },
+      {
+        key: "costPrice" as const,
+        field: ProcurementOrderField.COST_PRICE,
+        label: "采购成本单价",
+      },
+      {
+        key: "status" as const,
+        field: ProcurementOrderField.STATUS,
+        label: "状态",
+      },
+      {
+        key: "auditComment" as const,
+        field: ProcurementOrderField.AUDIT_COMMENT,
+        label: "审核意见",
+      },
+    ];
+
+    // 过滤掉当前操作员无权访问 (HIDDEN) 的字段
+    const activeExportFields = fieldKeys.filter((f) => {
+      if (fieldVisibility && fieldVisibility[f.key] === false) return false;
+      if (!ability || !f.field) return true;
+      return ability.can("read", procurementOrderPageContract.subject, f.field);
+    });
+
+    const csvContent = [
+      activeExportFields.map((f) => f.label).join(","),
+      ...orders.map((o) =>
+        activeExportFields
+          .map((f) => {
+            const val = o[f.key];
+            if (val === null || val === undefined) return "";
+            return `"${String(val).replace(/"/g, '""')}"`;
+          })
+          .join(","),
+      ),
+    ].join("\n");
+
+    if (typeof window !== "undefined" && typeof Blob !== "undefined") {
+      const blob = new Blob(["\uFEFF" + csvContent], {
+        type: "text/csv;charset=utf-8;",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `采购订单_${new Date().toISOString().slice(0, 10)}.csv`,
+      );
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
   };
 
-  // 定义业务列契约（自动关联 fieldVisibility，保留原有脱敏与显隐特性）
+  // 定义业务列契约（显式挂载 field: ProcurementOrderField.XXX，受控列必带身份证）
   const allColumns: ColumnDef<ProcurementOrderItem>[] = [
     {
       id: "orderNo",
+      field: ProcurementOrderField.ORDER_NO,
       header: "订单编号",
       cell: (order: ProcurementOrderItem) => (
         <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
@@ -59,6 +162,7 @@ export function ProcurementOrderCenter({
     },
     {
       id: "supplierName",
+      field: ProcurementOrderField.SUPPLIER_NAME,
       header: "供应商名称",
       cell: (order: ProcurementOrderItem) => (
         <span className="font-medium text-slate-800 dark:text-slate-200">
@@ -68,6 +172,7 @@ export function ProcurementOrderCenter({
     },
     {
       id: "quantity",
+      field: ProcurementOrderField.QUANTITY,
       header: "采购数量",
       cell: (order: ProcurementOrderItem) => (
         <span className="text-slate-600 dark:text-slate-400 tabular-nums">
@@ -77,6 +182,7 @@ export function ProcurementOrderCenter({
     },
     {
       id: "costPrice",
+      field: ProcurementOrderField.COST_PRICE,
       header: "采购单价 (敏感资产)",
       cell: (order: ProcurementOrderItem) => (
         <span className="font-bold text-emerald-600 tabular-nums dark:text-emerald-400">
@@ -95,6 +201,7 @@ export function ProcurementOrderCenter({
     },
     {
       id: "status",
+      field: ProcurementOrderField.STATUS,
       header: "状态",
       cell: (order: ProcurementOrderItem) => {
         if (order.status === ProcurementOrderStatus.APPROVED) {
@@ -120,6 +227,7 @@ export function ProcurementOrderCenter({
     },
     {
       id: "auditComment",
+      field: ProcurementOrderField.AUDIT_COMMENT,
       header: "审核意见",
       cell: (order: ProcurementOrderItem) => (
         <span className="text-slate-500 dark:text-slate-400">
@@ -161,15 +269,26 @@ export function ProcurementOrderCenter({
     },
   ];
 
-  // 严格依据传入的 fieldVisibility 过滤可见列（保证与服务端推导一致）
+  // 严格过滤可见列（双重保障：fieldVisibility 模式或 ability 契约模式）
   const activeColumns = allColumns.filter((col) => {
-    if (col.id === "orderNo") return fieldVisibility.orderNo;
-    if (col.id === "supplierName") return fieldVisibility.supplierName;
-    if (col.id === "quantity") return fieldVisibility.quantity;
-    if (col.id === "costPrice") return fieldVisibility.costPrice;
-    if (col.id === "status") return fieldVisibility.status;
-    if (col.id === "auditComment") return fieldVisibility.auditComment;
-    return true; // 部门等公共列默认展示
+    // 1. 若外部传入 fieldVisibility 映射表，优先遵守
+    if (fieldVisibility) {
+      if (col.id === "orderNo") return fieldVisibility.orderNo;
+      if (col.id === "supplierName") return fieldVisibility.supplierName;
+      if (col.id === "quantity") return fieldVisibility.quantity;
+      if (col.id === "costPrice") return fieldVisibility.costPrice;
+      if (col.id === "status") return fieldVisibility.status;
+      if (col.id === "auditComment") return fieldVisibility.auditComment;
+    }
+    // 2. 若无 fieldVisibility 但有 ability 鉴权上下文，按 CASL 判定
+    if (ability && col.field) {
+      return ability.can(
+        "read",
+        procurementOrderPageContract.subject,
+        col.field,
+      );
+    }
+    return true; // 部门、操作等公共列默认展示
   });
 
   return (
@@ -195,7 +314,7 @@ export function ProcurementOrderCenter({
             <Button
               variant="outline"
               size="sm"
-              onClick={handleExportDummy}
+              onClick={handleExport}
               className="text-xs font-semibold gap-1"
             >
               <Download className="size-3.5" />
@@ -217,7 +336,7 @@ export function ProcurementOrderCenter({
         data={orders}
         columns={activeColumns}
         rowKey={(order: ProcurementOrderItem) => order.id}
-        subject={ProcurementSubject}
+        subject={procurementOrderPageContract.subject}
         ability={ability}
         total={orders.length}
       >
@@ -226,25 +345,38 @@ export function ProcurementOrderCenter({
       </DataTable.Root>
 
       {/* 底部 Prisma 动态下推查询调试说明 */}
-      <div className="rounded-lg border border-border/70 bg-muted/20 p-3 text-xs">
-        <div className="font-semibold text-foreground mb-1">
-          Prisma accessibleBy 实时下推查询条件 (当前租户: {activeOrgId})
+      {activeOrgId && (
+        <div className="rounded-lg border border-border/70 bg-muted/20 p-3 text-xs">
+          <div className="font-semibold text-foreground mb-1">
+            Prisma accessibleBy 实时下推查询条件 (当前租户: {activeOrgId})
+          </div>
+          <pre className="font-mono text-[11px] text-muted-foreground overflow-x-auto p-2 bg-background rounded border">
+            {JSON.stringify(sqlWhere, null, 2)}
+          </pre>
         </div>
-        <pre className="font-mono text-[11px] text-muted-foreground overflow-x-auto p-2 bg-background rounded border">
-          {JSON.stringify(sqlWhere, null, 2)}
-        </pre>
-      </div>
+      )}
 
       {/* 审核弹窗 */}
       {selectedAuditOrder && (
         <AuditOrderModal
           order={selectedAuditOrder}
           isOpen={Boolean(selectedAuditOrder)}
-          fieldVisibility={fieldVisibility}
+          fieldVisibility={
+            fieldVisibility ?? {
+              orderNo: true,
+              supplierName: true,
+              quantity: true,
+              costPrice: true,
+              status: true,
+              auditComment: true,
+            }
+          }
           onClose={() => setSelectedAuditOrder(null)}
           onAudited={() => {
             setSelectedAuditOrder(null);
-            window.location.reload();
+            if (typeof window !== "undefined") {
+              window.location.reload();
+            }
           }}
         />
       )}
