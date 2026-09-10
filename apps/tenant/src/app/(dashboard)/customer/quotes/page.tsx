@@ -29,7 +29,7 @@ export default async function QuotesPage() {
       initialQuotes={quotes}
       customers={customers}
       stores={stores}
-      ability={permissions}
+      permissions={permissions}
     />
   );
 }

@@ -32,13 +32,35 @@ interface Props {
   ability?: {
     can(action: string, subject: string, field?: string): boolean;
   };
+  permissions?: {
+    readonly actions: readonly string[];
+    readonly fieldPolicies?: Readonly<Record<string, string>>;
+  };
 }
 
 /**
  * 客户中心 - 客户阶梯价与报价单中心工作台
  * 遵循现代数智工业风规范，全面接入 BusinessTableWorkspace 体系
  */
-export function QuoteView({ initialQuotes, customers, stores, ability }: Props) {
+export function QuoteView({
+  initialQuotes,
+  customers,
+  stores,
+  ability: explicitAbility,
+  permissions,
+}: Props) {
+  const ability = React.useMemo(() => {
+    if (explicitAbility) return explicitAbility;
+    if (!permissions) return undefined;
+    return {
+      can(action: string, subject?: string, field?: string) {
+        if (subject && subject !== CustomerQuoteSubject) return false;
+        if (!permissions.actions.includes(action)) return false;
+        if (field && permissions.fieldPolicies?.[field] === "HIDDEN") return false;
+        return true;
+      },
+    };
+  }, [explicitAbility, permissions]);
   const [quotes] = useState<QuoteListItem[]>(initialQuotes);
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -405,6 +427,7 @@ export function QuoteView({ initialQuotes, customers, stores, ability }: Props) 
         rowKey={(q: QuoteListItem) => q.quoteId}
         subject={CustomerQuoteSubject}
         ability={ability}
+        permissions={permissions}
         total={filteredQuotes.length}
       >
         <DataTable.Toolbar>

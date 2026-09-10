@@ -2,28 +2,25 @@ import { headers } from "next/headers";
 import { getCurrentTenantContext, getServerAuthRuntime } from "@chenrun/auth";
 import {
   CaslAbilityFactory,
-  FieldPolicy,
   parsePersistedPermissions,
   type FieldAccessMode,
 } from "@chenrun/authorization";
+import { toPlainData } from "@chenrun/shared";
 import { globalTenantCatalog } from "./global-catalog";
 
-export interface SerializedAbility {
+export interface TenantSubjectPermissions {
   readonly actions: readonly string[];
   readonly fieldPolicies: Readonly<Record<string, FieldAccessMode>>;
 }
 
 /**
- * 在 Server Component 中获取当前登录用户针对特定 Subject 的强类型权限描述
+ * 在 Server Component 中获取当前登录用户针对特定 Subject 的强类型权限纯数据描述
+ * 严格遵循 RSC 跨端序列化规范：仅返回纯 JSON 对象，杜绝传递不可序列化的函数！
  * 严格遵循 Fail-Closed 原则：若未登录或未授权，默认空数组 (全部拒绝)
  */
 export async function getTenantSubjectPermissions(
   subject: string,
-): Promise<{
-  actions: string[];
-  fieldPolicies: Record<string, FieldAccessMode>;
-  can: (action: string, s?: string, field?: string) => boolean;
-}> {
+): Promise<TenantSubjectPermissions> {
   try {
     const reqHeaders = await headers();
     const runtime = getServerAuthRuntime();
@@ -47,20 +44,21 @@ export async function getTenantSubjectPermissions(
     const fieldPolicies: Record<string, FieldAccessMode> = {};
 
     // SAFETY: resolveRolesAndStatements is an internal helper on CaslAbilityFactory that reads persistent role definitions
-    const { byRole, roleNames } = await (factory as unknown as {
-      resolveRolesAndStatements: (ctx: typeof tenantCtx) => Promise<{
-        byRole: Map<string, { role: string; permission: string }>;
-        roleNames: string[];
-      }>;
-    }).resolveRolesAndStatements(tenantCtx);
+    const { byRole, roleNames } = await (
+      factory as unknown as {
+        resolveRolesAndStatements: (ctx: typeof tenantCtx) => Promise<{
+          byRole: Map<string, { role: string; permission: string }>;
+          roleNames: string[];
+        }>;
+      }
+    ).resolveRolesAndStatements(tenantCtx);
 
     // 如果是 owner，全量放行
     if (roleNames.includes("owner")) {
-      return {
+      return toPlainData({
         actions,
         fieldPolicies,
-        can: () => true,
-      };
+      });
     }
 
     for (const roleName of roleNames) {
@@ -77,27 +75,14 @@ export async function getTenantSubjectPermissions(
       }
     }
 
-    return {
+    return toPlainData({
       actions: allowedActions,
       fieldPolicies,
-      can(action: string, targetSubject?: string, field?: string) {
-        if (targetSubject && targetSubject !== subject) {
-          return false;
-        }
-        if (!allowedActions.includes(action)) {
-          return false;
-        }
-        if (field && fieldPolicies[field] === FieldPolicy.HIDDEN) {
-          return false;
-        }
-        return true;
-      },
-    };
+    });
   } catch {
-    return {
+    return toPlainData({
       actions: [],
       fieldPolicies: {},
-      can: () => false,
-    };
+    });
   }
 }

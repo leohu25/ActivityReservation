@@ -33,11 +33,31 @@ export const customerConfigurableFields = [
   { field: CustomerField.CUSTOMER_CODE, label: "客户编码", isSensitive: false },
   { field: CustomerField.CUSTOMER_NAME, label: "客户名称", isSensitive: false },
   { field: CustomerField.CATEGORY, label: "客户分类", isSensitive: false },
-  { field: CustomerField.CONTACT_PERSON, label: "联系人姓名", isSensitive: false },
-  { field: CustomerField.CONTACT_PHONE, label: "联系人电话 (敏感)", isSensitive: true },
-  { field: CustomerField.SETTLEMENT_METHOD, label: "结算方式", isSensitive: false },
-  { field: CustomerField.DEFAULT_TAX_RATE, label: "默认税率", isSensitive: false },
-  { field: CustomerField.CREDIT_LIMIT, label: "授信额度 (敏感资产)", isSensitive: true },
+  {
+    field: CustomerField.CONTACT_PERSON,
+    label: "联系人姓名",
+    isSensitive: false,
+  },
+  {
+    field: CustomerField.CONTACT_PHONE,
+    label: "联系人电话 (敏感)",
+    isSensitive: true,
+  },
+  {
+    field: CustomerField.SETTLEMENT_METHOD,
+    label: "结算方式",
+    isSensitive: false,
+  },
+  {
+    field: CustomerField.DEFAULT_TAX_RATE,
+    label: "默认税率",
+    isSensitive: false,
+  },
+  {
+    field: CustomerField.CREDIT_LIMIT,
+    label: "授信额度 (敏感资产)",
+    isSensitive: true,
+  },
   { field: CustomerField.STATUS, label: "客户状态", isSensitive: false },
 ] as const;
 
@@ -55,14 +75,42 @@ export const CustomerStoreField = {
 } as const;
 
 export const customerStoreConfigurableFields = [
-  { field: CustomerStoreField.STORE_CODE, label: "门店编码", isSensitive: false },
-  { field: CustomerStoreField.STORE_NAME, label: "门店名称", isSensitive: false },
-  { field: CustomerStoreField.CUSTOMER_CODE, label: "所属客户", isSensitive: false },
-  { field: CustomerStoreField.REGION_CODE, label: "所属区域", isSensitive: false },
-  { field: CustomerStoreField.DELIVERY_PERIOD, label: "配送时段", isSensitive: false },
+  {
+    field: CustomerStoreField.STORE_CODE,
+    label: "门店编码",
+    isSensitive: false,
+  },
+  {
+    field: CustomerStoreField.STORE_NAME,
+    label: "门店名称",
+    isSensitive: false,
+  },
+  {
+    field: CustomerStoreField.CUSTOMER_CODE,
+    label: "所属客户",
+    isSensitive: false,
+  },
+  {
+    field: CustomerStoreField.REGION_CODE,
+    label: "所属区域",
+    isSensitive: false,
+  },
+  {
+    field: CustomerStoreField.DELIVERY_PERIOD,
+    label: "配送时段",
+    isSensitive: false,
+  },
   { field: CustomerStoreField.ADDRESS, label: "配送地址", isSensitive: false },
-  { field: CustomerStoreField.CONTACT_PERSON, label: "联系人姓名", isSensitive: false },
-  { field: CustomerStoreField.CONTACT_PHONE, label: "联系人电话 (敏感)", isSensitive: true },
+  {
+    field: CustomerStoreField.CONTACT_PERSON,
+    label: "联系人姓名",
+    isSensitive: false,
+  },
+  {
+    field: CustomerStoreField.CONTACT_PHONE,
+    label: "联系人电话 (敏感)",
+    isSensitive: true,
+  },
   { field: CustomerStoreField.STATUS, label: "门店状态", isSensitive: false },
 ] as const;
 
@@ -78,10 +126,26 @@ export const CustomerQuoteField = {
 
 export const customerQuoteConfigurableFields = [
   { field: CustomerQuoteField.QUOTE_ID, label: "报价单号", isSensitive: false },
-  { field: CustomerQuoteField.DISPLAY_NAME, label: "对外简称", isSensitive: false },
-  { field: CustomerQuoteField.SCOPE_TYPE, label: "定价适用维度", isSensitive: false },
-  { field: CustomerQuoteField.EFFECTIVE_DATE, label: "生效日期", isSensitive: false },
-  { field: CustomerQuoteField.EXPIRY_DATE, label: "失效日期", isSensitive: false },
+  {
+    field: CustomerQuoteField.DISPLAY_NAME,
+    label: "对外简称",
+    isSensitive: false,
+  },
+  {
+    field: CustomerQuoteField.SCOPE_TYPE,
+    label: "定价适用维度",
+    isSensitive: false,
+  },
+  {
+    field: CustomerQuoteField.EFFECTIVE_DATE,
+    label: "生效日期",
+    isSensitive: false,
+  },
+  {
+    field: CustomerQuoteField.EXPIRY_DATE,
+    label: "失效日期",
+    isSensitive: false,
+  },
   { field: CustomerQuoteField.STATUS, label: "单据状态", isSensitive: false },
 ] as const;
 

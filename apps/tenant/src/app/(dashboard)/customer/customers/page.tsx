@@ -28,7 +28,7 @@ export default async function CustomersPage() {
       initialCustomers={customers}
       categories={categories}
       tags={tags}
-      ability={permissions}
+      permissions={permissions}
     />
   );
 }

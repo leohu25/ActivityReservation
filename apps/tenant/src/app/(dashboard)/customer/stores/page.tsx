@@ -24,7 +24,7 @@ export default async function StoresPage() {
     <StoreView
       initialStores={stores}
       customers={customers}
-      ability={permissions}
+      permissions={permissions}
     />
   );
 }

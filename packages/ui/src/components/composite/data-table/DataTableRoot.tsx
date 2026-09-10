@@ -8,6 +8,11 @@ import {
 } from "./DataTableContext";
 import { cn } from "../../../lib/utils";
 
+export interface PlainTablePermissions {
+        readonly actions: readonly string[];
+        readonly fieldPolicies?: Readonly<Record<string, string>>;
+}
+
 export interface DataTableRootProps<TData> {
         data: readonly TData[];
         columns: readonly ColumnDef<TData>[];
@@ -18,9 +23,12 @@ export interface DataTableRootProps<TData> {
         total?: number;
         onPageChange?: (page: number, pageSize: number) => void;
         subject?: string;
+        /** 支持传入传统的 Ability 实例 */
         ability?: {
                 can(action: string, subject: string, field?: string): boolean;
         };
+        /** 针对 Next.js Server Component 跨边界传递：支持直接传入纯 JSON 权限数据，无需传递函数 */
+        permissions?: PlainTablePermissions;
         children: React.ReactNode;
         className?: string;
 }
@@ -35,7 +43,8 @@ export function DataTableRoot<TData>({
         total,
         onPageChange,
         subject,
-        ability,
+        ability: explicitAbility,
+        permissions,
         children,
         className,
 }: DataTableRootProps<TData>) {
@@ -45,6 +54,34 @@ export function DataTableRoot<TData>({
         const [expandedRowKeys, setExpandedRowKeys] = React.useState<
                 Set<string>
         >(new Set());
+
+        // 自动从纯 JSON permissions 派生客户端可执行的 ability (完美契合 RSC 边界规范)
+        const effectiveAbility = React.useMemo(() => {
+                if (explicitAbility) {
+                        return explicitAbility;
+                }
+                if (!permissions) {
+                        return undefined;
+                }
+                return {
+                        can(action: string, s: string, field?: string) {
+                                if (subject && s && s !== subject) {
+                                        return false;
+                                }
+                                if (!permissions.actions.includes(action)) {
+                                        return false;
+                                }
+                                if (
+                                        field &&
+                                        permissions.fieldPolicies?.[field] ===
+                                                "HIDDEN"
+                                ) {
+                                        return false;
+                                }
+                                return true;
+                        },
+                };
+        }, [explicitAbility, permissions, subject]);
 
         const allRowKeys = React.useMemo(
                 () => data.map((item) => rowKey(item)),
@@ -115,7 +152,7 @@ export function DataTableRoot<TData>({
                         total,
                         onPageChange,
                         subject,
-                        ability,
+                        ability: effectiveAbility,
                 }),
                 [
                         data,
@@ -131,7 +168,7 @@ export function DataTableRoot<TData>({
                         total,
                         onPageChange,
                         subject,
-                        ability,
+                        effectiveAbility,
                 ],
         );
 

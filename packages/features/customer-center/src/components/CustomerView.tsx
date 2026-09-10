@@ -31,9 +31,32 @@ interface Props {
   ability?: {
     can(action: string, subject: string, field?: string): boolean;
   };
+  permissions?: {
+    readonly actions: readonly string[];
+    readonly fieldPolicies?: Readonly<Record<string, string>>;
+  };
 }
 
-export function CustomerView({ initialCustomers, categories, tags, ability }: Props) {
+export function CustomerView({
+  initialCustomers,
+  categories,
+  tags,
+  ability: explicitAbility,
+  permissions,
+}: Props) {
+  const ability = React.useMemo(() => {
+    if (explicitAbility) return explicitAbility;
+    if (!permissions) return undefined;
+    return {
+      can(action: string, subject?: string, field?: string) {
+        if (subject && subject !== CustomerSubject) return false;
+        if (!permissions.actions.includes(action)) return false;
+        if (field && permissions.fieldPolicies?.[field] === "HIDDEN")
+          return false;
+        return true;
+      },
+    };
+  }, [explicitAbility, permissions]);
   const [customers] = useState(initialCustomers);
   const [keyword, setKeyword] = useState("");
   const [selectedCat, setSelectedCat] = useState("");
@@ -330,6 +353,7 @@ export function CustomerView({ initialCustomers, categories, tags, ability }: Pr
         rowKey={(c: CustomerListItem) => c.customerCode}
         subject={CustomerSubject}
         ability={ability}
+        permissions={permissions}
         total={filteredCustomers.length}
       >
         <DataTable.Toolbar>
