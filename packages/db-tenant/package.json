@@ -10,7 +10,7 @@
   },
   "scripts": {
     "check": "tsc --noEmit",
-    "generate": "prisma generate --config prisma.config.ts",
+    "generate": "node ../../scripts/sync-tenant-schema.mjs && prisma generate --config prisma.config.ts",
     "test": "tsx --test src/*.test.ts"
   },
   "dependencies": {

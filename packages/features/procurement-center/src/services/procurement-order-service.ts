@@ -11,7 +11,7 @@ import {
   ForbiddenError,
   NotFoundError,
 } from "@chenrun/shared";
-import type { ProcurementPrismaClient, ProcurementPrisma } from "../db/client";
+import type { TenantPrismaClient, TenantPrisma } from "@chenrun/db-tenant";
 import {
   type ProcurementField,
   ProcurementOrderStatus,
@@ -40,7 +40,7 @@ export class ProcurementOrderService {
    * 查询采购订单列表，自动依据 CASL 数据范围下推过滤条件，并对敏感成本价格做脱敏处理
    */
   async listOrders(
-    prisma: ProcurementPrismaClient,
+    prisma: TenantPrismaClient,
     ability: ProcurementAnyAbility,
     currentUserId?: string,
   ): Promise<readonly ProcurementOrderItem[]> {
@@ -53,8 +53,7 @@ export class ProcurementOrderService {
 
     // SAFETY: accessibleWhere 经 getAccessibleWhere 归一化为标准的 Prisma 查询条件对象
     const rawOrders = await prisma.purchaseOrder.findMany({
-      where:
-        accessibleWhere as unknown as ProcurementPrisma.PurchaseOrderWhereInput,
+      where: accessibleWhere as unknown as TenantPrisma.PurchaseOrderWhereInput,
       include: {
         department: {
           select: {
@@ -107,7 +106,7 @@ export class ProcurementOrderService {
    * 创建新采购订单，强制执行功能权限校验与字段可编辑性拦截
    */
   async createOrder(
-    prisma: ProcurementPrismaClient,
+    prisma: TenantPrismaClient,
     ability: ProcurementAnyAbility,
     operator: CreateOrderOperator,
     input: CreateOrderInput,
@@ -198,7 +197,7 @@ export class ProcurementOrderService {
    * 审核采购订单，严格执行状态机流转与【禁止自审】安全红线
    */
   async auditOrder(
-    prisma: ProcurementPrismaClient,
+    prisma: TenantPrismaClient,
     ability: ProcurementAnyAbility,
     operator: AuditOrderOperator,
     input: AuditOrderInput,
@@ -286,7 +285,7 @@ export class ProcurementOrderService {
    * 导出采购订单数据，遵循字段策略过滤隐藏字段
    */
   async exportOrders(
-    prisma: ProcurementPrismaClient,
+    prisma: TenantPrismaClient,
     ability: ProcurementAnyAbility,
   ): Promise<readonly ExportOrderItem[]> {
     if (!ability.can("export", ProcurementSubject)) {
@@ -302,8 +301,7 @@ export class ProcurementOrderService {
 
     // SAFETY: accessibleWhere 经 getAccessibleWhere 归一化为标准的 Prisma 查询条件对象
     const orders = await prisma.purchaseOrder.findMany({
-      where:
-        accessibleWhere as unknown as ProcurementPrisma.PurchaseOrderWhereInput,
+      where: accessibleWhere as unknown as TenantPrisma.PurchaseOrderWhereInput,
       orderBy: { createdAt: "desc" },
     });
 

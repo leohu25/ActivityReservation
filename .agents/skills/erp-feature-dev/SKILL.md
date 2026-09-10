@@ -78,7 +78,7 @@ Phase 7: 契约对齐单测与全栈验证
 
 | 阶段 | 核心任务 | 交付物与验证指标 | 深入阅读文档 |
 | :--- | :--- | :--- | :--- |
-| **Phase 1<br>数据建模** | 切片内定义模型，配置专属 Client Output，运行基线迁移。 | • `prisma/schema.prisma`<br>• `src/db/client.ts`<br>• `pnpm migrate:tenant:gen` | `references/2-schema-migrate.md` |
+| **Phase 1<br>数据建模** | 切片内定义模型，统一由 db-tenant 聚合生成 Client，运行基线迁移。 | • `prisma/schema.prisma`<br>• `pnpm migrate:tenant:gen` | `references/2-schema-migrate.md` |
 | **Phase 2<br>纯数据契约** | 编写无 JSX、无 DOM 的纯数据契约，定义受控字段枚举与操作权限。 | • `src/contracts/<page>.contract.ts`<br>• 字段与动作自包含 | `references/1-contracts.md` |
 | **Phase 3<br>领域服务** | 封装核心业务、自增编码算法、状态机级联与删除业务防护。 | • `src/services/<domain>.service.ts`<br>• 业务单测通过 | `references/3-services.md` |
 | **Phase 4<br>安全 Actions** | 使用 `defineServerAction` 包装所有 Actions，彻底消除序列化异常与样板代码。 | • `src/actions.ts`<br>• 100% 自动 `toPlainData` | `references/4-server-actions.md` |

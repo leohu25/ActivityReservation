@@ -10,10 +10,6 @@ import {
   type TenantPrismaClient,
   type ResolvedDepartmentTopology,
 } from "@chenrun/db-tenant";
-import {
-  getProcurementPrismaClient,
-  type ProcurementPrismaClient,
-} from "../db/client";
 import { procurementCatalog } from "../index";
 import type { ProcurementAction } from "../contracts";
 import { ProcurementOrderService } from "../services/procurement-order-service";
@@ -24,7 +20,6 @@ export interface TenantProcurementContext {
   readonly memberId: string;
   readonly role: string;
   readonly prisma: TenantPrismaClient;
-  readonly procurementPrisma: ProcurementPrismaClient;
   readonly topology: ResolvedDepartmentTopology;
   readonly ability: AppPrismaAbility<ProcurementAction, "PurchaseOrder">;
 }
@@ -100,29 +95,12 @@ export async function getTenantProcurementContext(): Promise<TenantProcurementCo
     topology,
   )) as AppPrismaAbility<ProcurementAction, "PurchaseOrder">;
 
-  // 解析当前租户独立数据库连接 URL 并获取采购中心专属 Prisma Client
-  const secretResolver = (manager as any).secretResolver;
-  const tenantRecord = await runtime.tenantContextRepository.findTenantDatabase(
-    tenantCtx.organizationId,
-  );
-  if (!tenantRecord) {
-    throw new Error(
-      `Tenant database not configured for organization ${tenantCtx.organizationId}`,
-    );
-  }
-
-  const databaseUrl = await secretResolver.resolveDatabaseUrl(
-    tenantRecord.secretRef,
-  );
-  const procurementPrisma = getProcurementPrismaClient(databaseUrl);
-
   return {
     organizationId: tenantCtx.organizationId,
     userId: tenantCtx.user.id,
     memberId: tenantCtx.member.id,
     role: tenantCtx.member.role,
     prisma: tenantPrisma,
-    procurementPrisma,
     topology,
     ability,
   };

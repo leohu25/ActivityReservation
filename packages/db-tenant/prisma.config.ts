@@ -1,8 +1,8 @@
 import { defineConfig } from "prisma/config";
 
-// 租户 Prisma 基础配置
+// 租户 Prisma 基础配置（指向全量聚合后的 Canonical Schema）
 export default defineConfig({
-  schema: "prisma/schema.prisma",
+  schema: "prisma/schema.generated.prisma",
   migrations: {
     path: "prisma/migrations",
   },

@@ -1,20 +1,19 @@
 import { headers } from "next/headers";
 import { getCurrentTenantContext } from "@chenrun/auth";
-import { getTenantDbManager } from "@chenrun/db-tenant";
 import {
-  getCustomerPrismaClient,
-  type CustomerPrismaClient,
-} from "../db/client";
+  getTenantDbManager,
+  type TenantPrismaClient,
+} from "@chenrun/db-tenant";
 
 export interface TenantCustomerContext {
   readonly organizationId: string;
   readonly userId: string;
   readonly memberId: string;
-  readonly client: CustomerPrismaClient;
+  readonly client: TenantPrismaClient;
 }
 
 /**
- * 解析并获取当前租户上下文下的 CustomerPrismaClient
+ * 解析并获取当前租户上下文下的全量 TenantPrismaClient
  */
 export async function getTenantCustomerContext(): Promise<TenantCustomerContext> {
   const reqHeaders = await headers();
@@ -29,9 +28,9 @@ export async function getTenantCustomerContext(): Promise<TenantCustomerContext>
     repository: runtime.tenantContextRepository,
   });
 
-  // 获得租户主库以检查员工状态门禁
-  const tenantBasePrisma = await manager.getClient(tenantCtx.organizationId);
-  const employeeProfile = await tenantBasePrisma.employeeProfile.findUnique({
+  // 获得租户统一物理库客户端并检查员工状态门禁
+  const tenantPrisma = await manager.getClient(tenantCtx.organizationId);
+  const employeeProfile = await tenantPrisma.employeeProfile.findUnique({
     where: { memberId: tenantCtx.member.id },
     select: {
       id: true,
@@ -44,26 +43,10 @@ export async function getTenantCustomerContext(): Promise<TenantCustomerContext>
   });
   assertTenantAccessGate(employeeProfile);
 
-  // 解析当前租户独立数据库连接 URL
-  const secretResolver = (manager as any).secretResolver;
-  const tenantRecord = await runtime.tenantContextRepository.findTenantDatabase(
-    tenantCtx.organizationId,
-  );
-  if (!tenantRecord) {
-    throw new Error(
-      `Tenant database not configured for organization ${tenantCtx.organizationId}`,
-    );
-  }
-
-  const databaseUrl = await secretResolver.resolveDatabaseUrl(
-    tenantRecord.secretRef,
-  );
-  const customerClient = getCustomerPrismaClient(databaseUrl);
-
   return {
     organizationId: tenantCtx.organizationId,
     userId: tenantCtx.user.id,
     memberId: tenantCtx.member.id,
-    client: customerClient,
+    client: tenantPrisma,
   };
 }

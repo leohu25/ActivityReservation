@@ -283,37 +283,41 @@ export function createDefaultTenantDbManager(
   );
 }
 
-let tenantDbManagerSingleton: TenantDbManager<TenantPrismaClient> | undefined;
+// SAFETY: globalThis 类型扩展用于在 Next.js 服务端运行时与热重载生命周期中保持单一 TenantDbManager 实例
+const globalForTenantDb = globalThis as unknown as {
+  __TENANT_DB_MANAGER__?: TenantDbManager<TenantPrismaClient>;
+};
 
 /**
- * 获取租户物理数据库管理器单例
+ * 获取租户物理数据库管理器单例（全局唯一复用，防御 Next.js HMR 连接池泄漏）
  */
 export function getTenantDbManager(
   options?: Partial<DefaultTenantDbManagerOptions>,
 ): TenantDbManager<TenantPrismaClient> {
-  if (tenantDbManagerSingleton) {
-    return tenantDbManagerSingleton;
+  if (globalForTenantDb.__TENANT_DB_MANAGER__) {
+    return globalForTenantDb.__TENANT_DB_MANAGER__;
   }
   if (!options?.repository) {
     throw new Error(
       "初始化 TenantDbManager 单例需要提供 TenantContextRepository",
     );
   }
-  tenantDbManagerSingleton = createDefaultTenantDbManager({
+  const manager = createDefaultTenantDbManager({
     repository: options.repository,
     secretResolver: options.secretResolver,
     clientFactory: options.clientFactory,
   });
-  return tenantDbManagerSingleton;
+  globalForTenantDb.__TENANT_DB_MANAGER__ = manager;
+  return manager;
 }
 
 /**
  * 重置租户数据库管理器单例（清理缓存与关闭连接，主要用于测试或进程退出）
  */
 export async function resetTenantDbManager(): Promise<void> {
-  if (tenantDbManagerSingleton) {
-    const manager = tenantDbManagerSingleton;
-    tenantDbManagerSingleton = undefined;
+  if (globalForTenantDb.__TENANT_DB_MANAGER__) {
+    const manager = globalForTenantDb.__TENANT_DB_MANAGER__;
+    globalForTenantDb.__TENANT_DB_MANAGER__ = undefined;
     await manager.closeAll();
   }
 }

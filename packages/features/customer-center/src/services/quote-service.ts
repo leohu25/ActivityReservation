@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { CustomerPrismaClient } from "../db/client";
+import type { TenantPrismaClient } from "@chenrun/db-tenant";
 
 export interface CreateQuoteItemInput {
   itemCode: string;
@@ -37,7 +37,7 @@ export class CustomerQuoteService {
   /**
    * 生成报价单单号: QUOT-YYYYMMDD-XXXX
    */
-  static async generateQuoteId(client: CustomerPrismaClient): Promise<string> {
+  static async generateQuoteId(client: TenantPrismaClient): Promise<string> {
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, "0");
@@ -70,7 +70,7 @@ export class CustomerQuoteService {
    * 报价单列表查询
    */
   static async listQuotes(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
     filter: ListQuoteFilter = {},
   ) {
     const where: any = {};
@@ -113,7 +113,7 @@ export class CustomerQuoteService {
    * 创建报价单（包含明细行）
    */
   static async createQuote(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
     input: CreateQuoteInput,
   ) {
     if (!input.customerCode && !input.storeCode && !input.regionCode) {
@@ -169,7 +169,7 @@ export class CustomerQuoteService {
    * 变更报价单状态（草稿 -> 已生效 / 已作废）
    */
   static async updateQuoteStatus(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
     quoteId: string,
     status: "ACTIVE" | "VOIDED",
   ) {
@@ -198,7 +198,7 @@ export class CustomerQuoteService {
    * 给定商品、门店、客户、区域与下单日期，精准返回有效报价明细
    */
   static async resolvePrice(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
     params: {
       itemCode: string;
       customerCode: string;

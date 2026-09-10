@@ -1,4 +1,4 @@
-import type { CustomerPrismaClient } from "../db/client";
+import type { TenantPrismaClient } from "@chenrun/db-tenant";
 
 export interface CreateCustomerInput {
   customerName: string;
@@ -31,7 +31,7 @@ export class CustomerService {
    * 生成唯一且单调递增的客户编码: CUST-YYYYMMDD-XXXX
    */
   static async generateCustomerCode(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
   ): Promise<string> {
     const today = new Date();
     const yyyy = today.getFullYear();
@@ -65,7 +65,7 @@ export class CustomerService {
    * 查询客户列表
    */
   static async listCustomers(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
     filter: ListCustomerFilter = {},
   ) {
     const where: any = {};
@@ -122,7 +122,7 @@ export class CustomerService {
   /**
    * 获取客户详情
    */
-  static async getCustomer(client: CustomerPrismaClient, customerCode: string) {
+  static async getCustomer(client: TenantPrismaClient, customerCode: string) {
     return client.customer.findUnique({
       where: { customerCode },
       include: {
@@ -142,7 +142,7 @@ export class CustomerService {
    * 创建客户档案
    */
   static async createCustomer(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
     input: CreateCustomerInput,
   ) {
     const category = await client.customerCategory.findUnique({
@@ -204,7 +204,7 @@ export class CustomerService {
    * 更新客户档案
    */
   static async updateCustomer(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
     customerCode: string,
     input: UpdateCustomerInput,
   ) {
@@ -275,7 +275,7 @@ export class CustomerService {
    * 变更客户状态（核心业务红线：停用客户时下属门店同时停用）
    */
   static async updateCustomerStatus(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
     customerCode: string,
     status: "ACTIVE" | "DISABLED",
   ) {
@@ -301,7 +301,7 @@ export class CustomerService {
    * 删除客户（核心控制点：已有门店或单据的客户不允许删除，只能停用）
    */
   static async deleteCustomer(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
     customerCode: string,
   ) {
     const storeCount = await client.customerStore.count({

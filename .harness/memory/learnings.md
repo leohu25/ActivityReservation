@@ -127,4 +127,4 @@
   3. **自动化对齐门禁**：
      - 每个页面组件配套编写 `<Page>View.test.tsx`，断言契约动作与页面按钮 100% 呼应，断言 `HIDDEN` 字段列物理级剥离。
   4. **专项 Skill 指南**：
-     - 详细操作步骤与代码样板已沉淀至项目专属 Skill：`.agent/skills/erp-feature-permissions/SKILL.md`。
+     - 详细操作步骤与代码样板已沉淀至项目专属 Skill：`.agents/skills/erp-feature-permissions/SKILL.md`。

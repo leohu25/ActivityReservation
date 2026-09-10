@@ -8,7 +8,7 @@
     "verify": "./scripts/verify.sh",
     "session:end": "./scripts/session-end.sh",
     "ui:add": "npx shadcn@latest add -y --overwrite -c packages/ui",
-    "sync:features": "node scripts/sync-features.mjs",
+    "sync:features": "node scripts/sync-features.mjs && node scripts/sync-tenant-schema.mjs",
     "db:migrate:check": "pnpm --filter @chenrun/db-migrate check",
     "db:migrate:catalog": "pnpm --filter @chenrun/db-migrate exec tsx src/cli.ts catalog",
     "db:migrate:generate": "pnpm --filter @chenrun/db-migrate exec tsx src/cli.ts generate",

@@ -187,6 +187,15 @@
       "status": "completed",
       "owner": "implementer",
       "evidence": "完成 packages/features/customer-center 独立特性包与内聚 Prisma Schema 建模（所有表及字段全中文三斜杠注释）；落地多级分类树、标签字典、客户档案、门店档案及门店报价单领域服务；实现客户停用级联门店停用、已有单据防删除保护与三级报价优先级匹配算法（门店>客户>区域）；左侧导航升级为顶级手风琴【客户中心】；完成 /customer/categories-tags、/customer/customers、/customer/stores、/customer/quotes 4张受控页面与交互；重构全库命名规范为全小写蛇形命名（snake_case）；拆分平台迁移 (platform-migrate) 与租户数据舰队迁移 (tenant-migrate)；落地新租户动态全量 Schema 开通与基线版本对齐；控制台落地 /migrations 数据架构中枢；全仓 14 个包类型检查 0 错误、136 个单测 100% 通过、全栈门禁 verify.sh 全绿"
+    },
+    {
+      "id": "arch-tenant-db-client-consolidation",
+      "name": "【架构重构】多租户 Prisma 客户端归一与连接池聚合治理 (Tenant DB Client Consolidation & Unified Pooling)",
+      "description": "彻底消除各 Feature 内部私自生成的 Prisma 客户端与底层驱动连接池；利用 tooling/db-migrate 聚合机制将所有 Feature 模型统一汇聚至 packages/db-tenant 生成单一全量强类型 TenantPrismaClient；由 TenantDbManager 全局单例连接池统一接管物理数据库连接；彻底删除各 Feature 内部冗余的 src/db/ 与私有缓存，零历史包袱与零兼容壳",
+      "dependencies": ["feature-customer-center"],
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "落地 scripts/sync-tenant-schema.mjs 自动聚合 Canonical Tenant Schema；packages/db-tenant 生成统一强类型 TenantPrismaClient 并由 TenantDbManager (基于 globalThis 防泄漏单例) 统一管理物理连接；物理删除 customer-center/src/db 与 procurement-center/src/db，彻底剥离业务包的 @prisma/adapter-pg 等驱动依赖；业务 Session 与所有 Service 方法签名直接使用 TenantPrismaClient，零兼容壳；全仓 13 包类型检查 100% 通过、139+ 单测全绿、Next.js 生产构建通过、全栈门禁 ./scripts/verify.sh 全绿"
     }
   ]
 }

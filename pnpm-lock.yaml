@@ -354,15 +354,6 @@ importers:
       '@chenrun/ui':
         specifier: workspace:*
         version: link:../../ui
-      '@prisma/adapter-pg':
-        specifier: 7.10.0
-        version: 7.10.0
-      '@prisma/client':
-        specifier: 7.10.0
-        version: 7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2)
-      '@prisma/client-runtime-utils':
-        specifier: 7.10.0
-        version: 7.10.0
       lucide-react:
         specifier: ^1.41.0
         version: 1.41.0(react@19.2.8)
@@ -379,9 +370,6 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.7
         version: 19.2.7(@types/react@19.2.18)
-      prisma:
-        specifier: 7.10.0
-        version: 7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2)
       react:
         specifier: 19.2.8
         version: 19.2.8
@@ -418,15 +406,6 @@ importers:
       '@chenrun/ui':
         specifier: workspace:*
         version: link:../../ui
-      '@prisma/adapter-pg':
-        specifier: 7.10.0
-        version: 7.10.0
-      '@prisma/client':
-        specifier: 7.10.0
-        version: 7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2)
-      '@prisma/client-runtime-utils':
-        specifier: 7.10.0
-        version: 7.10.0
       lucide-react:
         specifier: ^1.41.0
         version: 1.41.0(react@19.2.8)
@@ -443,9 +422,6 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.7
         version: 19.2.7(@types/react@19.2.18)
-      prisma:
-        specifier: 7.10.0
-        version: 7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2)
       react:
         specifier: 19.2.8
         version: 19.2.8

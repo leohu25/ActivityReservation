@@ -1,4 +1,4 @@
-import type { CustomerPrismaClient } from "../db/client";
+import type { TenantPrismaClient } from "@chenrun/db-tenant";
 
 export interface CreateStoreInput {
   customerCode: string;
@@ -30,9 +30,7 @@ export class CustomerStoreService {
   /**
    * 生成唯一且递增的门店编码: STOR-YYYYMMDD-XXXX
    */
-  static async generateStoreCode(
-    client: CustomerPrismaClient,
-  ): Promise<string> {
+  static async generateStoreCode(client: TenantPrismaClient): Promise<string> {
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, "0");
@@ -65,7 +63,7 @@ export class CustomerStoreService {
    * 门店列表查询
    */
   static async listStores(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
     filter: ListStoreFilter = {},
   ) {
     const where: any = {};
@@ -108,7 +106,7 @@ export class CustomerStoreService {
    * 创建门店档案
    */
   static async createStore(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
     input: CreateStoreInput,
   ) {
     // 必须关联已存在的有效客户档案
@@ -157,7 +155,7 @@ export class CustomerStoreService {
    * 更新门店档案
    */
   static async updateStore(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
     storeCode: string,
     input: UpdateStoreInput,
   ) {
@@ -201,7 +199,7 @@ export class CustomerStoreService {
    * 变更门店状态
    */
   static async updateStoreStatus(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
     storeCode: string,
     status: "ACTIVE" | "DISABLED",
   ) {
@@ -229,7 +227,7 @@ export class CustomerStoreService {
   /**
    * 删除门店（已有报价单或订单的门店不允许删除）
    */
-  static async deleteStore(client: CustomerPrismaClient, storeCode: string) {
+  static async deleteStore(client: TenantPrismaClient, storeCode: string) {
     const quoteCount = await client.customerQuote.count({
       where: { storeCode },
     });

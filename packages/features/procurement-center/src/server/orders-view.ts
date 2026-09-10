@@ -11,7 +11,6 @@ import {
   resolveEmployeeTopology,
 } from "@chenrun/db-tenant";
 import { toPlainData } from "@chenrun/shared";
-import { getProcurementPrismaClient } from "../db/client";
 import {
   getProcurementFieldVisibility,
   procurementCatalog,
@@ -128,27 +127,10 @@ export async function getProcurementOrdersPageData(): Promise<ProcurementOrdersP
     topology,
   )) as AppPrismaAbility<ProcurementAction, "PurchaseOrder">;
 
-  // 解析当前租户独立数据库连接 URL 并获取采购中心专属 Prisma Client
-  const secretResolver = (manager as any).secretResolver;
-  const tenantRecord =
-    await authRuntime.tenantContextRepository.findTenantDatabase(
-      tenantCtx.organizationId,
-    );
-  if (!tenantRecord) {
-    throw new Error(
-      `Tenant database not configured for organization ${tenantCtx.organizationId}`,
-    );
-  }
-
-  const databaseUrl = await secretResolver.resolveDatabaseUrl(
-    tenantRecord.secretRef,
-  );
-  const procurementPrisma = getProcurementPrismaClient(databaseUrl);
-
   // 查询当前用户在当前租户数据库中的采购订单
   const orderService = new ProcurementOrderService();
   const orders = await orderService.listOrders(
-    procurementPrisma,
+    tenantPrisma,
     prismaAbility,
     tenantCtx.user.id,
   );

@@ -6,32 +6,35 @@
 
 ## Current State (当前状态)
 
-- **当前目标 (Current Objective)**: 客户中心 (feature-customer-center) 业务特性闭环与工业级数据迁移架构重构
-- **当前激活特性 (Active Feature)**: `foundation-web-shell`
-- **当前状态 (Status)**: DEFECT_PATCH_COMPLETED
+- **当前目标 (Current Objective)**: 多租户 Prisma 客户端归一与连接池聚合治理 (`arch-tenant-db-client-consolidation`)
+- **当前激活特性 (Active Feature)**: `arch-tenant-db-client-consolidation`
+- **当前状态 (Status)**: ARCH_CONSOLIDATION_COMPLETED
 - **最近更新时间 (Last Updated)**: 2026-09-11
 
 ---
 
 ## What Was Done (已完成工作)
 
-1. **彻底按 Next.js 官方正统范式根治侧边栏整页刷新与展开态丢失缺陷**:
-   - **根因复盘**：`@chenrun/ui` 的 `Sidebar` 原先采用伪跨框架解耦设计，默认使用 `DefaultLink`（原生 `<a>` 标签），导致菜单点击触发浏览器的**硬导航 (Hard Navigation)**，销毁整页 DOM 树与 JS 内存堆，手风琴展开状态自然丢失；
-   - **拒绝胶水层与过度抽象**：彻底删除前期试验性质的 `app-sidebar.tsx` 包装层，杜绝“脱裤子放屁”式的间接引用；
-   - **直接对齐官方原语**：`Sidebar.tsx` 内置 Next.js 16 原生 `next/link` 与 `usePathname()`，直接在组件内部响应路由与渲染软导航，使得 `layout.tsx` 零多余代码直接消费 `<Sidebar />`；
-   - **兼顾纯 Node 单测**：支持可选 `currentPath` 覆盖，保证在非路由环境下也可进行纯函数式断言；
-   - **瞬时骨架占位**：配置 `(dashboard)/loading.tsx`，遵循官方 Instant Loading States 范式。
-2. **多租户基线与全栈类型自愈**:
-   - 补全 `db-tenant`、`db-control` 与 `feature-customer-center` 本地 Prisma 客户端生成；
-   - 全仓 `pnpm check`（Turbo 14/14 tasks）0 错误通过；
-   - `packages/ui` 14/14 单元测试 100% 全部通过；
-   - `node scripts/check-redlines.mjs` 192 个源码文件 0 红线违规；
-   - 沉淀复盘经验至 `.harness/memory/learnings.md`（规约第 9 条：严禁假解耦与过度抽象，对齐 App Router 嵌套布局与局部渲染范式）。
+1. **多租户 Prisma Client 与连接池彻底归一化**:
+   - **根因治理**：彻底消除了每个业务 Feature 私自跑 `prisma generate` 并独立 `new PrismaPg({ connectionString })` 导致的连接池成倍爆炸与事务割裂；
+   - **Schema 编译期预聚合 (Stitching)**：新增 `scripts/sync-tenant-schema.mjs`，保留各 Feature 目录下的 `prisma/schema.prisma` 独立性与内聚性，编译期自动合并生成全量 Canonical Schema 到 `packages/db-tenant/prisma/schema.generated.prisma`；
+   - **单一强类型 Client 生产源**：`packages/db-tenant` 统一生成 `@prisma/client-tenant`，拥有包含全量业务表的强类型 `TenantPrismaClient`；
+   - **零历史包袱与零兼容壳**：物理删除 `customer-center/src/db` 与 `procurement-center/src/db`，彻底剥离各 Feature 的数据库底层驱动依赖与多余导出；
+   - **业务代码全面切入**：重写 Session 与各业务 Service 方法签名，全部直接消费 `prisma: TenantPrismaClient`；
+   - **加固连接池单例防 HMR 泄漏**：在 `packages/db-tenant` 中通过 `globalThis.__TENANT_DB_MANAGER__` 缓存单例，单租户物理库全应用全局唯一连接池；
+2. **规范化工程技能与目录修复**:
+   - 纠正根目录 `.agent` 目录名为标准 `.agents`，同步更新全局引用；
+   - 安装 Vercel 官方 `vercel-react-best-practices`、社区高星 `nextjs-app-router-patterns` 与 Prisma 官方 `prisma-driver-adapter-implementation` 技能；
+3. **全栈门禁验证通过**:
+   - 13 个包 `pnpm check` 0 错误；
+   - 11 个测试套件 139+ 个单测 100% PASS；
+   - Next.js Turbopack 生产打包成功；
+   - `./scripts/verify.sh` 全栈门禁全绿通过。
 
 ---
 
 ## Next Steps (下一步计划)
 
-1. 从 `feature_list.json` 继续认领下一阶段业务特性（如客户中心剩余交互或采购中心审批流）；
+1. 从 `feature_list.json` 继续认领下一阶段业务特性或排期任务；
 2. 运行 `./init.sh` 确保启动自检通过；
-3. 开发新功能时严格受限在对应特性的 `scope.md` 白名单内。
+3. 遵循新的统一 Client 范式开发后续新业务切片（切片仅维护自身 schema，直接使用 `@chenrun/db-tenant` 的 `TenantPrismaClient`）。

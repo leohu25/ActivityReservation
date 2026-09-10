@@ -1,4 +1,4 @@
-import type { CustomerPrismaClient } from "../db/client";
+import type { TenantPrismaClient } from "@chenrun/db-tenant";
 
 /**
  * 客户分类节点模型
@@ -20,7 +20,7 @@ export class CustomerCategoryTagService {
    * 获取多级分类树
    */
   static async getCategoryTree(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
   ): Promise<CategoryTreeNode[]> {
     const list = await client.customerCategory.findMany({
       orderBy: { categoryCode: "asc" },
@@ -55,7 +55,7 @@ export class CustomerCategoryTagService {
    * 创建分类（校验父级防环）
    */
   static async createCategory(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
     input: {
       categoryCode: string;
       categoryName: string;
@@ -87,7 +87,7 @@ export class CustomerCategoryTagService {
    * 启停分类
    */
   static async updateCategoryStatus(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
     categoryCode: string,
     status: "ACTIVE" | "DISABLED",
   ) {
@@ -100,7 +100,7 @@ export class CustomerCategoryTagService {
   /**
    * 获取所有标签（可按类型过滤）
    */
-  static async listTags(client: CustomerPrismaClient, tagType?: string) {
+  static async listTags(client: TenantPrismaClient, tagType?: string) {
     return client.customerTag.findMany({
       where: tagType ? { tagType } : undefined,
       orderBy: { createdAt: "desc" },
@@ -111,7 +111,7 @@ export class CustomerCategoryTagService {
    * 创建标签
    */
   static async createTag(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
     input: {
       tagCode: string;
       tagName: string;
@@ -134,7 +134,7 @@ export class CustomerCategoryTagService {
    * 启停标签
    */
   static async updateTagStatus(
-    client: CustomerPrismaClient,
+    client: TenantPrismaClient,
     tagCode: string,
     status: "ACTIVE" | "DISABLED",
   ) {
