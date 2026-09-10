@@ -3,12 +3,14 @@ import type {
   OrganizationRoleRecord,
 } from "@chenrun/db-control";
 import {
+  DataScope,
   FieldPolicy,
   parsePersistedPermissions,
   serializeRolePermissions,
   type RolePermissionPayload,
+  type TenantFeatureManifest,
 } from "@chenrun/authorization";
-import { ProcurementSubject } from "@chenrun/feature-procurement-center";
+import { ALL_TENANT_MANIFESTS } from "../registry.generated";
 import type {
   CreateRoleInput,
   SaveRolePermissionsInput,
@@ -29,6 +31,148 @@ export class TenantRoleServiceError extends Error {
   }
 }
 
+/**
+ * 依据全局切片自描述清单契约 (ALL_TENANT_MANIFESTS) 动态自驱推导核心内置角色的四层权限模板
+ * 彻底消除硬编码外部业务切片符号与资源（采购、客户等），形成真正的单一事实源 (SSoT)
+ */
+export function deriveBuiltInRoleDefaults(
+  manifests: readonly TenantFeatureManifest[] = ALL_TENANT_MANIFESTS,
+): Record<"admin" | "member", RolePermissionPayload> {
+  // 1. Admin: 赋予所有注册切片的全部合法 actions，数据范围赋予最大支持级别 (ALL / DEPT_TREE)
+  const adminStatement: Record<string, string[]> = {};
+  const adminDataScopes: Array<
+    NonNullable<RolePermissionPayload["dataScopes"]>[number]
+  > = [];
+
+  for (const manifest of manifests) {
+    for (const def of manifest.permissions) {
+      adminStatement[def.resource] = [...def.actions];
+
+      let hasScopeConfigured = false;
+      if (def.actionMetadata) {
+        for (const [action, meta] of Object.entries(def.actionMetadata)) {
+          if (meta?.scopes && meta.scopes.length > 0) {
+            hasScopeConfigured = true;
+            const maxScope = meta.scopes.includes(DataScope.ALL)
+              ? DataScope.ALL
+              : meta.scopes.includes(DataScope.DEPT_TREE)
+                ? DataScope.DEPT_TREE
+                : meta.scopes[meta.scopes.length - 1];
+
+            adminDataScopes.push({
+              resource: def.resource,
+              action,
+              scopeType: maxScope,
+            });
+          }
+        }
+      }
+
+      if (!hasScopeConfigured && manifest.permissionModules) {
+        for (const mod of manifest.permissionModules) {
+          for (const page of mod.pages) {
+            if (page.resource === def.resource) {
+              for (const act of page.actions) {
+                if (act.supportedScopes && act.supportedScopes.length > 0) {
+                  hasScopeConfigured = true;
+                  const maxScope = act.supportedScopes.includes(DataScope.ALL)
+                    ? DataScope.ALL
+                    : act.supportedScopes.includes(DataScope.DEPT_TREE)
+                      ? DataScope.DEPT_TREE
+                      : act.supportedScopes[act.supportedScopes.length - 1];
+                  adminDataScopes.push({
+                    resource: def.resource,
+                    action: act.action,
+                    scopeType: maxScope,
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 2. Member: 仅赋予已注册切片的 read 动作，默认部门级受限查看，敏感字段默认只读保护
+  const memberStatement: Record<string, string[]> = {};
+  const memberDataScopes: Array<
+    NonNullable<RolePermissionPayload["dataScopes"]>[number]
+  > = [];
+  const memberFieldPolicies: Array<
+    NonNullable<RolePermissionPayload["fieldPolicies"]>[number]
+  > = [];
+
+  for (const manifest of manifests) {
+    for (const def of manifest.permissions) {
+      if (def.actions.includes("read" as never)) {
+        memberStatement[def.resource] = ["read"];
+
+        let readScopes: readonly string[] | undefined;
+        if (def.actionMetadata?.read?.scopes) {
+          readScopes = def.actionMetadata.read.scopes;
+        } else if (manifest.permissionModules) {
+          for (const mod of manifest.permissionModules) {
+            for (const page of mod.pages) {
+              if (page.resource === def.resource) {
+                const readAct = page.actions.find((a) => a.action === "read");
+                if (readAct?.supportedScopes) {
+                  readScopes = readAct.supportedScopes;
+                }
+              }
+            }
+          }
+        }
+
+        if (readScopes && readScopes.length > 0) {
+          const memberScope = readScopes.includes(DataScope.DEPT)
+            ? DataScope.DEPT
+            : readScopes.includes(DataScope.SELF)
+              ? DataScope.SELF
+              : (readScopes[0] as typeof DataScope.DEPT);
+
+          memberDataScopes.push({
+            resource: def.resource,
+            action: "read",
+            scopeType: memberScope,
+          });
+        }
+      }
+    }
+
+    if (manifest.permissionModules) {
+      for (const mod of manifest.permissionModules) {
+        for (const page of mod.pages) {
+          if (page.configurableFields) {
+            for (const f of page.configurableFields) {
+              if (f.sensitive) {
+                memberFieldPolicies.push({
+                  subject: page.subject,
+                  field: f.field,
+                  access: FieldPolicy.READONLY,
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    admin: {
+      statement: adminStatement,
+      dataScopes: adminDataScopes,
+      fieldPolicies: [],
+    },
+    member: {
+      statement: memberStatement,
+      dataScopes: memberDataScopes,
+      fieldPolicies: memberFieldPolicies,
+    },
+  };
+}
+
 /** 租户角色与权限管理领域服务 */
 export class TenantRoleService {
   constructor(private readonly repository: AuthorizationRepository) {}
@@ -44,6 +188,7 @@ export class TenantRoleService {
     const items: TenantRoleItem[] = [];
 
     // 1. 确保可配置的核心内置角色在前排列（明确排除 owner，因为超级管理员具备所有权限且租户管理员不得管理超管）
+    const derivedDefaults = deriveBuiltInRoleDefaults();
     const builtInDefaults: Array<{
       role: BuiltInRole;
       name: string;
@@ -54,99 +199,13 @@ export class TenantRoleService {
         role: "admin",
         name: "租户管理员 (Admin)",
         description: "协助企业最高管理者进行日常业务审批与系统配置",
-        defaultPayload: {
-          statement: {
-            "procurement.order": [
-              "read",
-              "create",
-              "update",
-              "audit",
-              "export",
-            ],
-            customer: ["read", "create", "update", "delete"],
-            customer_store: ["read", "create", "update", "delete"],
-            customer_category_tag: ["read", "create", "update", "delete"],
-            customer_quote: ["read", "create", "update", "audit"],
-            // 组织架构
-            "organization.employee": ["read", "create", "update", "delete"],
-            "organization.department": ["read", "create", "update", "delete"],
-            "organization.position": ["read", "create", "update", "delete"],
-            // 权限管理
-            "system.roles": ["read", "update"],
-            // 企业设置
-            "settings.company": ["read", "update"],
-            "settings.general": ["read", "update"],
-            "settings.security": ["read", "update"],
-            // 审计日志
-            "audit.operations": ["read", "export"],
-            "audit.logins": ["read", "export"],
-            "audit.permissions": ["read", "export"],
-          },
-          dataScopes: [
-            {
-              resource: "procurement.order",
-              scopeType: "DEPT_TREE",
-            },
-            {
-              resource: "customer",
-              action: "read",
-              scopeType: "ALL",
-            },
-            {
-              resource: "customer_store",
-              action: "read",
-              scopeType: "ALL",
-            },
-            {
-              resource: "customer_quote",
-              action: "read",
-              scopeType: "ALL",
-            },
-          ],
-          fieldPolicies: [],
-        },
+        defaultPayload: derivedDefaults.admin,
       },
       {
         role: "member",
         name: "标准成员 (Member)",
         description: "企业默认员工角色，默认拥有部门级受限查看权限",
-        defaultPayload: {
-          statement: {
-            "procurement.order": ["read"],
-            customer: ["read"],
-            customer_store: ["read"],
-            customer_quote: ["read"],
-          },
-          dataScopes: [
-            {
-              resource: "procurement.order",
-              action: "read",
-              scopeType: "DEPT",
-            },
-            {
-              resource: "customer",
-              action: "read",
-              scopeType: "DEPT",
-            },
-            {
-              resource: "customer_store",
-              action: "read",
-              scopeType: "DEPT",
-            },
-            {
-              resource: "customer_quote",
-              action: "read",
-              scopeType: "SELF",
-            },
-          ],
-          fieldPolicies: [
-            {
-              subject: ProcurementSubject,
-              field: "costPrice",
-              access: FieldPolicy.READONLY,
-            },
-          ],
-        },
+        defaultPayload: derivedDefaults.member,
       },
     ];
 

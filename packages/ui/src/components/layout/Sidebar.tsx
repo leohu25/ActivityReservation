@@ -71,7 +71,6 @@ export interface SidebarProps {
   readonly allowedPermissions?: readonly string[];
 }
 
-
 /** 递归检查项是否可见 */
 function isItemVisible(
   item: NavItem,
@@ -177,8 +176,7 @@ export function Sidebar({
 
   // 2. 确定数据源：若未提供 sections，支持将 navItems 适配为标准结构，默认空数组
   const effectiveSections: readonly NavSection[] =
-    sections ??
-    (navItems ? [{ id: "custom", items: navItems }] : []);
+    sections ?? (navItems ? [{ id: "custom", items: navItems }] : []);
 
   // 3. 状态：记录折叠分组的展开/折叠状态
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});

@@ -2,10 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
-import {
-  assertTenantAccessGate,
-  TenantContextError,
-} from "@chenrun/auth";
+import { assertTenantAccessGate, TenantContextError } from "@chenrun/auth";
 import {
   CaslAbilityFactory,
   getAccessibleWhere,
@@ -47,18 +44,26 @@ test("工作台页面源码中彻底清除任何硬编码 mock 拓扑数据与 m
     "工作台页面严禁出现写死的 dept_procurement_east_sub mock 标识",
   );
 
-  // 验证工作台接入了真实物理数据库查询与自驱拓扑装配
+  // 验证工作台接入了真实物理数据库查询与自驱拓扑装配（可位于切片服务端或页面）
+  const workbenchServerPath = path.resolve(
+    root,
+    "packages/features/tenant-admin/src/server/workbench.ts",
+  );
+  const combinedContent = fs.existsSync(workbenchServerPath)
+    ? fileContent + "\n" + fs.readFileSync(workbenchServerPath, "utf-8")
+    : fileContent;
+
   assert.ok(
-    fileContent.includes("resolveEmployeeTopology"),
-    "工作台必须调用 resolveEmployeeTopology 自驱装配真实部门拓扑",
+    combinedContent.includes("resolveEmployeeTopology"),
+    "工作台或对应切片服务端必须调用 resolveEmployeeTopology 自驱装配真实部门拓扑",
   );
   assert.ok(
-    fileContent.includes("assertTenantAccessGate"),
-    "工作台必须调用 assertTenantAccessGate 执行租户访问硬门禁",
+    combinedContent.includes("assertTenantAccessGate"),
+    "工作台或对应切片服务端必须调用 assertTenantAccessGate 执行租户访问硬门禁",
   );
   assert.ok(
-    fileContent.includes("employeeProfile.findUnique"),
-    "工作台必须真实直连 Tenant DB 查询员工档案",
+    combinedContent.includes("employeeProfile.findUnique"),
+    "工作台或对应切片服务端必须真实直连 Tenant DB 查询员工档案",
   );
 });
 
@@ -80,24 +85,21 @@ test("租户准入门禁 (Tenant Access Gate) 严格 Fail-Closed 阻断非 ACTIV
   assert.throws(
     () => assertTenantAccessGate({ status: "SUSPENDED" }),
     (err: unknown) =>
-      err instanceof TenantContextError &&
-      err.code === "EMPLOYEE_SUSPENDED",
+      err instanceof TenantContextError && err.code === "EMPLOYEE_SUSPENDED",
   );
 
   // 4. 离职 (TERMINATED) 严格拦截
   assert.throws(
     () => assertTenantAccessGate({ status: "TERMINATED" }),
     (err: unknown) =>
-      err instanceof TenantContextError &&
-      err.code === "EMPLOYEE_TERMINATED",
+      err instanceof TenantContextError && err.code === "EMPLOYEE_TERMINATED",
   );
 
   // 5. 待激活 (INVITED) 或其他异常状态拦截
   assert.throws(
     () => assertTenantAccessGate({ status: "INVITED" }),
     (err: unknown) =>
-      err instanceof TenantContextError &&
-      err.code === "EMPLOYEE_NOT_ACTIVE",
+      err instanceof TenantContextError && err.code === "EMPLOYEE_NOT_ACTIVE",
   );
 });
 
@@ -211,7 +213,11 @@ test("员工调换部门后，CASL accessibleBy 数据库下推条件立即由�
   const newTopology = {
     userId: "usr_buyer_1",
     departmentId: "dept_south_root",
-    departmentTreeIds: ["dept_south_root", "dept_south_sub_1", "dept_south_sub_2"],
+    departmentTreeIds: [
+      "dept_south_root",
+      "dept_south_sub_1",
+      "dept_south_sub_2",
+    ],
   };
 
   const abilityAfter = (await factory.createPrismaAbilityForTenant(

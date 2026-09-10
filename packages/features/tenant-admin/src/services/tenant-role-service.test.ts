@@ -97,8 +97,24 @@ test("listTenantRoles 默认按规范列出内置角色并追加持久化自定�
   assert.equal(list.length, 3);
   assert.equal(list[0].role, "admin");
   assert.equal(list[0].isSystem, true);
+  // 验证 admin 自动动态推导出各业务切片的全部权限（采购、客户、系统等）
+  assert.ok(list[0].permissions.statement["procurement.order"]);
+  assert.ok(list[0].permissions.statement["customer"]);
+  assert.ok(list[0].permissions.statement["organization.employee"]);
+
   assert.equal(list[1].role, "member");
   assert.equal(list[1].isSystem, true);
+  // 验证 member 自动动态获得各切片的 read 权限及敏感字段保护
+  assert.deepEqual(list[1].permissions.statement["procurement.order"], [
+    "read",
+  ]);
+  assert.deepEqual(list[1].permissions.statement["customer"], ["read"]);
+  const memberCostPricePolicy = list[1].permissions.fieldPolicies?.find(
+    (fp) => fp.subject === "PurchaseOrder" && fp.field === "costPrice",
+  );
+  assert.ok(memberCostPricePolicy);
+  assert.equal(memberCostPricePolicy.access, "READONLY");
+
   assert.equal(list[2].role, "procurement_auditor");
   assert.equal(list[2].isSystem, false);
   assert.deepEqual(list[2].permissions.statement["procurement.order"], [
