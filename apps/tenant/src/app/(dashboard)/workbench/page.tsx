@@ -9,7 +9,9 @@ import {
 import {
   CaslAbilityFactory,
   getAccessibleWhere,
+  getFieldMode,
   type AppPrismaAbility,
+  type FieldAccessMode,
 } from "@chenrun/authorization";
 import {
   getTenantDbManager,
@@ -30,7 +32,6 @@ import {
   Input,
   Button,
   AuthorizedField,
-  type AbilityLike,
 } from "@chenrun/ui";
 import {
   Building2,
@@ -303,14 +304,18 @@ function EmployeeProfileMetricsGrid({
  */
 function PermissionAnalysisPanels({
   sqlWhere,
-  ability,
+  fieldModes,
   canReadOrder,
   canCreateOrder,
   canAuditOrder,
   canExportOrder,
 }: {
   sqlWhere: unknown;
-  ability: AbilityLike;
+  fieldModes: {
+    supplierName: FieldAccessMode;
+    costPrice: FieldAccessMode;
+    quantity: FieldAccessMode;
+  };
   canReadOrder: boolean;
   canCreateOrder: boolean;
   canAuditOrder: boolean;
@@ -418,7 +423,7 @@ function PermissionAnalysisPanels({
         </CardHeader>
         <CardContent className="space-y-4">
           <AuthorizedField
-            ability={ability}
+            mode={fieldModes.supplierName}
             subject="PurchaseOrder"
             field="supplierName"
             label="供应商全称 (supplierName)"
@@ -427,7 +432,7 @@ function PermissionAnalysisPanels({
           </AuthorizedField>
 
           <AuthorizedField
-            ability={ability}
+            mode={fieldModes.costPrice}
             subject="PurchaseOrder"
             field="costPrice"
             label="采购成本价 (costPrice) —— 核心保密资产"
@@ -444,7 +449,7 @@ function PermissionAnalysisPanels({
           </AuthorizedField>
 
           <AuthorizedField
-            ability={ability}
+            mode={fieldModes.quantity}
             subject="PurchaseOrder"
             field="quantity"
             label="采购批次数量 (quantity)"
@@ -561,7 +566,15 @@ export default async function WorkbenchPage() {
 
       <PermissionAnalysisPanels
         sqlWhere={sqlWhere}
-        ability={prismaAbility}
+        fieldModes={{
+          supplierName: getFieldMode(
+            prismaAbility,
+            "PurchaseOrder",
+            "supplierName",
+          ),
+          costPrice: getFieldMode(prismaAbility, "PurchaseOrder", "costPrice"),
+          quantity: getFieldMode(prismaAbility, "PurchaseOrder", "quantity"),
+        }}
         canReadOrder={prismaAbility.can("read", "PurchaseOrder")}
         canCreateOrder={prismaAbility.can("create", "PurchaseOrder")}
         canAuditOrder={prismaAbility.can("audit", "PurchaseOrder")}

@@ -56,7 +56,8 @@ export function QuoteView({
       can(action: string, subject?: string, field?: string) {
         if (subject && subject !== CustomerQuoteSubject) return false;
         if (!permissions.actions.includes(action)) return false;
-        if (field && permissions.fieldPolicies?.[field] === "HIDDEN") return false;
+        if (field && permissions.fieldPolicies?.[field] === "HIDDEN")
+          return false;
         return true;
       },
     };
