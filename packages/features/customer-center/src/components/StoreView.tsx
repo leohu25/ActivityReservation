@@ -16,13 +16,13 @@ import {
   type ColumnDef,
 } from "@chenrun/ui";
 import { exportContractCsv } from "@chenrun/shared";
+import { useAbility } from "@chenrun/authorization";
 import {
   updateStoreStatusAction,
   deleteStoreAction,
 } from "../actions";
 import { CreateStoreModal } from "./CreateStoreModal";
 import { CustomerStoreField, storePageContract } from "../contracts";
-import { isFieldAllowedForAction } from "@chenrun/authorization";
 import type { StoreListItem, CustomerListItem } from "../types";
 
 /**
@@ -40,13 +40,6 @@ interface Props {
   initialStatus?: string;
   /** 可选客户关联字典列表 */
   customers: CustomerListItem[];
-  ability?: {
-    can(action: string, subject: string, field?: string): boolean;
-  };
-  permissions?: {
-    readonly actions: readonly string[];
-    readonly fieldPolicies?: Readonly<Record<string, string>>;
-  };
 }
 
 /**
@@ -62,20 +55,8 @@ export function StoreView({
   initialCustomer = "",
   initialStatus = "",
   customers,
-  ability: explicitAbility,
-  permissions,
 }: Props) {
-  const ability = React.useMemo(() => {
-    if (explicitAbility) return explicitAbility;
-    if (!permissions) return undefined;
-    return {
-      can(action: string, subject?: string, field?: string) {
-        if (subject && subject !== storePageContract.subject) return false;
-        if (!permissions.actions.includes(action)) return false;
-        return isFieldAllowedForAction(permissions.fieldPolicies, action, field);
-      },
-    };
-  }, [explicitAbility, permissions]);
+  const ability = useAbility();
   const { navigateList, router } = useListUrlNav();
   const [stores, setStores] = useState<StoreListItem[]>(initialStores);
   const [total, setTotal] = useState(initialTotal ?? initialStores.length);
@@ -298,13 +279,13 @@ export function StoreView({
   ];
 
   return (
-    <DataTable.Workspace
-      data={stores}
-      columns={columns}
-      rowKey={(s: StoreListItem) => s.storeCode}
-      subject={storePageContract.subject}
-      ability={ability}
-      title="门店档案"
+    <>
+      <DataTable.Workspace
+        data={stores}
+        columns={columns}
+        rowKey={(s: StoreListItem) => s.storeCode}
+        subject={storePageContract.subject}
+        title="门店档案"
       description="门店是订单订货、物流配送、现场签收与对账的最小履约单元，必须归属于有效客户并绑定区域。"
       page={page}
       pageSize={pageSize}
@@ -376,6 +357,7 @@ export function StoreView({
           onCreated={() => router?.refresh()}
         />
       )}
-    </DataTable.Workspace>
+      </DataTable.Workspace>
+    </>
   );
 }

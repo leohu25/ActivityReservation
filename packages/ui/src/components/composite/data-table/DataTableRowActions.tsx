@@ -2,6 +2,7 @@
 
 import React, { type ReactNode, useState } from "react";
 import { MoreHorizontal } from "lucide-react";
+import { useOptionalAbility } from "@chenrun/authorization";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -85,15 +86,15 @@ export function DataTableRowActions<TRecord>({
   unauthorizedStrategy = "hidden",
   className,
 }: DataTableRowActionsProps<TRecord>) {
-  const { subject, ability } = useDataTableContext();
+  const { subject } = useDataTableContext();
+  const ability = useOptionalAbility();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [activeConfirmAction, setActiveConfirmAction] =
     useState<RowActionItem<TRecord> | null>(null);
 
-  // 严格 Fail-Closed：无 subject 放行，无 ability 拒绝
+  // Fail-Closed：缺 ability 或 subject 一律拒绝（禁止无上下文放行）
   const canPerform = (actionName: string) => {
-    if (!subject) return true;
-    if (!ability) return false;
+    if (!subject || !ability) return false;
     return ability.can(actionName, subject);
   };
 

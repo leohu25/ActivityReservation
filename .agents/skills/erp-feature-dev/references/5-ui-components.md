@@ -15,7 +15,7 @@
 > ⚠️ **核心红线**：
 >
 > 1. **二次确认只在对话框提示一次**：破坏性操作统一由 `DataTableRowActions` 的 `ConfirmDialog` 进行模态对话框确认，严禁在回调函数内再次使用浏览器的 `window.confirm` 进行二次弹窗；
-> 2. **消息通知右上角 Toast 弹出**：严禁在页面顶部塞入静态红色大横幅挤压变形表格布局，所有成功、警告与错误提示统一使用右上角 `toast` 浮层通知；
+> 2. **消息通知右上角 Toast 弹出**：严禁在页面顶部塞入静态红色大横幅挤压变形表格布局，所有成功、警告与错误提示统一使用右上角 `toast` 浮层通知；页内粘性反馈用 `FeedbackBanner`（基于 shadcn `Alert`）；
 > 3. **杜绝全页强刷**：严禁调用 `window.location.reload()`，状态变更必须由 React 本地 State 即时响应驱动，配合 `router?.refresh()` 静默同步；
 > 4. **服务端分页（生产必选）**
 
@@ -68,6 +68,8 @@ toast.warning("检测到该客户存在未结款项");
 
 ## 2. 现代化工业风 DataTable 通用积木与权限开发手册
 
+> **权限来源（官方 CASL）**：切片 layout 已挂 `TenantAbilityProvider`；Workspace/Root **只传 `subject`**，禁止传 `permissions`/`ability`。完整范式见 `7-casl-ability-provider.md`。
+
 ### 2.1 一体化卡片容器原则
 
 **推荐整页模板（约定大于配置）**：`DataTable.Workspace` 默认带齐 Header + 刷新/导出/列设置/新增 + 关键字(+/状态)筛选 + 表格 + 分页，页面按需 `show*=false` 关闭：
@@ -78,7 +80,6 @@ toast.warning("检测到该客户存在未结款项");
   columns={columns}
   rowKey={(c) => c.customerCode}
   subject={customerPageContract.subject}
-  permissions={permissions}
   title="客户档案"
   description="维护企业客户主数据、结算方式、授信与服务时间。"
   page={page}
@@ -115,7 +116,6 @@ toast.warning("检测到该客户存在未结款项");
   columns={columns}
   rowKey={(item) => item.id}
   subject="Customer"
-  permissions={permissions}
   page={page}
   pageSize={pageSize}
   total={total}
@@ -173,7 +173,7 @@ toast.warning("检测到该客户存在未结款项");
 | `DataTable.FormModal` | 编辑/新建弹窗（品牌徽标+审计底栏） | `badge/headerExtra/auditHint` |
 | `DataTable.FormSection/FieldGrid/Banner` | 表单分组/字段网格/信息横幅 | 配合 FormModal 使用 |
 | `DataTable.DetailDrawer` | 详情查看居中弹窗（与编辑弹窗同构） | `record/onClose/children/badge` |
-| `DataTable.AuthField` | 字段三态表单控件 | `field/action` |
+| `DataTable.AuthField` | 字段三态表单控件（shadcn `Field`+`Badge` 组合） | `field/action` |
 | `DataTable.AuthGuard` | 权限包裹任意插槽 | `action` |
 
 ### 2.3 自定义操作按钮如何加权限
@@ -210,7 +210,7 @@ toast.warning("检测到该客户存在未结款项");
 </DataTable.Actions>
 ```
 
-**Fail-Closed 规则**：`subject` 与 `ability` 齐备时，无权限 → 隐藏/置灰；缺 `ability` 时视为无权限（禁止默认放行）。
+**Fail-Closed 规则**：上层已挂 `AbilityProvider` 时，无权限 → 隐藏/置灰；无 Provider / 缺 `subject` 时视为无权限（禁止默认放行）。
 
 **禁止**手写 `canExport && <Button>` 再包一层——用 `ActionButton` 即可。
 

@@ -105,7 +105,6 @@ export function DataTableWorkspace<TData>({
   onPageChange,
   subject,
   ability,
-  permissions,
   integratedCard = true,
   clientSidePagination,
   className,
@@ -158,7 +157,6 @@ export function DataTableWorkspace<TData>({
       onPageChange={onPageChange}
       subject={subject}
       ability={ability}
-      permissions={permissions}
       integratedCard={integratedCard}
       clientSidePagination={clientSidePagination}
       className={className}

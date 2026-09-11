@@ -53,11 +53,8 @@ export interface DataTableContextValue<TData = any> {
   toggleColumnVisibility: (columnId: string) => void;
   resetColumnVisibility: () => void;
 
-  // 权限与业务上下文
+  // 业务上下文：仅承载 subject；Ability 一律来自 @casl/react AbilityProvider
   subject?: string;
-  ability?: {
-    can(action: string, subject: string, field?: string): boolean;
-  };
 }
 
 const DataTableContext = createContext<DataTableContextValue<any> | null>(null);

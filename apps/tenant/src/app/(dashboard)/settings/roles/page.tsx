@@ -6,7 +6,7 @@ import {
   RolePermissionManager,
 } from "@chenrun/feature-tenant-admin";
 import { Card } from "@chenrun/ui";
-import { ALL_TENANT_MANIFESTS, globalTenantPermissionTree } from "@/kernel";
+import { ALL_TENANT_MANIFESTS, globalTenantPermissionTree, getTenantSubjectPermissions } from "@/kernel";
 
 /**
  * 租户角色与权限管理页面 (Server Component - 极薄装配线)
@@ -52,10 +52,15 @@ export default async function SettingsRolesPage() {
     .split(",")
     .map((r) => r.trim())
     .filter(Boolean);
-  // 过渡策略：保留内置角色字符串判断，避免历史 admin 未保存 statement 时锁死配置页。
-  // 目标态：仅 `ability.can("read", "RoleManagement")`（Phase 3 后续可收紧）。
+
+  // 官方 CASL：layout 已注入 AbilityProvider；这里用同一套快照做 RSC 门禁
+  const rolePerms = await getTenantSubjectPermissions("RoleManagement");
+  const canReadRoles = rolePerms.actions.includes("read");
+  // 过渡兜底：历史 admin 可能尚未保存 statement，避免锁死配置页
   const isTenantAdmin =
-    roleList.includes("owner") || roleList.includes("admin");
+    canReadRoles ||
+    roleList.includes("owner") ||
+    roleList.includes("admin");
 
   if (!isTenantAdmin) {
     return (

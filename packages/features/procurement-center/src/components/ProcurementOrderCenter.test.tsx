@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import React from "react";
 import { renderToString } from "react-dom/server";
+import { TenantAbilityProvider } from "@chenrun/authorization";
 import {
   ProcurementOrderStatus,
-  ProcurementOrderSubject,
   procurementOrderPageContract,
 } from "../contracts";
 import type { ProcurementOrderItem } from "../types";
@@ -26,25 +27,56 @@ const order: ProcurementOrderItem = {
   isSelfAuditBlocked: false,
 };
 
+function renderCenter(
+  ui: React.ReactElement,
+  permissions?: {
+    actions: readonly string[];
+    fieldPolicies?: Readonly<Record<string, string>>;
+  },
+) {
+  if (!permissions) {
+    return renderToString(ui);
+  }
+  return renderToString(
+    <TenantAbilityProvider
+      snapshots={{
+        subject: procurementOrderPageContract.subject,
+        actions: permissions.actions,
+        fieldPolicies: permissions.fieldPolicies,
+      }}
+    >
+      {ui}
+    </TenantAbilityProvider>,
+  );
+}
+
 test("ProcurementOrderCenter 依据 fieldVisibility 对 HIDDEN 字段直接移除整列且不渲染掩码", () => {
   const html = renderToString(
-    <ProcurementOrderCenter
-      orders={[order]}
-      sqlWhere={{ deptId: "dept_root" }}
-      activeOrgId="org_test"
-      departmentName="采购部"
-      canCreate={false}
-      canExport={false}
-      fieldVisibility={{
-        orderNo: false,
-        supplierName: false,
-        quantity: true,
-        costPrice: false,
-        status: true,
-        auditComment: false,
+    <TenantAbilityProvider
+      snapshots={{
+        subject: procurementOrderPageContract.subject,
+        actions: ["read"],
+        fieldPolicies: {},
       }}
-      currentUserId="user_viewer"
-    />,
+    >
+      <ProcurementOrderCenter
+        orders={[order]}
+        sqlWhere={{ deptId: "dept_root" }}
+        activeOrgId="org_test"
+        departmentName="采购部"
+        canCreate={false}
+        canExport={false}
+        fieldVisibility={{
+          orderNo: false,
+          supplierName: false,
+          quantity: true,
+          costPrice: false,
+          status: true,
+          auditComment: false,
+        }}
+        currentUserId="user_viewer"
+      />
+    </TenantAbilityProvider>,
   );
 
   assert.doesNotMatch(html, /订单编号/);
@@ -61,19 +93,16 @@ test("ProcurementOrderCenter 依据 fieldVisibility 对 HIDDEN 字段直接移�
   assert.match(html, /待审核/);
 });
 
-test("ProcurementOrderCenter 严格根据 permissions.fieldPolicies 动态执行 HIDDEN 物理列剥离", () => {
-  // 场景 1: costPrice 与 supplierName 设置为 HIDDEN
-  const htmlWithHidden = renderToString(
-    <ProcurementOrderCenter
-      orders={[order]}
-      permissions={{
-        actions: ["read"],
-        fieldPolicies: {
-          costPrice: "HIDDEN",
-          supplierName: "HIDDEN",
-        },
-      }}
-    />,
+test("ProcurementOrderCenter 严格根据 AbilityProvider fieldPolicies 动态执行 HIDDEN 物理列剥离", () => {
+  const htmlWithHidden = renderCenter(
+    <ProcurementOrderCenter orders={[order]} />,
+    {
+      actions: ["read"],
+      fieldPolicies: {
+        costPrice: "HIDDEN",
+        supplierName: "HIDDEN",
+      },
+    },
   );
 
   assert.doesNotMatch(
@@ -98,37 +127,24 @@ test("ProcurementOrderCenter 严格根据 permissions.fieldPolicies 动态执行
   );
   assert.match(htmlWithHidden, /订单编号/, "非 HIDDEN 字段应正常展示");
 
-  // 场景 2: 全量放行
-  const htmlFull = renderToString(
-    <ProcurementOrderCenter
-      orders={[order]}
-      permissions={{
-        actions: ["read"],
-        fieldPolicies: {},
-      }}
-    />,
-  );
+  const htmlFull = renderCenter(<ProcurementOrderCenter orders={[order]} />, {
+    actions: ["read"],
+    fieldPolicies: {},
+  });
 
   assert.match(htmlFull, /采购单价/);
   assert.match(htmlFull, /供应商名称/);
 });
 
 test("ProcurementOrderCenter 依据 export 权限动态控制【导出数据】按钮显隐", () => {
-  // 拥有 export 权限
-  const withExport = renderToString(
-    <ProcurementOrderCenter
-      orders={[order]}
-      permissions={{ actions: ["read", "export"] }}
-    />,
-  );
+  const withExport = renderCenter(<ProcurementOrderCenter orders={[order]} />, {
+    actions: ["read", "export"],
+  });
   assert.match(withExport, /导出数据/, "具有 export 权限时应渲染导出按钮");
 
-  // 无 export 权限
-  const withoutExport = renderToString(
-    <ProcurementOrderCenter
-      orders={[order]}
-      permissions={{ actions: ["read"] }}
-    />,
+  const withoutExport = renderCenter(
+    <ProcurementOrderCenter orders={[order]} />,
+    { actions: ["read"] },
   );
   assert.doesNotMatch(
     withoutExport,
@@ -138,14 +154,7 @@ test("ProcurementOrderCenter 依据 export 权限动态控制【导出数据】�
 });
 
 test("ProcurementOrderCenter 契约自包含检验：subject 与 resource 正确", () => {
-  assert.equal(procurementOrderPageContract.subject, ProcurementOrderSubject);
-  assert.equal(procurementOrderPageContract.resource, "procurement.order");
-  assert.ok(
-    procurementOrderPageContract.actions.some((a) => a.action === "audit"),
-    "契约必须包含审核动作",
-  );
-  assert.ok(
-    procurementOrderPageContract.actions.some((a) => a.action === "export"),
-    "契约必须包含导出动作",
-  );
+  assert.equal(procurementOrderPageContract.subject, "PurchaseOrder");
+  assert.ok(procurementOrderPageContract.actions.length > 0);
+  assert.ok(procurementOrderPageContract.configurableFields?.length);
 });

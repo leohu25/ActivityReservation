@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
-import { AlertCircle, CheckCircle2, Info } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info, X } from "lucide-react";
+import { Alert, AlertDescription } from "../shadcn/alert";
+import { Button } from "../shadcn/button";
 import { cn } from "../../lib/utils";
 
 export interface FeedbackBannerProps {
@@ -11,7 +13,10 @@ export interface FeedbackBannerProps {
   readonly onDismiss?: () => void;
 }
 
-/** 页内反馈条：替代各 View 手写 emerald/rose 横幅（通知优先仍用 toast） */
+/**
+ * 页内反馈条：基于 shadcn Alert 组合（通知优先仍用 toast）。
+ * 成功/信息用 default + 语义图标色；错误用 destructive variant。
+ */
 export function FeedbackBanner({
   type,
   message,
@@ -22,37 +27,35 @@ export function FeedbackBanner({
     type === "success" ? CheckCircle2 : type === "error" ? AlertCircle : Info;
 
   return (
-    <div
-      role="status"
+    <Alert
+      variant={type === "error" ? "destructive" : "default"}
       className={cn(
-        "flex items-center gap-2 rounded-xl border p-3.5 text-xs font-semibold",
-        type === "success" &&
-          "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300",
-        type === "error" &&
-          "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-300",
+        "items-center",
+        type === "success" && "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200",
         type === "info" &&
-          "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300",
+          "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200",
         className,
       )}
     >
       <Icon
         className={cn(
-          "size-4 shrink-0",
           type === "success" && "text-emerald-600 dark:text-emerald-400",
-          type === "error" && "text-rose-600 dark:text-rose-400",
           type === "info" && "text-blue-600 dark:text-blue-400",
         )}
       />
-      <span className="min-w-0 flex-1">{message}</span>
+      <AlertDescription className="font-medium">{message}</AlertDescription>
       {onDismiss ? (
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
+          className="col-start-2 h-6 justify-self-end px-2 text-xs opacity-70 hover:opacity-100"
           onClick={onDismiss}
-          className="shrink-0 text-xs font-medium opacity-60 hover:opacity-100"
         >
+          <X className="size-3" />
           关闭
-        </button>
+        </Button>
       ) : null}
-    </div>
+    </Alert>
   );
 }

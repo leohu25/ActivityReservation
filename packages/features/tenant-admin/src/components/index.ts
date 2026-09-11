@@ -8,8 +8,7 @@ export * from "./DepartmentFormModal";
 export * from "./PositionView";
 export * from "./PositionFormModal";
 export * from "./EmployeeView";
+export * from "./TenantAdminAbilityBoundary";
 export * from "./WorkbenchView";
 export * from "./AuthModal";
 export * from "./OrgSwitcher";
-
-

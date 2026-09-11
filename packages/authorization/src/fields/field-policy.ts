@@ -171,30 +171,14 @@ export function resolveFieldAccess(input: {
 }
 
 /**
- * 前端 plain ability 的字段级判定（与 CASL 字段规则对齐）。
- * 用于从 RSC 下发的 `{ actions, fieldPolicies }` 纯数据重建 can()。
- * fieldPolicies 允许宽 string（RSC 序列化后为字符串字面量）。
+ * 前端 plain ability 的字段级判定（实现收敛至 @chenrun/shared，此处再导出保持领域包 API 稳定）。
  */
-export function isFieldAllowedForAction(
-  fieldPolicies: Readonly<Record<string, string>> | undefined,
-  action: string,
-  field?: string,
-): boolean {
-  if (!field) {
-    return true;
-  }
-  const mode = fieldPolicies?.[field];
-  if (mode === FieldPolicy.HIDDEN) {
-    return false;
-  }
-  if (
-    (action === "create" || action === "update") &&
-    mode === FieldPolicy.READONLY
-  ) {
-    return false;
-  }
-  return true;
-}
+export {
+  createSubjectAbility,
+  isFieldAllowedForAction,
+  type SubjectAbilityLike,
+  type SubjectPermissionsPayload,
+} from "@chenrun/shared";
 
 /**
  * 通用字段可见性生成器 (Field Visibility Map Generator)

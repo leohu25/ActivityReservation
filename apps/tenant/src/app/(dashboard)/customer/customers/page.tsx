@@ -1,12 +1,11 @@
 import {
   CustomerView,
-  CustomerSubject,
   listCustomersAction,
   getCategoryTreeAction,
   listTagsAction,
 } from "@chenrun/feature-customer-center";
+import type { CustomerListItem } from "@chenrun/feature-customer-center/types";
 import { toPlainData } from "@chenrun/shared";
-import { getTenantSubjectPermissions } from "@/kernel";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -21,6 +20,9 @@ function readInt(sp: SearchParams, key: string, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
+/**
+ * 客户档案页：权限由 customer/layout 的 AbilityProvider 注入，本页只取业务数据。
+ */
 export default async function CustomersPage({
   searchParams,
 }: {
@@ -33,7 +35,7 @@ export default async function CustomersPage({
   const categoryCode = readOne(sp, "category");
   const status = readOne(sp, "status");
 
-  const [custRes, catRes, tagsRes, permissions] = await Promise.all([
+  const [custRes, catRes, tagsRes] = await Promise.all([
     listCustomersAction({
       page,
       pageSize,
@@ -43,7 +45,6 @@ export default async function CustomersPage({
     }),
     getCategoryTreeAction(),
     listTagsAction(),
-    getTenantSubjectPermissions(CustomerSubject),
   ]);
 
   const list =
@@ -51,7 +52,9 @@ export default async function CustomersPage({
       ? toPlainData(custRes.data)
       : { items: [], total: 0, page: 1, pageSize };
 
-  const customers = Array.isArray(list) ? list : (list.items ?? []);
+  const customers = (
+    Array.isArray(list) ? list : (list.items ?? [])
+  ) as CustomerListItem[];
   const total = Array.isArray(list) ? list.length : (list.total ?? 0);
   const categories =
     catRes.success && catRes.data ? toPlainData(catRes.data) : [];
@@ -68,7 +71,6 @@ export default async function CustomersPage({
       initialStatus={status}
       categories={categories}
       tags={tags}
-      permissions={permissions}
     />
   );
 }

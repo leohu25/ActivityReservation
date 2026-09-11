@@ -4,44 +4,58 @@
 
 ---
 
-## 1. 租户端应用路由挂载 (`apps/tenant/src/app/...`)
+## 1. 租户端路由：layout 注入 Ability + page 只取数据
 
-租户端页面属于 Next.js Server Components，负责提取租户会话、CASL 权限与数据并下发给 Client Component：
+**教科书形态**（与 `references/7-casl-ability-provider.md` 一致）：
+
+1. **切片 layout（RSC）**：拉取本切片全部 Subject 权限快照，挂 `*AbilityBoundary` → `TenantAbilityProvider`
+2. **page（RSC）**：只请求业务数据，**禁止**再 `getTenantSubjectPermissions`、**禁止**向 View 传 `permissions`/`ability`
+3. **View（Client）**：只声明 `subject`，消费 `useAbility()` / DataTable 积木
 
 ```tsx
-// apps/tenant/src/app/(dashboard)/customer/customers/page.tsx
-import React from "react";
+// apps/tenant/src/app/(dashboard)/customer/layout.tsx
 import {
-  CustomerView,
+  CustomerAbilityBoundary,
   CustomerSubject,
-  listCustomersAction,
-  getCategoryTreeAction,
-  listTagsAction,
+  CustomerStoreSubject,
+  CustomerQuoteSubject,
+  CustomerCategorySubject,
+  CustomerTagSubject,
 } from "@chenrun/feature-customer-center";
 import { getTenantSubjectPermissions } from "@/kernel";
 
-export default async function CustomersPage() {
-  // 1. 并行获取业务数据与 CASL 权限
-  const [custRes, catRes, tagsRes, permissions] = await Promise.all([
-    listCustomersAction(),
-    getCategoryTreeAction(),
-    listTagsAction(),
+export default async function CustomerLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [customer, store, quote, category, tag] = await Promise.all([
     getTenantSubjectPermissions(CustomerSubject),
+    getTenantSubjectPermissions(CustomerStoreSubject),
+    getTenantSubjectPermissions(CustomerQuoteSubject),
+    getTenantSubjectPermissions(CustomerCategorySubject),
+    getTenantSubjectPermissions(CustomerTagSubject),
   ]);
 
-  const customers = custRes.success && custRes.data ? custRes.data : [];
-  const categories = catRes.success && catRes.data ? catRes.data : [];
-  const tags = tagsRes.success && tagsRes.data ? tagsRes.data : [];
-
-  // 2. 渲染 Client Component
   return (
-    <CustomerView
-      initialCustomers={customers}
-      categories={categories}
-      tags={tags}
-      permissions={permissions}
-    />
+    <CustomerAbilityBoundary
+      permissions={{ customer, store, quote, category, tag }}
+    >
+      {children}
+    </CustomerAbilityBoundary>
   );
+}
+```
+
+```tsx
+// apps/tenant/src/app/(dashboard)/customer/customers/page.tsx
+import { CustomerView, listCustomersAction } from "@chenrun/feature-customer-center";
+
+export default async function CustomersPage() {
+  const [custRes] = await Promise.all([listCustomersAction({ page, pageSize })]);
+  const customers = custRes.success && custRes.data ? custRes.data : [];
+
+  return <CustomerView initialCustomers={customers} categories={[]} tags={[]} />;
 }
 ```
 
@@ -91,24 +105,26 @@ export const customerCenterManifest: FeatureManifest = {
 
 ## 3. 契约 100% 对齐自动化测试 (`CustomerView.test.tsx`)
 
-防止后续迭代产生“空头支票”或“幽灵权限”，编写单元测试：
+用 **AbilityProvider 包裹**注入权限，禁止给 View 塞 `permissions` prop：
 
 ```tsx
+import { TenantAbilityProvider } from "@chenrun/authorization";
+import { CustomerView } from "./CustomerView";
+
 test("CustomerView 与 customerPageContract 契约 100% 对齐", () => {
   const html = renderToString(
-    React.createElement(CustomerView, {
-      initialCustomers: mockCustomers,
-      categories: [],
-      tags: [],
-      permissions: {
+    <TenantAbilityProvider
+      snapshots={{
+        subject: "Customer",
         actions: ["read", "create", "update", "delete", "export"],
         fieldPolicies: {},
-      },
-    }),
+      }}
+    >
+      <CustomerView initialCustomers={mockCustomers} categories={[]} tags={[]} />
+    </TenantAbilityProvider>,
   );
 
-  // 验证契约声明的每个动作按钮在界面上都能找到对应元素，杜绝脱节
-  assert.match(html, /新建客户/);
-  assert.match(html, /导出数据/);
+  assert.match(html, /新增/);
+  assert.match(html, /导出/);
 });
 ```

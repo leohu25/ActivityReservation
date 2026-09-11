@@ -2,6 +2,9 @@
 
 import React, { cloneElement, isValidElement, useContext } from "react";
 import { FieldPolicy, type FieldAccessMode } from "@chenrun/shared";
+import { useOptionalAbility } from "@chenrun/authorization";
+import { Field, FieldLabel } from "../../shadcn/field";
+import { Badge } from "../../shadcn/badge";
 import { DataTableContext } from "../data-table/DataTableContext";
 
 export type { FieldAccessMode } from "@chenrun/shared";
@@ -11,9 +14,9 @@ export interface AbilityLike {
 }
 
 export interface AuthFieldProps {
-  /** CASL Ability 实例，若未传则自动从父级 DataTableContext 继承 */
+  /** CASL Ability；未传则读 AbilityProvider（官方范式） */
   readonly ability?: AbilityLike | null;
-  /** 实体名称 (如 'PurchaseOrder', 'Customer')，若未传则自动从父级 DataTableContext 继承 */
+  /** 实体名称；未传则从 DataTableContext 继承 subject */
   readonly subject?: string;
   /** 字段名 (如 'costPrice', 'supplierName') */
   readonly field: string;
@@ -31,14 +34,14 @@ export interface AuthFieldProps {
   readonly label?: string;
   /** 隐藏或无权访问时的占位渲染内容 (默认不渲染) */
   readonly fallback?: React.ReactNode;
+  readonly className?: string;
 }
 
 /**
  * 推导字段访问三态 (HIDDEN, READONLY, EDITABLE)
- * 遵循权限系统方案规范：
- * - 不能 read -> HIDDEN (隐藏)
- * - 能 read 但不能 write -> READONLY (只读)
- * - 能 read 且能 write -> EDITABLE (可编辑)
+ * - 不能 read -> HIDDEN
+ * - 能 read 但不能 write -> READONLY
+ * - 能 read 且能 write -> EDITABLE
  */
 export function deriveFieldMode(
   ability: AbilityLike | null | undefined,
@@ -67,9 +70,8 @@ export function deriveFieldMode(
 }
 
 /**
- * 现代化字段权限积木 (AuthField)
- * 依据当前 CASL Ability 全自动感应并呈现 HIDDEN (剥离隐藏)、READONLY (只读锁定) 与 EDITABLE (正常交互)。
- * 深度集成在 DataTable 积木套件中，自动从上下文继承 ability 与 subject。
+ * 字段权限积木：CASL 三态 × shadcn Field 官方组合。
+ * 外壳完全来自 Field/FieldLabel/Badge；权限判定走 AbilityProvider。
  */
 export function AuthField({
   ability: explicitAbility,
@@ -80,69 +82,49 @@ export function AuthField({
   children,
   label,
   fallback = null,
+  className,
 }: AuthFieldProps) {
   const tableContext = useContext(DataTableContext);
+  const caslAbility = useOptionalAbility();
 
   const ability =
-    explicitAbility === undefined ? tableContext?.ability : explicitAbility;
+    explicitAbility !== undefined ? explicitAbility : caslAbility;
   const subject = explicitSubject || tableContext?.subject || "";
 
   const resolvedMode = deriveFieldMode(ability, subject, field, action, mode);
 
   if (resolvedMode === FieldPolicy.HIDDEN) {
-    return fallback
-      ? React.createElement(React.Fragment, null, fallback)
-      : null;
+    return fallback ? <>{fallback}</> : null;
   }
 
   const isReadOnly = resolvedMode === FieldPolicy.READONLY;
 
-  let badgeElement: React.ReactNode = null;
-  if (isReadOnly) {
-    badgeElement = React.createElement(
-      "span",
-      {
-        className:
-          "rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700",
-      },
-      "只读",
-    );
-  }
-
-  let labelElement: React.ReactNode = null;
-  if (label) {
-    labelElement = React.createElement(
-      "div",
-      { className: "flex items-center justify-between mb-1" },
-      React.createElement(
-        "label",
-        {
-          className: "text-xs font-semibold text-slate-700 dark:text-slate-300",
-        },
-        label,
-      ),
-      badgeElement,
-    );
-  }
-
   let childElement: React.ReactNode = children;
   if (isValidElement(children)) {
-    const existingClass = children.props.className || "";
-    const readOnlyClass = isReadOnly
-      ? "bg-slate-100/70 text-slate-500 cursor-not-allowed dark:bg-slate-800/50 dark:text-slate-400"
-      : "";
     childElement = cloneElement(children, {
       disabled: isReadOnly || children.props.disabled,
       readOnly: isReadOnly || children.props.readOnly,
-      className: `${existingClass} ${readOnlyClass}`.trim(),
     });
   }
 
-  return React.createElement(
-    "div",
-    { className: "flex flex-col gap-1.5" },
-    labelElement,
-    childElement,
+  return (
+    <Field
+      data-disabled={isReadOnly || undefined}
+      data-slot="auth-field"
+      className={className}
+    >
+      {label ? (
+        <FieldLabel>
+          <span>{label}</span>
+          {isReadOnly ? (
+            <Badge variant="secondary" size="sm">
+              只读
+            </Badge>
+          ) : null}
+        </FieldLabel>
+      ) : null}
+      {childElement}
+    </Field>
   );
 }
 

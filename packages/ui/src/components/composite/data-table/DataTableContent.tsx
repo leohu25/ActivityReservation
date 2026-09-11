@@ -11,6 +11,7 @@ import {
   TableCell,
 } from "../../shadcn/table";
 import { Checkbox } from "../../shadcn/checkbox";
+import { useOptionalAbility } from "@chenrun/authorization";
 import { EmptyState } from "../../feedback/EmptyState";
 import { useDataTableContext } from "./DataTableContext";
 import { cn } from "../../../lib/utils";
@@ -52,8 +53,8 @@ export function DataTableContent<TData = any>({
     page = 1,
     pageSize = pageData.length || 10,
     subject,
-    ability,
   } = useDataTableContext<TData>();
+  const ability = useOptionalAbility();
 
   // CASL 字段 HIDDEN + 用户列设置 visibleColumnIds 双重过滤
   const visibleColumns = useMemo(() => {

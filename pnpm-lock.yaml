@@ -514,6 +514,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@chenrun/authorization':
+        specifier: workspace:*
+        version: link:../authorization
       '@chenrun/shared':
         specifier: workspace:*
         version: link:../shared

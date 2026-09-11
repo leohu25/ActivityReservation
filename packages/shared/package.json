@@ -10,7 +10,7 @@
   },
   "scripts": {
     "check": "tsc --noEmit",
-    "test": "tsx --test src/*.test.ts"
+    "test": "tsx --test src/*.test.ts src/**/*.test.ts"
   },
   "devDependencies": {
     "@types/node": "^20.19.43",

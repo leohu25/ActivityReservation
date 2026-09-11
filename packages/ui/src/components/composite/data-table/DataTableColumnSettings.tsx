@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../shadcn/dropdown-menu";
+import { useOptionalAbility } from "@chenrun/authorization";
 import { useDataTableContext } from "./DataTableContext";
 import { cn } from "../../../lib/utils";
 
@@ -37,8 +38,8 @@ export function DataTableColumnSettings({
     toggleColumnVisibility,
     resetColumnVisibility,
     subject,
-    ability,
   } = useDataTableContext();
+  const ability = useOptionalAbility();
 
   // 字段级 HIDDEN 列不进入面板
   const panelColumns = useMemo(() => {

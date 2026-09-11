@@ -11,6 +11,8 @@ import type {
 
 export const AbilityContext = AbilityProvider;
 export { useAbility };
+/** 官方 @casl/react 声明式门禁组件 */
+export { CaslCan as Can };
 
 /** Binds React permission props to one concrete permission catalog. */
 export function createReactAbilityAdapter<

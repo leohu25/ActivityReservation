@@ -1,12 +1,15 @@
 import {
   QuoteView,
-  CustomerQuoteSubject,
   listQuotesAction,
   listCustomersAction,
   listStoresAction,
 } from "@chenrun/feature-customer-center";
+import type {
+  CustomerListItem,
+  QuoteListItem,
+  StoreListItem,
+} from "@chenrun/feature-customer-center/types";
 import { toPlainData } from "@chenrun/shared";
-import { getTenantSubjectPermissions } from "@/kernel";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -21,6 +24,7 @@ function readInt(sp: SearchParams, key: string, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
+/** 报价单页：权限由 customer/layout 的 AbilityProvider 注入 */
 export default async function QuotesPage({
   searchParams,
 }: {
@@ -31,7 +35,7 @@ export default async function QuotesPage({
   const pageSize = Math.min(100, readInt(sp, "pageSize", 10));
   const status = readOne(sp, "status");
 
-  const [quotesRes, custRes, storesRes, permissions] = await Promise.all([
+  const [quotesRes, custRes, storesRes] = await Promise.all([
     listQuotesAction({
       page,
       pageSize,
@@ -39,31 +43,30 @@ export default async function QuotesPage({
     }),
     listCustomersAction({ page: 1, pageSize: 100 }),
     listStoresAction({ page: 1, pageSize: 100 }),
-    getTenantSubjectPermissions(CustomerQuoteSubject),
   ]);
 
   const quoteList =
     quotesRes.success && quotesRes.data
       ? toPlainData(quotesRes.data)
       : { items: [], total: 0, page: 1, pageSize };
-  const quotes = Array.isArray(quoteList)
-    ? quoteList
-    : (quoteList.items ?? []);
+  const quotes = (
+    Array.isArray(quoteList) ? quoteList : (quoteList.items ?? [])
+  ) as QuoteListItem[];
   const total = Array.isArray(quoteList)
     ? quoteList.length
     : (quoteList.total ?? 0);
 
   const custList =
     custRes.success && custRes.data ? toPlainData(custRes.data) : null;
-  const customers = Array.isArray(custList)
+  const customers = (Array.isArray(custList)
     ? custList
-    : ((custList?.items as never[]) ?? []);
+    : ((custList?.items as never[]) ?? [])) as CustomerListItem[];
 
   const storeList =
     storesRes.success && storesRes.data ? toPlainData(storesRes.data) : null;
-  const stores = Array.isArray(storeList)
+  const stores = (Array.isArray(storeList)
     ? storeList
-    : ((storeList?.items as never[]) ?? []);
+    : ((storeList?.items as never[]) ?? [])) as StoreListItem[];
 
   return (
     <QuoteView
@@ -74,7 +77,6 @@ export default async function QuotesPage({
       initialStatus={status}
       customers={customers}
       stores={stores}
-      permissions={permissions}
     />
   );
 }

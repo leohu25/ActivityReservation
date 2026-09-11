@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useContext } from "react";
+import { useOptionalAbility } from "@chenrun/authorization";
 import { DataTableContext } from "../data-table/DataTableContext";
 
 export interface AuthGuardProps {
@@ -33,9 +34,10 @@ export function AuthGuard({
   children,
 }: AuthGuardProps) {
   const tableContext = useContext(DataTableContext);
+  const caslAbility = useOptionalAbility();
 
   const ability =
-    explicitAbility === undefined ? tableContext?.ability : explicitAbility;
+    explicitAbility !== undefined ? explicitAbility : caslAbility;
   const subject = explicitSubject || tableContext?.subject;
 
   if (!ability || !subject) {

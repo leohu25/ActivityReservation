@@ -1,6 +1,17 @@
 export * from "./lib/utils";
 export { useSafeRouter } from "./lib/use-safe-router";
 export { useListUrlNav, type ListUrlPatch } from "./lib/use-list-url-nav";
+// 官方 CASL 客户端范式（AbilityProvider / Can / useAbility）
+export {
+  TenantAbilityProvider,
+  useOptionalAbility,
+  useSubjectCan,
+  createAbilityFromSnapshot,
+  AbilityContext,
+  Can,
+  useAbility,
+  type AbilitySnapshot,
+} from "@chenrun/authorization";
 // 1 shadcn 层
 export * from "./components/shadcn";
 // 2 组件层

@@ -1,10 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  isFieldAllowedForAction,
-  type FieldAccessMode,
-} from "@chenrun/authorization";
+import { useAbility, type FieldAccessMode } from "@chenrun/authorization";
 import { Badge, Button, DataTable, type ColumnDef } from "@chenrun/ui";
 import { CheckCheck, PackageCheck } from "lucide-react";
 import {
@@ -14,7 +11,6 @@ import {
 } from "../contracts";
 import type {
   ProcurementOrderItem,
-  ProcurementAnyAbility,
   ProcurementFieldVisibility,
 } from "../types";
 import { CreateOrderDialog } from "./CreateOrderDialog";
@@ -29,14 +25,13 @@ export interface ProcurementOrderCenterProps {
   readonly canExport?: boolean;
   readonly fieldVisibility?: ProcurementFieldVisibility;
   readonly currentUserId?: string;
-  readonly ability?: ProcurementAnyAbility;
   readonly createFieldModes?: Record<string, FieldAccessMode>;
-  readonly permissions?: {
-    readonly actions: readonly string[];
-    readonly fieldPolicies?: Readonly<Record<string, string>>;
-  };
 }
 
+/**
+ * 采购订单中心：Ability 来自上层 AbilityProvider（procurement layout）。
+ * 服务端仍可显式下发 canCreate/canExport/fieldVisibility（真实例编译结果）。
+ */
 export function ProcurementOrderCenter({
   orders,
   sqlWhere = {},
@@ -45,36 +40,23 @@ export function ProcurementOrderCenter({
   canCreate: explicitCanCreate,
   canExport: explicitCanExport,
   fieldVisibility,
-  ability: explicitAbility,
   createFieldModes,
-  permissions,
 }: ProcurementOrderCenterProps) {
   const [selectedAuditOrder, setSelectedAuditOrder] =
     useState<ProcurementOrderItem | null>(null);
 
-  // 依据 skill 规范，标准化解析 ability 守卫
-  const ability = React.useMemo(() => {
-    if (explicitAbility) return explicitAbility;
-    if (!permissions) return undefined;
-    return {
-      can(action: string, subject?: string, field?: string) {
-        if (subject && subject !== procurementOrderPageContract.subject)
-          return false;
-        if (!permissions.actions.includes(action)) return false;
-        return isFieldAllowedForAction(permissions.fieldPolicies, action, field);
-      },
-    };
-  }, [explicitAbility, permissions]);
+  const ability = useAbility();
+  const subject = procurementOrderPageContract.subject;
 
-  // 受控操作按钮鉴权：优先通过 ability 计算，也可兼容服务端显式传入的 props
+  // Fail-Closed：未显式传入时，无 ability 一律拒绝
   const canExport =
     explicitCanExport === undefined
-      ? !ability || ability.can("export", procurementOrderPageContract.subject)
+      ? ability.can("export", subject)
       : explicitCanExport;
 
   const canCreate =
     explicitCanCreate === undefined
-      ? !ability || ability.can("create", procurementOrderPageContract.subject)
+      ? ability.can("create", subject)
       : explicitCanCreate;
 
   const handleExport = () => {
@@ -114,8 +96,8 @@ export function ProcurementOrderCenter({
     // 过滤掉当前操作员无权访问 (HIDDEN) 的字段
     const activeExportFields = fieldKeys.filter((f) => {
       if (fieldVisibility && fieldVisibility[f.key] === false) return false;
-      if (!ability || !f.field) return true;
-      return ability.can("read", procurementOrderPageContract.subject, f.field);
+      if (!f.field) return true;
+      return ability.can("read", subject, f.field);
     });
 
     const csvContent = [
@@ -281,13 +263,9 @@ export function ProcurementOrderCenter({
       if (col.id === "status") return fieldVisibility.status;
       if (col.id === "auditComment") return fieldVisibility.auditComment;
     }
-    // 2. 若无 fieldVisibility 但有 ability 鉴权上下文，按 CASL 判定
-    if (ability && col.field) {
-      return ability.can(
-        "read",
-        procurementOrderPageContract.subject,
-        col.field,
-      );
+    // 2. 否则按官方 AbilityProvider 判定
+    if (col.field) {
+      return ability.can("read", subject, col.field);
     }
     return true; // 部门、操作等公共列默认展示
   });
@@ -298,9 +276,7 @@ export function ProcurementOrderCenter({
         data={orders}
         columns={activeColumns}
         rowKey={(order: ProcurementOrderItem) => order.id}
-        subject={procurementOrderPageContract.subject}
-        ability={ability}
-        permissions={permissions}
+        subject={subject}
         title="采购订单中心"
         description="按钮依权限展示、敏感成本价依字段策略控制、查询结果遵循 PostgreSQL 动态数据范围下推，审核执行【禁止自审】红线。"
         showFilterBar={false}
