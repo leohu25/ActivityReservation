@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
+import { ThemeToggle } from "../ThemeToggle";
 
 /** 单个导航项模型（支持普通叶子链接或带子项的折叠分组） */
 export interface NavItem {
@@ -206,10 +207,10 @@ export function Sidebar({
   };
 
   return (
-    <aside className="w-64 border-r border-slate-200/80 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between shrink-0 select-none overflow-y-auto">
-      <div className="space-y-4">
+    <aside className="w-56 border-r border-slate-200/80 bg-white p-3.5 dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between shrink-0 select-none overflow-y-auto">
+      <div className="space-y-3.5">
         {/* 顶部轻量标签 */}
-        <div className="flex items-center gap-1.5 px-2.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+        <div className="flex items-center gap-1.5 px-2.5 text-xs font-bold tracking-wider text-slate-400 uppercase">
           <Layers className="size-3.5 text-slate-400" />
           <span>核心功能导航</span>
         </div>
@@ -229,7 +230,7 @@ export function Sidebar({
             return (
               <div key={section.id} className="space-y-1">
                 {section.title ? (
-                  <div className="px-2.5 pt-1.5 pb-1 text-[10px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
+                  <div className="px-2.5 pt-1.5 pb-1 text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
                     {section.title}
                   </div>
                 ) : null}
@@ -250,7 +251,7 @@ export function Sidebar({
                           <button
                             type="button"
                             onClick={() => toggleGroup(item.id)}
-                            className={`group flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold transition-all duration-150 ${
+                            className={`group flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-sm font-semibold transition-all duration-150 ${
                               childActive
                                 ? "text-blue-600 dark:text-blue-400"
                                 : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-slate-100"
@@ -295,7 +296,7 @@ export function Sidebar({
                                   <Link
                                     key={child.id}
                                     href={child.href ?? "#"}
-                                    className={`group flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs transition-all duration-150 ${
+                                    className={`group flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-sm transition-all duration-150 ${
                                       isSubActive
                                         ? "bg-blue-50 font-semibold text-blue-700 dark:bg-blue-950/40 dark:text-blue-300"
                                         : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-slate-200"
@@ -323,7 +324,7 @@ export function Sidebar({
                       <Link
                         key={item.id}
                         href={item.href ?? "#"}
-                        className={`group flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold transition-all duration-150 ${
+                        className={`group flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-sm font-semibold transition-all duration-150 ${
                           isActive
                             ? "bg-blue-600 text-white shadow-xs shadow-blue-500/30"
                             : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-100"
@@ -362,16 +363,12 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* 底部四层权限架构说明微卡片 */}
-      <div className="rounded-xl bg-blue-50/60 p-3 border border-blue-100/80 dark:bg-blue-950/20 dark:border-blue-900/40">
-        <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-700 dark:text-blue-400">
-          <ShieldCheck className="size-3.5" />
-          <span>四层权限体系守护</span>
-        </div>
-        <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-          涵盖 Better Auth 功能权限、CASL 按钮守卫、Prisma
-          数据下推与三态字段控制。
-        </p>
+      {/* 底部主题切换 */}
+      <div className="flex items-center justify-between px-1 pt-2">
+        <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
+          外观
+        </span>
+        <ThemeToggle />
       </div>
     </aside>
   );

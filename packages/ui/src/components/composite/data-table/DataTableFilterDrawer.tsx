@@ -11,9 +11,9 @@ import {
   SheetTrigger,
   SheetFooter,
   SheetClose,
-} from "../../primitives/sheet";
-import { Button } from "../../primitives/button";
-import { Badge } from "../../primitives/badge";
+} from "../../shadcn/sheet";
+import { Button } from "../../shadcn/button";
+import { Badge } from "../../shadcn/badge";
 import { cn } from "../../../lib/utils";
 
 export interface DataTableFilterDrawerProps {

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Search, X } from "lucide-react";
-import { Input } from "../../primitives/input";
+import { Input } from "../../shadcn/input";
 import { cn } from "../../../lib/utils";
 
 export interface DataTableSearchProps {

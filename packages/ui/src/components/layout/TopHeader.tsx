@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Button } from "../primitives/button";
-import { ThemeToggle } from "../ThemeToggle";
+import { Button } from "../shadcn/button";
 import { Loader2 } from "lucide-react";
 
 export interface TopHeaderProps {
@@ -84,11 +83,8 @@ export function TopHeader({
         {user && orgSwitcherSlot}
       </div>
 
-      {/* 右侧用户与主题操作区 */}
+      {/* 右侧用户操作区 */}
       <div className="flex items-center gap-3">
-        {/* 三态主题切换 (暗色 / 亮色 / 跟随系统) */}
-        <ThemeToggle />
-
         {user ? (
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50/80 py-1 pl-1.5 pr-3 dark:border-slate-800 dark:bg-slate-800/80">

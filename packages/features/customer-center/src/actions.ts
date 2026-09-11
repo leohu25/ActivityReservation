@@ -2,13 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { defineServerAction } from "@chenrun/shared";
-import { getTenantCustomerContext } from "./server/session";
+import { assertCustomerAbility, getTenantCustomerContext } from "./server/session";
 import {
   CustomerCategoryTagService,
   CustomerService,
   CustomerStoreService,
   CustomerQuoteService,
 } from "./services";
+import {
+  CustomerCategorySubject,
+  CustomerQuoteSubject,
+  CustomerStoreSubject,
+  CustomerSubject,
+} from "./contracts";
 import type {
   CreateCustomerInput,
   UpdateCustomerInput,
@@ -22,7 +28,8 @@ import type {
 // ==========================================
 
 export const getCategoryTreeAction = defineServerAction(async () => {
-  const { client } = await getTenantCustomerContext();
+  const { client, ability } = await getTenantCustomerContext();
+  assertCustomerAbility(ability, "read", CustomerCategorySubject);
   return CustomerCategoryTagService.getCategoryTree(client);
 }, "获取分类树失败");
 
@@ -33,7 +40,8 @@ export const createCategoryAction = defineServerAction(
     parentCode?: string | null;
     description?: string | null;
   }) => {
-    const { client } = await getTenantCustomerContext();
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "create", CustomerCategorySubject);
     const created = await CustomerCategoryTagService.createCategory(
       client,
       input,
@@ -47,7 +55,8 @@ export const createCategoryAction = defineServerAction(
 
 export const updateCategoryStatusAction = defineServerAction(
   async (categoryCode: string, status: "ACTIVE" | "DISABLED") => {
-    const { client } = await getTenantCustomerContext();
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "update", CustomerCategorySubject);
     const updated = await CustomerCategoryTagService.updateCategoryStatus(
       client,
       categoryCode,
@@ -60,7 +69,8 @@ export const updateCategoryStatusAction = defineServerAction(
 );
 
 export const listTagsAction = defineServerAction(async (tagType?: string) => {
-  const { client } = await getTenantCustomerContext();
+  const { client, ability } = await getTenantCustomerContext();
+  assertCustomerAbility(ability, "read", CustomerCategorySubject);
   return CustomerCategoryTagService.listTags(client, tagType);
 }, "获取标签失败");
 
@@ -71,7 +81,8 @@ export const createTagAction = defineServerAction(
     tagType: string;
     description?: string | null;
   }) => {
-    const { client } = await getTenantCustomerContext();
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "create", CustomerCategorySubject);
     const created = await CustomerCategoryTagService.createTag(client, input);
     revalidatePath("/customer/categories-tags");
     revalidatePath("/customer/customers");
@@ -82,7 +93,8 @@ export const createTagAction = defineServerAction(
 
 export const updateTagStatusAction = defineServerAction(
   async (tagCode: string, status: "ACTIVE" | "DISABLED") => {
-    const { client } = await getTenantCustomerContext();
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "update", CustomerCategorySubject);
     const updated = await CustomerCategoryTagService.updateTagStatus(
       client,
       tagCode,
@@ -107,7 +119,8 @@ export const listCustomersAction = defineServerAction(
     page?: number;
     pageSize?: number;
   }) => {
-    const { client } = await getTenantCustomerContext();
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "read", CustomerSubject);
     return CustomerService.listCustomers(client, filter);
   },
   "获取客户列表失败",
@@ -115,7 +128,8 @@ export const listCustomersAction = defineServerAction(
 
 export const createCustomerAction = defineServerAction(
   async (input: CreateCustomerInput) => {
-    const { client } = await getTenantCustomerContext();
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "create", CustomerSubject);
     const created = await CustomerService.createCustomer(client, input);
     revalidatePath("/customer/customers");
     return created;
@@ -125,7 +139,8 @@ export const createCustomerAction = defineServerAction(
 
 export const updateCustomerAction = defineServerAction(
   async (customerCode: string, input: UpdateCustomerInput) => {
-    const { client } = await getTenantCustomerContext();
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "update", CustomerSubject);
     const updated = await CustomerService.updateCustomer(
       client,
       customerCode,
@@ -139,7 +154,8 @@ export const updateCustomerAction = defineServerAction(
 
 export const updateCustomerStatusAction = defineServerAction(
   async (customerCode: string, status: "ACTIVE" | "DISABLED") => {
-    const { client } = await getTenantCustomerContext();
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "toggle_status", CustomerSubject);
     const updated = await CustomerService.updateCustomerStatus(
       client,
       customerCode,
@@ -154,7 +170,8 @@ export const updateCustomerStatusAction = defineServerAction(
 
 export const deleteCustomerAction = defineServerAction(
   async (customerCode: string) => {
-    const { client } = await getTenantCustomerContext();
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "delete", CustomerSubject);
     const deleted = await CustomerService.deleteCustomer(client, customerCode);
     revalidatePath("/customer/customers");
     return deleted;
@@ -175,7 +192,8 @@ export const listStoresAction = defineServerAction(
     page?: number;
     pageSize?: number;
   }) => {
-    const { client } = await getTenantCustomerContext();
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "read", CustomerStoreSubject);
     return CustomerStoreService.listStores(client, filter);
   },
   "获取门店列表失败",
@@ -183,7 +201,8 @@ export const listStoresAction = defineServerAction(
 
 export const createStoreAction = defineServerAction(
   async (input: CreateStoreInput) => {
-    const { client } = await getTenantCustomerContext();
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "create", CustomerStoreSubject);
     const created = await CustomerStoreService.createStore(client, input);
     revalidatePath("/customer/stores");
     revalidatePath("/customer/customers");
@@ -194,7 +213,8 @@ export const createStoreAction = defineServerAction(
 
 export const updateStoreAction = defineServerAction(
   async (storeCode: string, input: UpdateStoreInput) => {
-    const { client } = await getTenantCustomerContext();
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "update", CustomerStoreSubject);
     const updated = await CustomerStoreService.updateStore(
       client,
       storeCode,
@@ -208,7 +228,8 @@ export const updateStoreAction = defineServerAction(
 
 export const updateStoreStatusAction = defineServerAction(
   async (storeCode: string, status: "ACTIVE" | "DISABLED") => {
-    const { client } = await getTenantCustomerContext();
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "update", CustomerStoreSubject);
     const updated = await CustomerStoreService.updateStoreStatus(
       client,
       storeCode,
@@ -222,7 +243,8 @@ export const updateStoreStatusAction = defineServerAction(
 
 export const deleteStoreAction = defineServerAction(
   async (storeCode: string) => {
-    const { client } = await getTenantCustomerContext();
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "delete", CustomerStoreSubject);
     const deleted = await CustomerStoreService.deleteStore(client, storeCode);
     revalidatePath("/customer/stores");
     return deleted;
@@ -243,7 +265,8 @@ export const listQuotesAction = defineServerAction(
     page?: number;
     pageSize?: number;
   }) => {
-    const { client } = await getTenantCustomerContext();
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "read", CustomerQuoteSubject);
     return CustomerQuoteService.listQuotes(client, filter);
   },
   "获取报价单列表失败",
@@ -251,7 +274,8 @@ export const listQuotesAction = defineServerAction(
 
 export const createQuoteAction = defineServerAction(
   async (input: CreateQuoteInput) => {
-    const { client } = await getTenantCustomerContext();
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "create", CustomerQuoteSubject);
     const created = await CustomerQuoteService.createQuote(client, input);
     revalidatePath("/customer/quotes");
     return created;
@@ -261,7 +285,8 @@ export const createQuoteAction = defineServerAction(
 
 export const updateQuoteStatusAction = defineServerAction(
   async (quoteId: string, status: "ACTIVE" | "VOIDED") => {
-    const { client } = await getTenantCustomerContext();
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "update", CustomerQuoteSubject);
     const updated = await CustomerQuoteService.updateQuoteStatus(
       client,
       quoteId,

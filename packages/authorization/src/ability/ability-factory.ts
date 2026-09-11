@@ -20,6 +20,7 @@ import {
 } from "../scopes/data-scope";
 import {
   FieldPolicy,
+  type FieldAccessMode,
   type RoleFieldPolicyConfig,
 } from "../fields/field-policy";
 
@@ -345,6 +346,54 @@ export class CaslAbilityFactory<
     return { roleNames, byRole };
   }
 
+  /** 超级管理员 (owner) 全量规则：由 Catalog 定义唯一派生，禁止在业务侧另写一份 */
+  private buildOwnerActionRules(): Array<{ action: string; subject: string }> {
+    const ownerRules: Array<{ action: string; subject: string }> = [];
+    for (const def of this.catalog.definitions) {
+      for (const act of def.actions) {
+        ownerRules.push({ action: act, subject: def.subject });
+      }
+    }
+    return ownerRules;
+  }
+
+  /**
+   * 公开：解析当前成员角色名列表（含内置 owner/admin/member）。
+   * 供应用层做超管判定或审计，避免反射私有方法。
+   */
+  async resolveMemberRoleNames(context: TenantContext): Promise<string[]> {
+    const { roleNames } = await this.resolveRolesAndStatements(context);
+    return roleNames;
+  }
+
+  /**
+   * 公开：聚合指定 Subject 上的字段策略（多角色合并，后者覆盖前者的同名字段）。
+   * owner 无字段限制，返回空对象（全量可读可写，由 Ability 侧放行）。
+   */
+  async resolveFieldPoliciesForSubject(
+    context: TenantContext,
+    subject: string,
+  ): Promise<Readonly<Record<string, FieldAccessMode>>> {
+    const { roleNames, byRole } = await this.resolveRolesAndStatements(context);
+    if (roleNames.includes("owner")) {
+      return {};
+    }
+
+    const fieldPolicies: Record<string, FieldAccessMode> = {};
+    for (const roleName of roleNames) {
+      const persisted = byRole.get(roleName);
+      if (!persisted) continue;
+      const parsed = parsePersistedPermissions(persisted);
+      if (!parsed?.fieldPolicies) continue;
+      for (const fp of parsed.fieldPolicies) {
+        if (fp.subject === subject) {
+          fieldPolicies[fp.field] = fp.access;
+        }
+      }
+    }
+    return fieldPolicies;
+  }
+
   /**
    * 构建纯功能层面的 CASL Ability（用于 UI 元素显示控制与轻量级服务端守卫）。
    */
@@ -362,14 +411,9 @@ export class CaslAbilityFactory<
 
     // 超级管理员 (owner) 默认具有全部固有最高操作权限 (Wildcard/Bypass)
     if (roleNames.includes("owner")) {
-      const allDefinitions = this.catalog.definitions;
-      const ownerRules: Array<{ action: string; subject: string }> = [];
-      for (const def of allDefinitions) {
-        for (const act of def.actions) {
-          ownerRules.push({ action: act, subject: def.subject });
-        }
-      }
-      return createMongoAbility<[string, string]>(ownerRules) as CatalogAbility;
+      return createMongoAbility<[string, string]>(
+        this.buildOwnerActionRules(),
+      ) as CatalogAbility;
     }
 
     const rules: Array<{ action: string; subject: string }> = [];
@@ -422,15 +466,8 @@ export class CaslAbilityFactory<
 
     // 超级管理员 (owner) 默认具有全部固有最高操作权限与全量数据范围 (Wildcard/Bypass)
     if (roleNames.includes("owner")) {
-      const allDefinitions = this.catalog.definitions;
-      const ownerRules: IntermediateRule[] = [];
-      for (const def of allDefinitions) {
-        for (const act of def.actions) {
-          ownerRules.push({ action: act, subject: def.subject });
-        }
-      }
       // SAFETY: ownerRules contains valid action/subject pairs conforming to createPrismaAbility parameter schema
-      const rawOwnerRules = ownerRules as unknown as Parameters<
+      const rawOwnerRules = this.buildOwnerActionRules() as unknown as Parameters<
         typeof createPrismaAbility
       >[0];
       // SAFETY: Cast to catalog-bound AppPrismaAbility ensuring compile-time action/subject contract

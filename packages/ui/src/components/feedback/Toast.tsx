@@ -1,5 +1,5 @@
 "use client";
 
 export { toast } from "sonner";
-export { Toaster } from "../primitives/sonner";
-export type { ToasterProps } from "../primitives/sonner";
+export { Toaster } from "../shadcn/sonner";
+export type { ToasterProps } from "../shadcn/sonner";

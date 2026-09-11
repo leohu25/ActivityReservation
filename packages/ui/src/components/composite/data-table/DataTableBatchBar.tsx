@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { CheckSquare, X } from "lucide-react";
-import { Button } from "../../primitives/button";
+import { Button } from "../../shadcn/button";
 import { useDataTableContext } from "./DataTableContext";
 import { cn } from "../../../lib/utils";
 

@@ -3,6 +3,39 @@
 import React, { type ReactNode } from "react";
 import { cn } from "../../../lib/utils";
 
+export interface DataTableFormFieldProps {
+  /** 字段标签 */
+  label: string;
+  /** 是否必填（展示 *） */
+  required?: boolean;
+  /** 辅助说明（标签下方） */
+  hint?: string;
+  children: ReactNode;
+  className?: string;
+}
+
+/** 编辑/新建弹窗标准字段：标签 + 控件，统一间距与必填星号 */
+export function DataTableFormField({
+  label,
+  required,
+  hint,
+  children,
+  className,
+}: DataTableFormFieldProps) {
+  return (
+    <div className={cn("min-w-0 space-y-1.5", className)}>
+      <label className="block text-xs font-medium text-foreground">
+        {label}
+        {required ? <span className="text-destructive ml-0.5">*</span> : null}
+      </label>
+      {children}
+      {hint ? (
+        <p className="text-[11px] text-muted-foreground">{hint}</p>
+      ) : null}
+    </div>
+  );
+}
+
 export interface DataTableFormFieldGridProps {
   /** 表单字段网格，通常配合 DataTableInputGroup 使用 */
   children: ReactNode;

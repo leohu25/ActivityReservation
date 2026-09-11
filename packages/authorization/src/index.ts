@@ -47,7 +47,9 @@ export {
   getFieldVisibility,
   getReadableFields,
   getEditableFields,
+  isFieldAllowedForAction,
   pickReadableFields,
+  resolveFieldAccess,
   type FieldAccessMode,
   type RoleFieldPolicyConfig,
 } from "./fields/field-policy";

@@ -1,33 +1,16 @@
-import { DataScope, type DataScopeType } from "@chenrun/authorization";
+import {
+  DataScope,
+  type DataScopeType,
+  type FeatureModulePermissionDescriptor,
+  type FeaturePagePermissionDescriptor,
+} from "@chenrun/authorization";
 
-/** 权限动作配置项模型 */
-export interface ActionConfigItem {
-  readonly action: string;
-  readonly label: string;
-  readonly supportedScopes?: readonly DataScopeType[];
-}
-
-/** 受控页面/实体模型 */
-export interface PagePermissionDescriptor {
-  readonly resource: string;
-  readonly subject: string;
-  readonly label: string;
-  readonly path?: string;
-  readonly actions: readonly ActionConfigItem[];
-  readonly configurableFields?: readonly {
-    readonly field: string;
-    readonly label: string;
-    readonly sensitive?: boolean;
-  }[];
-}
-
-/** 业务顶级模块（对应侧边栏主分类/主菜单分组）模型 */
-export interface ModulePermissionDescriptor {
-  readonly moduleKey: string;
-  readonly label: string;
-  readonly iconName: string;
-  readonly pages: readonly PagePermissionDescriptor[];
-}
+/**
+ * 页面/模块权限描述符：统一 re-export `@chenrun/authorization` 契约类型，
+ * 杜绝 tenant-admin 再维护一份平行定义导致漂移。
+ */
+export type PagePermissionDescriptor = FeaturePagePermissionDescriptor;
+export type ModulePermissionDescriptor = FeatureModulePermissionDescriptor;
 
 export const DATA_SCOPE_SELECT_OPTIONS: Array<{
   value: DataScopeType;

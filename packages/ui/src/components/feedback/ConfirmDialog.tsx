@@ -10,8 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../primitives/dialog";
-import { Button } from "../primitives/button";
+} from "../shadcn/dialog";
+import { Button } from "../shadcn/button";
 import { AlertTriangle, Loader2 } from "lucide-react";
 
 export interface ConfirmDialogProps {

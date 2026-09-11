@@ -142,6 +142,61 @@ export function assertEditableFields<T extends Record<string, unknown>>(
 }
 
 /**
+ * 推导字段访问三态（角色配置 UI 与 Ability 编译共用的单一规则）。
+ *
+ * 规则：
+ * 1. 已有显式 fieldPolicy → 直接采用
+ * 2. 有写动作 (create/update) → EDITABLE
+ * 3. 仅有读动作 (read) → READONLY
+ * 4. 否则 → HIDDEN
+ *
+ * 与 `computeAllowedFields` / `getFieldMode` 语义对齐：HIDDEN 任何操作剥离；
+ * READONLY 可读不可写；EDITABLE 可读可写。
+ */
+export function resolveFieldAccess(input: {
+  readonly explicit?: FieldAccessMode | null;
+  readonly hasRead?: boolean;
+  readonly hasWrite?: boolean;
+}): FieldAccessMode {
+  if (input.explicit) {
+    return input.explicit;
+  }
+  if (input.hasWrite) {
+    return FieldPolicy.EDITABLE;
+  }
+  if (input.hasRead) {
+    return FieldPolicy.READONLY;
+  }
+  return FieldPolicy.HIDDEN;
+}
+
+/**
+ * 前端 plain ability 的字段级判定（与 CASL 字段规则对齐）。
+ * 用于从 RSC 下发的 `{ actions, fieldPolicies }` 纯数据重建 can()。
+ * fieldPolicies 允许宽 string（RSC 序列化后为字符串字面量）。
+ */
+export function isFieldAllowedForAction(
+  fieldPolicies: Readonly<Record<string, string>> | undefined,
+  action: string,
+  field?: string,
+): boolean {
+  if (!field) {
+    return true;
+  }
+  const mode = fieldPolicies?.[field];
+  if (mode === FieldPolicy.HIDDEN) {
+    return false;
+  }
+  if (
+    (action === "create" || action === "update") &&
+    mode === FieldPolicy.READONLY
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/**
  * 通用字段可见性生成器 (Field Visibility Map Generator)
  * 遍历指定 Subject 的目标受控字段清单，调用 CASL Ability 的 can('read', subject, field)
  * 快速生成强类型的字段可读性状态映射对象 { [field]: boolean }，供前端页面或视图层直接解构消费。

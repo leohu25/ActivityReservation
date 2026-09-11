@@ -2,6 +2,16 @@
 
 辰润 ERP 采用现代化数智工业风规范，全面基于 `@chenrun/ui`（shadcn/ui 体系）构建。
 
+## 0. 三层 UI 资产模型
+
+| 层 | 目录 | 职责 |
+|----|------|------|
+| **原子层** | `packages/ui/.../primitives/` | Radix/shadcn 封装，业务禁止改 |
+| **组件层** | `composite/`、`layout/`、`feedback/` | 可复用组件单元 |
+| **模板层** | `templates/` | 整页骨架（`DataTable.Workspace`、`DashboardShell`） |
+
+**新列表页优先 `DataTable.Workspace`**（默认刷新/导出/列设置/新增+筛选+表格+分页，`show*` 关闭）；特殊布局再下沉用原子拼装。
+
 > ⚠️ **核心红线**：
 >
 > 1. **二次确认只在对话框提示一次**：破坏性操作统一由 `DataTableRowActions` 的 `ConfirmDialog` 进行模态对话框确认，严禁在回调函数内再次使用浏览器的 `window.confirm` 进行二次弹窗；
@@ -60,11 +70,46 @@ toast.warning("检测到该客户存在未结款项");
 
 ### 2.1 一体化卡片容器原则
 
-**反模式（禁止）**：搜索框、筛选 Tag、表格、分页条各自裸露在页面 `#F4F7FB` 底色上，缺少主工作区实体感。
-
-**标准范式**：使用 `DataTable.Root` 默认开启的 `integratedCard`，将标题区、全局操作区、筛选条、表格主体与分页栏整合进同一张纯白大卡片：
+**推荐整页模板（约定大于配置）**：`DataTable.Workspace` 默认带齐 Header + 刷新/导出/列设置/新增 + 关键字(+/状态)筛选 + 表格 + 分页，页面按需 `show*=false` 关闭：
 
 ```tsx
+<DataTable.Workspace
+  data={customers}
+  columns={columns}
+  rowKey={(c) => c.customerCode}
+  subject={customerPageContract.subject}
+  permissions={permissions}
+  title="客户档案"
+  description="维护企业客户主数据、结算方式、授信与服务时间。"
+  page={page}
+  pageSize={pageSize}
+  total={total}
+  onPageChange={(p, ps) => navigateList({ page: p, pageSize: ps })}
+  onRefresh={() => router?.refresh()}
+  onExport={handleExport}
+  onCreate={() => setShowModal(true)}
+  statusOptions={[
+    { value: "ACTIVE", label: "正常" },
+    { value: "DISABLED", label: "已停用" },
+  ]}
+  keywordValue={keyword}
+  statusValue={status}
+  onKeywordChange={setKeyword}
+  onStatusChange={setStatus}
+  onSearch={() => navigateList({ page: 1 })}
+  onReset={() => { setKeyword(""); setStatus(""); navigateList({ page: 1, keyword: "", status: "" }); }}
+  contentProps={{ selectable: true }}
+  // 不需要导出时： showExport={false}
+  // 不需要状态筛时： hideStatusFilter 或不传 statusOptions
+>
+  {/* 本页特有扩展插槽（详情/表单 Modal 等） */}
+</DataTable.Workspace>
+```
+
+**原子拼装仍可用**（Workspace 内部即组合这些积木）：搜索栏、工具栏、表格主体与分页条必须包在同一张 `DataTable.Root` 白卡内，严禁零散漂浮在页面灰色背景上。
+
+```tsx
+// 原子范式（需要完全自定义布局时）
 <DataTable.Root
   data={data}
   columns={columns}
@@ -114,15 +159,16 @@ toast.warning("检测到该客户存在未结款项");
 
 | 积木 | 职责 | 关键开关 |
 | :--- | :--- | :--- |
+| `DataTable.Workspace` | **整页工作台模板（推荐）** 默认刷新/导出/列设置/新增 + 筛选 + 表格 + 分页 | `showRefresh/Export/Create/ColumnSettings`、`showFilterBar`、`statusOptions` |
 | `DataTable.Root` | 状态上下文 + 一体化白卡 | `integratedCard` |
 | `DataTable.Header` | 分类小标 + 竖条标题 + 说明 + actions 插槽 | `category/title/description/actions` |
 | `DataTable.Toolbar` | 全局操作按钮容器 | children 自由装配 |
-| `DataTable.ActionButton` | 声明式权限按钮 | `action/subject/unauthorizedStrategy` |
+| `DataTable.ActionButton` | 声明式权限按钮 | `action/subject/unauthorizedStrategy`（默认 hidden） |
 | `DataTable.ColumnSettings` | 动态列显隐（DropdownMenu+Checkbox） | 列定义 `lockVisible/defaultVisible` |
 | `DataTable.FilterBar` | 组合筛选栏 | `onSearch/onReset/onAdvancedFilter` |
 | `DataTable.InputGroup` | `[标签 \| 控件]` 一体化输入组 | `label` |
 | `DataTable.Content` | 紧凑表格主体 | `selectable/showIndex` |
-| `DataTable.RowActions` | 行内平铺 + 折叠菜单 | `inlineActions/extraActions/menuOnly` |
+| `DataTable.RowActions` | 行内平铺 + 折叠菜单；默认详情/编辑/删除 | `hideView/hideEdit/hideDelete`、`extraActions`、`menuOnly` |
 | `DataTable.Pagination` | 范围文案 + 数字页码 | `showRange/pageSizeOptions` |
 | `DataTable.FormModal` | 编辑/新建弹窗（品牌徽标+审计底栏） | `badge/headerExtra/auditHint` |
 | `DataTable.FormSection/FieldGrid/Banner` | 表单分组/字段网格/信息横幅 | 配合 FormModal 使用 |
@@ -131,6 +177,8 @@ toast.warning("检测到该客户存在未结款项");
 | `DataTable.AuthGuard` | 权限包裹任意插槽 | `action` |
 
 ### 2.3 自定义操作按钮如何加权限
+
+**约定大于配置**：页面直接声明按钮；普通用户按权限隐藏；不需要的按钮用 `hide*` 或不写该 Button，并同步从契约删 action。
 
 ```tsx
 // 声明式：自动从 Root 继承 subject，Fail-Closed
@@ -164,20 +212,27 @@ toast.warning("检测到该客户存在未结款项");
 
 **Fail-Closed 规则**：`subject` 与 `ability` 齐备时，无权限 → 隐藏/置灰；缺 `ability` 时视为无权限（禁止默认放行）。
 
+**禁止**手写 `canExport && <Button>` 再包一层——用 `ActionButton` 即可。
+
 ### 2.4 行级操作：平铺链接 + 折叠菜单
 
 对齐工业风参考：高频操作直接平铺文字链接（详情/编辑），次要与危险操作折叠进 `...`：
+
+**默认全量展示**内置「详情 / 编辑 / 删除」；页面不需要时用 `hideView` / `hideEdit` / `hideDelete` 显式关闭，并同步从契约移除对应 action。
 
 ```tsx
 <DataTable.RowActions
   record={row}
   onView={() => setViewing(row)}
   onEdit={() => setEditing(row)}
+  // 页面不需要删除时：
+  // hideDelete
   extraActions={[
     {
       label: row.status === "ACTIVE" ? "停用" : "启用",
       variant: row.status === "ACTIVE" ? "destructive" : "default",
-      action: "update",
+      // 自定义扩展动作：必须与契约 actions 声明的 action 一致
+      action: "toggle_status",
       onClick: () => handleToggle(row),
       confirm: row.status === "ACTIVE"
         ? { title: `确认停用「${row.name}」？`, confirmText: "确认停用" }
@@ -191,6 +246,13 @@ toast.warning("检测到该客户存在未结款项");
   }}
 />
 ```
+
+自定义动作（如 `toggle_status`）必须：
+1. 在 `contracts/<page>.contract.ts` 的 `actions` 中声明；
+2. 在 RowActions/ActionButton 上挂同一 `action`；
+3. 在 Server Action 里 `assert*Ability(ability, action, subject)`。
+
+两页都要同名操作但权限独立 → **各自契约、不同 Subject**。
 
 ### 2.5 动态列设置
 

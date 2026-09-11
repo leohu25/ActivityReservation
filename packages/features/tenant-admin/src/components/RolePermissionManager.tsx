@@ -32,14 +32,15 @@ import {
   DataScope,
   FieldPolicy,
   StandardAction,
+  resolveFieldAccess,
   type DataScopeType,
   type FieldAccessMode,
   type RolePermissionPayload,
 } from "@chenrun/authorization";
 import type { TenantRoleItem } from "../types";
+import { CreateRoleModal } from "./CreateRoleModal";
 import {
   saveRolePermissionsAction,
-  createRoleAction,
   deleteRoleAction,
   getSystemRoleDefaultsAction,
 } from "../actions";
@@ -73,16 +74,15 @@ export function RolePermissionManager({
     message: string;
   } | null>(null);
 
-  // 模块展开/折叠状态，默认展开所有模块
+  // 模块展开/折叠状态：默认展开 permissionTree 中全部模块（由契约派生，禁止硬编码 moduleKey）
   const [expandedModules, setExpandedModules] = useState<
     Record<string, boolean>
-  >({
-    customer: true,
-    procurement: true,
-    organization: true,
-    permissions: true,
-    settings: true,
-    audit: true,
+  >(() => {
+    const initial: Record<string, boolean> = {};
+    for (const mod of permissionTree) {
+      initial[mod.moduleKey] = true;
+    }
+    return initial;
   });
 
   // 展开字段控制抽屉/面板的页面 resource
@@ -92,9 +92,6 @@ export function RolePermissionManager({
 
   // 新增角色模态框状态
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newRoleCode, setNewRoleCode] = useState("");
-  const [newRoleName, setNewRoleName] = useState("");
-  const [newRoleDesc, setNewRoleDesc] = useState("");
 
   const selectedRole =
     roles.find((r) => r.role === selectedRoleCode) || roles[0];
@@ -239,7 +236,7 @@ export function RolePermissionManager({
     });
   };
 
-  // 5. 字段策略推导与修改
+  // 5. 字段策略推导与修改（单一规则源：@chenrun/authorization resolveFieldAccess）
   const getFieldAccess = (
     subject: string,
     field: string,
@@ -252,14 +249,12 @@ export function RolePermissionManager({
     if (found) return found.access;
 
     const statement = selectedRole?.permissions.statement[resource] ?? [];
-    const hasWrite =
-      statement.includes(StandardAction.CREATE) ||
-      statement.includes(StandardAction.UPDATE);
-    const hasRead = statement.includes(StandardAction.READ);
-
-    if (hasWrite) return FieldPolicy.EDITABLE;
-    if (hasRead) return FieldPolicy.READONLY;
-    return FieldPolicy.HIDDEN;
+    return resolveFieldAccess({
+      hasRead: statement.includes(StandardAction.READ),
+      hasWrite:
+        statement.includes(StandardAction.CREATE) ||
+        statement.includes(StandardAction.UPDATE),
+    });
   };
 
   const handleToggleFieldAccess = (
@@ -355,36 +350,6 @@ export function RolePermissionManager({
         setNotification({
           type: "error",
           message: res.error || "获取推荐模板失败",
-        });
-      }
-    });
-  };
-
-  // 8. 新增自定义角色
-  const handleCreateRole = () => {
-    if (!newRoleCode.trim()) return;
-    setNotification(null);
-    startTransition(async () => {
-      const res = await createRoleAction(
-        newRoleCode.trim(),
-        newRoleName.trim() || undefined,
-        newRoleDesc.trim() || undefined,
-      );
-      if (res.success && res.data) {
-        setRoles((prev) => [...prev, res.data!]);
-        setSelectedRoleCode(res.data.role);
-        setShowCreateModal(false);
-        setNewRoleCode("");
-        setNewRoleName("");
-        setNewRoleDesc("");
-        setNotification({
-          type: "success",
-          message: `新业务角色 [${res.data.name}] 已成功创建！`,
-        });
-      } else {
-        setNotification({
-          type: "error",
-          message: res.error || "创建失败",
         });
       }
     });
@@ -978,79 +943,14 @@ export function RolePermissionManager({
         </Card>
       </div>
 
-      {/* 创建新角色模态框 */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <Card className="w-full max-w-md border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-xl">
-            <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <Shield className="size-4 text-blue-600" />
-                <span>新建租户业务角色</span>
-              </CardTitle>
-              <CardDescription className="text-xs">
-                角色编码创建后不可修改，请遵循小写字母下划线规范
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 space-y-3">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  角色标识代码 (Role Code) *
-                </label>
-                <Input
-                  placeholder="例如: customer_manager, buyer_leader"
-                  value={newRoleCode}
-                  onChange={(e) => setNewRoleCode(e.target.value)}
-                  className="font-mono text-xs"
-                />
-                <p className="text-[10px] text-slate-400">
-                  小写字母开头，由 2-31 位小写字母、数字或下划线组成
-                </p>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  角色显示名称 (Role Name)
-                </label>
-                <Input
-                  placeholder="例如: 客户业务经理"
-                  value={newRoleName}
-                  onChange={(e) => setNewRoleName(e.target.value)}
-                  className="text-xs"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  职责描述 (Description)
-                </label>
-                <Input
-                  placeholder="该角色在业务流程中的职责说明"
-                  value={newRoleDesc}
-                  onChange={(e) => setNewRoleDesc(e.target.value)}
-                  className="text-xs"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowCreateModal(false)}
-                >
-                  取消
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleCreateRole}
-                  disabled={isPending || !newRoleCode.trim()}
-                >
-                  {isPending ? "创建中..." : "确认创建"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <CreateRoleModal
+          onClose={() => setShowCreateModal(false)}
+          onCreated={() => {
+            setShowCreateModal(false);
+            window.location.reload();
+          }}
+        />
       )}
     </div>
   );

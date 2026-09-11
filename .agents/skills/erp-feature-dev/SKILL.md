@@ -1,6 +1,6 @@
 ---
 name: erp-feature-dev
-description: 辰润 ERP 业务切片全生命周期工程开发指南。涵盖数据建模迁移、页面纯数据契约 (contracts/)、领域服务实现、defineServerAction 序列化机制、工业风 UI 交互 (DataTable/Toast/单次确认/无感更新)、租户路由与 Manifest 对齐测试。按阶段 Schedule 推进并渐进式按需读取对应子文档。
+description: 辰润 ERP 业务切片全生命周期工程开发指南。涵盖数据建模迁移、页面纯数据契约 (contracts/)、领域服务实现、defineServerAction + CASL 写路径守卫、工业风 UI (DataTable 约定大于配置/Toast/单次确认)、租户路由与 Manifest 对齐测试。按阶段 Schedule 推进并渐进式按需读取对应子文档。
 color: blue
 emoji: 🚀
 vibe: 架构标准化、契约即事实源、底层机制防错、无感响应
@@ -18,13 +18,19 @@ agent_created: true
 
 ## 六大工程红线 (Zero-Tolerance Rules)
 
-1. **契约即唯一事实源**：每个页面必须在 `src/contracts/<page>.contract.ts` 维护专属纯数据契约，严禁手写平铺的 permissions 平行世界；
+1. **契约即唯一事实源**：每个页面必须在 `src/contracts/<page>.contract.ts` 维护专属纯数据契约，严禁手写平铺的 permissions 平行世界；页面 hide/不渲染的按钮必须同步从契约 `actions` 移除；
 2. **底层机制消灭序列化异常**：所有 Server Actions 必须由 `defineServerAction` 包装，严禁原始 Prisma 实体（带 Decimal/Date）直出；
 3. **交互单次确认**：破坏性操作统一由 `DataTableRowActions` 的 `ConfirmDialog` 提示一次，严禁调用浏览器原生 `confirm(...)`；
 4. **消息通知右上角 Toast 弹出**：严禁在页面顶部塞入静态红色大横幅挤压变形表格布局，所有操作反馈统一使用右上角 `toast`；
 5. **杜绝全页强刷**：严禁调用 `window.location.reload()`，状态变更由 React 本地 State 驱动即时响应，搭配 `router?.refresh()` 静默同步；
-6. **物理隔离路由**：业务数据必须由 `getTenantCustomerContext()` 动态路由至租户独立库，严禁硬编码或跨租户穿透。
+6. **物理隔离路由**：业务数据必须由 `getTenant*Context()` 动态路由至租户独立库，严禁硬编码或跨租户穿透。
 7. **一体化卡片容器**：列表页必须用 `DataTable.Root` 白卡整合标题/筛选/表格/分页，严禁零散漂浮在页面底色上（详见 `references/5-ui-components.md`）。
+8. **写路径强制 CASL**：Server Action 写/删/状态变更必须 `assert*Ability(ability, action, subject)`，与页面按钮同一动作名（详见 `references/4-server-actions.md`）。
+9. **BA 只管进门**：Better Auth 仅负责登录/会话/组织成员；业务权限只认 CASL（ADR-007），禁止用 BA `hasPermission` 查业务资源。
+10. **列表优先 shadcn**：简单列表/表单直接用 `Table`/`Form`/`Dialog`；需要统一工具栏时再用 `DataTable.Workspace`（可选加速，非强制）。
+11. **表单优先 shadcn Form**：短表单直接 `Form`+`Field`；长表单/AI 批量字段可用 `FormFields` Schema（可选）。
+12. **导出走契约**：CSV 导出用 `exportContractCsv(rows, contract.configurableFields, ...)`，禁止手写 fieldKeys。
+13. **原子层 = shadcn 目录**：`packages/ui/.../shadcn/` 仅允许 `npx shadcn@latest add` 引入；禁止手写；业务不得裸写控件样式。
 
 ---
 
@@ -38,17 +44,16 @@ packages/features/<feature-name>/
 │   ├── contracts/                     # 页面纯数据契约 (SSoT)
 │   │   ├── <page>.contract.ts         # 专属契约 (实体符号 + 字段枚举 + 页面契约)
 │   │   └── index.ts                   # 契约聚合
-│   ├── db/
-│   │   └── client.ts                  # 切片专属 PrismaClient 实例与连接池
+│   ├── catalog.ts                     # derivePermissionCatalog([manifest]) 切片权限目录
 │   ├── server/
-│   │   └── session.ts                 # 租户上下文解析与准入门禁
+│   │   └── session.ts                 # 租户上下文 + Ability 注入 + assert*Ability
 │   ├── services/
 │   │   └── <domain>.service.ts        # 领域纯业务服务 (防腐/单调递增/级联校验)
-│   ├── actions.ts                     # defineServerAction 导出的安全 Actions
+│   ├── actions.ts                     # defineServerAction + CASL 守卫
 │   ├── components/
 │   │   ├── <Page>View.tsx             # 工业风页面组件 (DataTable/Toast/单次确认)
 │   │   └── <Page>View.test.tsx        # 页面与契约 100% 对齐自动化单测
-│   ├── manifest.ts                    # 切片自描述清单 (导航菜单与权限模块定义)
+│   ├── manifest.ts                    # 切片自描述清单 (导航 + permissionModules 组装契约)
 │   ├── types.ts                       # 领域数据传输对象与展示接口
 │   └── index.ts                       # 切片外部公共导出
 ```

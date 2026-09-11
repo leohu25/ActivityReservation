@@ -76,6 +76,22 @@ export class PermissionCatalog<
     return this.byResource.get(resource) as TDefinitions[number] | undefined;
   }
 
+  /**
+   * 按 CASL Subject 反查资源定义。
+   * 页面契约以 subject 为业务主键，运行时权限探测应走此入口。
+   */
+  resolveBySubject(subject: string): TDefinitions[number] | undefined {
+    return this.definitions.find((d) => d.subject === subject);
+  }
+
+  /**
+   * 返回某 Subject 在页面契约中声明的全部 action（标准 + 自定义）。
+   * 未注册的 Subject 返回空数组（Fail-Closed）。
+   */
+  getDeclaredActions(subject: string): readonly string[] {
+    return this.resolveBySubject(subject)?.actions ?? [];
+  }
+
   containsAction(
     definition: TDefinitions[number],
     action: string,

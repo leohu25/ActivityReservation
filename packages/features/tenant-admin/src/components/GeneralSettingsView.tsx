@@ -9,8 +9,15 @@ import {
   CardContent,
   Input,
   Button,
+  Label,
+  PageShell,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@chenrun/ui";
-import { Sliders, Save, CheckCircle2, AlertCircle } from "lucide-react";
+import { Sliders, Save } from "lucide-react";
 import type { GeneralSettingsData, UpdateGeneralSettingsInput } from "../types";
 import { updateGeneralSettingsAction } from "../actions";
 
@@ -19,8 +26,26 @@ export interface GeneralSettingsViewProps {
   readonly isReadOnly?: boolean;
 }
 
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+const PRECISION_OPTIONS = [0, 2, 3, 4] as const;
+
+const PAGE_SIZE_LABELS: Record<number, string> = {
+  10: "10 行 / 页",
+  20: "20 行 / 页",
+  50: "50 行 / 页",
+  100: "100 行 / 页",
+};
+
+const PRECISION_LABELS: Record<number, string> = {
+  0: "0 位 (整数)",
+  2: "2 位 (常规元角分)",
+  3: "3 位 (高精成本)",
+  4: "4 位 (超精密算)",
+};
+
 /**
- * 租户通用基础偏好设置面板组件 (现代化表单设计)
+ * 租户通用基础偏好设置面板组件
+ * 直用 PageShell（页头+反馈条）+ shadcn Form 零件，不手写壳。
  */
 export function GeneralSettingsView({
   initialData,
@@ -58,37 +83,15 @@ export function GeneralSettingsView({
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      {/* 顶部标题 */}
-      <div>
-        <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2">
-          <Sliders className="size-5 text-blue-600 dark:text-blue-400" />
-          <span>基础偏好设置</span>
-        </h1>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          自定义租户系统的显示标识、默认分页大小、单据编码规则与数值展示精度
-        </p>
-      </div>
-
-      {feedback && (
-        <div
-          className={`flex items-center gap-2 rounded-xl p-3.5 text-xs font-semibold ${
-            feedback.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-300"
-              : "bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-300"
-          }`}
-        >
-          {feedback.type === "success" ? (
-            <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
-          ) : (
-            <AlertCircle className="size-4 shrink-0 text-rose-600" />
-          )}
-          <span>{feedback.message}</span>
-        </div>
-      )}
-
+    <PageShell
+      title="基础偏好设置"
+      description="自定义租户系统的显示标识、默认分页大小、单据编码规则与数值展示精度"
+      icon={<Sliders className="size-5 text-blue-600 dark:text-blue-400" />}
+      feedback={feedback}
+      onDismissFeedback={() => setFeedback(null)}
+      contentClassName="max-w-4xl"
+    >
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* 系统标识与界面偏好 */}
         <Card className="rounded-2xl border-slate-200/80 shadow-xs dark:border-slate-800">
           <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
             <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200">
@@ -100,10 +103,14 @@ export function GeneralSettingsView({
           </CardHeader>
           <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <Label
+                htmlFor="general-system-name"
+                className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
                 系统显示标题
-              </label>
+              </Label>
               <Input
+                id="general-system-name"
                 value={formData.systemName || ""}
                 onChange={(e) =>
                   setFormData((prev) => ({
@@ -117,30 +124,34 @@ export function GeneralSettingsView({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 默认分页大小 (行/页)
-              </label>
-              <select
-                value={formData.defaultPageSize ?? 10}
-                onChange={(e) =>
+              </Label>
+              <Select
+                value={String(formData.defaultPageSize ?? 10)}
+                onValueChange={(v) =>
                   setFormData((prev) => ({
                     ...prev,
-                    defaultPageSize: Number(e.target.value),
+                    defaultPageSize: Number(v),
                   }))
                 }
                 disabled={isReadOnly || isPending}
-                className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 shadow-xs focus:outline-hidden focus:ring-1 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
               >
-                <option value={10}>10 行 / 页</option>
-                <option value={20}>20 行 / 页</option>
-                <option value={50}>50 行 / 页</option>
-                <option value={100}>100 行 / 页</option>
-              </select>
+                <SelectTrigger className="w-full text-xs">
+                  <SelectValue placeholder="选择分页大小" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_OPTIONS.map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {PAGE_SIZE_LABELS[n]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
 
-        {/* 业务规则与数据格式 */}
         <Card className="rounded-2xl border-slate-200/80 shadow-xs dark:border-slate-800">
           <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
             <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200">
@@ -152,10 +163,14 @@ export function GeneralSettingsView({
           </CardHeader>
           <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <Label
+                htmlFor="general-order-prefix"
+                className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
                 采购单据编号前缀
-              </label>
+              </Label>
               <Input
+                id="general-order-prefix"
                 value={formData.orderPrefix || ""}
                 onChange={(e) =>
                   setFormData((prev) => ({
@@ -169,10 +184,14 @@ export function GeneralSettingsView({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <Label
+                htmlFor="general-date-format"
+                className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
                 日期默认格式
-              </label>
+              </Label>
               <Input
+                id="general-date-format"
                 value={formData.dateFormat || "YYYY-MM-DD"}
                 onChange={(e) =>
                   setFormData((prev) => ({
@@ -186,25 +205,30 @@ export function GeneralSettingsView({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 金额小数保留位数
-              </label>
-              <select
-                value={formData.amountPrecision ?? 2}
-                onChange={(e) =>
+              </Label>
+              <Select
+                value={String(formData.amountPrecision ?? 2)}
+                onValueChange={(v) =>
                   setFormData((prev) => ({
                     ...prev,
-                    amountPrecision: Number(e.target.value),
+                    amountPrecision: Number(v),
                   }))
                 }
                 disabled={isReadOnly || isPending}
-                className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 shadow-xs focus:outline-hidden focus:ring-1 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
               >
-                <option value={0}>0 位 (整数)</option>
-                <option value={2}>2 位 (常规元角分)</option>
-                <option value={3}>3 位 (高精成本)</option>
-                <option value={4}>4 位 (超精密算)</option>
-              </select>
+                <SelectTrigger className="w-full text-xs">
+                  <SelectValue placeholder="选择精度" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRECISION_OPTIONS.map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {PRECISION_LABELS[n]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
@@ -222,6 +246,6 @@ export function GeneralSettingsView({
           </div>
         )}
       </form>
-    </div>
+    </PageShell>
   );
 }

@@ -9,8 +9,8 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "../../primitives/table";
-import { Checkbox } from "../../primitives/checkbox";
+} from "../../shadcn/table";
+import { Checkbox } from "../../shadcn/checkbox";
 import { EmptyState } from "../../feedback/EmptyState";
 import { useDataTableContext } from "./DataTableContext";
 import { cn } from "../../../lib/utils";

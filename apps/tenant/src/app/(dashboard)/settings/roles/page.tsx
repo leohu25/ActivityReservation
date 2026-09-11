@@ -52,6 +52,8 @@ export default async function SettingsRolesPage() {
     .split(",")
     .map((r) => r.trim())
     .filter(Boolean);
+  // 过渡策略：保留内置角色字符串判断，避免历史 admin 未保存 statement 时锁死配置页。
+  // 目标态：仅 `ability.can("read", "RoleManagement")`（Phase 3 后续可收紧）。
   const isTenantAdmin =
     roleList.includes("owner") || roleList.includes("admin");
 

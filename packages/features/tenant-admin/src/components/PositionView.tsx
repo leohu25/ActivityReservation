@@ -7,9 +7,9 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
-  Input,
   Button,
   Badge,
+  PageShell,
 } from "@chenrun/ui";
 import {
   Briefcase,
@@ -21,11 +21,7 @@ import {
   AlertCircle,
   CheckCircle2,
 } from "lucide-react";
-import type {
-  CreatePositionInput,
-  PositionItem,
-  UpdatePositionInput,
-} from "../types";
+import type { PositionItem } from "../types";
 import {
   createPositionAction,
   deletePositionAction,
@@ -33,6 +29,7 @@ import {
   togglePositionStatusAction,
   updatePositionAction,
 } from "../actions";
+import { PositionFormModal } from "./PositionFormModal";
 
 export interface PositionViewProps {
   readonly initialPositions: readonly PositionItem[];
@@ -55,18 +52,6 @@ export function PositionView({ initialPositions }: PositionViewProps) {
     targetPosition?: PositionItem;
   } | null>(null);
 
-  const [formData, setFormData] = useState<{
-    name: string;
-    code: string;
-    description: string;
-    sort: number;
-  }>({
-    name: "",
-    code: "",
-    description: "",
-    sort: 0,
-  });
-
   const [isPending, startTransition] = useTransition();
 
   const refreshPositions = async () => {
@@ -78,83 +63,16 @@ export function PositionView({ initialPositions }: PositionViewProps) {
 
   const openCreateModal = () => {
     setModalState({ mode: "create" });
-    setFormData({
-      name: "",
-      code: "",
-      description: "",
-      sort: 0,
-    });
     setFeedback(null);
   };
 
   const openEditModal = (pos: PositionItem) => {
     setModalState({ mode: "edit", targetPosition: pos });
-    setFormData({
-      name: pos.name,
-      code: pos.code,
-      description: pos.description || "",
-      sort: pos.sort,
-    });
     setFeedback(null);
   };
 
   const closeModal = () => {
     setModalState(null);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name.trim()) {
-      setFeedback({ type: "error", message: "岗位名称不能为空" });
-      return;
-    }
-    if (!formData.code.trim()) {
-      setFeedback({ type: "error", message: "岗位编码不能为空" });
-      return;
-    }
-
-    startTransition(async () => {
-      if (modalState?.mode === "create") {
-        const payload: CreatePositionInput = {
-          name: formData.name.trim(),
-          code: formData.code.trim(),
-          description: formData.description.trim() || null,
-          sort: Number(formData.sort) || 0,
-        };
-        const res = await createPositionAction(payload);
-        if (res.success) {
-          setFeedback({ type: "success", message: "岗位字典已成功创建" });
-          closeModal();
-          await refreshPositions();
-        } else {
-          setFeedback({
-            type: "error",
-            message: res.error || "创建岗位失败",
-          });
-        }
-      } else if (modalState?.mode === "edit" && modalState.targetPosition) {
-        const payload: UpdatePositionInput = {
-          name: formData.name.trim(),
-          code: formData.code.trim(),
-          description: formData.description.trim() || null,
-          sort: Number(formData.sort) || 0,
-        };
-        const res = await updatePositionAction(
-          modalState.targetPosition.id,
-          payload,
-        );
-        if (res.success) {
-          setFeedback({ type: "success", message: "岗位字典已成功更新" });
-          closeModal();
-          await refreshPositions();
-        } else {
-          setFeedback({
-            type: "error",
-            message: res.error || "更新岗位失败",
-          });
-        }
-      }
-    });
   };
 
   const handleToggleStatus = (pos: PositionItem) => {
@@ -197,17 +115,11 @@ export function PositionView({ initialPositions }: PositionViewProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* 顶部标题与新建按钮 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-            企业岗位字典
-          </h1>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            维护企业职位与职务名称。严格遵守 Position != Role 解耦原则，岗位用于人事表达，系统权限由独立角色配置。
-          </p>
-        </div>
+    <PageShell
+      title="企业岗位字典"
+      description="维护企业职位与职务名称。严格遵守 Position != Role 解耦原则，岗位用于人事表达，系统权限由独立角色配置。"
+      icon={<Briefcase className="size-5 text-blue-600" />}
+      actions={
         <Button
           onClick={openCreateModal}
           className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs"
@@ -215,26 +127,10 @@ export function PositionView({ initialPositions }: PositionViewProps) {
           <Plus className="mr-1.5 size-4" />
           新增岗位
         </Button>
-      </div>
-
-      {/* 反馈提示 */}
-      {feedback && (
-        <div
-          className={`flex items-center gap-2 rounded-xl p-3.5 text-xs font-semibold border ${
-            feedback.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-              : "bg-rose-50 text-rose-800 border-rose-200"
-          }`}
-        >
-          {feedback.type === "success" ? (
-            <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
-          ) : (
-            <AlertCircle className="size-4 shrink-0 text-rose-600" />
-          )}
-          <span>{feedback.message}</span>
-        </div>
-      )}
-
+      }
+      feedback={feedback}
+      onDismissFeedback={() => setFeedback(null)}
+    >
       {/* 岗位表格主卡片 */}
       <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
         <CardHeader className="border-b border-slate-100 pb-4 dark:border-slate-800">
@@ -350,104 +246,17 @@ export function PositionView({ initialPositions }: PositionViewProps) {
         </CardContent>
       </Card>
 
-      {/* 弹窗模态框 */}
       {modalState && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              {modalState.mode === "create" ? "新建岗位字典" : "编辑岗位信息"}
-            </h2>
-            <p className="mt-1 text-xs text-slate-500">
-              维护行政职务字典，编码用于接口与系统内部唯一标识。
-            </p>
-
-            <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  岗位名称 <span className="text-rose-500">*</span>
-                </label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  placeholder="例如: 采购经理、技术主管"
-                  className="text-xs"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  岗位编码 <span className="text-rose-500">*</span>
-                </label>
-                <Input
-                  value={formData.code}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, code: e.target.value }))
-                  }
-                  placeholder="例如: pos_procurement_mgr"
-                  className="text-xs font-mono"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  职责说明
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  placeholder="描述该岗位的核心工作范畴与职责要求"
-                  rows={3}
-                  className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-700 shadow-xs focus:border-blue-500 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  同级排序号
-                </label>
-                <Input
-                  type="number"
-                  value={formData.sort}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      sort: Number(e.target.value),
-                    }))
-                  }
-                  className="text-xs"
-                />
-              </div>
-
-              <div className="mt-6 flex justify-end gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={closeModal}
-                  disabled={isPending}
-                >
-                  取消
-                </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={isPending}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  {isPending ? "保存中..." : "确认保存"}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <PositionFormModal
+          mode={modalState.mode}
+          record={modalState.targetPosition}
+          onClose={() => setModalState(null)}
+          onSaved={async () => {
+            setModalState(null);
+            await refreshPositions();
+          }}
+        />
       )}
-    </div>
+    </PageShell>
   );
 }

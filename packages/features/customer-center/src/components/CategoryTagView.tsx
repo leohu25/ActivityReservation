@@ -1,24 +1,23 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { FolderTree, Tag, Plus, LayoutGrid } from "lucide-react";
 import {
   DictionarySectionCard,
   Button,
-  Input,
   Tabs,
   TabsList,
   TabsTrigger,
   TabsContent,
   toast,
+  useSafeRouter,
 } from "@chenrun/ui";
 import {
-  createCategoryAction,
   updateCategoryStatusAction,
-  createTagAction,
   updateTagStatusAction,
 } from "../actions";
+import { CreateCategoryModal } from "./CreateCategoryModal";
+import { CreateTagModal } from "./CreateTagModal";
 import type { CustomerCategoryItem, CustomerTagItem } from "../types";
 
 /**
@@ -29,14 +28,6 @@ interface Props {
   initialCategories: CustomerCategoryItem[];
   /** 初始业务标签字典数据集 */
   initialTags: CustomerTagItem[];
-}
-
-function useSafeRouter() {
-  try {
-    return useRouter();
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -58,50 +49,8 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
   }, [initialTags]);
   const [loading, setLoading] = useState(false);
 
-  // 新建分类模态框表单状态
   const [showCatModal, setShowCatModal] = useState(false);
-  const [catCode, setCatCode] = useState("");
-  const [catName, setCatName] = useState("");
-  const [parentCode, setParentCode] = useState("");
-  const [catDesc, setCatDesc] = useState("");
-
-  // 新建标签模态框表单状态
   const [showTagModal, setShowTagModal] = useState(false);
-  const [tagCode, setTagCode] = useState("");
-  const [tagName, setTagName] = useState("");
-  const [tagType, setTagType] = useState("DELIVERY");
-  const [tagDesc, setTagDesc] = useState("");
-
-  /**
-   * 提交新建客户分类数据
-   */
-  const handleCreateCategory = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const res = await createCategoryAction({
-        categoryCode: catCode,
-        categoryName: catName,
-        parentCode: parentCode || null,
-        description: catDesc || null,
-      });
-      if (res.success) {
-        toast.success("客户分类创建成功");
-        setShowCatModal(false);
-        setCatCode("");
-        setCatName("");
-        setParentCode("");
-        setCatDesc("");
-        router?.refresh();
-      } else {
-        toast.error(res.error || "创建分类失败");
-      }
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "请求异常");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   /**
    * 切换客户分类启用/停用状态
@@ -129,36 +78,6 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "变更状态异常");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
-   * 提交新建客户业务标签
-   */
-  const handleCreateTag = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const res = await createTagAction({
-        tagCode,
-        tagName,
-        tagType,
-        description: tagDesc || null,
-      });
-      if (res.success) {
-        toast.success("业务标签创建成功");
-        setShowTagModal(false);
-        setTagCode("");
-        setTagName("");
-        setTagDesc("");
-        router?.refresh();
-      } else {
-        toast.error(res.error || "创建标签失败");
-      }
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "请求异常");
     } finally {
       setLoading(false);
     }
@@ -372,162 +291,18 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
         </TabsContent>
       </Tabs>
 
-      {/* 新建分类模态弹窗 */}
       {showCatModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card text-card-foreground rounded-xl max-w-md w-full p-6 border shadow-2xl">
-            <h3 className="text-base font-bold text-foreground mb-4">
-              新建客户分类
-            </h3>
-            <form onSubmit={handleCreateCategory} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1">
-                  分类编码 (唯一标识) *
-                </label>
-                <Input
-                  required
-                  value={catCode}
-                  onChange={(e) => setCatCode(e.target.value)}
-                  placeholder="如: CUST_CAT_001"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1">
-                  分类名称 *
-                </label>
-                <Input
-                  required
-                  value={catName}
-                  onChange={(e) => setCatName(e.target.value)}
-                  placeholder="如: 连锁餐饮 / 企事业单位"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1">
-                  父级分类编码 (可选)
-                </label>
-                <select
-                  value={parentCode}
-                  onChange={(e) => setParentCode(e.target.value)}
-                  className="w-full h-9 px-3 border border-input rounded-md bg-background text-foreground text-sm"
-                >
-                  <option value="">(作为根分类)</option>
-                  {categories.map((c) => (
-                    <option key={c.categoryCode} value={c.categoryCode}>
-                      {c.categoryName} ({c.categoryCode})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1">
-                  业务描述说明
-                </label>
-                <Input
-                  value={catDesc}
-                  onChange={(e) => setCatDesc(e.target.value)}
-                  placeholder="分类适用范围与说明"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-3 border-t">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowCatModal(false)}
-                >
-                  取消
-                </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={loading}
-                  className="font-semibold"
-                >
-                  {loading ? "保存中..." : "保存分类"}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <CreateCategoryModal
+          categories={categories}
+          onClose={() => setShowCatModal(false)}
+          onCreated={() => router?.refresh()}
+        />
       )}
-
-      {/* 新建业务标签模态弹窗 */}
       {showTagModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card text-card-foreground rounded-xl max-w-md w-full p-6 border shadow-2xl">
-            <h3 className="text-base font-bold text-foreground mb-4">
-              新建客户业务标签
-            </h3>
-            <form onSubmit={handleCreateTag} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1">
-                  标签编码 (唯一标识) *
-                </label>
-                <Input
-                  required
-                  value={tagCode}
-                  onChange={(e) => setTagCode(e.target.value)}
-                  placeholder="如: TAG_VIP"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1">
-                  标签名称 *
-                </label>
-                <Input
-                  required
-                  value={tagName}
-                  onChange={(e) => setTagName(e.target.value)}
-                  placeholder="如: VIP专属、早间必达"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1">
-                  标签业务类型 *
-                </label>
-                <select
-                  value={tagType}
-                  onChange={(e) => setTagType(e.target.value)}
-                  className="w-full h-9 px-3 border border-input rounded-md bg-background text-foreground text-sm"
-                >
-                  <option value="DELIVERY">配送策略 (DELIVERY)</option>
-                  <option value="SETTLEMENT">结算方式 (SETTLEMENT)</option>
-                  <option value="CREDIT">信用分级 (CREDIT)</option>
-                  <option value="OTHER">其他通用 (OTHER)</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1">
-                  业务描述说明
-                </label>
-                <Input
-                  value={tagDesc}
-                  onChange={(e) => setTagDesc(e.target.value)}
-                  placeholder="标签打标规则与适用场景"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-3 border-t">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowTagModal(false)}
-                >
-                  取消
-                </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={loading}
-                  className="font-semibold"
-                >
-                  {loading ? "保存中..." : "保存标签"}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <CreateTagModal
+          onClose={() => setShowTagModal(false)}
+          onCreated={() => router?.refresh()}
+        />
       )}
     </div>
   );

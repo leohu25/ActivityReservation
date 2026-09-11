@@ -8,8 +8,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../../primitives/dropdown-menu";
-import { Button } from "../../primitives/button";
+} from "../../shadcn/dropdown-menu";
+import { Button } from "../../shadcn/button";
 import { ConfirmDialog } from "../../feedback/ConfirmDialog";
 import { useDataTableContext } from "./DataTableContext";
 import { cn } from "../../../lib/utils";
@@ -47,13 +47,26 @@ export interface DataTableRowActionsProps<TRecord> {
   };
   /**
    * 平铺文本链接操作（如「详情」「编辑」），直接展示在行内，缩短操作链路。
-   * 未提供时自动根据 onView/onEdit 生成默认平铺项。
+   * 未提供时默认平铺内置「详情/编辑」。
    */
   inlineActions?: readonly RowActionItem<TRecord>[];
   /** 次要/危险操作，折叠进 `...` 下拉菜单 */
   extraActions?: readonly RowActionItem<TRecord>[];
-  /** 是否强制使用纯下拉菜单模式（忽略 onView/onEdit 默认平铺） */
+  /** 是否强制使用纯下拉菜单模式（忽略默认平铺详情/编辑） */
   menuOnly?: boolean;
+  /**
+   * 页面级约定大于配置：默认展示内置「详情/编辑/删除」。
+   * 页面不需要某操作时显式隐藏；对应 action 也可同步从角色权限目录移除。
+   */
+  hideView?: boolean;
+  hideEdit?: boolean;
+  hideDelete?: boolean;
+  /**
+   * 无权限时的展示策略：
+   * - `hidden`（默认）：对普通用户按权限隐藏
+   * - `disabled-tooltip`：置灰可见
+   */
+  unauthorizedStrategy?: "hidden" | "disabled-tooltip";
   className?: string;
 }
 
@@ -66,6 +79,10 @@ export function DataTableRowActions<TRecord>({
   inlineActions,
   extraActions = [],
   menuOnly = false,
+  hideView = false,
+  hideEdit = false,
+  hideDelete = false,
+  unauthorizedStrategy = "hidden",
   className,
 }: DataTableRowActionsProps<TRecord>) {
   const { subject, ability } = useDataTableContext();
@@ -73,53 +90,91 @@ export function DataTableRowActions<TRecord>({
   const [activeConfirmAction, setActiveConfirmAction] =
     useState<RowActionItem<TRecord> | null>(null);
 
-  // 校验是否有对应的操作权限 (严格遵循 Fail-Closed 原则)
+  // 严格 Fail-Closed：无 subject 放行，无 ability 拒绝
   const canPerform = (actionName: string) => {
     if (!subject) return true;
     if (!ability) return false;
     return ability.can(actionName, subject);
   };
 
-  const canView = onView ? canPerform("read") : false;
-  const canEdit = onEdit ? canPerform("update") : false;
-  const canDelete = onDelete ? canPerform("delete") : false;
+  const canView = canPerform("read");
+  const canEdit = canPerform("update");
+  const canDelete = canPerform("delete");
 
-  // 构建平铺操作列表
+  const keepUnauthorized = unauthorizedStrategy === "disabled-tooltip";
+
+  // 构建平铺操作列表：默认详情/编辑；页面可 hideView/hideEdit 关闭
   const resolvedInline: RowActionItem<TRecord>[] = React.useMemo(() => {
     if (inlineActions) {
       return inlineActions.filter((item) =>
-        item.action ? canPerform(item.action) : true,
+        item.action
+          ? canPerform(item.action) || keepUnauthorized
+          : true,
       );
     }
     if (menuOnly) return [];
     const defaults: RowActionItem<TRecord>[] = [];
-    if (canView && onView) {
+    if (!hideView) {
       defaults.push({
         label: "详情",
         action: "read",
-        onClick: () => onView(record),
+        onClick: () => onView?.(record),
       });
     }
-    if (canEdit && onEdit) {
+    if (!hideEdit) {
       defaults.push({
         label: "编辑",
         action: "update",
-        onClick: () => onEdit(record),
+        onClick: () => onEdit?.(record),
       });
     }
     return defaults;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inlineActions, menuOnly, canView, canEdit, onView, onEdit, record, subject, ability]);
+  }, [
+    inlineActions,
+    menuOnly,
+    hideView,
+    hideEdit,
+    canView,
+    canEdit,
+    onView,
+    onEdit,
+    record,
+    subject,
+    ability,
+    keepUnauthorized,
+  ]);
+
+  // 有权限但未配置回调 → 置灰（便于开发时识别按钮已预留）
+  const isInlineDisabled = (item: RowActionItem<TRecord>) => {
+    if (item.action === "read") return !onView;
+    if (item.action === "update") return !onEdit;
+    return false;
+  };
+
+  const filteredInline = resolvedInline.filter((item) => {
+    if (!item.action) return true;
+    if (canPerform(item.action)) return true;
+    return keepUnauthorized;
+  });
 
   const validExtraActions = extraActions.filter((item) =>
-    item.action ? canPerform(item.action) : true,
+    item.action
+      ? canPerform(item.action) || keepUnauthorized
+      : true,
   );
 
-  // 若提供了 inlineActions，删除/查看/编辑也可按需放入下拉
-  const menuHasBuiltIn = menuOnly && (canView || canEdit);
+  const showDelete = !hideDelete && (canDelete || keepUnauthorized);
+  const deleteDisabled = !onDelete;
+
+  const menuHasBuiltIn =
+    menuOnly &&
+    ((!hideView && (canView || keepUnauthorized)) ||
+      (!hideEdit && (canEdit || keepUnauthorized)));
+
   const hasAnyAction =
-    resolvedInline.length > 0 ||
-    canDelete ||
+    filteredInline.length > 0 ||
+    showDelete ||
     validExtraActions.length > 0 ||
     menuHasBuiltIn;
 
@@ -137,30 +192,36 @@ export function DataTableRowActions<TRecord>({
 
   return (
     <div className={cn("flex items-center justify-end gap-0.5", className)}>
-      {/* 平铺文本链接操作 */}
-      {resolvedInline.map((item) => (
-        <Button
-          key={item.label}
-          type="button"
-          variant="link"
-          size="sm"
-          className={cn(
-            "h-auto p-0 px-1 text-xs font-medium no-underline hover:underline",
-            item.variant === "destructive"
-              ? "text-destructive"
-              : "text-primary",
-            item.inlineClassName,
-          )}
-          onClick={() => runAction(item)}
-        >
-          {item.label}
-        </Button>
-      ))}
+      {/* 平铺文本链接操作（默认展示；无权限隐藏；有权限无回调置灰） */}
+      {filteredInline.map((item) => {
+        const disabled = isInlineDisabled(item);
+        return (
+          <Button
+            key={item.label}
+            type="button"
+            variant="link"
+            size="sm"
+            disabled={disabled}
+            title={disabled ? "未配置操作回调" : undefined}
+            className={cn(
+              "h-auto p-0 px-1 text-xs font-medium no-underline hover:underline",
+              disabled && "opacity-50 hover:no-underline cursor-not-allowed",
+              item.variant === "destructive"
+                ? "text-destructive"
+                : "text-primary",
+              item.inlineClassName,
+            )}
+            onClick={() => {
+              if (!disabled) runAction(item);
+            }}
+          >
+            {item.label}
+          </Button>
+        );
+      })}
 
       {/* 次要/危险操作折叠菜单 */}
-      {(validExtraActions.length > 0 ||
-        canDelete ||
-        (menuOnly && (canView || canEdit))) && (
+      {(validExtraActions.length > 0 || showDelete || menuHasBuiltIn) && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -173,17 +234,19 @@ export function DataTableRowActions<TRecord>({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[140px] text-xs">
-            {menuOnly && canView && onView && (
+            {menuOnly && !hideView && (canView || keepUnauthorized) && (
               <DropdownMenuItem
-                onClick={() => onView(record)}
+                disabled={!onView}
+                onClick={() => onView?.(record)}
                 className="gap-2 cursor-pointer"
               >
                 <span>查看详情</span>
               </DropdownMenuItem>
             )}
-            {menuOnly && canEdit && onEdit && (
+            {menuOnly && !hideEdit && (canEdit || keepUnauthorized) && (
               <DropdownMenuItem
-                onClick={() => onEdit(record)}
+                disabled={!onEdit}
+                onClick={() => onEdit?.(record)}
                 className="gap-2 cursor-pointer"
               >
                 <span>编辑记录</span>
@@ -204,12 +267,13 @@ export function DataTableRowActions<TRecord>({
               </DropdownMenuItem>
             ))}
 
-            {canDelete && (
+            {showDelete && (
               <>
                 {(menuHasBuiltIn || validExtraActions.length > 0) && (
                   <DropdownMenuSeparator />
                 )}
                 <DropdownMenuItem
+                  disabled={deleteDisabled}
                   onClick={() => setDeleteConfirmOpen(true)}
                   className="gap-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
                 >
@@ -222,7 +286,7 @@ export function DataTableRowActions<TRecord>({
       )}
 
       {/* 内置二次确认防误删弹窗 */}
-      {canDelete && (
+      {showDelete && !deleteDisabled && (
         <ConfirmDialog
           open={deleteConfirmOpen}
           onOpenChange={setDeleteConfirmOpen}

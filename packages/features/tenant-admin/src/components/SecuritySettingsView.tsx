@@ -9,8 +9,16 @@ import {
   CardContent,
   Input,
   Button,
+  Checkbox,
+  Label,
+  PageShell,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@chenrun/ui";
-import { ShieldCheck, Save, CheckCircle2, AlertCircle, Lock, Clock } from "lucide-react";
+import { ShieldCheck, Save, Lock, Clock } from "lucide-react";
 import type { SecuritySettingsData, UpdateSecuritySettingsInput } from "../types";
 import { updateSecuritySettingsAction } from "../actions";
 
@@ -19,8 +27,18 @@ export interface SecuritySettingsViewProps {
   readonly isReadOnly?: boolean;
 }
 
+const IDLE_TIMEOUT_OPTIONS = [15, 30, 60, 480] as const;
+
+const IDLE_TIMEOUT_LABELS: Record<number, string> = {
+  15: "15 分钟 (高灵敏安全)",
+  30: "30 分钟 (推荐标准)",
+  60: "60 分钟 (1 小时常规)",
+  480: "480 分钟 (8 小时工作日免登)",
+};
+
 /**
  * 租户安全策略配置面板组件
+ * 直用 PageShell + shadcn Select / Checkbox，不手写壳与原生控件。
  */
 export function SecuritySettingsView({
   initialData,
@@ -57,37 +75,15 @@ export function SecuritySettingsView({
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      {/* 顶部标题 */}
-      <div>
-        <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2">
-          <ShieldCheck className="size-5 text-blue-600 dark:text-blue-400" />
-          <span>企业安全设置</span>
-        </h1>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          管控租户会话空闲登出超时、初始密码改密强制规则以及成员账号强度基线
-        </p>
-      </div>
-
-      {feedback && (
-        <div
-          className={`flex items-center gap-2 rounded-xl p-3.5 text-xs font-semibold ${
-            feedback.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-300"
-              : "bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-300"
-          }`}
-        >
-          {feedback.type === "success" ? (
-            <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
-          ) : (
-            <AlertCircle className="size-4 shrink-0 text-rose-600" />
-          )}
-          <span>{feedback.message}</span>
-        </div>
-      )}
-
+    <PageShell
+      title="企业安全设置"
+      description="管控租户会话空闲登出超时、初始密码改密强制规则以及成员账号强度基线"
+      icon={<ShieldCheck className="size-5 text-blue-600 dark:text-blue-400" />}
+      feedback={feedback}
+      onDismissFeedback={() => setFeedback(null)}
+      contentClassName="max-w-4xl"
+    >
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* 会话安全策略 */}
         <Card className="rounded-2xl border-slate-200/80 shadow-xs dark:border-slate-800">
           <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
             <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
@@ -100,30 +96,34 @@ export function SecuritySettingsView({
           </CardHeader>
           <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 闲置自动登出超时 (分钟)
-              </label>
-              <select
-                value={formData.sessionIdleTimeoutMinutes ?? 60}
-                onChange={(e) =>
+              </Label>
+              <Select
+                value={String(formData.sessionIdleTimeoutMinutes ?? 60)}
+                onValueChange={(v) =>
                   setFormData((prev) => ({
                     ...prev,
-                    sessionIdleTimeoutMinutes: Number(e.target.value),
+                    sessionIdleTimeoutMinutes: Number(v),
                   }))
                 }
                 disabled={isReadOnly || isPending}
-                className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 shadow-xs focus:outline-hidden focus:ring-1 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
               >
-                <option value={15}>15 分钟 (高灵敏安全)</option>
-                <option value={30}>30 分钟 (推荐标准)</option>
-                <option value={60}>60 分钟 (1 小时常规)</option>
-                <option value={480}>480 分钟 (8 小时工作日免登)</option>
-              </select>
+                <SelectTrigger className="w-full text-xs">
+                  <SelectValue placeholder="选择超时策略" />
+                </SelectTrigger>
+                <SelectContent>
+                  {IDLE_TIMEOUT_OPTIONS.map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {IDLE_TIMEOUT_LABELS[n]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
 
-        {/* 密码强度与凭证生命周期 */}
         <Card className="rounded-2xl border-slate-200/80 shadow-xs dark:border-slate-800">
           <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
             <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
@@ -137,10 +137,14 @@ export function SecuritySettingsView({
           <CardContent className="pt-4 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <Label
+                  htmlFor="security-password-min-length"
+                  className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+                >
                   密码最小长度字符数
-                </label>
+                </Label>
                 <Input
+                  id="security-password-min-length"
                   type="number"
                   min={6}
                   max={32}
@@ -160,51 +164,57 @@ export function SecuritySettingsView({
             </div>
 
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-3">
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="checkbox"
+              <div className="flex items-start gap-2.5">
+                <Checkbox
+                  id="security-force-change-password"
                   checked={formData.forceChangeInitialPassword ?? true}
-                  onChange={(e) =>
+                  onCheckedChange={(checked) =>
                     setFormData((prev) => ({
                       ...prev,
-                      forceChangeInitialPassword: e.target.checked,
+                      forceChangeInitialPassword: checked === true,
                     }))
                   }
                   disabled={isReadOnly || isPending}
-                  className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  className="mt-0.5"
                 />
-                <div>
-                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                <div className="space-y-0.5">
+                  <Label
+                    htmlFor="security-force-change-password"
+                    className="text-xs font-semibold text-slate-800 dark:text-slate-200 cursor-pointer"
+                  >
                     首次登录强制修改初始密码
-                  </span>
+                  </Label>
                   <p className="text-[11px] text-slate-400">
                     管理员直接开号分配临时密码后，员工首次登录成功时必须重置新密码方可进入系统
                   </p>
                 </div>
-              </label>
+              </div>
 
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="checkbox"
+              <div className="flex items-start gap-2.5">
+                <Checkbox
+                  id="security-require-special-char"
                   checked={formData.requireSpecialChar ?? true}
-                  onChange={(e) =>
+                  onCheckedChange={(checked) =>
                     setFormData((prev) => ({
                       ...prev,
-                      requireSpecialChar: e.target.checked,
+                      requireSpecialChar: checked === true,
                     }))
                   }
                   disabled={isReadOnly || isPending}
-                  className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  className="mt-0.5"
                 />
-                <div>
-                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                <div className="space-y-0.5">
+                  <Label
+                    htmlFor="security-require-special-char"
+                    className="text-xs font-semibold text-slate-800 dark:text-slate-200 cursor-pointer"
+                  >
                     强制要求包含特殊符号 (@#$%^&*)
-                  </span>
+                  </Label>
                   <p className="text-[11px] text-slate-400">
                     提高暴力破解阻断阈值，避免弱口令安全隐患
                   </p>
                 </div>
-              </label>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -222,6 +232,6 @@ export function SecuritySettingsView({
           </div>
         )}
       </form>
-    </div>
+    </PageShell>
   );
 }

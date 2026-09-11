@@ -8,7 +8,9 @@
 
 1. **严禁手写两套平行世界**：切片内**彻底废除**平铺的 `permissions.ts`，每个页面必须在 `src/contracts/<page>.contract.ts` 中自包含维护自己的实体符号、受控字段枚举与页面契约；
 2. **契约即事实源**：契约里有的，前台有按钮可点、后台有选项可配；契约里没有的，两端物理级绝不出现（杜绝空头支票与幽灵权限）；
-3. **受控列必带身份证**：表格列凡涉及受控主数据字段，必须显式挂载 `field: MyField.XXX`，否则 CASL 无法执行 `HIDDEN` 物理列剥离。
+3. **受控列必带身份证**：表格列凡涉及受控主数据字段，必须显式挂载 `field: MyField.XXX`，否则 CASL 无法执行 `HIDDEN` 物理列剥离；
+4. **标准动作预制 + 自定义扩展**：`read/create/update/delete/export` 按页面勾选；页面特有操作（如 `toggle_status`）在契约 `actions` 中声明独立标识；运行时动作清单由 Catalog `getDeclaredActions(subject)` 派生，禁止第二份硬编码白名单；
+5. **页面 hide 同步契约**：`hideView/hideEdit/hideDelete` 或页面不渲染的按钮，必须从契约 `actions` 移除，角色目录随之变短。
 
 ---
 
@@ -126,8 +128,32 @@ export function CustomerView({ initialCustomers, permissions }: Props) {
     // ...
   ];
 
-  // 3. 操作按钮鉴权判定
-  const canExport = !ability || ability.can(StandardAction.EXPORT, customerPageContract.subject);
-  const canCreate = !ability || ability.can(StandardAction.CREATE, customerPageContract.subject);
+  // 3. 操作按钮：页面直接声明，由 ActionButton 按权限显隐（约定大于配置）
+  //    不需要手写 canExport && <Button>；不需要的按钮用 hide* 或不写
+  //    <DataTable.ActionButton action="create" onClick={...}>新增</DataTable.ActionButton>
+  //    <DataTable.ActionButton action="export" onClick={...}>导出</DataTable.ActionButton>
+  //    行操作默认详情/编辑/删除；hideView / hideEdit / hideDelete 显式关闭
+  //    页面 hide 或不渲染的按钮 → 契约同步移除该 action，角色目录不再出现
 }
 ```
+
+### 自定义扩展动作
+
+标准 CRUD/导出由契约勾选；页面特有操作在契约 `actions` 中声明独立标识，
+并与按钮 `action`、Server Action `assertAbility` 使用同一名称：
+
+```ts
+// contracts/customer.contract.ts
+actions: [
+  ...,
+  { action: "toggle_status", label: "启用/停用客户" },
+]
+
+// View extraActions
+{ label: "停用客户", action: "toggle_status", onClick: ... }
+
+// Server Action
+assertCustomerAbility(ability, "toggle_status", CustomerSubject);
+```
+
+两页都要「盘点」但权限互不通用 → 各自契约、**不同 Subject**，同名 action 也不共用。

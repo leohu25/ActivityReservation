@@ -2,7 +2,7 @@
 
 import React, { type ReactNode } from "react";
 import { Search, RotateCcw, SlidersHorizontal } from "lucide-react";
-import { Button } from "../../primitives/button";
+import { Button } from "../../shadcn/button";
 import { cn } from "../../../lib/utils";
 
 export interface DataTableFilterBarProps {

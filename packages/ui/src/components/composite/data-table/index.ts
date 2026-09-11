@@ -19,10 +19,19 @@ import {
 import { DataTableFormModal } from "./DataTableFormModal";
 import {
   DataTableFormBanner,
+  DataTableFormField,
   DataTableFormFieldGrid,
   DataTableFormSection,
 } from "./DataTableFormLayout";
 import { DataTableActions, DataTableActionButton } from "./DataTableActions";
+import {
+  DataTableFormFields,
+  useDataTableForm,
+  type DataTableFormFieldSchema,
+  type FormFieldOption,
+} from "./DataTableFormSchema";
+// 模板层：整页 Workspace（目录在 templates/，此处挂到 DataTable 命名空间）
+import { DataTableWorkspace } from "../../templates/DataTableWorkspace";
 import { AuthField, AuthGuard } from "../auth";
 
 export * from "./DataTableContext";
@@ -44,11 +53,20 @@ export * from "./DataTableDetailLayout";
 export * from "./DataTableFormModal";
 export * from "./DataTableFormLayout";
 export * from "./DataTableActions";
+export * from "./DataTableFormSchema";
+export {
+  DataTableWorkspace,
+  type DataTableWorkspaceProps,
+  type WorkspaceStatusOption,
+} from "../../templates/DataTableWorkspace";
 
 /**
  * 复合积木化数据表格体系 (Compound DataTable Pattern)
  *
- * 标准一体化列表装配：
+ * 推荐整页模板（约定大于配置，默认全量控件）：
+ *   <DataTable.Workspace title="客户档案" ... />
+ *
+ * 原子拼装仍可用：
  *   <DataTable.Root>
  *     <DataTable.Header actions={<DataTable.Toolbar>...</DataTable.Toolbar>} />
  *     <DataTable.FilterBar>
@@ -60,6 +78,7 @@ export * from "./DataTableActions";
  */
 export const DataTable = Object.assign(DataTableRoot, {
   Root: DataTableRoot,
+  Workspace: DataTableWorkspace,
   Toolbar: DataTableToolbar,
   Header: DataTableHeader,
   Search: DataTableSearch,
@@ -78,6 +97,9 @@ export const DataTable = Object.assign(DataTableRoot, {
   FormModal: DataTableFormModal,
   FormSection: DataTableFormSection,
   FormFieldGrid: DataTableFormFieldGrid,
+  FormField: DataTableFormField,
+  FormFields: DataTableFormFields,
+  useForm: useDataTableForm,
   FormBanner: DataTableFormBanner,
   Actions: DataTableActions,
   ActionButton: DataTableActionButton,

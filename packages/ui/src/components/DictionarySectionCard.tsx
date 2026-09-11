@@ -8,9 +8,9 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
-} from "./primitives/card";
-import { Input } from "./primitives/input";
-import { Badge } from "./primitives/badge";
+} from "./shadcn/card";
+import { Input } from "./shadcn/input";
+import { Badge } from "./shadcn/badge";
 import { cn } from "../lib/utils";
 
 /**

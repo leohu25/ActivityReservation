@@ -1,26 +1,20 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Plus, Download, RefreshCw, Trash2 } from "lucide-react";
 import {
   DataTable,
-  Button,
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Badge,
   DataTableRowActions,
   toast,
+  useListUrlNav,
   type ColumnDef,
 } from "@chenrun/ui";
-import { createQuoteAction, updateQuoteStatusAction } from "../actions";
+import { exportContractCsv } from "@chenrun/shared";
+import { updateQuoteStatusAction } from "../actions";
+import { CreateQuoteModal } from "./CreateQuoteModal";
 import { CustomerQuoteField, quotePageContract } from "../contracts";
+import { isFieldAllowedForAction } from "@chenrun/authorization";
 import type {
-  CreateQuoteItemInput,
   QuoteListItem,
   CustomerListItem,
   StoreListItem,
@@ -49,14 +43,6 @@ interface Props {
   };
 }
 
-function useSafeRouter() {
-  try {
-    return useRouter();
-  } catch {
-    return null;
-  }
-}
-
 /**
  * 客户中心 - 客户阶梯价与报价单中心工作台
  * 遵循现代数智工业风规范，全面接入 BusinessTableWorkspace 体系
@@ -79,13 +65,11 @@ export function QuoteView({
       can(action: string, subject?: string, field?: string) {
         if (subject && subject !== quotePageContract.subject) return false;
         if (!permissions.actions.includes(action)) return false;
-        if (field && permissions.fieldPolicies?.[field] === "HIDDEN")
-          return false;
-        return true;
+        return isFieldAllowedForAction(permissions.fieldPolicies, action, field);
       },
     };
   }, [explicitAbility, permissions]);
-  const router = useSafeRouter();
+  const { navigateList, router } = useListUrlNav();
   const [quotes, setQuotes] = useState<QuoteListItem[]>(initialQuotes);
   const [total, setTotal] = useState(initialTotal ?? initialQuotes.length);
   const [page, setPage] = useState(initialPage);
@@ -100,147 +84,7 @@ export function QuoteView({
   const [statusFilter, setStatusFilter] = useState(initialStatus);
   const [loading, setLoading] = useState(false);
 
-  const navigateList = React.useCallback(
-    (patch: { page?: number; pageSize?: number; status?: string }) => {
-      const next = new URLSearchParams();
-      const p = patch.page ?? page;
-      const ps = patch.pageSize ?? pageSize;
-      const st = patch.status !== undefined ? patch.status : statusFilter;
-      if (p > 1) next.set("page", String(p));
-      if (ps !== 10) next.set("pageSize", String(ps));
-      if (st) next.set("status", st);
-      const qs = next.toString();
-      router?.push(qs ? `?${qs}` : window.location.pathname);
-    },
-    [page, pageSize, statusFilter, router],
-  );
-
-  // 新建报价单模态框表单状态
   const [showModal, setShowModal] = useState(false);
-  const [scopeType, setScopeType] = useState<"CUSTOMER" | "STORE" | "REGION">(
-    "STORE",
-  );
-  const [customerCode, setCustomerCode] = useState(
-    customers[0]?.customerCode || "",
-  );
-  const [storeCode, setStoreCode] = useState(stores[0]?.storeCode || "");
-  const [regionCode, setRegionCode] = useState("REGION_BJ_01");
-  const [quoteDate] = useState(new Date().toISOString().split("T")[0]);
-  const [effectiveDate, setEffectiveDate] = useState(
-    new Date().toISOString().split("T")[0],
-  );
-  const [expiryDate, setExpiryDate] = useState("");
-  const [displayName, setDisplayName] = useState("");
-
-  // 明细行条目列表
-  const [items, setItems] = useState<CreateQuoteItemInput[]>([
-    {
-      itemCode: "ITEM_VEG_001",
-      itemName: "有机特级上海青(净菜)",
-      salesUnit: "kg",
-      unitPriceExclTax: 5.5,
-      unitPriceInclTax: 6.0,
-      taxRate: 9.0,
-      minQty: 10,
-      maxQty: null,
-      remark: "每日新鲜直供",
-    },
-  ]);
-
-  /** 服务端已过滤，客户端不再二次筛选 */
-  const filteredQuotes = quotes;
-
-  /**
-   * 添加明细行
-   */
-  const handleAddItem = () => {
-    setItems([
-      ...items,
-      {
-        itemCode: `ITEM_VEG_${String(items.length + 1).padStart(3, "0")}`,
-        itemName: "特选生鲜净菜",
-        salesUnit: "kg",
-        unitPriceExclTax: 10.0,
-        unitPriceInclTax: 10.9,
-        taxRate: 9.0,
-        minQty: 5,
-        maxQty: null,
-        remark: "",
-      },
-    ]);
-  };
-
-  /**
-   * 移除指定明细行
-   */
-  const handleRemoveItem = (index: number) => {
-    if (items.length <= 1) {
-      alert("报价单至少保留一条品项明细");
-      return;
-    }
-    setItems(items.filter((_, i) => i !== index));
-  };
-
-  /**
-   * 修改明细行字段值并联动含税单价计算
-   */
-  const handleItemChange = (
-    index: number,
-    field: keyof CreateQuoteItemInput,
-    val: string | number | null,
-  ) => {
-    const updated = [...items];
-    const curr = { ...updated[index], [field]: val };
-
-    // 自动按税率推导含税单价
-    if (field === "unitPriceExclTax" || field === "taxRate") {
-      const excl = Number(curr.unitPriceExclTax) || 0;
-      const rate = Number(curr.taxRate) || 0;
-      curr.unitPriceInclTax = parseFloat((excl * (1 + rate / 100)).toFixed(2));
-    }
-
-    updated[index] = curr;
-    setItems(updated);
-  };
-
-  /**
-   * 提交拟定新报价单
-   */
-  const handleCreateQuote = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const payload = {
-        scopeType,
-        customerCode:
-          scopeType === "CUSTOMER" || scopeType === "STORE"
-            ? customerCode
-            : null,
-        storeCode: scopeType === "STORE" ? storeCode : null,
-        regionCode: scopeType === "REGION" ? regionCode : null,
-        quoteDate,
-        effectiveDate,
-        expiryDate: expiryDate || null,
-        displayName: displayName || null,
-        createdBy: "系统管理员",
-        items,
-      };
-
-      const res = await createQuoteAction(payload);
-      if (res.success) {
-        toast.success("报价单创建成功");
-        setShowModal(false);
-        router?.refresh();
-      } else {
-        toast.error(res.error || "创建报价单失败");
-      }
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "请求异常");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   /**
    * 更新报价单状态（审核生效 / 作废）
@@ -271,76 +115,14 @@ export function QuoteView({
   };
 
   const handleExport = () => {
-    const fieldKeys: Array<{
-      key: keyof QuoteListItem;
-      field?: string;
-      label: string;
-    }> = [
-      {
-        key: "quoteId",
-        field: CustomerQuoteField.QUOTE_ID,
-        label: "报价单号",
+    exportContractCsv(quotes, quotePageContract.configurableFields ?? [], {
+      subject: quotePageContract.subject,
+      ability,
+      filename: `门店报价单_${new Date().toISOString().slice(0, 10)}.csv`,
+      format: {
+        [CustomerQuoteField.STATUS]: (q) => q.status,
       },
-      {
-        key: "displayName",
-        field: CustomerQuoteField.DISPLAY_NAME,
-        label: "对外简称",
-      },
-      {
-        key: "scopeType",
-        field: CustomerQuoteField.SCOPE_TYPE,
-        label: "适用维度",
-      },
-      {
-        key: "effectiveDate",
-        field: CustomerQuoteField.EFFECTIVE_DATE,
-        label: "生效日期",
-      },
-      {
-        key: "expiryDate",
-        field: CustomerQuoteField.EXPIRY_DATE,
-        label: "失效日期",
-      },
-      {
-        key: "status",
-        field: CustomerQuoteField.STATUS,
-        label: "状态",
-      },
-    ];
-
-    const activeExportFields = fieldKeys.filter((f) => {
-      if (!ability || !f.field) return true;
-      return ability.can("read", quotePageContract.subject, f.field);
     });
-
-    const csvContent = [
-      activeExportFields.map((f) => f.label).join(","),
-      ...filteredQuotes.map((q) =>
-        activeExportFields
-          .map((f) => {
-            const val = q[f.key];
-            if (val === null || val === undefined) return "";
-            if (val instanceof Date) return val.toISOString().slice(0, 10);
-            return `"${String(val).replace(/"/g, '""')}"`;
-          })
-          .join(","),
-      ),
-    ].join("\n");
-
-    const blob = new Blob([`\uFEFF${csvContent}`], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute(
-      "download",
-      `门店报价单_${new Date().toISOString().slice(0, 10)}.csv`,
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   };
 
   /**
@@ -508,13 +290,15 @@ export function QuoteView({
   ];
 
   return (
-    <DataTable.Root
-      data={filteredQuotes}
+    <DataTable.Workspace
+      data={quotes}
       columns={columns}
       rowKey={(q: QuoteListItem) => q.quoteId}
       subject={quotePageContract.subject}
       ability={ability}
       permissions={permissions}
+      title="客户阶梯价与报价单"
+      description="按门店、客户、区域维护商品报价明细。报价优先级：门店专属报价 > 客户通用报价 > 区域保底报价。"
       page={page}
       pageSize={pageSize}
       total={total}
@@ -523,88 +307,36 @@ export function QuoteView({
         setPageSize(nextPageSize);
         navigateList({ page: nextPage, pageSize: nextPageSize });
       }}
-    >
-      <DataTable.Header
-        category="BUSINESS WORKSPACE"
-        title="客户阶梯价与报价单"
-        description="按门店、客户、区域维护商品报价明细。报价优先级：门店专属报价 > 客户通用报价 > 区域保底报价。"
-        actions={
-          <DataTable.Toolbar>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router?.refresh()}
-              className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
-            >
-              <RefreshCw className="size-3.5 text-muted-foreground" />
-              刷新
-            </Button>
-            {(!ability || ability.can("export", quotePageContract.subject)) && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExport}
-                className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
-              >
-                <Download className="size-3.5 text-muted-foreground" />
-                导出
-              </Button>
-            )}
-            <DataTable.ColumnSettings />
-            {(!ability || ability.can("create", quotePageContract.subject)) && (
-              <DataTable.ActionButton
-                action="create"
-                size="sm"
-                className="gap-1.5 shadow-xs"
-                onClick={() => setShowModal(true)}
-              >
-                <Plus className="size-3.5" />
-                新增
-              </DataTable.ActionButton>
-            )}
-          </DataTable.Toolbar>
-        }
-      />
-
-      <DataTable.FilterBar
-        onSearch={() => {
-          setPage(1);
-          navigateList({ page: 1 });
-        }}
-        onReset={() => {
-          setStatusFilter("");
-          setPage(1);
-          navigateList({ page: 1, status: "" });
-        }}
-      >
-        <DataTable.InputGroup label="状态" className="w-44">
-          <Select
-            value={statusFilter || "ALL"}
-            onValueChange={(v) => {
-              const next = v === "ALL" ? "" : v;
-              setStatusFilter(next);
-              setPage(1);
-              navigateList({ page: 1, status: next });
-            }}
-          >
-            <SelectTrigger className="border-0 shadow-none">
-              <SelectValue placeholder="全部" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">全部</SelectItem>
-              <SelectItem value="DRAFT">草稿</SelectItem>
-              <SelectItem value="ACTIVE">已生效</SelectItem>
-              <SelectItem value="VOIDED">已作废</SelectItem>
-              <SelectItem value="EXPIRED">已过期</SelectItem>
-            </SelectContent>
-          </Select>
-        </DataTable.InputGroup>
-      </DataTable.FilterBar>
-
-      <DataTable.Content
-        selectable
-        showIndex
-        renderExpandedRow={(q: QuoteListItem) => (
+      onRefresh={() => router?.refresh()}
+      onExport={handleExport}
+      onCreate={() => setShowModal(true)}
+      showKeywordFilter={false}
+      statusOptions={[
+        { value: "DRAFT", label: "草稿" },
+        { value: "ACTIVE", label: "已生效" },
+        { value: "VOIDED", label: "已作废" },
+        { value: "EXPIRED", label: "已过期" },
+      ]}
+      statusValue={statusFilter}
+      statusAllValue="ALL"
+      onStatusChange={(v) => {
+        const next = v === "ALL" ? "" : v;
+        setStatusFilter(next);
+        setPage(1);
+        navigateList({ page: 1, status: next });
+      }}
+      onSearch={() => {
+        setPage(1);
+        navigateList({ page: 1 });
+      }}
+      onReset={() => {
+        setStatusFilter("");
+        setPage(1);
+        navigateList({ page: 1, status: "" });
+      }}
+      contentProps={{
+        selectable: true,
+        renderExpandedRow: (q: QuoteListItem) => (
           <div className="space-y-2">
             <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
               <span>商品定价明细清单</span>
@@ -638,303 +370,18 @@ export function QuoteView({
               ))}
             </div>
           </div>
-        )}
-      />
-      <DataTable.Pagination />
+        ),
+      }}
+    >
 
-      {/* 新增报价单抽屉/模态框 */}
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card text-card-foreground rounded-xl max-w-4xl w-full p-6 border shadow-2xl max-h-[92vh] overflow-y-auto">
-            <h3 className="text-base font-bold text-foreground mb-4">
-              拟定新报价单
-            </h3>
-            <form onSubmit={handleCreateQuote} className="space-y-4 text-sm">
-              <div className="p-4 bg-muted/40 rounded-lg border space-y-3">
-                <div className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">
-                  适用范围设定 (三选一)
-                </div>
-                <div className="flex gap-4">
-                  <label className="inline-flex items-center gap-1.5 text-xs cursor-pointer text-foreground">
-                    <input
-                      type="radio"
-                      name="scopeType"
-                      checked={scopeType === "STORE"}
-                      onChange={() => setScopeType("STORE")}
-                    />
-                    门店专属报价 (优先级最高)
-                  </label>
-                  <label className="inline-flex items-center gap-1.5 text-xs cursor-pointer text-foreground">
-                    <input
-                      type="radio"
-                      name="scopeType"
-                      checked={scopeType === "CUSTOMER"}
-                      onChange={() => setScopeType("CUSTOMER")}
-                    />
-                    客户全门店通用
-                  </label>
-                  <label className="inline-flex items-center gap-1.5 text-xs cursor-pointer text-foreground">
-                    <input
-                      type="radio"
-                      name="scopeType"
-                      checked={scopeType === "REGION"}
-                      onChange={() => setScopeType("REGION")}
-                    />
-                    区域通用报价 (基准保底)
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 pt-2">
-                  {scopeType !== "REGION" && (
-                    <div>
-                      <label className="block text-xs font-medium text-foreground mb-1">
-                        所属客户 *
-                      </label>
-                      <select
-                        value={customerCode}
-                        onChange={(e) => setCustomerCode(e.target.value)}
-                        className="w-full h-9 px-3 border border-input rounded-md bg-background text-foreground text-sm"
-                      >
-                        {customers.map((c) => (
-                          <option key={c.customerCode} value={c.customerCode}>
-                            {c.customerName}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {scopeType === "STORE" && (
-                    <div>
-                      <label className="block text-xs font-medium text-foreground mb-1">
-                        所属门店 *
-                      </label>
-                      <select
-                        value={storeCode}
-                        onChange={(e) => setStoreCode(e.target.value)}
-                        className="w-full h-9 px-3 border border-input rounded-md bg-background text-foreground text-sm"
-                      >
-                        {stores.map((s) => (
-                          <option key={s.storeCode} value={s.storeCode}>
-                            {s.storeName} ({s.storeCode})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {scopeType === "REGION" && (
-                    <div>
-                      <label className="block text-xs font-medium text-foreground mb-1">
-                        区域编码 *
-                      </label>
-                      <Input
-                        value={regionCode}
-                        onChange={(e) => setRegionCode(e.target.value)}
-                        placeholder="如: REGION_BJ_01"
-                      />
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-xs font-medium text-foreground mb-1">
-                      对外简称 (给客户看)
-                    </label>
-                    <Input
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="如: 2026秋季净菜直供报价单"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-foreground mb-1">
-                      价格生效日期 *
-                    </label>
-                    <Input
-                      type="date"
-                      required
-                      value={effectiveDate}
-                      onChange={(e) => setEffectiveDate(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-foreground mb-1">
-                      失效日期 (为空则长期有效)
-                    </label>
-                    <Input
-                      type="date"
-                      value={expiryDate}
-                      onChange={(e) => setExpiryDate(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* 明细行维护 */}
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-semibold text-foreground text-xs uppercase tracking-wider">
-                    报价明细条目 ({items.length})
-                  </h4>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAddItem}
-                    className="h-7 text-xs"
-                  >
-                    <Plus className="size-3 mr-1" />
-                    添加商品
-                  </Button>
-                </div>
-
-                <div className="border rounded-lg overflow-x-auto bg-card">
-                  <table className="w-full text-xs">
-                    <thead className="bg-muted/50 text-muted-foreground uppercase border-b">
-                      <tr>
-                        <th className="p-2 text-left">商品编码</th>
-                        <th className="p-2 text-left">商品名称</th>
-                        <th className="p-2 text-left">单位</th>
-                        <th className="p-2 text-right">不含税单价</th>
-                        <th className="p-2 text-right">税率(%)</th>
-                        <th className="p-2 text-right">含税单价</th>
-                        <th className="p-2 text-right">最小起订</th>
-                        <th className="p-2 text-center">操作</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {items.map((item, idx) => (
-                        <tr key={idx} className="hover:bg-muted/30">
-                          <td className="p-2">
-                            <input
-                              value={item.itemCode}
-                              onChange={(e) =>
-                                handleItemChange(
-                                  idx,
-                                  "itemCode",
-                                  e.target.value,
-                                )
-                              }
-                              className="w-24 px-1.5 py-1 border border-input rounded bg-background text-foreground text-xs"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <input
-                              value={item.itemName}
-                              onChange={(e) =>
-                                handleItemChange(
-                                  idx,
-                                  "itemName",
-                                  e.target.value,
-                                )
-                              }
-                              className="w-36 px-1.5 py-1 border border-input rounded bg-background text-foreground text-xs"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <input
-                              value={item.salesUnit}
-                              onChange={(e) =>
-                                handleItemChange(
-                                  idx,
-                                  "salesUnit",
-                                  e.target.value,
-                                )
-                              }
-                              className="w-12 px-1.5 py-1 border border-input rounded bg-background text-foreground text-xs"
-                            />
-                          </td>
-                          <td className="p-2 text-right">
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={item.unitPriceExclTax}
-                              onChange={(e) =>
-                                handleItemChange(
-                                  idx,
-                                  "unitPriceExclTax",
-                                  parseFloat(e.target.value) || 0,
-                                )
-                              }
-                              className="w-20 px-1.5 py-1 border border-input rounded bg-background text-foreground text-xs text-right"
-                            />
-                          </td>
-                          <td className="p-2 text-right">
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={item.taxRate}
-                              onChange={(e) =>
-                                handleItemChange(
-                                  idx,
-                                  "taxRate",
-                                  parseFloat(e.target.value) || 0,
-                                )
-                              }
-                              className="w-16 px-1.5 py-1 border border-input rounded bg-background text-foreground text-xs text-right"
-                            />
-                          </td>
-                          <td className="p-2 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                            ¥{item.unitPriceInclTax}
-                          </td>
-                          <td className="p-2 text-right">
-                            <input
-                              type="number"
-                              value={item.minQty || ""}
-                              onChange={(e) =>
-                                handleItemChange(
-                                  idx,
-                                  "minQty",
-                                  parseFloat(e.target.value) || null,
-                                )
-                              }
-                              placeholder="起订量"
-                              className="w-16 px-1.5 py-1 border border-input rounded bg-background text-foreground text-xs text-right"
-                            />
-                          </td>
-                          <td className="p-2 text-center">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveItem(idx)}
-                              className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            >
-                              <Trash2 className="size-3.5" />
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowModal(false)}
-                >
-                  取消
-                </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={loading}
-                  className="font-semibold"
-                >
-                  {loading ? "保存中..." : "创建报价单 (保存为草稿)"}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <CreateQuoteModal
+          customers={customers}
+          stores={stores}
+          onClose={() => setShowModal(false)}
+          onCreated={() => router?.refresh()}
+        />
       )}
-    </DataTable.Root>
+    </DataTable.Workspace>
   );
 }

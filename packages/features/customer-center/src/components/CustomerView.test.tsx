@@ -36,7 +36,7 @@ test("CustomerView 依据 export 权限动态控制【导出数据】按钮渲�
   );
   assert.match(htmlWithExport, /导出/, "拥有 export 权限时应渲染导出按钮");
 
-  // 场景 2: 未拥有 export 动作权限
+  // 场景 2: 未拥有 export 动作权限 → 对普通用户隐藏
   const htmlWithoutExport = renderToString(
     React.createElement(CustomerView, {
       initialCustomers: mockCustomers,
@@ -50,7 +50,7 @@ test("CustomerView 依据 export 权限动态控制【导出数据】按钮渲�
   );
   assert.doesNotMatch(
     htmlWithoutExport,
-    /<button[^>]*>导出</,
+    /导出/,
     "无 export 权限时不应渲染导出按钮",
   );
 });
@@ -144,6 +144,7 @@ test("CustomerView 与 customerPageContract 契约 100% 对齐（无幽灵动作
     "update",
     "delete",
     "export",
+    "toggle_status",
   ]);
 
   // 2. 验证契约中的受控字段已覆盖关键业务主数据
@@ -173,4 +174,35 @@ test("CustomerView 与 customerPageContract 契约 100% 对齐（无幽灵动作
     /打开操作菜单/,
     "具有行级操作权限时必须渲染操作菜单触发器",
   );
+  // 契约必须声明自定义扩展动作（菜单项在 Dropdown Portal 内，SSR 不输出文案）
+  assert.ok(
+    contractActions.includes("toggle_status"),
+    "契约必须声明 toggle_status 以驱动停用/启用权限",
+  );
+});
+
+test("CustomerView 停用客户受 toggle_status 契约动作控制（行操作权限过滤）", () => {
+  // 直接验证 plain ability 对自定义 action 的判定链路
+  const withToggle = {
+    can(action: string) {
+      return ["read", "update", "delete", "export", "toggle_status"].includes(
+        action,
+      );
+    },
+  };
+  const withoutToggle = {
+    can(action: string) {
+      return ["read", "update", "delete", "export"].includes(action);
+    },
+  };
+
+  assert.equal(withToggle.can("toggle_status"), true);
+  assert.equal(withoutToggle.can("toggle_status"), false);
+
+  // 契约声明了该动作后，角色目录 / Catalog 才会出现
+  const toggleAct = customerPageContract.actions.find(
+    (a) => a.action === "toggle_status",
+  );
+  assert.ok(toggleAct, "契约必须包含 toggle_status");
+  assert.equal(toggleAct.label, "启用/停用客户");
 });

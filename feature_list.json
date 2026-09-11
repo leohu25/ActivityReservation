@@ -223,6 +223,15 @@
       "status": "completed",
       "owner": "implementer",
       "evidence": "落地一体化白卡 Root/Header/FilterBar/InputGroup/ColumnSettings/Content(showIndex)/Pagination 数字页码/RowActions 平铺+折叠/FormModal 与 DetailDrawer 居中工业风弹窗/FormSection·FieldGrid·Banner；ui 包 tsc 0 错误、单测 27/27、全仓 13 包 check 全绿；erp-feature-dev 沉淀完整 DataTable 手册"
+    },
+    {
+      "id": "arch-authz-consolidation",
+      "name": "【架构重构】权限体系统一排查与收敛重构 (Authorization Consolidation)",
+      "description": "保持契约→manifest→角色树主链，系统性补齐旁路：权限下发改契约派生（消灭硬编码 action 白名单）、危险操作挂 action、owner 规则单点化、字段三态单点化、删除平行类型、customer 写路径 CASL 对齐、BA/CASL 分工 ADR、hide 约定贯穿契约与 skill。目标：角色可配 = 页面可见 = 后端可拦。",
+      "dependencies": ["ui-datatable-enterprise-framework"],
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "Phase 0–7 完成：PermissionCatalog.getDeclaredActions + permissions 契约派生；customer 契约 toggle_status 与停用按钮/Server Action 对齐；buildOwnerActionRules 单点与公开 resolveFieldPoliciesForSubject；tenant-admin 平行类型删除；resolveFieldAccess/isFieldAllowedForAction 字段三态单点；customer-center 全量 assertCustomerAbility；ADR-007；全仓 13/13 check、各包测试全绿（customer 12/12 含服务与守卫）"
     }
   ]
 }

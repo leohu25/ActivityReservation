@@ -1,9 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import type { FieldAccessMode } from "@chenrun/authorization";
+import {
+  isFieldAllowedForAction,
+  type FieldAccessMode,
+} from "@chenrun/authorization";
 import { Badge, Button, DataTable, type ColumnDef } from "@chenrun/ui";
-import { CheckCheck, PackageCheck, ShoppingCart, Download } from "lucide-react";
+import { CheckCheck, PackageCheck } from "lucide-react";
 import {
   ProcurementOrderField,
   ProcurementOrderStatus,
@@ -58,9 +61,7 @@ export function ProcurementOrderCenter({
         if (subject && subject !== procurementOrderPageContract.subject)
           return false;
         if (!permissions.actions.includes(action)) return false;
-        if (field && permissions.fieldPolicies?.[field] === "HIDDEN")
-          return false;
-        return true;
+        return isFieldAllowedForAction(permissions.fieldPolicies, action, field);
       },
     };
   }, [explicitAbility, permissions]);
@@ -293,56 +294,62 @@ export function ProcurementOrderCenter({
 
   return (
     <div className="space-y-4">
-      {/* 头部标题与新建/导出操作 */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-border/60">
-        <div>
-          <div className="flex items-center gap-2">
-            <ShoppingCart className="size-5 text-primary" />
-            <h1 className="text-lg font-bold text-foreground">采购订单中心</h1>
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            按钮依权限展示、敏感成本价依字段策略控制、查询结果遵循 PostgreSQL
-            动态数据范围下推，审核执行【禁止自审】红线。
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5">
-          <Badge variant="default" size="sm">
-            <PackageCheck className="size-3 mr-1" />
-            <span>CASL 动态守卫 + 物理库直连</span>
-          </Badge>
-          {canExport && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExport}
-              className="text-xs font-semibold gap-1"
-            >
-              <Download className="size-3.5" />
-              <span>导出数据</span>
-            </Button>
-          )}
-          {canCreate && (
-            <CreateOrderDialog
-              ability={ability}
-              fieldModes={createFieldModes}
-              departmentName={departmentName}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* 复合积木化 DataTable */}
-      <DataTable.Root
+      <DataTable.Workspace
         data={orders}
         columns={activeColumns}
         rowKey={(order: ProcurementOrderItem) => order.id}
         subject={procurementOrderPageContract.subject}
         ability={ability}
+        permissions={permissions}
+        title="采购订单中心"
+        description="按钮依权限展示、敏感成本价依字段策略控制、查询结果遵循 PostgreSQL 动态数据范围下推，审核执行【禁止自审】红线。"
+        showFilterBar={false}
+        showRefresh={false}
+        showCreate={false}
+        exportText="导出数据"
+        onExport={handleExport}
+        toolbarExtra={
+          <>
+            <Badge variant="default" size="sm">
+              <PackageCheck className="size-3 mr-1" />
+              <span>CASL 动态守卫 + 物理库直连</span>
+            </Badge>
+            {canCreate && (
+              <CreateOrderDialog
+                ability={ability}
+                fieldModes={createFieldModes}
+                departmentName={departmentName}
+              />
+            )}
+          </>
+        }
         total={orders.length}
       >
-        <DataTable.Content />
-        <DataTable.Pagination />
-      </DataTable.Root>
+        {/* 审核弹窗 */}
+        {selectedAuditOrder && (
+          <AuditOrderModal
+            order={selectedAuditOrder}
+            isOpen={Boolean(selectedAuditOrder)}
+            fieldVisibility={
+              fieldVisibility ?? {
+                orderNo: true,
+                supplierName: true,
+                quantity: true,
+                costPrice: true,
+                status: true,
+                auditComment: true,
+              }
+            }
+            onClose={() => setSelectedAuditOrder(null)}
+            onAudited={() => {
+              setSelectedAuditOrder(null);
+              if (typeof window !== "undefined") {
+                window.location.reload();
+              }
+            }}
+          />
+        )}
+      </DataTable.Workspace>
 
       {/* 底部 Prisma 动态下推查询调试说明 */}
       {activeOrgId && (
@@ -354,31 +361,6 @@ export function ProcurementOrderCenter({
             {JSON.stringify(sqlWhere, null, 2)}
           </pre>
         </div>
-      )}
-
-      {/* 审核弹窗 */}
-      {selectedAuditOrder && (
-        <AuditOrderModal
-          order={selectedAuditOrder}
-          isOpen={Boolean(selectedAuditOrder)}
-          fieldVisibility={
-            fieldVisibility ?? {
-              orderNo: true,
-              supplierName: true,
-              quantity: true,
-              costPrice: true,
-              status: true,
-              auditComment: true,
-            }
-          }
-          onClose={() => setSelectedAuditOrder(null)}
-          onAudited={() => {
-            setSelectedAuditOrder(null);
-            if (typeof window !== "undefined") {
-              window.location.reload();
-            }
-          }}
-        />
       )}
     </div>
   );

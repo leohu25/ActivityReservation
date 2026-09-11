@@ -179,7 +179,18 @@ export function DataTableRoot<TData>({
         if (!permissions.actions.includes(action)) {
           return false;
         }
-        if (field && permissions.fieldPolicies?.[field] === "HIDDEN") {
+        // 与 CASL 字段规则对齐：HIDDEN 剥离；READONLY 不可写
+        if (
+          field &&
+          permissions.fieldPolicies?.[field] === "HIDDEN"
+        ) {
+          return false;
+        }
+        if (
+          field &&
+          (action === "create" || action === "update") &&
+          permissions.fieldPolicies?.[field] === "READONLY"
+        ) {
           return false;
         }
         return true;

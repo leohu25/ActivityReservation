@@ -5,9 +5,33 @@ import {
   getFieldMode,
   getReadableFields,
   getEditableFields,
+  isFieldAllowedForAction,
   pickReadableFields,
   assertEditableFields,
+  resolveFieldAccess,
 } from "./field-policy";
+
+test("resolveFieldAccess 单点推导三态（显式策略优先，否则按动作）", () => {
+  assert.equal(resolveFieldAccess({ explicit: "READONLY" }), "READONLY");
+  assert.equal(resolveFieldAccess({ hasWrite: true, hasRead: true }), "EDITABLE");
+  assert.equal(resolveFieldAccess({ hasRead: true }), "READONLY");
+  assert.equal(resolveFieldAccess({}), "HIDDEN");
+});
+
+test("isFieldAllowedForAction 与 CASL 字段规则对齐", () => {
+  const policies = {
+    secret: "HIDDEN",
+    remark: "READONLY",
+    name: "EDITABLE",
+  } as const;
+
+  assert.equal(isFieldAllowedForAction(policies, "read", "secret"), false);
+  assert.equal(isFieldAllowedForAction(policies, "read", "remark"), true);
+  assert.equal(isFieldAllowedForAction(policies, "update", "remark"), false);
+  assert.equal(isFieldAllowedForAction(policies, "update", "name"), true);
+  assert.equal(isFieldAllowedForAction(policies, "read", "unlisted"), true);
+  assert.equal(isFieldAllowedForAction(policies, "read", undefined), true);
+});
 
 test("getFieldMode 正确推导 HIDDEN、READONLY 与 EDITABLE 三态属性", () => {
   const ability = defineAbility((can) => {

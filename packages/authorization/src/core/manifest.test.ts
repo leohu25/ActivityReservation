@@ -141,6 +141,16 @@ test("derivePermissionCatalog 生成强类型 PermissionCatalog 实例", () => {
         assert.equal(catalog.resolve("res.a1")?.subject, "SubjectA1");
 });
 
+test("PermissionCatalog.getDeclaredActions 按 Subject 返回契约声明的标准与自定义动作", () => {
+        const catalog = derivePermissionCatalog([mockFeatureA, mockFeatureB]);
+        assert.deepEqual(catalog.getDeclaredActions("SubjectA1"), [
+                "read",
+                "create",
+        ]);
+        // 未注册 Subject Fail-Closed
+        assert.deepEqual(catalog.getDeclaredActions("UnknownSubject"), []);
+});
+
 test("deriveNavSections 能够自动合并同 sectionId 的菜单与分组", () => {
         const sections = deriveNavSections([mockFeatureA, mockFeatureB]);
         assert.equal(sections.length, 1);

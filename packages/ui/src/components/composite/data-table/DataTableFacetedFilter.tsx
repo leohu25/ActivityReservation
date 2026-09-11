@@ -6,9 +6,9 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "../../primitives/popover";
-import { Button } from "../../primitives/button";
-import { Badge } from "../../primitives/badge";
+} from "../../shadcn/popover";
+import { Button } from "../../shadcn/button";
+import { Badge } from "../../shadcn/badge";
 import { cn } from "../../../lib/utils";
 
 export interface FacetedOption {

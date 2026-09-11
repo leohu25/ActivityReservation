@@ -1,13 +1,13 @@
 "use client";
 
 import React, { type ReactNode } from "react";
-import { Button } from "../../primitives/button";
+import { Button } from "../../shadcn/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "../../primitives/tooltip";
+} from "../../shadcn/tooltip";
 import { useDataTableContext } from "./DataTableContext";
 import { cn } from "../../../lib/utils";
 
@@ -19,7 +19,11 @@ export interface DataTableActionButtonProps
   subject?: string;
   /** 字段名校验 (如需判断对特定字段的修改权限) */
   field?: string;
-  /** 无权限时的展示策略：'hidden' 直接隐藏，'disabled-tooltip' 置灰并展示 Tooltip 提示 */
+  /**
+   * 无权限时的展示策略：
+   * - `hidden`（默认）：对普通用户按权限隐藏
+   * - `disabled-tooltip`：置灰并提示（调试或希望始终可见时使用）
+   */
   unauthorizedStrategy?: "hidden" | "disabled-tooltip";
   /** 无权限时 Tooltip 提示文案，默认 "暂无操作权限" */
   unauthorizedTooltip?: string;
@@ -29,6 +33,9 @@ export interface DataTableActionButtonProps
  * 列表动作按钮积木 (DataTableActionButton)
  * 深度集成 CASL 权限自动判定：
  * 自动从 DataTableContext 感知 subject 和 ability，无需在每个按钮上重复传参！
+ *
+ * 约定：页面直接声明按钮；是否展示由权限决定。不需要的按钮在页面上不写或显式关闭，
+ * 对应 action 也可从角色权限目录中移除。
  */
 export function DataTableActionButton({
   action,

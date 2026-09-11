@@ -2,14 +2,14 @@
 
 import React, { useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "../../primitives/button";
+import { Button } from "../../shadcn/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../primitives/select";
+} from "../../shadcn/select";
 import { useDataTableContext } from "./DataTableContext";
 import { cn } from "../../../lib/utils";
 

@@ -2,15 +2,15 @@
 
 import React, { useMemo } from "react";
 import { Columns3 } from "lucide-react";
-import { Button } from "../../primitives/button";
-import { Checkbox } from "../../primitives/checkbox";
+import { Button } from "../../shadcn/button";
+import { Checkbox } from "../../shadcn/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../../primitives/dropdown-menu";
+} from "../../shadcn/dropdown-menu";
 import { useDataTableContext } from "./DataTableContext";
 import { cn } from "../../../lib/utils";
 

@@ -8,8 +8,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "../../primitives/dialog";
-import { Button } from "../../primitives/button";
+} from "../../shadcn/dialog";
+import { Button } from "../../shadcn/button";
 import { cn } from "../../../lib/utils";
 
 export interface DataTableFormModalProps<TRecord = any> {

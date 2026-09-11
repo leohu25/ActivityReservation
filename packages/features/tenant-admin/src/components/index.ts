@@ -1,10 +1,15 @@
 export * from "./RolePermissionManager";
+export * from "./CreateRoleModal";
 export * from "./CompanySettingsView";
 export * from "./GeneralSettingsView";
 export * from "./SecuritySettingsView";
 export * from "./DepartmentView";
+export * from "./DepartmentFormModal";
 export * from "./PositionView";
+export * from "./PositionFormModal";
 export * from "./EmployeeView";
 export * from "./WorkbenchView";
 export * from "./AuthModal";
 export * from "./OrgSwitcher";
+
+

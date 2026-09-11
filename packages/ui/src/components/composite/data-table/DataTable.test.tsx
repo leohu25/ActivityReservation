@@ -346,7 +346,7 @@ test("DataTable.FormBanner: 渲染信息横幅", () => {
   assert.match(html, /按宸润采购字段维护/);
 });
 
-test("DataTable.Actions & ActionButton: 支持自定义顶部操作插槽与权限自动判定", () => {
+test("DataTable.Actions & ActionButton: 页面直接声明按钮，权限决定显隐", () => {
   const ability = {
     can(action: string, subject: string) {
       if (subject === "Material" && action === "create") return true;
@@ -365,24 +365,16 @@ test("DataTable.Actions & ActionButton: 支持自定义顶部操作插槽与权�
     >
       <DataTable.Toolbar>
         <DataTableActions>
-          {({ can }) => (
-            <>
-              {can("create") && (
-                <DataTableActionButton action="create">
-                  新建物料
-                </DataTableActionButton>
-              )}
-              <DataTableActionButton action="export">
-                导出报表
-              </DataTableActionButton>
-            </>
-          )}
+          <DataTableActionButton action="create">新建物料</DataTableActionButton>
+          <DataTableActionButton action="export">导出报表</DataTableActionButton>
         </DataTableActions>
       </DataTable.Toolbar>
     </DataTable.Root>,
   );
 
+  // 有权限：展示
   assert.match(html, /新建物料/);
+  // 无权限：默认隐藏（普通用户 Fail-Closed）
   assert.doesNotMatch(html, /导出报表/);
 });
 
@@ -445,6 +437,100 @@ test("DataTableRowActions: 默认平铺「详情/编辑」并折叠删除", () =
   assert.match(html, /详情/);
   assert.match(html, /编辑/);
   assert.match(html, /打开操作菜单/);
+});
+
+test("DataTableRowActions: 不传回调时默认仍展示内置操作（有权限无回调置灰）", () => {
+  const ability = {
+    can(action: string, subject: string) {
+      if (subject === "Material" && action === "read") return true;
+      if (subject === "Material" && action === "update") return true;
+      if (subject === "Material" && action === "delete") return true;
+      return false;
+    },
+  };
+
+  const html = renderToString(
+    <DataTable.Root
+      data={mockData}
+      columns={mockColumns}
+      rowKey={(item) => item.id}
+      subject="Material"
+      ability={ability}
+    >
+      <DataTableRowActions record={mockData[0]} />
+    </DataTable.Root>,
+  );
+
+  assert.match(html, /详情/);
+  assert.match(html, /编辑/);
+  assert.match(html, /打开操作菜单/);
+  assert.match(html, /opacity-50/);
+});
+
+test("DataTableRowActions: hideView/hideEdit/hideDelete 支持按需隐藏", () => {
+  const ability = {
+    can(action: string, subject: string) {
+      if (subject === "Material" && action === "read") return true;
+      if (subject === "Material" && action === "update") return true;
+      if (subject === "Material" && action === "delete") return true;
+      return false;
+    },
+  };
+
+  const html = renderToString(
+    <DataTable.Root
+      data={mockData}
+      columns={mockColumns}
+      rowKey={(item) => item.id}
+      subject="Material"
+      ability={ability}
+    >
+      <DataTableRowActions
+        record={mockData[0]}
+        onView={() => {}}
+        onEdit={() => {}}
+        onDelete={() => {}}
+        hideView
+        hideDelete
+      />
+    </DataTable.Root>,
+  );
+
+  assert.doesNotMatch(html, /详情/);
+  assert.match(html, /编辑/);
+  assert.doesNotMatch(html, /打开操作菜单/);
+});
+
+test("DataTableRowActions: 无 delete 权限时默认隐藏删除入口", () => {
+  const ability = {
+    can(action: string, subject: string) {
+      if (subject === "Material" && action === "read") return true;
+      if (subject === "Material" && action === "update") return true;
+      return false;
+    },
+  };
+
+  const html = renderToString(
+    <DataTable.Root
+      data={mockData}
+      columns={mockColumns}
+      rowKey={(item) => item.id}
+      subject="Material"
+      ability={ability}
+    >
+      <DataTableRowActions
+        record={mockData[0]}
+        onView={() => {}}
+        onEdit={() => {}}
+        onDelete={() => {}}
+      />
+    </DataTable.Root>,
+  );
+
+  assert.match(html, /详情/);
+  assert.match(html, /编辑/);
+  assert.doesNotMatch(html, /打开操作菜单/);
+  assert.doesNotMatch(html, /删除记录/);
 });
 
 test("DataTable.AuthorizedField: 在 DataTable 内部自动继承父级权限与实体，且支持三态", () => {
@@ -510,4 +596,108 @@ test("DataTable.AuthGuard: 依据 CASL 权限自动控制自定义插槽块的�
 
   assert.match(html, /批量审核专区/);
   assert.doesNotMatch(html, /高危清库操作/);
+});
+
+test("DataTable.Workspace: 默认全量展示刷新/导出/列设置/新增与关键字筛选", () => {
+  const ability = {
+    can(action: string, subject: string) {
+      if (subject === "Material" && (action === "export" || action === "create"))
+        return true;
+      return false;
+    },
+  };
+
+  const html = renderToString(
+    <DataTable.Workspace
+      data={mockData}
+      columns={mockColumns}
+      rowKey={(item) => item.id}
+      subject="Material"
+      ability={ability}
+      title="物料档案"
+      total={mockData.length}
+      statusOptions={[
+        { value: "IN_STOCK", label: "有货" },
+        { value: "OUT_OF_STOCK", label: "缺货" },
+      ]}
+    />,
+  );
+
+  assert.match(html, /物料档案/);
+  assert.match(html, /刷新/);
+  assert.match(html, /导出/);
+  assert.match(html, /列设置/);
+  assert.match(html, /新增/);
+  assert.match(html, /关键字/);
+  assert.match(html, /物料名称/);
+  assert.match(html, /共/);
+});
+
+test("DataTable.Workspace: show* 开关可关闭默认控件", () => {
+  const html = renderToString(
+    <DataTable.Workspace
+      data={mockData}
+      columns={mockColumns}
+      rowKey={(item) => item.id}
+      title="精简页"
+      showRefresh={false}
+      showExport={false}
+      showCreate={false}
+      showColumnSettings={false}
+      showFilterBar={false}
+      showPagination={false}
+    />,
+  );
+
+  assert.match(html, /精简页/);
+  assert.doesNotMatch(html, /刷新/);
+  assert.doesNotMatch(html, /导出/);
+  assert.doesNotMatch(html, /新增/);
+  assert.doesNotMatch(html, /列设置/);
+  assert.doesNotMatch(html, /关键字/);
+});
+
+test("DataTable.FormFields: 按 Schema 循环渲染字段", () => {
+  const html = renderToString(
+    <DataTable.FormFields
+      fields={[
+        {
+          name: "name",
+          label: "名称",
+          type: "text",
+          required: true,
+          placeholder: "请输入名称",
+        },
+        {
+          name: "status",
+          label: "状态",
+          type: "select",
+          options: [
+            { value: "A", label: "启用" },
+            { value: "B", label: "停用" },
+          ],
+        },
+        {
+          name: "enabled",
+          label: "启用开关",
+          type: "switch",
+          hint: "关闭后不可用",
+        },
+        {
+          name: "agree",
+          label: "已阅读协议",
+          type: "checkbox",
+        },
+      ]}
+      values={{ name: "", status: "A", enabled: true, agree: false }}
+      onChange={() => {}}
+    />,
+  );
+
+  assert.match(html, /名称/);
+  assert.match(html, /状态/);
+  assert.match(html, /请输入名称/);
+  assert.match(html, /启用/);
+  assert.match(html, /启用开关/);
+  assert.match(html, /已阅读协议/);
 });

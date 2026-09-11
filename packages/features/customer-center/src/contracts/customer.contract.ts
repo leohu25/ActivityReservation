@@ -79,6 +79,8 @@ export const customerPageContract: FeaturePagePermissionDescriptor = {
     },
     { action: StandardAction.DELETE, label: "删除客户" },
     { action: StandardAction.EXPORT, label: "导出数据" },
+    /** 页面自定义扩展动作：启用/停用客户（非通用 CRUD，由契约显式声明） */
+    { action: "toggle_status", label: "启用/停用客户" },
   ],
   configurableFields: customerConfigurableFields.map((f) => ({
     field: f.field,
