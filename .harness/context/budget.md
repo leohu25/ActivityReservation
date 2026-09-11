@@ -21,6 +21,11 @@
 2. **测试输出只报异常**：各包 `test` 使用 `scripts/fail-only-reporter.mjs`；全绿仅 `ok N/N`，回执/progress 只记该行或失败摘要，禁止粘贴成功用例明细。
 3. **证据一行化**：`feature_list.json` 的 `evidence` 与 progress 验证记录控制在一行摘要（命令 + N/N + commit），详情指针到 `verification.md`。
 4. **上下文按需加载**：优先 grep 定位后再精读；禁止整目录 `ls`/通读 README 当背景。
+5. **脚本默认静默 (Fail-Only Output)**：编写任何自动化脚本（门禁、校验、同步、迁移、生成器）时——
+   - **成功默认零/极少输出**（至多一行摘要）；
+   - **失败才展开**原因、路径与修复指引；
+   - 例外仅限：用户显式交互的状态报告（如 `status.sh`/`init.sh` 的就绪清单）、关键副作用（自动扩围、破坏性操作）。
+   - 推荐模式：日志捕获 + 成功吞掉；参考 `scripts/verify.sh` 的 `run_quiet`。`VERBOSE=1` 可强制展开。
 
 ---
 

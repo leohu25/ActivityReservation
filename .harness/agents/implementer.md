@@ -18,3 +18,5 @@
    - 实现业务逻辑的同时必须编写单元测试，跑通 Feature 专属测试后向 Coordinator 回执交付。
 4. **技术债识别原则**：
    - 发现范围外历史代码缺陷，严禁借机顺手重构，必须登记至 `.harness/memory/technical-debt.md`。
+5. **脚本静默原则**：
+   - 编写/修改自动化脚本时默认 Fail-Only：成功极少或不输出，失败才展开详情（见 `.harness/context/budget.md` §二.5）。

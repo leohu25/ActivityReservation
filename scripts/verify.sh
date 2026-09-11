@@ -17,8 +17,8 @@ run_quiet() {
   local log
   log="$(mktemp)"
   if "$@" >"$log" 2>&1; then
-    if grep -qE "Auto-Recorded|告警通过并自动记录" "$log"; then
-      grep -E "Auto-Recorded|告警通过并自动记录" "$log" | sed 's/^/  /'
+    if grep -q "Auto-Recorded" "$log"; then
+      grep "Auto-Recorded" "$log" | sed 's/^/  /'
     fi
     echo -e "• ${label}: ${GREEN}通过${NC}"
     rm -f "$log"
