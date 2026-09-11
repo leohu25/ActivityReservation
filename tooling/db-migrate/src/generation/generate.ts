@@ -152,7 +152,15 @@ export function generateMigration(input: {
   const hasCommentsChange = Boolean(commentsDiffSql.trim());
 
   if (!hasStructuralChange && !hasCommentsChange) {
-    throw new Error(`No ${input.scope} schema change was detected`);
+    const targetFile =
+      input.scope === "platform"
+        ? "packages/db-control/prisma/schema.prisma"
+        : "packages/db-tenant/prisma/schema.prisma (或 packages/features/*/prisma/schema.prisma)";
+    throw new Error(
+      `\x1b[31m✗ [Schema No-Op] 未检测到 [${input.scope}] 的 Schema 结构或注释变更\x1b[0m\n` +
+        `    \x1b[33m• 目标文件:\x1b[0m ${targetFile}\n` +
+        `    \x1b[90m> 请先在上述 Schema 中修改模型/字段或使用 --scope tenant，保存后再执行 generate。\x1b[0m`,
+    );
   }
 
   let sql = "";

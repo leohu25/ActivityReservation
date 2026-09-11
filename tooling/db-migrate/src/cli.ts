@@ -155,7 +155,15 @@ async function main(): Promise<void> {
   throw new Error(`Unknown command: ${command}`);
 }
 
-main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : String(error));
-  process.exit(1);
-});
+main()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch((error: unknown) => {
+    if (error instanceof Error) {
+      process.stderr.write(`${error.message}\n`);
+    } else {
+      process.stderr.write(`${String(error)}\n`);
+    }
+    process.exit(1);
+  });

@@ -34,7 +34,7 @@ tooling/db-migrate/
 ├── prisma.config.ts          # 仅用于开发阶段调用 Prisma CLI 的数据源配置文件
 ├── README.md                 # 架构设计、目录定位与日常操作指南 (本文件)
 │
-├── baselines/                # 各作用域的完整基线快照（新库开通专用）
+├── baselines/                # 【开发期对照源】各作用域的完整基线快照（文件工件，给 CLI Diff 用）
 │   ├── platform/             # 平台库基线
 │   │   └── <version>/
 │   │       ├── baseline.sql  # 平台库全量建表 DDL
@@ -55,8 +55,8 @@ tooling/db-migrate/
 │           ├── manifest.json # 包含风险标记与审批元数据的清单
 │           └── schema.snapshot.prisma # 本次变更对应的快照
 │
-├── generated/                # 编译产物目录 (纳入版本控制)
-│   └── runtime-catalog.ts    # 预先编译的只读 Catalog 常量，直接供 Next.js 服务端引用
+├── generated/                # 【线上运行时代码】编译产物目录 (纳入版本控制)
+│   └── runtime-catalog.ts    # 预编译为 TypeScript 常量的总账 (包含最新 Baseline + 历次增量 SQL)
 │
 └── src/                      # 源码实现
     ├── cli.ts                # 命令行调度入口 (pnpm db:migrate:*)
@@ -83,6 +83,35 @@ tooling/db-migrate/
         ├── tenant-runner.ts  # 带 advisory lock 锁保护的多租户执行升级引擎
         ├── provisioner.ts    # 租户物理库自动化原子开通、基线建表与 Seed 初始化器
         └── service.ts        # 提供给应用层的总控 Facade (DatabaseMigrationService)
+```
+
+### 💡 核心认知：`baselines/` 与 `runtime-catalog.ts` 的区别与联系
+
+很多开发者初次接触时会有疑问：**它们是否是同一个东西？**
+
+**结论：它们本质上是同一批迁移数据的“两种不同生命周期形态”。**
+
+| 维度 | `baselines/` (工件目录) | `generated/runtime-catalog.ts` (代码文件) |
+| :--- | :--- | :--- |
+| **存在形态** | 目录结构，包含磁盘文件 (`.sql`、`schema.prisma`、`manifest.json`) | 单个只读 TypeScript 代码文件，导出常量对象 |
+| **适用阶段** | **开发态 (Dev-time / Build-time)** | **运行态 (Runtime / Production)** |
+| **主要用途** | 供 CLI 工具（如 `prisma migrate diff`）读取，用于对比当前代码与基线的差异、生成增量迁移。 | 供生产环境（Node.js / Next.js 服务端）直接 `import` 调用，作为建表与升级的执行总账。 |
+| **包含内容** | 仅包含对应作用域的**初始全量大底子快照**。 | **全量汇总**：包含 Baseline 完整 SQL **+** 后续所有增量 Migrations 的 SQL。 |
+| **为什么转 TS** | 磁盘文件容易在 Docker/Serverless 打包中丢失路径；开发工具解析语法需要文件。 | 编译为 TS 常量可直接打入 Bundle，**零文件 I/O、无路径脆弱性、免装 Prisma CLI**。 |
+
+**两者的联动链路**：
+
+```text
+开发者修改 Prisma Schema
+       │
+       ▼ (CLI 开发态对比差异)
+   [baselines/] (静态文件快照对照物)
+       │
+       ▼ (产出增量目录)
+   [migrations/] (每次版本变更的 migration.sql)
+       │
+       ▼ (自动聚合编译入库: pnpm db:migrate catalog)
+[generated/runtime-catalog.ts] ──> 供 Next.js / Better Auth / 租户开通服务直接内存引用
 ```
 
 ---
