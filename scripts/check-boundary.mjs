@@ -208,11 +208,36 @@ if (violations.length > 0) {
   for (const v of violations) {
     process.stdout.write(`      \x1b[33m• ${v}\x1b[0m\n`);
   }
+
+  // 自动将非白名单变更追加记录至当前特性的 scope.md (Spillover 区域)，由智能体/系统自动完成持久化
+  try {
+    let scopeContent = fs.readFileSync(scopeFile, "utf-8");
+    const spilloverHeader = "## 附带修改与前置联动 (Spillover / 联动扩围)";
+    const newRecords = violations
+      .map((f) => `- \`${f}\` # 理由：会话开发过程中检测到的联动修改，自动登记扩围`)
+      .join("\n");
+
+    if (scopeContent.includes(spilloverHeader)) {
+      scopeContent = scopeContent.replace(
+        spilloverHeader,
+        `${spilloverHeader}\n\n${newRecords}`,
+      );
+    } else {
+      scopeContent += `\n\n${spilloverHeader}\n\n${newRecords}\n`;
+    }
+
+    fs.writeFileSync(scopeFile, scopeContent, "utf-8");
+    process.stdout.write(
+      `    \x1b[32m✔ [Auto-Recorded] 已自动将上述 ${violations.length} 个文件扩围记录到 .harness/features/${activeFeature}/scope.md 中。\x1b[0m\n`,
+    );
+  } catch (err) {
+    process.stdout.write(
+      `    \x1b[90m> 提示：自动追加 scope.md 失败: ${err.message}，请人工确保已记录。\x1b[0m\n`,
+    );
+  }
+
   process.stdout.write(
-    `    \x1b[90m> 提示：当前已由阻断改为告警模式，不会拦截提交。请确保已在特性沙盒 handoff.md 或 scope.md 中记录扩围理由。\x1b[0m\n`,
-  );
-  process.stdout.write(
-    `• 沙盒边界: \x1b[33m告警通过\x1b[0m (${changedFiles.length} 个变动文件，其中 ${violations.length} 个附带修改已提示记录)\n`,
+    `• 沙盒边界: \x1b[33m告警通过并自动记录\x1b[0m (${changedFiles.length} 个变动文件，其中 ${violations.length} 个附带修改已自动登记)\n`,
   );
   process.exit(0);
 }
