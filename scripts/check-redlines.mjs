@@ -198,6 +198,6 @@ if (violations.length > 0) {
 }
 
 process.stdout.write(
-  `• 红线扫描: \x1b[32m通过\x1b[0m (${allFiles.length} 个源码文件无违规)\n`,
+  `• 红线扫描: \x1b[32m通过\x1b[0m (${allFiles.length} files)\n`,
 );
 process.exit(0);

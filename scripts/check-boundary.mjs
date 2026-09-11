@@ -224,9 +224,9 @@ for (const file of changedFiles) {
   violations.push(file);
 }
 
-if (spilloverHits.length > 0) {
+if (spilloverHits.length > 0 && process.env.VERBOSE === "1") {
   process.stdout.write(
-    `  ℹ 检测到 ${spilloverHits.length} 个合法附带联动修改 (Spillover)，请确保已在沙盒 handoff.md 记录理由。\n`,
+    `  ℹ 检测到 ${spilloverHits.length} 个合法附带联动修改 (Spillover)\n`,
   );
 }
 

@@ -9,6 +9,27 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+# 静默执行：成功只打一行标签；失败才展开完整日志
+# 成功时若日志含自动扩围等关键事件，则透出该行
+run_quiet() {
+  local label="$1"
+  shift
+  local log
+  log="$(mktemp)"
+  if "$@" >"$log" 2>&1; then
+    if grep -qE "Auto-Recorded|告警通过并自动记录" "$log"; then
+      grep -E "Auto-Recorded|告警通过并自动记录" "$log" | sed 's/^/  /'
+    fi
+    echo -e "• ${label}: ${GREEN}通过${NC}"
+    rm -f "$log"
+    return 0
+  fi
+  echo -e "• ${label}: ${RED}失败${NC}"
+  cat "$log"
+  rm -f "$log"
+  return 1
+}
+
 echo -e "${BLUE}>>> 门禁验证自检${NC}"
 
 # 1. 元数据校验
@@ -20,28 +41,24 @@ node -e "JSON.parse(require('fs').readFileSync('${WORKSPACE_ROOT}/feature_list.j
   echo -e "• 元数据  : ${RED}feature_list.json 非法${NC}"
   exit 1
 }
-echo -e "• 元数据  : ${GREEN}Harness 账本合法${NC}"
+echo -e "• 元数据  : ${GREEN}合法${NC}"
 
-# 2. 检查激活特性沙盒与修改边界
-MEMBER_FILE="${WORKSPACE_ROOT}/member.local.md"
-if [ -f "${MEMBER_FILE}" ]; then
-  ACTIVE_FEAT=$(grep 'active_feature_id:' "${MEMBER_FILE}" | head -n 1 | awk -F '"' '{print $2}')
-  if [ -n "$ACTIVE_FEAT" ] && [ -d "${WORKSPACE_ROOT}/.harness/features/${ACTIVE_FEAT}" ]; then
-    echo -e "• 特性沙盒: ${GREEN}${ACTIVE_FEAT} 就绪${NC}"
-  else
-    echo -e "• 特性沙盒: ${YELLOW}${ACTIVE_FEAT:-none}${NC}"
+# 2. 特性沙盒与边界
+if [ -f "${WORKSPACE_ROOT}/member.local.md" ]; then
+  ACTIVE_FEAT=$(grep 'active_feature_id:' "${WORKSPACE_ROOT}/member.local.md" | head -n 1 | awk -F '"' '{print $2}')
+  if [ -n "$ACTIVE_FEAT" ]; then
+    echo -e "• 特性沙盒: ${GREEN}${ACTIVE_FEAT}${NC}"
   fi
 fi
-node "${WORKSPACE_ROOT}/scripts/check-boundary.mjs"
+run_quiet "沙盒边界" node "${WORKSPACE_ROOT}/scripts/check-boundary.mjs"
 
-# 3. 架构红线与安全策略扫描
-node "${WORKSPACE_ROOT}/scripts/check-redlines.mjs"
+# 3. 架构红线
+run_quiet "红线扫描" node "${WORKSPACE_ROOT}/scripts/check-redlines.mjs"
 
-# 4. 构建/类型检查 (若项目已安装)
+# 4. 类型检查
 if [ -f "${WORKSPACE_ROOT}/package.json" ] && [ -d "${WORKSPACE_ROOT}/node_modules" ]; then
   if grep -q "\"check\"" "${WORKSPACE_ROOT}/package.json"; then
-    pnpm --silent check
-    echo -e "• 类型扫描: ${GREEN}通过${NC}"
+    run_quiet "类型扫描" pnpm --silent check
   fi
 else
   echo -e "• 代码检查: ${YELLOW}跳过 (尚未初始化 node_modules)${NC}"
