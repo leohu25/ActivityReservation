@@ -40,6 +40,9 @@ forbidden_patterns:
 
 ## 附带修改与前置联动 (Spillover / 联动扩围)
 
+- `packages/ui/src/Sidebar.test.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
+- `packages/ui/src/components/ThemeToggle.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
+
 - `.harness/features/arch-authz-consolidation/context.md` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
 - `.harness/features/arch-authz-consolidation/handoff.md` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
 - `.harness/features/arch-authz-consolidation/progress.md` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
