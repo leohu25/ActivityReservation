@@ -160,13 +160,13 @@ export function ControlLogin(): React.JSX.Element {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@chenrun.com"
+              placeholder="admin@qq.com"
               className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
             />
             <p className="mt-1.5 text-[11px] text-slate-400">
               提示：默认平台超管邮箱为{" "}
               <code className="font-mono text-blue-600 font-semibold">
-                admin@chenrun.com
+                admin@qq.com
               </code>
             </p>
           </div>

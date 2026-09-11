@@ -36,6 +36,8 @@
 - `packages/features/tenant-admin/README.md` # 理由：各包 README 自解释完善
 - `packages/shared/README.md` # 理由：各包 README 自解释完善
 - `packages/ui/README.md` # 理由：各包 README 自解释完善
+- `packages/features/tenant-admin/src/services/tenant-settings-service.test.ts` # 理由：统一默认超管邮箱为 admin@qq.com 后的单测对齐
+- `packages/shared/src/index.test.ts` # 理由：统一默认超管邮箱为 admin@qq.com 后的脱敏单测对齐
 
 ## 范围说明
 

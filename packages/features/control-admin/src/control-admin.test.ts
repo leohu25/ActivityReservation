@@ -20,21 +20,21 @@ import type {
 } from "@chenrun/db-migrate";
 
 test("控制平面超管鉴权判定与断言守卫", () => {
-  // 1. 默认邮箱白名单包含 admin@chenrun.com
-  assert.equal(isControlAdminEmail("admin@chenrun.com"), true);
-  assert.equal(isControlAdminEmail("ADMIN@CHENRUN.COM"), true); // 大小写不敏感
+  // 1. 默认邮箱白名单包含 admin@qq.com
+  assert.equal(isControlAdminEmail("admin@qq.com"), true);
+  assert.equal(isControlAdminEmail("admin@qq.com"), true); // 大小写不敏感
   assert.equal(isControlAdminEmail("user@example.com"), false);
   assert.equal(isControlAdminEmail(null), false);
   assert.equal(isControlAdminEmail(""), false);
 
   // 2. checkIsControlAdmin
-  assert.equal(checkIsControlAdmin({ email: "admin@chenrun.com" }), true);
+  assert.equal(checkIsControlAdmin({ email: "admin@qq.com" }), true);
   assert.equal(checkIsControlAdmin({ email: "normal@tenant.com" }), false);
   assert.equal(checkIsControlAdmin(null), false);
 
   // 3. assertControlAdmin
   assert.doesNotThrow(() => {
-    assertControlAdmin({ email: "admin@chenrun.com" });
+    assertControlAdmin({ email: "admin@qq.com" });
   });
 
   assert.throws(
@@ -56,12 +56,12 @@ test("控制平面超管鉴权判定与断言守卫", () => {
     delete process.env.PLATFORM_ADMIN_EMAILS;
     process.env.CONTROL_BOOTSTRAP_ADMIN_EMAIL = "bootstrap@chenrun.com";
     assert.equal(isControlAdminEmail("bootstrap@chenrun.com"), true);
-    assert.equal(isControlAdminEmail("admin@chenrun.com"), false);
+    assert.equal(isControlAdminEmail("admin@qq.com"), false);
 
     // 5. 生产环境且未配置任何邮箱时，严格 Fail-Closed
     delete process.env.CONTROL_BOOTSTRAP_ADMIN_EMAIL;
     process.env.NODE_ENV = "production";
-    assert.equal(isControlAdminEmail("admin@chenrun.com"), false);
+    assert.equal(isControlAdminEmail("admin@qq.com"), false);
     assert.equal(isControlAdminEmail("any@domain.com"), false);
   } finally {
     if (originalAdminEmails === undefined) {
@@ -286,7 +286,7 @@ test("ControlAdminService 租户开通逻辑、初始凭证、预置角色与状
 
   const service = new ControlAdminService(fakePrisma);
 
-  const superAdmin = { email: "admin@chenrun.com" };
+  const superAdmin = { email: "admin@qq.com" };
   const normalUser = { email: "unauthorized@tenant.com" };
 
   // 1. 非超管尝试开通应被拦截
@@ -520,7 +520,7 @@ test("ControlAdminService 开通租户串联物理库创建、基线迁移与数
     new TenantDatabaseSeeder(),
   );
 
-  const superAdmin = { email: "admin@chenrun.com" };
+  const superAdmin = { email: "admin@qq.com" };
   const input: ProvisionTenantInput = {
     name: "新开通制造工厂",
     slug: "factory-chenrun",

@@ -103,7 +103,7 @@ test("TenantSettingsService 读写企业资料 (CompanyProfile) 与平台 Organi
     creditCode: "914403001922038216",
     legalPerson: "郭顺顺",
     contactPhone: "13800138000",
-    contactEmail: "admin@chenrun.com",
+    contactEmail: "admin@qq.com",
     address: "浙江省杭州市高新数智产业园A座",
     currency: "CNY",
     timezone: "Asia/Shanghai",

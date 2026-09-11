@@ -172,7 +172,7 @@ test("企业级格式化工具：货币、百分比、日期与容量", () => {
 
 test("敏感数据脱敏：手机号、邮箱、身份证与姓名", () => {
   assert.equal(maskPhone("13812345678"), "138****5678");
-  assert.equal(maskEmail("admin@chenrun.com"), "a***@chenrun.com");
+  assert.equal(maskEmail("admin@qq.com"), "a***@qq.com");
   assert.equal(maskIdCard("330102199001011234"), "330102********1234");
   assert.equal(maskBankCard("6222021234567890"), "6222 **** **** 7890");
   assert.equal(maskName("张三"), "张*");

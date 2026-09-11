@@ -8,7 +8,7 @@
  * 优先级：
  * 1. 环境变量 CONTROL_ADMIN_EMAILS / PLATFORM_ADMIN_EMAILS
  * 2. 回退检查环境变量 CONTROL_BOOTSTRAP_ADMIN_EMAIL (Day 0 超管)
- * 3. 开发环境缺省包含 admin@chenrun.com (生产环境未显式配置时严格返回空，Fail-Closed)
+ * 3. 开发环境缺省包含 admin@qq.com (生产环境未显式配置时严格返回空，Fail-Closed)
  */
 export function getControlAdminEmails(): string[] {
  const envEmails =
@@ -30,7 +30,7 @@ export function getControlAdminEmails(): string[] {
   return [];
  }
 
- return ["admin@chenrun.com"];
+ return ["admin@qq.com"];
 }
 
 /**

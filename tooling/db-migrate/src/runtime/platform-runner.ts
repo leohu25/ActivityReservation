@@ -224,7 +224,9 @@ export class PlatformMigrationRunner {
     ) {
       throw new DatabaseInitializationError(
         "SEED_CONFIGURATION_MISSING",
-        "Platform Day 0 requires bootstrap admin email, name, and a password of at least 12 characters",
+        `\x1b[31m✗ [Platform Day 0] 控制台空库初始化需要配置平台初始超级管理员账号\x1b[0m\n` +
+          `    \x1b[33m• 缺少环境变量:\x1b[0m CONTROL_BOOTSTRAP_ADMIN_EMAIL, CONTROL_BOOTSTRAP_ADMIN_NAME, CONTROL_BOOTSTRAP_ADMIN_PASSWORD\n` +
+          `    \x1b[90m> 请在 apps/control/.env.local 中配置上述变量（密码至少 12 位），参考 apps/control/.env.example。\x1b[0m`,
       );
     }
     return input;
