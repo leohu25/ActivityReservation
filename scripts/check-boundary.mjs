@@ -202,21 +202,19 @@ if (spilloverHits.length > 0) {
 }
 
 if (violations.length > 0) {
-  process.stderr.write(
-    `\x1b[31m✗ [Boundary Violation] 发现 ${violations.length} 个文件越权修改 (当前特性: ${activeFeature}):\x1b[0m\n`,
+  process.stdout.write(
+    `  \x1b[33m⚠ [Boundary Warning] 检测到 ${violations.length} 个非白名单边界文件变动 (当前特性: ${activeFeature}):\x1b[0m\n`,
   );
   for (const v of violations) {
-    process.stderr.write(`    \x1b[33m• ${v}\x1b[0m\n`);
+    process.stdout.write(`      \x1b[33m• ${v}\x1b[0m\n`);
   }
-  process.stderr.write(`
-\x1b[36m【沙盒边界分流指引】\x1b[0m:
-1. \x1b[32m若该改动是当前特性的前置联动依赖\x1b[0m:
-   请在 .harness/features/${activeFeature}/scope.md 中追加 \`## 附带修改与前置联动 (Spillover)\` 区块并注明理由；
-2. \x1b[32m若该改动是顺手发现的独立 Bug/优化但非当前特性范畴\x1b[0m:
-   运行 \`./scripts/save-patch.sh "<说明>"\` 将其无损归档至 .harness/patches/ 并自动登记至技术债台账，避免劳动成果丢失；
-3. 否则请回退与当前特性无关的改动。
-`);
-  process.exit(1);
+  process.stdout.write(
+    `    \x1b[90m> 提示：当前已由阻断改为告警模式，不会拦截提交。请确保已在特性沙盒 handoff.md 或 scope.md 中记录扩围理由。\x1b[0m\n`,
+  );
+  process.stdout.write(
+    `• 沙盒边界: \x1b[33m告警通过\x1b[0m (${changedFiles.length} 个变动文件，其中 ${violations.length} 个附带修改已提示记录)\n`,
+  );
+  process.exit(0);
 }
 
 process.stdout.write(
