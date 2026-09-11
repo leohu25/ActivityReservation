@@ -7,6 +7,12 @@ import {
   type ControlPrismaClient,
 } from "@chenrun/db-control";
 import {
+  getMigrationCatalog,
+  platformBootstrapAdminFromEnv,
+  PlatformMigrationRunner,
+  seedPlatformBootstrapAdmin,
+} from "@chenrun/db-migrate/platform";
+import {
   createTrustedTenantContextResolver,
   type TrustedSessionReader,
 } from "../context/trusted-tenant-context";
@@ -59,6 +65,31 @@ export function createServerAuth(options: ServerAuthOptions) {
 export type ServerAuthRuntime = ReturnType<typeof createServerAuth>;
 
 let singleton: ServerAuthRuntime | undefined;
+let ensurePromise: Promise<void> | undefined;
+
+/** Ensures the platform baseline exists before any Better Auth database query. */
+export async function ensureServerAuthDatabase(
+  databaseUrl = process.env.CONTROL_DATABASE_URL,
+): Promise<void> {
+  if (!databaseUrl) {
+    throw new Error("CONTROL_DATABASE_URL is required");
+  }
+  if (!ensurePromise) {
+    const runner = new PlatformMigrationRunner(
+      databaseUrl,
+      getMigrationCatalog("platform"),
+      { seedBootstrapAdmin: seedPlatformBootstrapAdmin },
+    );
+    ensurePromise = runner
+      .ensureInitialized(platformBootstrapAdminFromEnv())
+      .then(() => undefined)
+      .catch((error) => {
+        ensurePromise = undefined;
+        throw error;
+      });
+  }
+  return ensurePromise;
+}
 
 /** Lazily initializes server auth so build-time module evaluation needs no secrets. */
 export function getServerAuthRuntime(
@@ -90,6 +121,14 @@ export function getServerAuth(): ServerAuthRuntime["auth"] {
   return getServerAuthRuntime().auth;
 }
 
+export async function getEnsuredServerAuthRuntime(
+  options?: ServerAuthOptions,
+): Promise<ServerAuthRuntime> {
+  const databaseUrl = options?.databaseUrl ?? process.env.CONTROL_DATABASE_URL;
+  await ensureServerAuthDatabase(databaseUrl);
+  return getServerAuthRuntime(options);
+}
+
 /** Resolves tenant context from Better Auth's signed server session only. */
 export async function getCurrentTenantContext(
   headers: Headers,
@@ -108,6 +147,7 @@ export async function getCurrentTenantContext(
 export async function closeServerAuth(): Promise<void> {
   const runtime = singleton;
   singleton = undefined;
+  ensurePromise = undefined;
   if (runtime) {
     await runtime.prisma.$disconnect();
   }

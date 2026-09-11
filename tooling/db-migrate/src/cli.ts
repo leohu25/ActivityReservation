@@ -10,6 +10,12 @@ import {
   generateMigration,
   generateRuntimeCatalog,
 } from "./generation/generate";
+import { getMigrationCatalog } from "./runtime/catalog";
+import {
+  platformBootstrapAdminFromEnv,
+  seedPlatformBootstrapAdmin,
+} from "./runtime/platform-bootstrap";
+import { PlatformMigrationRunner } from "./runtime/platform-runner";
 
 function parseArgs(args: readonly string[]): {
   readonly command: string;
@@ -65,6 +71,7 @@ function help(): void {
       [--allow-destructive --reason <text> --data-plan <text> --rollback-plan <text>]
   db-migrate catalog
   db-migrate check
+  db-migrate ensure-platform
 `);
 }
 
@@ -123,6 +130,26 @@ async function main(): Promise<void> {
   if (command === "check") {
     checkMigrationArtifacts(workspaceRoot);
     console.log("Migration artifacts are consistent");
+    return;
+  }
+  if (command === "ensure-platform") {
+    const controlDatabaseUrl = process.env.CONTROL_DATABASE_URL;
+    if (!controlDatabaseUrl) {
+      throw new Error("CONTROL_DATABASE_URL is required");
+    }
+    const runner = new PlatformMigrationRunner(
+      controlDatabaseUrl,
+      getMigrationCatalog("platform"),
+      { seedBootstrapAdmin: seedPlatformBootstrapAdmin },
+    );
+    const result = await runner.ensureInitialized(
+      platformBootstrapAdminFromEnv(),
+    );
+    console.log(
+      result.status === "INITIALIZED"
+        ? `Initialized platform database baseline ${result.baselineVersion}`
+        : `Platform database is ${result.status.toLowerCase()} at ${result.currentVersion}`,
+    );
     return;
   }
   throw new Error(`Unknown command: ${command}`);

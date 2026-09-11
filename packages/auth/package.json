@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@chenrun/db-control": "workspace:*",
+    "@chenrun/db-migrate": "workspace:*",
     "better-auth": "1.7.3"
   },
   "peerDependencies": {

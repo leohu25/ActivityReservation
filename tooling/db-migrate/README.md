@@ -184,3 +184,18 @@ pnpm db:migrate:generate --scope tenant --name drop_legacy_column \
 pnpm db:migrate:baseline --scope platform --reset
 pnpm db:migrate:baseline --scope tenant --reset
 ```
+
+### 场景 D：平台首次部署 / 空库自愈
+
+开发和生产使用相同的运行时命令，不依赖 Prisma CLI：
+
+```bash
+CONTROL_BOOTSTRAP_ADMIN_EMAIL=admin@example.com \
+CONTROL_BOOTSTRAP_ADMIN_NAME="平台超级管理员" \
+CONTROL_BOOTSTRAP_ADMIN_PASSWORD='从 Secret 注入的一次性强密码' \
+pnpm db:platform:ensure
+```
+
+运行时只对 `public` 下完全没有用户表的严格空库应用最新 Platform Baseline，随后登记 `platform_migration` 基线记录并幂等创建 Better Auth credential 超管。完整库直接放行；非空但缺表或 checksum 冲突的库会阻断，不会自动补表。已有库的增量迁移也不会由此命令自动执行。
+
+`apps/control/src/instrumentation.ts` 与 `apps/tenant/src/instrumentation.ts` 在 Node.js 服务进程启动时执行同一 ensure；认证请求路径另有进程内 Promise 去重兜底。

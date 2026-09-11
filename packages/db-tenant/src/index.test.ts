@@ -108,6 +108,62 @@ test("resolves only secretRef and caches one client per organization", async () 
   ]);
 });
 
+test("runs the optional database ensure hook before creating a tenant client", async () => {
+  const events: string[] = [];
+  const manager = new TenantDbManager<FakeClient>(
+    repository({ org1: mapping("org1") }),
+    {
+      async resolveDatabaseUrl() {
+        return "opaque://org1";
+      },
+    },
+    async ({ organizationId }) => {
+      events.push("client");
+      return {
+        organizationId,
+        disconnects: 0,
+        async $disconnect() {},
+      };
+    },
+    async ({ organizationId, databaseUrl, mapping: tenantMapping }) => {
+      events.push("ensure");
+      assert.equal(organizationId, "org1");
+      assert.equal(databaseUrl, "opaque://org1");
+      assert.equal(tenantMapping.organizationId, "org1");
+    },
+  );
+
+  await manager.getClient("org1");
+  assert.deepEqual(events, ["ensure", "client"]);
+});
+
+test("ensure hook failure prevents client creation and can be retried", async () => {
+  let ensureCalls = 0;
+  let creations = 0;
+  const manager = new TenantDbManager<FakeClient>(
+    repository({ org1: mapping("org1") }),
+    { async resolveDatabaseUrl() { return "opaque://org1"; } },
+    async ({ organizationId }) => {
+      creations += 1;
+      return {
+        organizationId,
+        disconnects: 0,
+        async $disconnect() {},
+      };
+    },
+    async () => {
+      ensureCalls += 1;
+      if (ensureCalls === 1) throw new Error("partial tenant database");
+    },
+  );
+
+  await assert.rejects(manager.getClient("org1"), /partial tenant database/);
+  assert.equal(creations, 0);
+  await manager.getClient("org1");
+  assert.equal(ensureCalls, 2);
+  assert.equal(creations, 1);
+});
+
 test("deduplicates concurrent first access", async () => {
   let release: (() => void) | undefined;
   const wait = new Promise<void>((resolve) => {

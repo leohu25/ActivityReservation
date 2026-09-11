@@ -66,6 +66,7 @@ const topology = await resolveEmployeeTopology(tenantPrisma, employeeProfile.id)
 
 1. **绝对物理隔离**：各租户数据分布在独立物理库中，严禁混用连接，严禁跨租户直接连表查询。
 2. **连接池单例与防泄漏**：服务端使用 `getTenantDbManager()` 获取单例，严禁在 Server Action 或业务 Service 中随意 `new PrismaClient()`。
+3. **安全的建连前自检钩子**：`TenantDbManager` 支持可选 `ensureDatabase`，在创建/缓存 Prisma Client 前执行。迁移工具可在组合根注入严格空库 Baseline ensure，而 `db-tenant` 本身不反向依赖迁移包，避免依赖环。钩子失败不会缓存半成品客户端，后续请求可重试。
 3. **零明文连接串注入**：只能使用 Control DB 提供的 `secretRef` 解析连接串，客户端无法篡改连接目标。
 
 ## 5. 验证命令

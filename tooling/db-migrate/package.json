@@ -7,7 +7,8 @@
     "db-migrate": "./src/cli.ts"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./platform": "./src/runtime/platform-entry.ts"
   },
   "scripts": {
     "generate": "tsx src/cli.ts generate",
@@ -19,6 +20,7 @@
     "@chenrun/db-control": "workspace:*",
     "@chenrun/db-tenant": "workspace:*",
     "@chenrun/shared": "workspace:*",
+    "better-auth": "1.7.3",
     "pg": "^8.23.0"
   },
   "devDependencies": {

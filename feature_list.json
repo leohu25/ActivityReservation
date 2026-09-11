@@ -205,6 +205,15 @@
       "status": "completed",
       "owner": "implementer",
       "evidence": "完成 packages/db-control (contracts/repositories/prisma 分层)、packages/db-tenant (pool 连接池治理与拓扑/迁移/种子规范导出)、packages/authorization (四层权限闭环) 与 packages/auth (双端隔离规范) 内部工程化重构；四大核心包全量补齐高规格自解释 README.md；经 reviewer 子智能体独立代码与架构审计通过；全仓 13 包类型检查 100% 通过、139+ 单测全绿、无破坏性变更"
+    },
+    {
+      "id": "foundation-day0-db-self-healing",
+      "name": "【P0】平台与租户数据库 Day 0 自愈初始化",
+      "description": "统一开发与生产数据库启动机制：严格空库自动应用版本化 Baseline 与幂等 Seed，完整库放行，非空残缺库阻断；平台启动和数据库首次访问双重兜底，租户开通和首次连接复用同一初始化引擎。",
+      "dependencies": ["arch-infra-packages-refactor"],
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "完成开发与生产统一 Day 0 状态机：平台严格空库通过 runtime catalog Baseline、PostgreSQL advisory lock 与事务完成全量建表，登记/校验 platform_migration 基线 checksum，并以 Better Auth 兼容哈希幂等创建环境变量注入的 Bootstrap 超管；非空残缺库 fail-closed，Day 1 增量不自动执行。新增生产可用 ensure-platform CLI、dev:control/init.sh 接入、Control/Tenant Next.js instrumentation 启动门禁及认证首次访问 Promise 兜底。租户 Provisioner 复用严格空库 Baseline 与现有 ROOT/岗位/Owner Seed，增加本地 tenant_schema_migration 台账；TenantDbManager 提供无依赖环的安全建连前 ensure hook。全仓 check (13/13) 与全仓 test (11/11 模块，140+ 单测) 100% 通过；真实 PostgreSQL 空库初始化/幂等与残缺库阻断验证通过，./init.sh 5 步自检全绿。"
     }
   ]
 }

@@ -8,7 +8,9 @@ export {
 export {
   closeServerAuth,
   createServerAuth,
+  ensureServerAuthDatabase,
   getCurrentTenantContext,
+  getEnsuredServerAuthRuntime,
   getServerAuth,
   getServerAuthRuntime,
   type ServerAuthOptions,

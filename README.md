@@ -45,6 +45,7 @@ pnpm run init
 
 1. **装载 Git 门禁**：自动在 `.git/hooks/` 配置物理 `pre-commit` 门禁，确保每次提交前全栈自检通过。
 2. **环境变量检查**：自动检测各子应用的环境配置文件状态。
+3. **Control DB Day 0 自动自愈**：当检测到 `apps/control/.env.local` 且数据库为空时，自动安全执行最新 Baseline 建表并创建初始超管。
 
 ---
 
@@ -114,21 +115,26 @@ pnpm run lint
 # 1. 一致性检查（校验当前所有 Schema 与已提交的迁移/基线/Catalog 是否一致）
 pnpm run db:migrate:check
 
-# 2. 实体变更后显式生成增量迁移
+# 2. 平台控制库 Day 0 结构与种子数据自愈（开箱即用建表并初始化超管）
+pnpm run db:platform:ensure
+
+# 3. 实体变更后显式生成增量迁移
 pnpm run db:migrate:generate --scope tenant --name add_xxx_field
 pnpm run db:migrate:generate --scope platform --name add_xxx_field
 
-# 3. 重新生成或重置最新全量基线快照 (生成可审核的 baseline.sql)
+# 4. 重新生成或重置最新全量基线快照 (生成可审核的 baseline.sql)
 pnpm run db:migrate:baseline --scope tenant --reset
 pnpm run db:migrate:baseline --scope platform --reset
 
-# 4. 重新编译生成运行期只读 Catalog (generated/runtime-catalog.ts)
+# 5. 重新编译生成运行期只读 Catalog (generated/runtime-catalog.ts)
 pnpm run db:migrate:catalog
 ```
 
 ---
 
 ## 项目工程架构总览
+
+详细系统架构、领域拓扑、租户物理隔离与鉴权协议设计请参见：[系统整体架构设计文档 (`docs/ARCHITECTURE.md`)](docs/ARCHITECTURE.md)。
 
 ```text
 chenrun-erp-nextjs/

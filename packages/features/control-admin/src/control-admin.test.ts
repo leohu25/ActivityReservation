@@ -46,6 +46,40 @@ test("控制平面超管鉴权判定与断言守卫", () => {
       message: /需要控制平面超级管理员权限/,
     },
   );
+
+  // 4. 当 CONTROL_ADMIN_EMAILS 未设置时回退至 CONTROL_BOOTSTRAP_ADMIN_EMAIL
+  const originalAdminEmails = process.env.CONTROL_ADMIN_EMAILS;
+  const originalBootstrapEmail = process.env.CONTROL_BOOTSTRAP_ADMIN_EMAIL;
+  const originalNodeEnv = process.env.NODE_ENV;
+  try {
+    delete process.env.CONTROL_ADMIN_EMAILS;
+    delete process.env.PLATFORM_ADMIN_EMAILS;
+    process.env.CONTROL_BOOTSTRAP_ADMIN_EMAIL = "bootstrap@chenrun.com";
+    assert.equal(isControlAdminEmail("bootstrap@chenrun.com"), true);
+    assert.equal(isControlAdminEmail("admin@chenrun.com"), false);
+
+    // 5. 生产环境且未配置任何邮箱时，严格 Fail-Closed
+    delete process.env.CONTROL_BOOTSTRAP_ADMIN_EMAIL;
+    process.env.NODE_ENV = "production";
+    assert.equal(isControlAdminEmail("admin@chenrun.com"), false);
+    assert.equal(isControlAdminEmail("any@domain.com"), false);
+  } finally {
+    if (originalAdminEmails === undefined) {
+      delete process.env.CONTROL_ADMIN_EMAILS;
+    } else {
+      process.env.CONTROL_ADMIN_EMAILS = originalAdminEmails;
+    }
+    if (originalBootstrapEmail === undefined) {
+      delete process.env.CONTROL_BOOTSTRAP_ADMIN_EMAIL;
+    } else {
+      process.env.CONTROL_BOOTSTRAP_ADMIN_EMAIL = originalBootstrapEmail;
+    }
+    if (originalNodeEnv === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = originalNodeEnv;
+    }
+  }
 });
 
 test("ControlAdminService 租户开通逻辑、初始凭证、预置角色与状态管控", async () => {

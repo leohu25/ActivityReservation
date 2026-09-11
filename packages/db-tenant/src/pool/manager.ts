@@ -25,6 +25,16 @@ export type TenantClientFactory<Client extends TenantDbClient> = (
   options: TenantClientFactoryOptions,
 ) => Promise<Client> | Client;
 
+export interface TenantDatabaseEnsureInput {
+  readonly organizationId: string;
+  readonly databaseUrl: string;
+  readonly mapping: TenantDatabaseRecord;
+}
+
+export type TenantDatabaseEnsureHook = (
+  input: TenantDatabaseEnsureInput,
+) => Promise<void>;
+
 export type TenantDbRoutingErrorCode =
   | "TENANT_DATABASE_NOT_FOUND"
   | "TENANT_DATABASE_INACTIVE"
@@ -56,6 +66,7 @@ export class TenantDbManager<Client extends TenantDbClient> {
     private readonly repository: TenantContextRepository,
     private readonly secretResolver: SecretResolver,
     private readonly clientFactory: TenantClientFactory<Client>,
+    private readonly ensureDatabase?: TenantDatabaseEnsureHook,
   ) {}
 
   async getClient(organizationId: string): Promise<Client> {
@@ -169,6 +180,7 @@ export class TenantDbManager<Client extends TenantDbClient> {
       );
     }
 
+    await this.ensureDatabase?.({ organizationId, databaseUrl, mapping });
     const client = await this.clientFactory({ organizationId, databaseUrl });
     this.clients.set(organizationId, client);
     return client;
@@ -246,6 +258,7 @@ export interface DefaultTenantDbManagerOptions {
   repository: TenantContextRepository;
   secretResolver?: SecretResolver;
   clientFactory?: TenantClientFactory<TenantPrismaClient>;
+  ensureDatabase?: TenantDatabaseEnsureHook;
 }
 
 /**
@@ -264,6 +277,7 @@ export function createDefaultTenantDbManager(
     options.repository,
     secretResolver,
     clientFactory,
+    options.ensureDatabase,
   );
 }
 
@@ -290,6 +304,7 @@ export function getTenantDbManager(
     repository: options.repository,
     secretResolver: options.secretResolver,
     clientFactory: options.clientFactory,
+    ensureDatabase: options.ensureDatabase,
   });
   globalForTenantDb.__TENANT_DB_MANAGER__ = manager;
   return manager;

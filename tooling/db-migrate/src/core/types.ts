@@ -78,3 +78,35 @@ export interface TenantFleetResult {
   readonly upgradedCount: number;
   readonly failedCount: number;
 }
+
+export type DatabaseInitializationState =
+  | "EMPTY"
+  | "READY"
+  | "UPGRADE_REQUIRED"
+  | "PARTIAL"
+  | "CHECKSUM_MISMATCH";
+
+export interface DatabaseInitializationInspection {
+  readonly state: DatabaseInitializationState;
+  readonly scope: MigrationScope;
+  readonly baselineVersion: string;
+  readonly currentVersion: string | null;
+  readonly missingTables: readonly string[];
+  readonly pendingMigrations: readonly string[];
+}
+
+export interface EnsureDatabaseResult {
+  readonly status: "READY" | "INITIALIZED" | "UPGRADE_REQUIRED";
+  readonly scope: MigrationScope;
+  readonly baselineVersion: string;
+  readonly currentVersion: string | null;
+  readonly appliedBaseline: boolean;
+  readonly pendingMigrations: readonly string[];
+  readonly durationMs: number;
+}
+
+export interface PlatformBootstrapAdminInput {
+  readonly email: string;
+  readonly name: string;
+  readonly password: string;
+}
