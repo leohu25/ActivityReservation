@@ -31,6 +31,17 @@ export interface ListQuoteFilter {
   storeCode?: string;
   regionCode?: string;
   status?: string;
+  /** 页码，从 1 开始 */
+  page?: number;
+  /** 每页条数，默认 10 */
+  pageSize?: number;
+}
+
+export interface ListQuotesResult {
+  items: Awaited<ReturnType<TenantPrismaClient["customerQuote"]["findMany"]>>;
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export class CustomerQuoteService {
@@ -67,12 +78,16 @@ export class CustomerQuoteService {
   }
 
   /**
-   * 报价单列表查询
+   * 报价单列表查询（服务端分页：count + skip/take）
    */
   static async listQuotes(
     client: TenantPrismaClient,
     filter: ListQuoteFilter = {},
-  ) {
+  ): Promise<ListQuotesResult> {
+    const page = Math.max(1, filter.page ?? 1);
+    const pageSize = Math.min(100, Math.max(1, filter.pageSize ?? 10));
+    const skip = (page - 1) * pageSize;
+
     const where: any = {};
 
     if (filter.customerCode) {
@@ -88,25 +103,32 @@ export class CustomerQuoteService {
       where.status = filter.status;
     }
 
-    return client.customerQuote.findMany({
-      where,
-      include: {
-        customer: {
-          select: {
-            customerCode: true,
-            customerName: true,
+    const [total, items] = await Promise.all([
+      client.customerQuote.count({ where }),
+      client.customerQuote.findMany({
+        where,
+        include: {
+          customer: {
+            select: {
+              customerCode: true,
+              customerName: true,
+            },
           },
-        },
-        store: {
-          select: {
-            storeCode: true,
-            storeName: true,
+          store: {
+            select: {
+              storeCode: true,
+              storeName: true,
+            },
           },
+          items: true,
         },
-        items: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pageSize,
+      }),
+    ]);
+
+    return { items, total, page, pageSize };
   }
 
   /**

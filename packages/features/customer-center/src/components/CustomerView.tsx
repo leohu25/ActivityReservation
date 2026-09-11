@@ -2,11 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Store, Building2, Download } from "lucide-react";
+import { Plus, Store, Download, RefreshCw } from "lucide-react";
 import {
   DataTable,
   Button,
   Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Badge,
   DataTableRowActions,
   DataTableDetailDrawer,
@@ -28,6 +33,13 @@ import type {
 
 interface Props {
   initialCustomers: CustomerListItem[];
+  /** 服务端总条数（分页必传） */
+  initialTotal?: number;
+  initialPage?: number;
+  initialPageSize?: number;
+  initialKeyword?: string;
+  initialCategory?: string;
+  initialStatus?: string;
   categories: CustomerCategoryItem[];
   tags: CustomerTagItem[];
   ability?: {
@@ -49,6 +61,12 @@ function useSafeRouter() {
 
 export function CustomerView({
   initialCustomers,
+  initialTotal,
+  initialPage = 1,
+  initialPageSize = 10,
+  initialKeyword = "",
+  initialCategory = "",
+  initialStatus = "",
   categories,
   tags,
   ability: explicitAbility,
@@ -69,14 +87,48 @@ export function CustomerView({
   }, [explicitAbility, permissions]);
   const router = useSafeRouter();
   const [customers, setCustomers] = useState(initialCustomers);
+  const [total, setTotal] = useState(initialTotal ?? initialCustomers.length);
+  const [page, setPage] = useState(initialPage);
+  const [pageSize, setPageSize] = useState(initialPageSize);
 
   useEffect(() => {
     setCustomers(initialCustomers);
-  }, [initialCustomers]);
-  const [keyword, setKeyword] = useState("");
-  const [selectedCat, setSelectedCat] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("");
+    setTotal(initialTotal ?? initialCustomers.length);
+    setPage(initialPage);
+    setPageSize(initialPageSize);
+  }, [initialCustomers, initialTotal, initialPage, initialPageSize]);
+
+  const [keyword, setKeyword] = useState(initialKeyword);
+  const [selectedCat, setSelectedCat] = useState(initialCategory);
+  const [selectedStatus, setSelectedStatus] = useState(initialStatus);
   const [loading, setLoading] = useState(false);
+
+  /** 服务端翻页/筛选：经 URL 同步后由 RSC 重新拉取当前页 */
+  const navigateList = React.useCallback(
+    (patch: {
+      page?: number;
+      pageSize?: number;
+      keyword?: string;
+      category?: string;
+      status?: string;
+    }) => {
+      const next = new URLSearchParams();
+      const p = patch.page ?? page;
+      const ps = patch.pageSize ?? pageSize;
+      const kw = patch.keyword !== undefined ? patch.keyword : keyword;
+      const cat = patch.category !== undefined ? patch.category : selectedCat;
+      const st = patch.status !== undefined ? patch.status : selectedStatus;
+      if (p > 1) next.set("page", String(p));
+      if (ps !== 10) next.set("pageSize", String(ps));
+      if (kw) next.set("keyword", kw);
+      if (cat) next.set("category", cat);
+      if (st) next.set("status", st);
+      const qs = next.toString();
+      // 仅 push：searchParams 变更会触发 RSC 重拉；再 refresh 会打两次
+      router?.push(qs ? `?${qs}` : window.location.pathname);
+    },
+    [page, pageSize, keyword, selectedCat, selectedStatus, router],
+  );
 
   // 新建/编辑客户表单与详情抽屉状态
   const [showModal, setShowModal] = useState(false);
@@ -99,23 +151,7 @@ export function CustomerView({
   const [paymentCycle] = useState("MONTHLY");
   const [serviceTime, setServiceTime] = useState("");
 
-  const filteredCustomers = customers.filter((c) => {
-    if (selectedCat && c.categoryCode !== selectedCat) return false;
-    if (selectedStatus && c.status !== selectedStatus) return false;
-    if (keyword) {
-      const matchName = c.customerName
-        .toLowerCase()
-        .includes(keyword.toLowerCase());
-      const matchCode = c.customerCode
-        .toLowerCase()
-        .includes(keyword.toLowerCase());
-      const matchPerson = c.contactPerson
-        .toLowerCase()
-        .includes(keyword.toLowerCase());
-      if (!matchName && !matchCode && !matchPerson) return false;
-    }
-    return true;
-  });
+  const filteredCustomers = customers;
 
   const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -291,9 +327,10 @@ export function CustomerView({
       id: "customerCode",
       field: CustomerField.CUSTOMER_CODE,
       header: "客户编码",
-      width: 140,
+      width: 150,
+      lockVisible: true,
       cell: (c: CustomerListItem) => (
-        <span className="font-mono text-xs font-semibold text-foreground">
+        <span className="font-mono text-xs font-bold text-primary">
           {c.customerCode}
         </span>
       ),
@@ -423,87 +460,149 @@ export function CustomerView({
   ];
 
   return (
-    <div className="space-y-4">
-      {/* 头部标题与新建按钮 */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-border/60">
-        <div>
-          <div className="flex items-center gap-2">
-            <Building2 className="size-5 text-primary" />
-            <h1 className="text-lg font-bold text-foreground">客户档案管理</h1>
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            维护企业客户主数据、结算方式、授信与服务时间。一个客户下可挂载多个履约门店。
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {(!ability ||
-            ability.can("export", customerPageContract.subject)) && (
+    <>
+    <DataTable.Root
+      data={filteredCustomers}
+      columns={columns}
+      rowKey={(c: CustomerListItem) => c.customerCode}
+      subject={customerPageContract.subject}
+      ability={ability}
+      permissions={permissions}
+      page={page}
+      pageSize={pageSize}
+      total={total}
+      onPageChange={(nextPage, nextPageSize) => {
+        setPage(nextPage);
+        setPageSize(nextPageSize);
+        navigateList({ page: nextPage, pageSize: nextPageSize });
+      }}
+    >
+      <DataTable.Header
+        category="BUSINESS WORKSPACE"
+        title="客户档案"
+        description="维护企业客户主数据、结算方式、授信与服务时间。一个客户下可挂载多个履约门店。"
+        actions={
+          <DataTable.Toolbar>
             <Button
               variant="outline"
               size="sm"
-              onClick={handleExport}
-              className="font-semibold shadow-xs gap-1.5"
+              onClick={() => router?.refresh()}
+              className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
             >
-              <Download className="size-4 text-muted-foreground" />
-              <span>导出数据</span>
+              <RefreshCw className="size-3.5 text-muted-foreground" />
+              刷新
             </Button>
-          )}
-          {(!ability ||
-            ability.can("create", customerPageContract.subject)) && (
-            <Button
-              size="sm"
-              onClick={() => setShowModal(true)}
-              className="font-semibold shadow-xs"
-            >
-              <Plus className="size-4 mr-1" />
-              <span>新建客户</span>
-            </Button>
-          )}
-        </div>
-      </div>
+            {(!ability ||
+              ability.can("export", customerPageContract.subject)) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+                className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
+              >
+                <Download className="size-3.5 text-muted-foreground" />
+                导出
+              </Button>
+            )}
+            <DataTable.ColumnSettings />
+            {(!ability ||
+              ability.can("create", customerPageContract.subject)) && (
+              <DataTable.ActionButton
+                action="create"
+                size="sm"
+                className="gap-1.5 shadow-xs"
+                onClick={() => setShowModal(true)}
+              >
+                <Plus className="size-3.5" />
+                新增
+              </DataTable.ActionButton>
+            )}
+          </DataTable.Toolbar>
+        }
+      />
 
-      {/* 复合积木化 DataTable */}
-      <DataTable.Root
-        data={filteredCustomers}
-        columns={columns}
-        rowKey={(c: CustomerListItem) => c.customerCode}
-        subject={customerPageContract.subject}
-        ability={ability}
-        permissions={permissions}
-        total={filteredCustomers.length}
+      <DataTable.FilterBar
+        onSearch={() => {
+          setPage(1);
+          navigateList({ page: 1 });
+        }}
+        onReset={() => {
+          setKeyword("");
+          setSelectedCat("");
+          setSelectedStatus("");
+          setPage(1);
+          navigateList({
+            page: 1,
+            keyword: "",
+            category: "",
+            status: "",
+          });
+        }}
+        onAdvancedFilter={() => {
+          toast.info("高级筛选面板可按业务扩展");
+        }}
       >
-        <DataTable.Toolbar>
-          <div className="flex flex-wrap items-center gap-2">
-            <DataTable.Search
-              value={keyword}
-              onChange={setKeyword}
-              placeholder="搜索客户名称、编码、联系人..."
-            />
-            <DataTable.FacetedFilter
-              title="客户分类"
-              options={categories.map((c) => ({
-                label: c.categoryName,
-                value: c.categoryCode,
-              }))}
-              selectedValues={selectedCat ? [selectedCat] : []}
-              onSelect={(vals) => setSelectedCat(vals[0] || "")}
-              multiple={false}
-            />
-            <DataTable.FacetedFilter
-              title="状态"
-              options={[
-                { label: "正常", value: "ACTIVE" },
-                { label: "已停用", value: "DISABLED" },
-              ]}
-              selectedValues={selectedStatus ? [selectedStatus] : []}
-              onSelect={(vals) => setSelectedStatus(vals[0] || "")}
-              multiple={false}
-            />
-          </div>
-        </DataTable.Toolbar>
+        <DataTable.InputGroup label="关键字" className="w-64">
+          <Input
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                setPage(1);
+                navigateList({ page: 1 });
+              }
+            }}
+            placeholder="单号 / 名称 / 联系人"
+          />
+        </DataTable.InputGroup>
+        <DataTable.InputGroup label="客户分类" className="w-48">
+          <Select
+            value={selectedCat || "ALL"}
+            onValueChange={(v) => {
+              const next = v === "ALL" ? "" : v;
+              setSelectedCat(next);
+              setPage(1);
+              navigateList({ page: 1, category: next });
+            }}
+          >
+            <SelectTrigger className="border-0 shadow-none">
+              <SelectValue placeholder="全部" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">全部</SelectItem>
+              {categories.map((c) => (
+                <SelectItem key={c.categoryCode} value={c.categoryCode}>
+                  {c.categoryName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </DataTable.InputGroup>
+        <DataTable.InputGroup label="状态" className="w-40">
+          <Select
+            value={selectedStatus || "ALL"}
+            onValueChange={(v) => {
+              const next = v === "ALL" ? "" : v;
+              setSelectedStatus(next);
+              setPage(1);
+              navigateList({ page: 1, status: next });
+            }}
+          >
+            <SelectTrigger className="border-0 shadow-none">
+              <SelectValue placeholder="全部" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">全部</SelectItem>
+              <SelectItem value="ACTIVE">正常</SelectItem>
+              <SelectItem value="DISABLED">已停用</SelectItem>
+            </SelectContent>
+          </Select>
+        </DataTable.InputGroup>
+      </DataTable.FilterBar>
 
-        <DataTable.Content />
-        <DataTable.Pagination />
+      <DataTable.Content selectable showIndex />
+
+      <DataTable.Pagination />
 
         {/* 详情查看抽屉插槽 */}
         <DataTableDetailDrawer
@@ -511,53 +610,36 @@ export function CustomerView({
           onClose={() => setViewingCustomer(null)}
           title={(c) => `客户档案详情: ${c.customerName}`}
           description={(c) =>
-            `客户编码: ${c.customerCode} | 分类: ${c.category?.categoryName || c.categoryCode}`
+            `分类: ${c.category?.categoryName || c.categoryCode} | 结算: ${
+              settlementLabels[c.settlementMethod] || c.settlementMethod
+            }`
           }
         >
           {(c) => (
-            <div className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-muted/30 border">
-                <div>
-                  <span className="text-muted-foreground block mb-0.5">
-                    联系人:
-                  </span>
-                  <span className="font-semibold text-foreground">
+            <div className="space-y-3 text-sm">
+              <DataTable.DetailPanel title="基础信息">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                  <DataTable.DetailField label="联系人">
                     {c.contactPerson}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground block mb-0.5">
-                    联系电话:
-                  </span>
-                  <span className="font-mono text-foreground">
-                    {c.contactPhone}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground block mb-0.5">
-                    结算方式:
-                  </span>
-                  <span className="font-semibold text-foreground">
+                  </DataTable.DetailField>
+                  <DataTable.DetailField label="联系电话">
+                    <span className="font-mono">{c.contactPhone}</span>
+                  </DataTable.DetailField>
+                  <DataTable.DetailField label="结算方式">
                     {settlementLabels[c.settlementMethod] || c.settlementMethod}
-                  </span>
+                  </DataTable.DetailField>
+                  <DataTable.DetailField label="默认税率">
+                    <span className="font-mono">
+                      {c.defaultTaxRate ? `${c.defaultTaxRate}%` : "未设"}
+                    </span>
+                  </DataTable.DetailField>
                 </div>
-                <div>
-                  <span className="text-muted-foreground block mb-0.5">
-                    默认税率:
-                  </span>
-                  <span className="font-mono text-foreground">
-                    {c.defaultTaxRate ? `${c.defaultTaxRate}%` : "未设"}
-                  </span>
-                </div>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/20 border">
-                <span className="text-muted-foreground block mb-1">
-                  下属履约门店:
-                </span>
-                <span className="font-semibold text-foreground">
+              </DataTable.DetailPanel>
+              <DataTable.DetailPanel title="下属履约门店">
+                <div className="text-sm font-medium text-foreground">
                   共挂载 {c._count?.stores || c.stores?.length || 0} 个履约门店
-                </span>
-              </div>
+                </div>
+              </DataTable.DetailPanel>
             </div>
           )}
         </DataTableDetailDrawer>
@@ -578,22 +660,22 @@ export function CustomerView({
           }}
         >
           {({ record }) => (
-            <div className="space-y-3 text-xs">
+            <div className="rounded-xl border border-border/70 bg-background/60 p-4 space-y-4">
               <div>
-                <label className="font-medium text-foreground block mb-1">
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">
                   客户企业名称
                 </label>
                 <Input defaultValue={record?.customerName} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-medium text-foreground block mb-1">
+                  <label className="text-xs font-medium text-muted-foreground block mb-1.5">
                     联系人
                   </label>
                   <Input defaultValue={record?.contactPerson} />
                 </div>
                 <div>
-                  <label className="font-medium text-foreground block mb-1">
+                  <label className="text-xs font-medium text-muted-foreground block mb-1.5">
                     联系电话
                   </label>
                   <Input defaultValue={record?.contactPhone} />
@@ -791,6 +873,6 @@ export function CustomerView({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

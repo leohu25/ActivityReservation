@@ -4,10 +4,16 @@ import React from "react";
 import { renderToString } from "react-dom/server";
 import { DataTable } from "./index";
 import type { ColumnDef } from "./DataTableContext";
+import { resolveDefaultVisibleColumnIds } from "./DataTableContext";
 import { DataTableRowActions } from "./DataTableRowActions";
 import { DataTableDetailDrawer } from "./DataTableDetailDrawer";
 import { DataTableFormModal } from "./DataTableFormModal";
 import { DataTableActions, DataTableActionButton } from "./DataTableActions";
+import {
+  DataTableFormBanner,
+  DataTableFormFieldGrid,
+  DataTableFormSection,
+} from "./DataTableFormLayout";
 
 interface TestItem {
   id: string;
@@ -30,7 +36,7 @@ const mockColumns: ColumnDef<TestItem>[] = [
   {
     id: "price",
     header: "采购单价",
-    field: "price", // 受控字段
+    field: "price",
     cell: (item) => `¥${item.price}`,
   },
   {
@@ -63,19 +69,152 @@ test("DataTable: 能够像积木一样自由装配并正确渲染表格主体与
     </DataTable.Root>,
   );
 
-  // 验证搜索框占位符存在
   assert.match(html, /搜索物料\.\.\./);
-  // 验证表头和数据内容存在
   assert.match(html, /物料名称/);
   assert.match(html, /生鲜土豆/);
   assert.match(html, /冷冻鸡胸肉/);
-  // 验证分页信息存在
   assert.match(html, /共/);
-  assert.match(html, /条记录/);
+});
+
+test("DataTable.Root: 默认一体化白卡容器，可关闭 integratedCard", () => {
+  const cardHtml = renderToString(
+    <DataTable.Root
+      data={mockData}
+      columns={mockColumns}
+      rowKey={(item) => item.id}
+    >
+      <DataTable.Content />
+    </DataTable.Root>,
+  );
+  assert.match(cardHtml, /rounded-xl/);
+  assert.match(cardHtml, /bg-card/);
+
+  const bareHtml = renderToString(
+    <DataTable.Root
+      data={mockData}
+      columns={mockColumns}
+      rowKey={(item) => item.id}
+      integratedCard={false}
+    >
+      <DataTable.Content />
+    </DataTable.Root>,
+  );
+  assert.doesNotMatch(bareHtml, /rounded-xl border border-border\/80 bg-card shadow-xs p-5/);
+});
+
+test("DataTable.Header: 渲染分类小标、品牌竖条标题与说明文案", () => {
+  const html = renderToString(
+    <DataTable.Root
+      data={mockData}
+      columns={mockColumns}
+      rowKey={(item) => item.id}
+    >
+      <DataTable.Header
+        category="BUSINESS WORKSPACE"
+        title="采购订单待办理"
+        description="归集日采购、周采购和请购需求"
+        actions={<span>操作区</span>}
+      />
+      <DataTable.Content />
+    </DataTable.Root>,
+  );
+
+  assert.match(html, /BUSINESS WORKSPACE/);
+  assert.match(html, /采购订单待办理/);
+  assert.match(html, /归集日采购/);
+  assert.match(html, /操作区/);
+});
+
+test("DataTable.FilterBar: 渲染查询/重置与高级筛选触发器及 InputGroup", () => {
+  let searched = 0;
+  let reset = 0;
+  let advanced = 0;
+
+  const html = renderToString(
+    <DataTable.Root
+      data={mockData}
+      columns={mockColumns}
+      rowKey={(item) => item.id}
+    >
+      <DataTable.FilterBar
+        onSearch={() => {
+          searched += 1;
+        }}
+        onReset={() => {
+          reset += 1;
+        }}
+        onAdvancedFilter={() => {
+          advanced += 1;
+        }}
+      >
+        <DataTable.InputGroup label="关键字">
+          <input placeholder="单号 / 名称" />
+        </DataTable.InputGroup>
+      </DataTable.FilterBar>
+      <DataTable.Content />
+    </DataTable.Root>,
+  );
+
+  assert.match(html, /关键字/);
+  assert.match(html, /查询/);
+  assert.match(html, /重置/);
+  assert.match(html, /高级筛选/);
+});
+
+test("DataTable.Content showIndex: 渲染跨页自增序号列", () => {
+  const html = renderToString(
+    <DataTable.Root
+      data={mockData}
+      columns={mockColumns}
+      rowKey={(item) => item.id}
+      page={2}
+      pageSize={2}
+    >
+      <DataTable.Content showIndex />
+    </DataTable.Root>,
+  );
+
+  // page=2 pageSize=2 → 序号从 3 开始
+  assert.match(html, />3</);
+  assert.match(html, />4</);
+  assert.doesNotMatch(html, />1</);
+});
+
+test("DataTable.Pagination: 渲染共 N 条、显示范围与数字页码", () => {
+  const html = renderToString(
+    <DataTable.Root
+      data={mockData}
+      columns={mockColumns}
+      rowKey={(item) => item.id}
+      page={2}
+      pageSize={2}
+      total={10}
+    >
+      <DataTable.Pagination />
+    </DataTable.Root>,
+  );
+
+  assert.match(html, /共/);
+  assert.match(html, /10/);
+  assert.match(html, /显示第/);
+  assert.match(html, /条\/页/);
+});
+
+test("DataTable.ColumnSettings: 命名空间存在且 lockVisible 解析正确", () => {
+  assert.equal(typeof DataTable.ColumnSettings, "function");
+
+  const cols: ColumnDef<TestItem>[] = [
+    { id: "a", header: "A", cell: () => null, lockVisible: true },
+    { id: "b", header: "B", cell: () => null, defaultVisible: false },
+    { id: "c", header: "C", cell: () => null },
+  ];
+  const ids = resolveDefaultVisibleColumnIds(cols);
+  assert.equal(ids.has("a"), true);
+  assert.equal(ids.has("b"), false);
+  assert.equal(ids.has("c"), true);
 });
 
 test("DataTable: 当无字段 read 权限时，自动隐藏对应列", () => {
-  // 模拟 CASL ability: 拒绝读取 price 字段
   const ability = {
     can(action: string, _subject: string, field?: string) {
       if (action === "read" && field === "price") {
@@ -97,10 +236,8 @@ test("DataTable: 当无字段 read 权限时，自动隐藏对应列", () => {
     </DataTable.Root>,
   );
 
-  // 能够读取 name 列
   assert.match(html, /物料名称/);
   assert.match(html, /生鲜土豆/);
-  // 无法读取 price 列（表头和金额都不应被渲染）
   assert.doesNotMatch(html, /采购单价/);
   assert.doesNotMatch(html, /¥15\.5/);
 });
@@ -140,7 +277,7 @@ test("DataTable.DetailDrawer: 能够正确渲染详情查看抽屉与自定义�
   assert.match(html, /价格:.*¥.*15\.5/);
 });
 
-test("DataTable.FormModal: 能够正确渲染编辑/新建表单弹窗插槽", () => {
+test("DataTable.FormModal: 渲染品牌徽标、审计提示与表单插槽", () => {
   const targetRecord = mockData[1];
   const html = renderToString(
     <DataTableFormModal
@@ -150,22 +287,63 @@ test("DataTable.FormModal: 能够正确渲染编辑/新建表单弹窗插槽", (
       record={targetRecord}
       onSubmit={() => {}}
       title={(r) => (r ? `编辑物料: ${r.name}` : "新建物料")}
-      description="修改库存与定价信息"
-      submitText="保存更改"
+      description="净配菜 ERP · 操作过程自动留痕"
+      submitText="保存"
     >
       {({ record }) => (
-        <div>
-          <label>当前名称: {record?.name}</label>
-          <label>当前库存: {record?.status}</label>
-        </div>
+        <DataTableFormSection title="基本信息">
+          <DataTableFormFieldGrid columns={2}>
+            <label>当前名称: {record?.name}</label>
+            <label>当前库存: {record?.status}</label>
+          </DataTableFormFieldGrid>
+        </DataTableFormSection>
       )}
     </DataTableFormModal>,
   );
 
+  assert.match(html, /CR/);
   assert.match(html, /编辑物料: 冷冻鸡胸肉/);
-  assert.match(html, /修改库存与定价信息/);
+  assert.match(html, /操作过程自动留痕/);
+  assert.match(html, /提交后记录操作人和时间/);
   assert.match(html, /当前名称:.*冷冻鸡胸肉/);
-  assert.match(html, /保存更改/);
+  assert.match(html, /保存/);
+});
+
+test("DataTable.FormModal: 支持 extraActions 底栏扩展按钮组", () => {
+  const html = renderToString(
+    <DataTableFormModal
+      open={true}
+      onOpenChange={() => {}}
+      inline={true}
+      record={mockData[0]}
+      onSubmit={() => {}}
+      title="编辑产品档案"
+      cancelText="返回"
+      submitText="保存"
+      extraActions={[
+        { key: "saveAs", label: "另存为新产品", onClick: () => {} },
+        { key: "saveAndCreate", label: "保存并新增", onClick: () => {} },
+      ]}
+    >
+      <div>表单内容</div>
+    </DataTableFormModal>,
+  );
+
+  assert.match(html, /另存为新产品/);
+  assert.match(html, /保存并新增/);
+  assert.match(html, /返回/);
+  assert.match(html, /保存/);
+});
+
+test("DataTable.FormBanner: 渲染信息横幅", () => {
+  const html = renderToString(
+    <DataTableFormBanner
+      title="采购计划"
+      description="按宸润采购字段维护，保存后立即进入当前业务列表"
+    />,
+  );
+  assert.match(html, /采购计划/);
+  assert.match(html, /按宸润采购字段维护/);
 });
 
 test("DataTable.Actions & ActionButton: 支持自定义顶部操作插槽与权限自动判定", () => {
@@ -194,7 +372,6 @@ test("DataTable.Actions & ActionButton: 支持自定义顶部操作插槽与权�
                   新建物料
                 </DataTableActionButton>
               )}
-              {/* export 无权限，默认 hidden 策略自动隐藏 */}
               <DataTableActionButton action="export">
                 导出报表
               </DataTableActionButton>
@@ -205,16 +382,44 @@ test("DataTable.Actions & ActionButton: 支持自定义顶部操作插槽与权�
     </DataTable.Root>,
   );
 
-  // create 有权限，应成功渲染
   assert.match(html, /新建物料/);
-  // export 无权限，应被自动过滤隐藏
   assert.doesNotMatch(html, /导出报表/);
 });
 
-test("DataTableRowActions: 支持自定义行级操作插槽与删除二次确认", () => {
+test("DataTable.ActionButton: disabled-tooltip 策略置灰并提示", () => {
+  const ability = {
+    can() {
+      return false;
+    },
+  };
+
+  const html = renderToString(
+    <DataTable.Root
+      data={mockData}
+      columns={mockColumns}
+      rowKey={(item) => item.id}
+      subject="Material"
+      ability={ability}
+    >
+      <DataTableActionButton
+        action="export"
+        unauthorizedStrategy="disabled-tooltip"
+        unauthorizedTooltip="暂无导出权限"
+      >
+        导出报表
+      </DataTableActionButton>
+    </DataTable.Root>,
+  );
+
+  assert.match(html, /导出报表/);
+  assert.match(html, /暂无导出权限|opacity-50/);
+});
+
+test("DataTableRowActions: 默认平铺「详情/编辑」并折叠删除", () => {
   const ability = {
     can(action: string, subject: string) {
       if (subject === "Material" && action === "read") return true;
+      if (subject === "Material" && action === "update") return true;
       if (subject === "Material" && action === "delete") return true;
       return false;
     },
@@ -231,18 +436,14 @@ test("DataTableRowActions: 支持自定义行级操作插槽与删除二次确�
       <DataTableRowActions
         record={mockData[0]}
         onView={() => {}}
+        onEdit={() => {}}
         onDelete={() => {}}
-        extraActions={[
-          {
-            label: "自定义盘点",
-            onClick: () => {},
-          },
-        ]}
       />
     </DataTable.Root>,
   );
 
-  // 渲染操作触发按钮
+  assert.match(html, /详情/);
+  assert.match(html, /编辑/);
   assert.match(html, /打开操作菜单/);
 });
 
@@ -250,8 +451,8 @@ test("DataTable.AuthorizedField: 在 DataTable 内部自动继承父级权限与
   const ability = {
     can(action: string, subject: string, field?: string) {
       if (subject !== "Material") return false;
-      if (field === "secretPrice") return false; // 隐藏
-      if (field === "readonlyName" && action === "read") return true; // 只读
+      if (field === "secretPrice") return false;
+      if (field === "readonlyName" && action === "read") return true;
       if (field === "readonlyName" && action === "update") return false;
       return true;
     },
@@ -265,21 +466,17 @@ test("DataTable.AuthorizedField: 在 DataTable 内部自动继承父级权限与
       subject="Material"
       ability={ability}
     >
-      {/* 字段 1：无 read 权限，自动 HIDDEN */}
       <DataTable.AuthorizedField field="secretPrice" label="绝密采购成本">
         <input placeholder="秘密价格" />
       </DataTable.AuthorizedField>
 
-      {/* 字段 2：有 read 无 update 权限，自动 READONLY 并打上只读徽标 */}
       <DataTable.AuthorizedField field="readonlyName" label="受保护名称">
         <input placeholder="只读名称" />
       </DataTable.AuthorizedField>
     </DataTable.Root>,
   );
 
-  // 绝密字段被自动剥离隐藏
   assert.doesNotMatch(html, /绝密采购成本/);
-  // 只读字段被渲染并带有只读标签和 disabled 属性
   assert.match(html, /受保护名称/);
   assert.match(html, /只读/);
   assert.match(html, /disabled/);

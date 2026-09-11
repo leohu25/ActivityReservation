@@ -24,6 +24,19 @@ export interface ListCustomerFilter {
   status?: string;
   keyword?: string;
   tagCode?: string;
+  /** 页码，从 1 开始 */
+  page?: number;
+  /** 每页条数，默认 20 */
+  pageSize?: number;
+}
+
+export interface ListCustomersResult {
+  items: Awaited<
+    ReturnType<TenantPrismaClient["customer"]["findMany"]>
+  >;
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export class CustomerService {
@@ -62,12 +75,16 @@ export class CustomerService {
   }
 
   /**
-   * 查询客户列表
+   * 查询客户列表（服务端分页：count + skip/take，禁止全量返回）
    */
   static async listCustomers(
     client: TenantPrismaClient,
     filter: ListCustomerFilter = {},
-  ) {
+  ): Promise<ListCustomersResult> {
+    const page = Math.max(1, filter.page ?? 1);
+    const pageSize = Math.min(100, Math.max(1, filter.pageSize ?? 20));
+    const skip = (page - 1) * pageSize;
+
     const where: any = {};
 
     if (filter.categoryCode) {
@@ -92,31 +109,40 @@ export class CustomerService {
       };
     }
 
-    return client.customer.findMany({
-      where,
-      include: {
-        category: true,
-        tagAssignments: {
-          include: {
-            tag: true,
-          },
-        },
-        stores: {
-          select: {
-            storeCode: true,
-            storeName: true,
-            status: true,
-          },
-        },
-        _count: {
-          select: {
-            stores: true,
-            quotes: true,
-          },
+    const include = {
+      category: true,
+      tagAssignments: {
+        include: {
+          tag: true,
         },
       },
-      orderBy: { createdAt: "desc" },
-    });
+      stores: {
+        select: {
+          storeCode: true,
+          storeName: true,
+          status: true,
+        },
+      },
+      _count: {
+        select: {
+          stores: true,
+          quotes: true,
+        },
+      },
+    } as const;
+
+    const [total, items] = await Promise.all([
+      client.customer.count({ where }),
+      client.customer.findMany({
+        where,
+        include,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pageSize,
+      }),
+    ]);
+
+    return { items, total, page, pageSize };
   }
 
   /**

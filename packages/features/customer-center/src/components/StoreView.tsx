@@ -2,11 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Building2, Store, Download } from "lucide-react";
+import { Plus, Download, RefreshCw, Building2 } from "lucide-react";
 import {
   DataTable,
   Button,
   Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Badge,
   DataTableRowActions,
   toast,
@@ -24,8 +29,15 @@ import type { StoreListItem, CustomerListItem } from "../types";
  * 门店档案列表页面入参属性契约
  */
 interface Props {
-  /** 初始门店列表数据集 */
+  /** 初始门店列表数据集（服务端当前页） */
   initialStores: StoreListItem[];
+  /** 服务端总条数 */
+  initialTotal?: number;
+  initialPage?: number;
+  initialPageSize?: number;
+  initialKeyword?: string;
+  initialCustomer?: string;
+  initialStatus?: string;
   /** 可选客户关联字典列表 */
   customers: CustomerListItem[];
   ability?: {
@@ -51,6 +63,12 @@ function useSafeRouter() {
  */
 export function StoreView({
   initialStores,
+  initialTotal,
+  initialPage = 1,
+  initialPageSize = 10,
+  initialKeyword = "",
+  initialCustomer = "",
+  initialStatus = "",
   customers,
   ability: explicitAbility,
   permissions,
@@ -70,14 +88,46 @@ export function StoreView({
   }, [explicitAbility, permissions]);
   const router = useSafeRouter();
   const [stores, setStores] = useState<StoreListItem[]>(initialStores);
+  const [total, setTotal] = useState(initialTotal ?? initialStores.length);
+  const [page, setPage] = useState(initialPage);
+  const [pageSize, setPageSize] = useState(initialPageSize);
 
   useEffect(() => {
     setStores(initialStores);
-  }, [initialStores]);
-  const [keyword, setKeyword] = useState("");
-  const [selectedCust, setSelectedCust] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("");
+    setTotal(initialTotal ?? initialStores.length);
+    setPage(initialPage);
+    setPageSize(initialPageSize);
+  }, [initialStores, initialTotal, initialPage, initialPageSize]);
+  const [keyword, setKeyword] = useState(initialKeyword);
+  const [selectedCust, setSelectedCust] = useState(initialCustomer);
+  const [selectedStatus, setSelectedStatus] = useState(initialStatus);
   const [loading, setLoading] = useState(false);
+
+  const navigateList = React.useCallback(
+    (patch: {
+      page?: number;
+      pageSize?: number;
+      keyword?: string;
+      customer?: string;
+      status?: string;
+    }) => {
+      const next = new URLSearchParams();
+      const p = patch.page ?? page;
+      const ps = patch.pageSize ?? pageSize;
+      const kw = patch.keyword !== undefined ? patch.keyword : keyword;
+      const cust =
+        patch.customer !== undefined ? patch.customer : selectedCust;
+      const st = patch.status !== undefined ? patch.status : selectedStatus;
+      if (p > 1) next.set("page", String(p));
+      if (ps !== 10) next.set("pageSize", String(ps));
+      if (kw) next.set("keyword", kw);
+      if (cust) next.set("customer", cust);
+      if (st) next.set("status", st);
+      const qs = next.toString();
+      router?.push(qs ? `?${qs}` : window.location.pathname);
+    },
+    [page, pageSize, keyword, selectedCust, selectedStatus, router],
+  );
 
   // 新建门店模态框表单状态
   const [showModal, setShowModal] = useState(false);
@@ -96,23 +146,9 @@ export function StoreView({
   const [billingPhone, setBillingPhone] = useState("");
 
   /**
-   * 客户端组合多条件实时筛选
+   * 服务端已过滤，客户端不再二次筛选
    */
-  const filteredStores = stores.filter((s) => {
-    if (selectedCust && s.customerCode !== selectedCust) return false;
-    if (selectedStatus && s.status !== selectedStatus) return false;
-    if (keyword) {
-      const matchName = s.storeName
-        .toLowerCase()
-        .includes(keyword.toLowerCase());
-      const matchCode = s.storeCode
-        .toLowerCase()
-        .includes(keyword.toLowerCase());
-      const matchAddr = s.address.toLowerCase().includes(keyword.toLowerCase());
-      if (!matchName && !matchCode && !matchAddr) return false;
-    }
-    return true;
-  });
+  const filteredStores = stores;
 
   /**
    * 提交新建门店主数据
@@ -427,85 +463,136 @@ export function StoreView({
   ];
 
   return (
-    <div className="space-y-4">
-      {/* 头部标题与新建按钮 */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-border/60">
-        <div>
-          <div className="flex items-center gap-2">
-            <Store className="size-5 text-primary" />
-            <h1 className="text-lg font-bold text-foreground">门店档案管理</h1>
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            门店是订单订货、物流配送、现场签收与对账的最小履约单元，必须归属于有效客户并绑定区域。
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {(!ability || ability.can("export", storePageContract.subject)) && (
+    <DataTable.Root
+      data={filteredStores}
+      columns={columns}
+      rowKey={(s: StoreListItem) => s.storeCode}
+      subject={storePageContract.subject}
+      ability={ability}
+      page={page}
+      pageSize={pageSize}
+      total={total}
+      onPageChange={(nextPage, nextPageSize) => {
+        setPage(nextPage);
+        setPageSize(nextPageSize);
+        navigateList({ page: nextPage, pageSize: nextPageSize });
+      }}
+    >
+      <DataTable.Header
+        category="BUSINESS WORKSPACE"
+        title="门店档案"
+        description="门店是订单订货、物流配送、现场签收与对账的最小履约单元，必须归属于有效客户并绑定区域。"
+        actions={
+          <DataTable.Toolbar>
             <Button
               variant="outline"
               size="sm"
-              onClick={handleExport}
-              className="font-semibold shadow-xs gap-1.5"
+              onClick={() => router?.refresh()}
+              className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
             >
-              <Download className="size-4 text-muted-foreground" />
-              <span>导出门店</span>
+              <RefreshCw className="size-3.5 text-muted-foreground" />
+              刷新
             </Button>
-          )}
-          {(!ability || ability.can("create", storePageContract.subject)) && (
-            <Button
-              size="sm"
-              onClick={() => setShowModal(true)}
-              className="font-semibold shadow-xs"
-            >
-              <Plus className="size-4 mr-1" />
-              <span>新建门店</span>
-            </Button>
-          )}
-        </div>
-      </div>
+            {(!ability || ability.can("export", storePageContract.subject)) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+                className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
+              >
+                <Download className="size-3.5 text-muted-foreground" />
+                导出
+              </Button>
+            )}
+            <DataTable.ColumnSettings />
+            {(!ability || ability.can("create", storePageContract.subject)) && (
+              <DataTable.ActionButton
+                action="create"
+                size="sm"
+                className="gap-1.5 shadow-xs"
+                onClick={() => setShowModal(true)}
+              >
+                <Plus className="size-3.5" />
+                新增
+              </DataTable.ActionButton>
+            )}
+          </DataTable.Toolbar>
+        }
+      />
 
-      {/* 复合积木化 DataTable */}
-      <DataTable.Root
-        data={filteredStores}
-        columns={columns}
-        rowKey={(s: StoreListItem) => s.storeCode}
-        subject={storePageContract.subject}
-        ability={ability}
-        total={filteredStores.length}
+      <DataTable.FilterBar
+        onSearch={() => {
+          setPage(1);
+          navigateList({ page: 1 });
+        }}
+        onReset={() => {
+          setKeyword("");
+          setSelectedCust("");
+          setSelectedStatus("");
+          setPage(1);
+          navigateList({ page: 1, keyword: "", customer: "", status: "" });
+        }}
       >
-        <DataTable.Toolbar>
-          <div className="flex flex-wrap items-center gap-2">
-            <DataTable.Search
-              value={keyword}
-              onChange={setKeyword}
-              placeholder="搜索门店名称、编码、收货地址..."
-            />
-            <DataTable.FacetedFilter
-              title="所属客户"
-              options={customers.map((c) => ({
-                label: c.customerName,
-                value: c.customerCode,
-              }))}
-              selectedValues={selectedCust ? [selectedCust] : []}
-              onSelect={(vals) => setSelectedCust(vals[0] || "")}
-              multiple={false}
-            />
-            <DataTable.FacetedFilter
-              title="状态"
-              options={[
-                { label: "正常", value: "ACTIVE" },
-                { label: "已停用", value: "DISABLED" },
-              ]}
-              selectedValues={selectedStatus ? [selectedStatus] : []}
-              onSelect={(vals) => setSelectedStatus(vals[0] || "")}
-              multiple={false}
-            />
-          </div>
-        </DataTable.Toolbar>
+        <DataTable.InputGroup label="关键字" className="w-64">
+          <Input
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                setPage(1);
+                navigateList({ page: 1 });
+              }
+            }}
+            placeholder="名称 / 编码 / 地址"
+          />
+        </DataTable.InputGroup>
+        <DataTable.InputGroup label="所属客户" className="w-52">
+          <Select
+            value={selectedCust || "ALL"}
+            onValueChange={(v) => {
+              const next = v === "ALL" ? "" : v;
+              setSelectedCust(next);
+              setPage(1);
+              navigateList({ page: 1, customer: next });
+            }}
+          >
+            <SelectTrigger className="border-0 shadow-none">
+              <SelectValue placeholder="全部" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">全部</SelectItem>
+              {customers.map((c) => (
+                <SelectItem key={c.customerCode} value={c.customerCode}>
+                  {c.customerName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </DataTable.InputGroup>
+        <DataTable.InputGroup label="状态" className="w-40">
+          <Select
+            value={selectedStatus || "ALL"}
+            onValueChange={(v) => {
+              const next = v === "ALL" ? "" : v;
+              setSelectedStatus(next);
+              setPage(1);
+              navigateList({ page: 1, status: next });
+            }}
+          >
+            <SelectTrigger className="border-0 shadow-none">
+              <SelectValue placeholder="全部" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">全部</SelectItem>
+              <SelectItem value="ACTIVE">正常</SelectItem>
+              <SelectItem value="DISABLED">已停用</SelectItem>
+            </SelectContent>
+          </Select>
+        </DataTable.InputGroup>
+      </DataTable.FilterBar>
 
-        <DataTable.Content />
-        <DataTable.Pagination />
-      </DataTable.Root>
+      <DataTable.Content selectable showIndex />
+      <DataTable.Pagination />
 
       {/* 新建门店模态框 */}
       {showModal && (
@@ -659,6 +746,6 @@ export function StoreView({
           </div>
         </div>
       )}
-    </div>
+    </DataTable.Root>
   );
 }

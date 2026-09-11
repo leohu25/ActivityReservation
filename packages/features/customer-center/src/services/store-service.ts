@@ -24,6 +24,17 @@ export interface ListStoreFilter {
   regionCode?: string;
   status?: string;
   keyword?: string;
+  /** 页码，从 1 开始 */
+  page?: number;
+  /** 每页条数，默认 10 */
+  pageSize?: number;
+}
+
+export interface ListStoresResult {
+  items: Awaited<ReturnType<TenantPrismaClient["customerStore"]["findMany"]>>;
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export class CustomerStoreService {
@@ -60,12 +71,16 @@ export class CustomerStoreService {
   }
 
   /**
-   * 门店列表查询
+   * 门店列表查询（服务端分页：count + skip/take）
    */
   static async listStores(
     client: TenantPrismaClient,
     filter: ListStoreFilter = {},
-  ) {
+  ): Promise<ListStoresResult> {
+    const page = Math.max(1, filter.page ?? 1);
+    const pageSize = Math.min(100, Math.max(1, filter.pageSize ?? 10));
+    const skip = (page - 1) * pageSize;
+
     const where: any = {};
 
     if (filter.customerCode) {
@@ -87,19 +102,26 @@ export class CustomerStoreService {
       ];
     }
 
-    return client.customerStore.findMany({
-      where,
-      include: {
-        customer: {
-          select: {
-            customerCode: true,
-            customerName: true,
-            status: true,
+    const [total, items] = await Promise.all([
+      client.customerStore.count({ where }),
+      client.customerStore.findMany({
+        where,
+        include: {
+          customer: {
+            select: {
+              customerCode: true,
+              customerName: true,
+              status: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pageSize,
+      }),
+    ]);
+
+    return { items, total, page, pageSize };
   }
 
   /**

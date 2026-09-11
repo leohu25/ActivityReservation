@@ -34,7 +34,7 @@ test("CustomerView 依据 export 权限动态控制【导出数据】按钮渲�
       },
     }),
   );
-  assert.match(htmlWithExport, /导出数据/, "拥有 export 权限时应渲染导出按钮");
+  assert.match(htmlWithExport, /导出/, "拥有 export 权限时应渲染导出按钮");
 
   // 场景 2: 未拥有 export 动作权限
   const htmlWithoutExport = renderToString(
@@ -50,7 +50,7 @@ test("CustomerView 依据 export 权限动态控制【导出数据】按钮渲�
   );
   assert.doesNotMatch(
     htmlWithoutExport,
-    /导出数据/,
+    /<button[^>]*>导出</,
     "无 export 权限时不应渲染导出按钮",
   );
 });
@@ -166,8 +166,8 @@ test("CustomerView 与 customerPageContract 契约 100% 对齐（无幽灵动作
       },
     }),
   );
-  assert.match(fullHtml, /新建客户/, "具有 create 权限时必须渲染新建按钮");
-  assert.match(fullHtml, /导出数据/, "具有 export 权限时必须渲染导出按钮");
+  assert.match(fullHtml, /新增/, "具有 create 权限时必须渲染新建按钮");
+  assert.match(fullHtml, /导出/, "具有 export 权限时必须渲染导出按钮");
   assert.match(
     fullHtml,
     /打开操作菜单/,

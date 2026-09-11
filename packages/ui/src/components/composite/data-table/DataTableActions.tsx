@@ -58,7 +58,6 @@ export function DataTableActionButton({
       return null;
     }
 
-    // 置灰并带 Tooltip 提示
     return (
       <TooltipProvider>
         <Tooltip>
@@ -122,7 +121,7 @@ export function DataTableActions({
   );
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("flex flex-wrap items-center gap-2", className)}>
       {typeof children === "function"
         ? children({ can, isAnySelected, selectedKeys: selectedArray })
         : children}

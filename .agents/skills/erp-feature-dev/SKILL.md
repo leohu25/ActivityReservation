@@ -24,6 +24,7 @@ agent_created: true
 4. **消息通知右上角 Toast 弹出**：严禁在页面顶部塞入静态红色大横幅挤压变形表格布局，所有操作反馈统一使用右上角 `toast`；
 5. **杜绝全页强刷**：严禁调用 `window.location.reload()`，状态变更由 React 本地 State 驱动即时响应，搭配 `router?.refresh()` 静默同步；
 6. **物理隔离路由**：业务数据必须由 `getTenantCustomerContext()` 动态路由至租户独立库，严禁硬编码或跨租户穿透。
+7. **一体化卡片容器**：列表页必须用 `DataTable.Root` 白卡整合标题/筛选/表格/分页，严禁零散漂浮在页面底色上（详见 `references/5-ui-components.md`）。
 
 ---
 

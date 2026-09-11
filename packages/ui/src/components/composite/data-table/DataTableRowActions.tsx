@@ -1,7 +1,7 @@
 "use client";
 
 import React, { type ReactNode, useState } from "react";
-import { MoreHorizontal, Eye, Edit2, Trash2 } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,12 +12,15 @@ import {
 import { Button } from "../../primitives/button";
 import { ConfirmDialog } from "../../feedback/ConfirmDialog";
 import { useDataTableContext } from "./DataTableContext";
+import { cn } from "../../../lib/utils";
 
 export interface RowActionItem<TRecord> {
   label: string;
   icon?: ReactNode;
   action?: string;
   variant?: "default" | "destructive";
+  /** 平铺展示时的样式 */
+  inlineClassName?: string;
   onClick: (record: TRecord) => void | Promise<void>;
   confirm?: {
     title: string;
@@ -42,8 +45,16 @@ export interface DataTableRowActionsProps<TRecord> {
     confirmText?: string;
     cancelText?: string;
   };
-  /** 扩展菜单项 */
+  /**
+   * 平铺文本链接操作（如「详情」「编辑」），直接展示在行内，缩短操作链路。
+   * 未提供时自动根据 onView/onEdit 生成默认平铺项。
+   */
+  inlineActions?: readonly RowActionItem<TRecord>[];
+  /** 次要/危险操作，折叠进 `...` 下拉菜单 */
   extraActions?: readonly RowActionItem<TRecord>[];
+  /** 是否强制使用纯下拉菜单模式（忽略 onView/onEdit 默认平铺） */
+  menuOnly?: boolean;
+  className?: string;
 }
 
 export function DataTableRowActions<TRecord>({
@@ -52,7 +63,10 @@ export function DataTableRowActions<TRecord>({
   onEdit,
   onDelete,
   deleteConfirm,
+  inlineActions,
   extraActions = [],
+  menuOnly = false,
+  className,
 }: DataTableRowActionsProps<TRecord>) {
   const { subject, ability } = useDataTableContext();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -70,86 +84,142 @@ export function DataTableRowActions<TRecord>({
   const canEdit = onEdit ? canPerform("update") : false;
   const canDelete = onDelete ? canPerform("delete") : false;
 
+  // 构建平铺操作列表
+  const resolvedInline: RowActionItem<TRecord>[] = React.useMemo(() => {
+    if (inlineActions) {
+      return inlineActions.filter((item) =>
+        item.action ? canPerform(item.action) : true,
+      );
+    }
+    if (menuOnly) return [];
+    const defaults: RowActionItem<TRecord>[] = [];
+    if (canView && onView) {
+      defaults.push({
+        label: "详情",
+        action: "read",
+        onClick: () => onView(record),
+      });
+    }
+    if (canEdit && onEdit) {
+      defaults.push({
+        label: "编辑",
+        action: "update",
+        onClick: () => onEdit(record),
+      });
+    }
+    return defaults;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inlineActions, menuOnly, canView, canEdit, onView, onEdit, record, subject, ability]);
+
   const validExtraActions = extraActions.filter((item) =>
     item.action ? canPerform(item.action) : true,
   );
 
+  // 若提供了 inlineActions，删除/查看/编辑也可按需放入下拉
+  const menuHasBuiltIn = menuOnly && (canView || canEdit);
   const hasAnyAction =
-    canView || canEdit || canDelete || validExtraActions.length > 0;
+    resolvedInline.length > 0 ||
+    canDelete ||
+    validExtraActions.length > 0 ||
+    menuHasBuiltIn;
 
   if (!hasAnyAction) {
     return null;
   }
 
+  const runAction = (item: RowActionItem<TRecord>) => {
+    if (item.confirm) {
+      setActiveConfirmAction(item);
+    } else {
+      void item.onClick(record);
+    }
+  };
+
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="size-7 p-0 text-muted-foreground hover:text-foreground"
-          >
-            <MoreHorizontal className="size-3.5" />
-            <span className="sr-only">打开操作菜单</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[140px] text-xs">
-          {canView && (
-            <DropdownMenuItem
-              onClick={() => onView?.(record)}
-              className="gap-2 cursor-pointer"
-            >
-              <Eye className="size-3.5 text-muted-foreground" />
-              <span>查看详情</span>
-            </DropdownMenuItem>
+    <div className={cn("flex items-center justify-end gap-0.5", className)}>
+      {/* 平铺文本链接操作 */}
+      {resolvedInline.map((item) => (
+        <Button
+          key={item.label}
+          type="button"
+          variant="link"
+          size="sm"
+          className={cn(
+            "h-auto p-0 px-1 text-xs font-medium no-underline hover:underline",
+            item.variant === "destructive"
+              ? "text-destructive"
+              : "text-primary",
+            item.inlineClassName,
           )}
+          onClick={() => runAction(item)}
+        >
+          {item.label}
+        </Button>
+      ))}
 
-          {canEdit && (
-            <DropdownMenuItem
-              onClick={() => onEdit?.(record)}
-              className="gap-2 cursor-pointer"
+      {/* 次要/危险操作折叠菜单 */}
+      {(validExtraActions.length > 0 ||
+        canDelete ||
+        (menuOnly && (canView || canEdit))) && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="size-7 p-0 text-muted-foreground hover:text-foreground"
             >
-              <Edit2 className="size-3.5 text-muted-foreground" />
-              <span>编辑记录</span>
-            </DropdownMenuItem>
-          )}
-
-          {validExtraActions.map((item, idx) => (
-            <DropdownMenuItem
-              key={idx}
-              onClick={() => {
-                if (item.confirm) {
-                  setActiveConfirmAction(item);
-                } else {
-                  void item.onClick(record);
-                }
-              }}
-              className={`gap-2 cursor-pointer ${
-                item.variant === "destructive" ? "text-destructive" : ""
-              }`}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </DropdownMenuItem>
-          ))}
-
-          {canDelete && (
-            <>
-              {(canView || canEdit || validExtraActions.length > 0) && (
-                <DropdownMenuSeparator />
-              )}
+              <MoreHorizontal className="size-3.5" />
+              <span className="sr-only">打开操作菜单</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[140px] text-xs">
+            {menuOnly && canView && onView && (
               <DropdownMenuItem
-                onClick={() => setDeleteConfirmOpen(true)}
-                className="gap-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                onClick={() => onView(record)}
+                className="gap-2 cursor-pointer"
               >
-                <Trash2 className="size-3.5" />
-                <span>删除记录</span>
+                <span>查看详情</span>
               </DropdownMenuItem>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+            )}
+            {menuOnly && canEdit && onEdit && (
+              <DropdownMenuItem
+                onClick={() => onEdit(record)}
+                className="gap-2 cursor-pointer"
+              >
+                <span>编辑记录</span>
+              </DropdownMenuItem>
+            )}
+
+            {validExtraActions.map((item) => (
+              <DropdownMenuItem
+                key={item.label}
+                onClick={() => runAction(item)}
+                className={cn(
+                  "gap-2 cursor-pointer",
+                  item.variant === "destructive" && "text-destructive",
+                )}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </DropdownMenuItem>
+            ))}
+
+            {canDelete && (
+              <>
+                {(menuHasBuiltIn || validExtraActions.length > 0) && (
+                  <DropdownMenuSeparator />
+                )}
+                <DropdownMenuItem
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  className="gap-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                >
+                  <span>删除记录</span>
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
       {/* 内置二次确认防误删弹窗 */}
       {canDelete && (
@@ -192,6 +262,6 @@ export function DataTableRowActions<TRecord>({
           }}
         />
       )}
-    </>
+    </div>
   );
 }

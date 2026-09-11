@@ -2,11 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, FileSpreadsheet, Download } from "lucide-react";
+import { Plus, Download, RefreshCw, Trash2 } from "lucide-react";
 import {
   DataTable,
   Button,
   Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Badge,
   DataTableRowActions,
   toast,
@@ -25,8 +30,12 @@ import type {
  * 报价单中心组件入参属性契约
  */
 interface Props {
-  /** 初始报价单列表数据 */
+  /** 初始报价单列表数据（服务端当前页） */
   initialQuotes: QuoteListItem[];
+  initialTotal?: number;
+  initialPage?: number;
+  initialPageSize?: number;
+  initialStatus?: string;
   /** 可选客户字典列表 */
   customers: CustomerListItem[];
   /** 可选门店字典列表 */
@@ -54,6 +63,10 @@ function useSafeRouter() {
  */
 export function QuoteView({
   initialQuotes,
+  initialTotal,
+  initialPage = 1,
+  initialPageSize = 10,
+  initialStatus = "",
   customers,
   stores,
   ability: explicitAbility,
@@ -74,13 +87,33 @@ export function QuoteView({
   }, [explicitAbility, permissions]);
   const router = useSafeRouter();
   const [quotes, setQuotes] = useState<QuoteListItem[]>(initialQuotes);
+  const [total, setTotal] = useState(initialTotal ?? initialQuotes.length);
+  const [page, setPage] = useState(initialPage);
+  const [pageSize, setPageSize] = useState(initialPageSize);
 
   useEffect(() => {
     setQuotes(initialQuotes);
-  }, [initialQuotes]);
-  const [keyword, setKeyword] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+    setTotal(initialTotal ?? initialQuotes.length);
+    setPage(initialPage);
+    setPageSize(initialPageSize);
+  }, [initialQuotes, initialTotal, initialPage, initialPageSize]);
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
   const [loading, setLoading] = useState(false);
+
+  const navigateList = React.useCallback(
+    (patch: { page?: number; pageSize?: number; status?: string }) => {
+      const next = new URLSearchParams();
+      const p = patch.page ?? page;
+      const ps = patch.pageSize ?? pageSize;
+      const st = patch.status !== undefined ? patch.status : statusFilter;
+      if (p > 1) next.set("page", String(p));
+      if (ps !== 10) next.set("pageSize", String(ps));
+      if (st) next.set("status", st);
+      const qs = next.toString();
+      router?.push(qs ? `?${qs}` : window.location.pathname);
+    },
+    [page, pageSize, statusFilter, router],
+  );
 
   // 新建报价单模态框表单状态
   const [showModal, setShowModal] = useState(false);
@@ -114,20 +147,8 @@ export function QuoteView({
     },
   ]);
 
-  /**
-   * 客户端条件筛选逻辑
-   */
-  const filteredQuotes = quotes.filter((q) => {
-    if (statusFilter && q.status !== statusFilter) return false;
-    if (keyword) {
-      const matchId = q.quoteId.toLowerCase().includes(keyword.toLowerCase());
-      const matchName = q.displayName
-        ?.toLowerCase()
-        .includes(keyword.toLowerCase());
-      if (!matchId && !matchName) return false;
-    }
-    return true;
-  });
+  /** 服务端已过滤，客户端不再二次筛选 */
+  const filteredQuotes = quotes;
 
   /**
    * 添加明细行
@@ -487,117 +508,139 @@ export function QuoteView({
   ];
 
   return (
-    <div className="space-y-4">
-      {/* 头部标题与新建按钮 */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-border/60">
-        <div>
-          <div className="flex items-center gap-2">
-            <FileSpreadsheet className="size-5 text-primary" />
-            <h1 className="text-lg font-bold text-foreground">
-              客户阶梯价与报价单中心
-            </h1>
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            按门店、客户、区域维护商品报价明细。报价优先级：门店专属报价 &gt;
-            客户通用报价 &gt; 区域保底报价。
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {(!ability || ability.can("export", quotePageContract.subject)) && (
+    <DataTable.Root
+      data={filteredQuotes}
+      columns={columns}
+      rowKey={(q: QuoteListItem) => q.quoteId}
+      subject={quotePageContract.subject}
+      ability={ability}
+      permissions={permissions}
+      page={page}
+      pageSize={pageSize}
+      total={total}
+      onPageChange={(nextPage, nextPageSize) => {
+        setPage(nextPage);
+        setPageSize(nextPageSize);
+        navigateList({ page: nextPage, pageSize: nextPageSize });
+      }}
+    >
+      <DataTable.Header
+        category="BUSINESS WORKSPACE"
+        title="客户阶梯价与报价单"
+        description="按门店、客户、区域维护商品报价明细。报价优先级：门店专属报价 > 客户通用报价 > 区域保底报价。"
+        actions={
+          <DataTable.Toolbar>
             <Button
               variant="outline"
               size="sm"
-              onClick={handleExport}
-              className="font-semibold shadow-xs gap-1.5"
+              onClick={() => router?.refresh()}
+              className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
             >
-              <Download className="size-4 text-muted-foreground" />
-              <span>导出报价单</span>
+              <RefreshCw className="size-3.5 text-muted-foreground" />
+              刷新
             </Button>
-          )}
-          {(!ability || ability.can("create", quotePageContract.subject)) && (
-            <Button
-              size="sm"
-              onClick={() => setShowModal(true)}
-              className="font-semibold shadow-xs"
-            >
-              <Plus className="size-4 mr-1" />
-              <span>拟定新报价单</span>
-            </Button>
-          )}
-        </div>
-      </div>
+            {(!ability || ability.can("export", quotePageContract.subject)) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+                className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
+              >
+                <Download className="size-3.5 text-muted-foreground" />
+                导出
+              </Button>
+            )}
+            <DataTable.ColumnSettings />
+            {(!ability || ability.can("create", quotePageContract.subject)) && (
+              <DataTable.ActionButton
+                action="create"
+                size="sm"
+                className="gap-1.5 shadow-xs"
+                onClick={() => setShowModal(true)}
+              >
+                <Plus className="size-3.5" />
+                新增
+              </DataTable.ActionButton>
+            )}
+          </DataTable.Toolbar>
+        }
+      />
 
-      {/* 复合积木化 DataTable */}
-      <DataTable.Root
-        data={filteredQuotes}
-        columns={columns}
-        rowKey={(q: QuoteListItem) => q.quoteId}
-        subject={quotePageContract.subject}
-        ability={ability}
-        permissions={permissions}
-        total={filteredQuotes.length}
+      <DataTable.FilterBar
+        onSearch={() => {
+          setPage(1);
+          navigateList({ page: 1 });
+        }}
+        onReset={() => {
+          setStatusFilter("");
+          setPage(1);
+          navigateList({ page: 1, status: "" });
+        }}
       >
-        <DataTable.Toolbar>
-          <div className="flex flex-wrap items-center gap-2">
-            <DataTable.Search
-              value={keyword}
-              onChange={setKeyword}
-              placeholder="搜索报价单号、对外简称..."
-            />
-            <DataTable.FacetedFilter
-              title="单据状态"
-              options={[
-                { label: "草稿", value: "DRAFT" },
-                { label: "已生效", value: "ACTIVE" },
-                { label: "已作废", value: "VOIDED" },
-                { label: "已过期", value: "EXPIRED" },
-              ]}
-              selectedValues={statusFilter ? [statusFilter] : []}
-              onSelect={(vals) => setStatusFilter(vals[0] || "")}
-              multiple={false}
-            />
-          </div>
-        </DataTable.Toolbar>
+        <DataTable.InputGroup label="状态" className="w-44">
+          <Select
+            value={statusFilter || "ALL"}
+            onValueChange={(v) => {
+              const next = v === "ALL" ? "" : v;
+              setStatusFilter(next);
+              setPage(1);
+              navigateList({ page: 1, status: next });
+            }}
+          >
+            <SelectTrigger className="border-0 shadow-none">
+              <SelectValue placeholder="全部" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">全部</SelectItem>
+              <SelectItem value="DRAFT">草稿</SelectItem>
+              <SelectItem value="ACTIVE">已生效</SelectItem>
+              <SelectItem value="VOIDED">已作废</SelectItem>
+              <SelectItem value="EXPIRED">已过期</SelectItem>
+            </SelectContent>
+          </Select>
+        </DataTable.InputGroup>
+      </DataTable.FilterBar>
 
-        <DataTable.Content
-          renderExpandedRow={(q: QuoteListItem) => (
-            <div className="space-y-2">
-              <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <span>商品定价明细清单</span>
-                <span className="font-mono text-muted-foreground font-normal">
-                  ({q.items?.length || 0} 个品项)
-                </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                {q.items?.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="p-2.5 rounded border border-border/70 bg-card text-xs flex justify-between items-center"
-                  >
-                    <div>
-                      <div className="font-medium text-foreground">
-                        {item.itemName}
-                      </div>
-                      <div className="font-mono text-[10px] text-muted-foreground">
-                        {item.itemCode}
-                      </div>
+      <DataTable.Content
+        selectable
+        showIndex
+        renderExpandedRow={(q: QuoteListItem) => (
+          <div className="space-y-2">
+            <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <span>商品定价明细清单</span>
+              <span className="font-mono text-muted-foreground font-normal">
+                ({q.items?.length || 0} 个品项)
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+              {q.items?.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="p-2.5 rounded border border-border/70 bg-card text-xs flex justify-between items-center"
+                >
+                  <div>
+                    <div className="font-medium text-foreground">
+                      {item.itemName}
                     </div>
-                    <div className="text-right">
-                      <div className="font-mono font-semibold text-primary">
-                        ¥{Number(item.unitPriceInclTax || 0).toFixed(2)}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground">
-                        单位: {item.salesUnit}
-                      </div>
+                    <div className="font-mono text-[10px] text-muted-foreground">
+                      {item.itemCode}
                     </div>
                   </div>
-                ))}
-              </div>
+                  <div className="text-right">
+                    <div className="font-mono font-semibold text-primary">
+                      ¥{Number(item.unitPriceInclTax || 0).toFixed(2)}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      单位: {item.salesUnit}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
-        />
-        <DataTable.Pagination />
-      </DataTable.Root>
+          </div>
+        )}
+      />
+      <DataTable.Pagination />
 
       {/* 新增报价单抽屉/模态框 */}
       {showModal && (
@@ -892,6 +935,6 @@ export function QuoteView({
           </div>
         </div>
       )}
-    </div>
+    </DataTable.Root>
   );
 }

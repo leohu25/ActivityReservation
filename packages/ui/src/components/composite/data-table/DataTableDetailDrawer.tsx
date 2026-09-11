@@ -2,51 +2,42 @@
 
 import type { ReactNode } from "react";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from "../../primitives/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../../primitives/dialog";
 import { Button } from "../../primitives/button";
 import { cn } from "../../../lib/utils";
 
 export interface DataTableDetailDrawerProps<TRecord = any> {
-  /** 当前选中的记录（非 null/undefined 时自动打开） */
   record: TRecord | null;
-  /** 关闭抽屉回调 */
   onClose: () => void;
-  /** 抽屉主标题，支持字符串或动态渲染函数 */
   title?: ReactNode | ((record: TRecord) => ReactNode);
-  /** 抽屉副标题或业务说明 */
   description?: ReactNode | ((record: TRecord) => ReactNode);
-  /** 自定义详情主体内容插槽 */
+  badge?: string;
   children: ReactNode | ((record: TRecord) => ReactNode);
-  /** 底部操作栏插槽（如关闭、打印、进入编辑等） */
   footer?: ReactNode | ((record: TRecord, close: () => void) => ReactNode);
-  /** 是否以内联/嵌入模式渲染（用于非弹层嵌入面板或 SSR 渲染断言），默认 false */
   inline?: boolean;
-  /** 抽屉宽度规格，默认 sm:max-w-lg */
   className?: string;
 }
 
 /**
- * 列表通用 CRUD - 详情查看抽屉插槽 (DataTableDetailDrawer)
- * 开箱即用，支持自由传递标题、详情内容与底部操作插槽
+ * 列表通用 CRUD - 详情查看居中弹窗
+ * 与 FormModal 同构：品牌徽标页头 + 内容区 + 左提示/右按钮组底栏。
  */
 export function DataTableDetailDrawer<TRecord = any>({
   record,
   onClose,
   title = "数据详情查看",
   description,
+  badge = "CR",
   children,
   footer,
   inline = false,
   className,
 }: DataTableDetailDrawerProps<TRecord>) {
-  const isOpen = Boolean(record);
-
   if (!record) {
     return null;
   }
@@ -59,86 +50,82 @@ export function DataTableDetailDrawer<TRecord = any>({
   const renderedFooter =
     typeof footer === "function" ? footer(record, onClose) : footer;
 
-  const innerContent = (
-    <div className="space-y-4">
-      <SheetHeader className="pb-3 border-b border-border/60">
-        <SheetTitle className="text-base font-semibold text-foreground">
+  const brandHeader = (
+    <div className="flex items-start gap-3 pr-8">
+      <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-xs font-bold tracking-wide text-primary-foreground shadow-xs">
+        {badge}
+      </span>
+      <div className="min-w-0 flex-1 space-y-1 pt-0.5">
+        <div className="text-base font-semibold tracking-tight text-foreground">
           {renderedTitle}
-        </SheetTitle>
-        {renderedDescription && (
-          <SheetDescription className="text-xs text-muted-foreground">
+        </div>
+        {renderedDescription ? (
+          <p className="text-xs leading-relaxed text-muted-foreground">
             {renderedDescription}
-          </SheetDescription>
-        )}
-      </SheetHeader>
-      <div className="py-2">{renderedContent}</div>
-      <SheetFooter className="pt-3 border-t border-border/60 flex sm:justify-end gap-2">
-        {renderedFooter ? (
-          renderedFooter
-        ) : (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onClose}
-            className="text-xs"
-          >
-            关闭
-          </Button>
-        )}
-      </SheetFooter>
+          </p>
+        ) : null}
+      </div>
     </div>
+  );
+
+  const defaultFooter = (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={onClose}
+      className="min-w-[72px] text-sm"
+    >
+      关闭
+    </Button>
   );
 
   if (inline) {
     return (
       <div
-        data-slot="detail-drawer-inline"
+        data-slot="detail-modal-inline"
         className={cn(
-          "rounded-lg border border-border/70 bg-card p-4 shadow-xs space-y-4",
+          "rounded-xl border border-border/70 bg-card p-5 shadow-xs",
           className,
         )}
       >
-        <div className="pb-3 border-b border-border/60">
-          <div className="text-base font-semibold text-foreground">
-            {renderedTitle}
+        <div className="space-y-4">
+          <div className="border-b border-border/60 pb-4">{brandHeader}</div>
+          <div>{renderedContent}</div>
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/60 pt-4">
+            {renderedFooter ?? defaultFooter}
           </div>
-          {renderedDescription && (
-            <p className="text-xs text-muted-foreground mt-1">
-              {renderedDescription}
-            </p>
-          )}
-        </div>
-        <div className="py-2">{renderedContent}</div>
-        <div className="pt-3 border-t border-border/60 flex justify-end gap-2">
-          {renderedFooter ? (
-            renderedFooter
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onClose}
-              className="text-xs"
-            >
-              关闭
-            </Button>
-          )}
         </div>
       </div>
     );
   }
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
         className={cn(
-          "sm:max-w-lg flex flex-col justify-between overflow-y-auto",
+          "max-h-[90vh] w-[min(860px,calc(100vw-2rem))] gap-0 overflow-hidden rounded-2xl border border-border/80 bg-card p-0 shadow-xl sm:max-w-none",
           className,
         )}
       >
-        {innerContent}
-      </SheetContent>
-    </Sheet>
+        <div className="flex max-h-[90vh] flex-col bg-card">
+          <div className="flex-1 space-y-4 overflow-y-auto bg-card px-6 pb-5 pt-5">
+            {brandHeader}
+            <DialogHeader className="sr-only">
+              <DialogTitle>{renderedTitle}</DialogTitle>
+              {renderedDescription ? (
+                <DialogDescription>{renderedDescription}</DialogDescription>
+              ) : null}
+            </DialogHeader>
+            <div>{renderedContent}</div>
+          </div>
+          <div className="shrink-0 border-t border-border/80 bg-card px-6 py-4">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {renderedFooter ?? defaultFooter}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

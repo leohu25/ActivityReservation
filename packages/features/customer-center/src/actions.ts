@@ -104,6 +104,8 @@ export const listCustomersAction = defineServerAction(
     status?: string;
     keyword?: string;
     tagCode?: string;
+    page?: number;
+    pageSize?: number;
   }) => {
     const { client } = await getTenantCustomerContext();
     return CustomerService.listCustomers(client, filter);
@@ -170,6 +172,8 @@ export const listStoresAction = defineServerAction(
     regionCode?: string;
     status?: string;
     keyword?: string;
+    page?: number;
+    pageSize?: number;
   }) => {
     const { client } = await getTenantCustomerContext();
     return CustomerStoreService.listStores(client, filter);
@@ -236,6 +240,8 @@ export const listQuotesAction = defineServerAction(
     storeCode?: string;
     regionCode?: string;
     status?: string;
+    page?: number;
+    pageSize?: number;
   }) => {
     const { client } = await getTenantCustomerContext();
     return CustomerQuoteService.listQuotes(client, filter);
