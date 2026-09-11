@@ -108,6 +108,7 @@ if (!fs.existsSync(scopeFile)) {
 }
 
 // 4. 解析 scope.md 中的白名单（支持主白名单与附带联动修改 Spillover 白名单）
+//    同时兼容 yaml 代码块中的 whitelist_patterns / forbidden_patterns（仅作放行参考）
 const scopeContent = fs.readFileSync(scopeFile, "utf-8");
 const whitelist = [];
 const spilloverList = [];
@@ -144,12 +145,38 @@ for (const line of lines) {
     if (item.includes("#")) {
       item = item.split("#")[0].trim();
     }
+    item = item
+      .replace(/^["'`]|["'`]$/g, "")
+      .trim();
     if (item) {
       if (currentSection === "whitelist") {
         whitelist.push(item);
       } else {
         spilloverList.push(item);
       }
+    }
+  }
+}
+
+// 兼容 yaml 代码块中的 whitelist_patterns（部分历史 scope 用 yaml 而非 markdown 列表）
+{
+  const yamlBlock = scopeContent.match(/```yaml([\s\S]*?)```/);
+  if (yamlBlock) {
+    const yLines = yamlBlock[1].split("\n");
+    let inWhitelist = false;
+    for (const raw of yLines) {
+      const t = raw.trim();
+      if (/^whitelist_patterns\s*:/.test(t)) {
+        inWhitelist = true;
+        continue;
+      }
+      if (/^[a-zA-Z_]/.test(t) && t.endsWith(":")) {
+        inWhitelist = false;
+        continue;
+      }
+      if (!inWhitelist) continue;
+      const m = t.match(/^-\s+["']?([^"']+)["']?\s*$/);
+      if (m) whitelist.push(m[1].trim());
     }
   }
 }
@@ -165,6 +192,8 @@ const universalAllowed = [
   ".agents/skills/**",
   ".harness/memory/**",
   ".harness/patches/**",
+  ".harness/context/**",
+  ".harness/features/_template/**",
   `.harness/features/${activeFeature}/**`,
 ];
 
@@ -205,31 +234,114 @@ if (violations.length > 0) {
   process.stdout.write(
     `  \x1b[33m⚠ [Boundary Warning] 检测到 ${violations.length} 个非白名单边界文件变动 (当前特性: ${activeFeature}):\x1b[0m\n`,
   );
-  for (const v of violations) {
+  // 超长列表只展示前 8 个 + 汇总，避免刷屏占上下文
+  const preview = violations.slice(0, 8);
+  for (const v of preview) {
     process.stdout.write(`      \x1b[33m• ${v}\x1b[0m\n`);
   }
+  if (violations.length > preview.length) {
+    process.stdout.write(
+      `      \x1b[33m… 以及另外 ${violations.length - preview.length} 个文件\x1b[0m\n`,
+    );
+  }
 
-  // 自动将非白名单变更追加记录至当前特性的 scope.md (Spillover 区域)，由智能体/系统自动完成持久化
+  // 自动扩围：按目录聚合成通配符条目（文件数 + commit），避免逐文件平铺
   try {
-    let scopeContent = fs.readFileSync(scopeFile, "utf-8");
-    const spilloverHeader = "## 附带修改与前置联动 (Spillover / 联动扩围)";
-    const newRecords = violations
-      .map((f) => `- \`${f}\` # 理由：会话开发过程中检测到的联动修改，自动登记扩围`)
-      .join("\n");
+    const shortCommit = (() => {
+      try {
+        return execSync("git rev-parse --short HEAD", {
+          cwd: workspaceRoot,
+          encoding: "utf-8",
+          stdio: ["pipe", "pipe", "ignore"],
+        }).trim();
+      } catch {
+        return "uncommitted";
+      }
+    })();
 
-    if (scopeContent.includes(spilloverHeader)) {
-      scopeContent = scopeContent.replace(
-        spilloverHeader,
-        `${spilloverHeader}\n\n${newRecords}`,
-      );
-    } else {
-      scopeContent += `\n\n${spilloverHeader}\n\n${newRecords}\n`;
+    // 已有模式（whitelist + spillover）用于去重
+    const existingPatterns = new Set(
+      [...whitelist, ...spilloverList].map((p) =>
+        p.replace(/\\/g, "/").trim(),
+      ),
+    );
+
+    // 按父目录分组
+    const byDir = new Map();
+    for (const f of violations) {
+      const norm = f.replace(/\\/g, "/");
+      const idx = norm.lastIndexOf("/");
+      const dir = idx === -1 ? "." : norm.slice(0, idx);
+      if (!byDir.has(dir)) byDir.set(dir, []);
+      byDir.get(dir).push(norm);
     }
 
-    fs.writeFileSync(scopeFile, scopeContent, "utf-8");
-    process.stdout.write(
-      `    \x1b[32m✔ [Auto-Recorded] 已自动将上述 ${violations.length} 个文件扩围记录到 .harness/features/${activeFeature}/scope.md 中。\x1b[0m\n`,
-    );
+    const newEntries = [];
+    for (const [dir, files] of byDir) {
+      const pattern = dir === "." ? "**" : `${dir}/**`;
+      // 已被更宽或同级模式覆盖则跳过
+      if (existingPatterns.has(pattern)) continue;
+      if (
+        files.some((f) =>
+          [...existingPatterns].some((p) => matchPattern(f, p)),
+        ) &&
+        files.every((f) =>
+          [...existingPatterns].some((p) => matchPattern(f, p)),
+        )
+      ) {
+        continue;
+      }
+      // 目录内仅 1 个文件时保留精确路径，便于审计
+      const entry =
+        files.length === 1 ? files[0] : pattern;
+      const countNote =
+        files.length === 1
+          ? `1 file @ ${shortCommit}`
+          : `${files.length} files @ ${shortCommit}`;
+      newEntries.push({ entry, countNote, files });
+      existingPatterns.add(entry);
+    }
+
+    if (newEntries.length === 0) {
+      process.stdout.write(
+        `    \x1b[90m> 扩围条目均已被现有白名单/通配符覆盖，无需追加。\x1b[0m\n`,
+      );
+    } else {
+      const spilloverHeader =
+        "## 附带修改与前置联动 (Spillover / 联动扩围)";
+      const headerNote =
+        "> 自动扩围按目录聚合；单文件精确登记，同目录 ≥2 文件折叠为 `dir/**`。";
+      const newRecords = newEntries
+        .map((e) => `- \`${e.entry}\` # ${e.countNote}，联动修改自动登记`)
+        .join("\n");
+
+      let next = fs.readFileSync(scopeFile, "utf-8");
+      const alreadyNoted = next.includes("自动扩围按目录聚合");
+      const noteLine = alreadyNoted ? "" : `${headerNote}\n\n`;
+
+      if (next.includes(spilloverHeader)) {
+        // 追加到 spillover 小节末尾（下一个 ## 标题之前）
+        const headerIdx = next.indexOf(spilloverHeader);
+        const afterHeader = next.indexOf("\n## ", headerIdx + spilloverHeader.length);
+        const insertAt = afterHeader === -1 ? next.length : afterHeader;
+        const block = `${alreadyNoted ? "" : noteLine}${newRecords}\n`;
+        // 若小节为空，保留一个空行
+        next =
+          next.slice(0, insertAt).replace(/\s*$/, "\n") +
+          block +
+          (afterHeader === -1 ? "" : next.slice(insertAt));
+      } else {
+        next += `\n\n${spilloverHeader}\n${headerNote}\n\n${newRecords}\n`;
+      }
+      fs.writeFileSync(scopeFile, next, "utf-8");
+      const totalFiles = newEntries.reduce(
+        (s, e) => s + e.files.length,
+        0,
+      );
+      process.stdout.write(
+        `    \x1b[32m✔ [Auto-Recorded] 已折叠登记 ${newEntries.length} 条目录级扩围（覆盖 ${totalFiles} 个文件，commit ${shortCommit}）到 scope.md。\x1b[0m\n`,
+      );
+    }
   } catch (err) {
     process.stdout.write(
       `    \x1b[90m> 提示：自动追加 scope.md 失败: ${err.message}，请人工确保已记录。\x1b[0m\n`,
@@ -237,7 +349,7 @@ if (violations.length > 0) {
   }
 
   process.stdout.write(
-    `• 沙盒边界: \x1b[33m告警通过并自动记录\x1b[0m (${changedFiles.length} 个变动文件，其中 ${violations.length} 个附带修改已自动登记)\n`,
+    `• 沙盒边界: \x1b[33m告警通过并自动记录\x1b[0m (${changedFiles.length} 个变动文件，其中 ${violations.length} 个附带修改已聚合登记)\n`,
   );
   process.exit(0);
 }

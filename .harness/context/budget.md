@@ -15,7 +15,16 @@
 
 ---
 
-## 二、 80% 上下文紧缩触发规则 (Compaction Rule)
+## 二、 Token 紧缩硬规则 (Anti-Bloat Invariants)
+
+1. **扩围登记按目录聚合**：`check-boundary.mjs` 自动折叠为 `dir/** # N files @ commit`；禁止在 `scope.md` 逐文件流水账。
+2. **测试输出只报异常**：各包 `test` 使用 `scripts/fail-only-reporter.mjs`；全绿仅 `ok N/N`，回执/progress 只记该行或失败摘要，禁止粘贴成功用例明细。
+3. **证据一行化**：`feature_list.json` 的 `evidence` 与 progress 验证记录控制在一行摘要（命令 + N/N + commit），详情指针到 `verification.md`。
+4. **上下文按需加载**：优先 grep 定位后再精读；禁止整目录 `ls`/通读 README 当背景。
+
+---
+
+## 三、 80% 上下文紧缩触发规则 (Compaction Rule)
 
 - 当单次会话累积使用的 Token 达到模型上下文窗口上限的 **80%** 时，智能体必须主动执行紧缩总结：
   1. 将已完成的推演结论与代码 Diff 沉淀回写至 `progress.md` 与 `handoff.md`。

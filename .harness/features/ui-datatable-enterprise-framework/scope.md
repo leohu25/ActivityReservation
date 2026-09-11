@@ -1,195 +1,85 @@
 # ui-datatable-enterprise-framework 白名单范围
 
-```yaml
-# 允许修改的源码与测试文件白名单
-whitelist_patterns:
-  - "packages/ui/src/components/composite/data-table/**"
-  - "packages/ui/src/components/primitives/table.tsx"
-  - ".agents/skills/erp-feature-dev/**"
-  - "feature_list.json"
-  - "member.local.md"
-  - ".harness/features/ui-datatable-enterprise-framework/**"
-  # 服务端分页闭环：客户列表 API/页面接线（用户明确要求禁止全量客户端分页）
-  - "packages/features/customer-center/src/components/CustomerView.tsx"
-  - "packages/features/customer-center/src/components/CustomerView.test.tsx"
-  - "packages/features/customer-center/src/components/StoreView.tsx"
-  - "packages/features/customer-center/src/components/QuoteView.tsx"
-  - "packages/features/customer-center/src/services/customer-service.ts"
-  - "packages/features/customer-center/src/actions.ts"
-  - "packages/features/customer-center/src/types.ts"
-  - "apps/tenant/src/app/**/customer/**"
-  # shadcn 外壳收敛（用户明确要求：Sidebar/TopHeader/ThemeToggle/Card/语义色）
-  - "packages/ui/src/components/layout/**"
-  - "packages/ui/src/components/templates/**"
-  - "packages/ui/src/components/shadcn/**"
-  - "packages/ui/src/hooks/**"
-  - "packages/ui/src/components/ThemeToggle.tsx"
-  - "packages/ui/src/components/DictionarySectionCard.tsx"
-  - "apps/*/src/app/globals.css"
-  - "apps/tenant/src/app/(dashboard)/layout.tsx"
+## 允许修改的文件与目录 (修改白名单)
 
-# 严禁越界的目录
-forbidden_patterns:
-  - "apps/**"
-  - "packages/features/**"
-  - "packages/db-*/**"
-  - "packages/auth/**"
-  - "packages/authorization/**"
-```
+### UI 积木与外壳
+- `packages/ui/src/components/composite/data-table/**`
+- `packages/ui/src/components/composite/form/**`
+- `packages/ui/src/components/primitives/table.tsx`
+- `packages/ui/src/components/layout/**`
+- `packages/ui/src/components/templates/**`
+- `packages/ui/src/components/shadcn/**`
+- `packages/ui/src/hooks/**`
+- `packages/ui/src/components/ThemeToggle.tsx`
+- `packages/ui/src/components/DictionarySectionCard.tsx`
+- `packages/ui/src/components/AuthorizedField.tsx`
+- `packages/ui/src/components/index.ts`
+- `packages/ui/src/index.ts`
+- `packages/ui/src/lib/**`
+- `packages/ui/package.json`
+- `packages/ui/components.json`
+- `packages/ui/README.md`
 
+### 业务接线（客户中心服务端分页）
+- `packages/features/customer-center/src/components/CustomerView.tsx`
+- `packages/features/customer-center/src/components/CustomerView.test.tsx`
+- `packages/features/customer-center/src/components/StoreView.tsx`
+- `packages/features/customer-center/src/components/QuoteView.tsx`
+- `packages/features/customer-center/src/services/customer-service.ts`
+- `packages/features/customer-center/src/actions.ts`
+- `packages/features/customer-center/src/types.ts`
+- `apps/tenant/src/app/**/customer/**`
+
+### 应用外壳与样式
+- `apps/*/src/app/globals.css`
+- `apps/tenant/src/app/(dashboard)/layout.tsx`
+
+### 工程协同
+- `.agents/skills/erp-feature-dev/**`
+- `feature_list.json`
+- `member.local.md`
+- `.harness/features/ui-datatable-enterprise-framework/**`
 
 ## 附带修改与前置联动 (Spillover / 联动扩围)
+> 自动扩围按目录聚合；单文件精确登记，同目录 ≥2 文件折叠为 `dir/**`。格式：`pattern # N files @ commit`
 
-- `packages/ui/src/Sidebar.test.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/ThemeToggle.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
+### 历史会话（DataTable / 权限 / 分页联动）
+- `packages/ui/src/Sidebar.test.ts` # 1 file @ historical，联动 sidebar 改写
+- `packages/ui/src/components/ExceptionList.tsx` # 1 file @ historical
+- `packages/ui/src/components/MetricCard.tsx` # 1 file @ historical
+- `packages/ui/src/components/ProcessStepper.tsx` # 1 file @ historical
+- `packages/ui/src/components/feedback/**` # 4 files @ historical，Empty/Toast 空态范式
+- `packages/ui/src/components/primitives/**` # 5 files @ historical，dialog/dropdown/sheet 等
+- `packages/authorization/**` # 6 files @ historical，权限消费对齐（ability/catalog/field-policy）
+- `packages/features/customer-center/**` # 12 files @ historical，分页与权限联动（已部分落入上方业务白名单）
+- `packages/features/tenant-admin/src/components/**` # 9 files @ historical，DataTable 装配范式
+- `packages/features/tenant-admin/src/permission-registry.ts` # 1 file @ historical，权限目录收敛
+- `packages/features/procurement-center/src/components/ProcurementOrderCenter.tsx` # 1 file @ historical，表格范式对齐
+- `packages/shared/src/utils/**` # 2 files @ historical，导出工具
+- `apps/tenant/src/app/(dashboard)/settings/roles/page.tsx` # 1 file @ historical，权限页联动
+- `apps/tenant/src/kernel/permissions.ts` # 1 file @ historical，权限内核
+- `pnpm-lock.yaml` # 1 file @ historical，依赖变更
+- `.harness/features/arch-authz-consolidation/**` # 5 files @ historical，特性沙盒交叉引用
 
-- `.harness/features/arch-authz-consolidation/context.md` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `.harness/features/arch-authz-consolidation/handoff.md` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `.harness/features/arch-authz-consolidation/progress.md` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `.harness/features/arch-authz-consolidation/scope.md` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `.harness/features/arch-authz-consolidation/verification.md` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `apps/tenant/src/app/(dashboard)/settings/roles/page.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `apps/tenant/src/kernel/permissions.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/authorization/src/ability/ability-factory.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/authorization/src/core/catalog.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/authorization/src/core/manifest.test.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/authorization/src/fields/field-policy.test.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/authorization/src/fields/field-policy.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/authorization/src/index.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/package.json` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/catalog.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/components/CategoryTagView.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/components/CreateCategoryModal.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/components/CreateCustomerModal.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/components/CreateQuoteModal.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/components/CreateStoreModal.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/components/CreateTagModal.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/components/index.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/contracts/customer.contract.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/index.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/server/session.test.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/server/session.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/procurement-center/src/components/ProcurementOrderCenter.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/tenant-admin/src/components/CreateRoleModal.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/tenant-admin/src/components/DepartmentFormModal.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/tenant-admin/src/components/DepartmentView.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/tenant-admin/src/components/GeneralSettingsView.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/tenant-admin/src/components/PositionFormModal.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/tenant-admin/src/components/PositionView.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/tenant-admin/src/components/RolePermissionManager.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/tenant-admin/src/components/SecuritySettingsView.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/tenant-admin/src/components/index.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/tenant-admin/src/permission-registry.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/shared/src/utils/export/index.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/shared/src/utils/index.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/README.md` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/components.json` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/package.json` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/AuthorizedField.test.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/AuthorizedField.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/DictionarySectionCard.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/ExceptionList.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/MetricCard.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/ProcessStepper.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableBatchBar.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableFacetedFilter.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableFilterDrawer.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableFormSchema.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableSearch.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/form/TagMultiSelect.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/form/index.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/feedback/ConfirmDialog.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/feedback/FeedbackBanner.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/feedback/Toast.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/feedback/index.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/index.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/layout/Sidebar.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/layout/TopHeader.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/primitives/dialog.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/primitives/dropdown-menu.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/primitives/index.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/primitives/separator.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/primitives/sheet.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/accordion.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/alert-dialog.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/alert.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/avatar.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/badge.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/breadcrumb.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/button.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/calendar.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/card.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/checkbox.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/collapsible.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/command.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/context-menu.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/dialog.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/dropdown-menu.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/form.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/hover-card.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/index.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/input.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/label.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/menubar.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/navigation-menu.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/pagination.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/popover.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/progress.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/radio-group.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/resizable.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/scroll-area.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/select.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/separator.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/sheet.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/skeleton.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/slider.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/sonner.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/switch.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/table.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/tabs.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/textarea.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/toggle-group.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/toggle.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/tooltip.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/templates/DashboardShell.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/templates/DataTableWorkspace.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/templates/PageShell.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/templates/index.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/index.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/lib/use-list-url-nav.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/lib/use-safe-router.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `pnpm-lock.yaml` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
+### Harness 工程优化（token 瘦身）
+- `scripts/**` # 2 files @ fb73ace，fail-only reporter + 边界通配符聚合
+- `packages/ui/package.json` # 1 file @ fb73ace，test 挂 fail-only reporter
+- `packages/shared/package.json` # 1 file @ fb73ace，test 挂 fail-only reporter
+- `packages/auth/package.json` # 1 file @ fb73ace，test 挂 fail-only reporter
+- `packages/authorization/package.json` # 1 file @ fb73ace，test 挂 fail-only reporter
+- `packages/db-control/package.json` # 1 file @ fb73ace，test 挂 fail-only reporter
+- `packages/db-tenant/package.json` # 1 file @ fb73ace，test 挂 fail-only reporter
+- `packages/features/customer-center/package.json` # 1 file @ fb73ace，test 挂 fail-only reporter
+- `packages/features/tenant-admin/package.json` # 1 file @ fb73ace，test 挂 fail-only reporter
+- `packages/features/procurement-center/package.json` # 1 file @ fb73ace，test 挂 fail-only reporter
+- `packages/features/control-admin/package.json` # 1 file @ fb73ace，test 挂 fail-only reporter
+- `tooling/db-migrate/package.json` # 1 file @ fb73ace，test 挂 fail-only reporter
+- `.harness/features/_template/scope.md` # 1 file @ fb73ace，扩围格式模板
 
-- `apps/tenant/src/app/(dashboard)/customer/customers/page.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `apps/tenant/src/app/(dashboard)/customer/quotes/page.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `apps/tenant/src/app/(dashboard)/customer/stores/page.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/actions.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/components/CustomerView.test.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/components/CustomerView.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/components/QuoteView.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/components/StoreView.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/services/customer-service.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/services/quote-service.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/features/customer-center/src/services/store-service.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTable.test.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableActions.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableColumnSettings.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableContent.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableContext.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableDetailDrawer.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableDetailLayout.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableFilterBar.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableFormLayout.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableFormModal.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableHeader.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableInputGroup.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTablePagination.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableRoot.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableRowActions.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/DataTableToolbar.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/composite/data-table/index.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
-- `packages/ui/src/components/shadcn/sidebar.tsx` # 理由：本会话安装官方 sidebar 并接入业务侧栏
-- `packages/ui/src/hooks/use-mobile.ts` # 理由：sidebar 官方依赖 useIsMobile
-- `apps/tenant/src/app/globals.css` # 理由：补齐 --sidebar-* 设计 token
-- `apps/control/src/app/globals.css` # 理由：补齐 --sidebar-* 设计 token
-- `apps/tenant/src/app/(dashboard)/layout.tsx` # 理由：顶栏企业徽标对齐 sidebar token
+## 严禁修改的内容 (受保护区域)
+
+- `apps/**`（上方 customer/globals/layout 白名单除外）
+- `packages/features/**`（上方 customer-center 业务白名单除外）
+- `packages/db-*/**`
+- `packages/auth/**`
+- `packages/authorization/**`（仅历史 spillover 记录，新改动需重新扩围）

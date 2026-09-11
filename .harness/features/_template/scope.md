@@ -8,10 +8,11 @@
 
 ## 附带修改与前置联动 (Spillover / 联动扩围)
 >
-> 当开发本特性必须联动微调共享库或底层接口契约时在此声明，并注明扩围理由，避免边界拦截阻断正常研发：
+> 必须联动微调共享库时在此声明。**按目录通配符聚合，禁止逐文件流水账**。
+> 自动扩围（`check-boundary.mjs`）已折叠为：单文件精确路径；同目录 ≥2 文件 `dir/**`，并标注 `N files @ commit`。
 <!-- 示例:
-- packages/db-tenant/src/contracts/** # 理由：扩展 tenant 模型的新字段契约
-- packages/ui/src/components/primitives/badge.tsx # 理由：支持新状态徽标样式
+- `packages/ui/src/components/primitives/badge.tsx` # 1 file @ abc1234，支持新状态徽标
+- `packages/features/customer-center/**` # 12 files @ abc1234，分页契约联动
 -->
 
 ## 严禁修改的内容 (受保护区域)

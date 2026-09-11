@@ -11,7 +11,7 @@
   "scripts": {
     "check": "tsc --noEmit",
     "generate": "node ../../scripts/sync-tenant-schema.mjs && prisma generate --config prisma.config.ts",
-    "test": "tsx --test src/*.test.ts src/**/*.test.ts"
+    "test": "tsx --test --test-reporter=../../scripts/fail-only-reporter.mjs src/*.test.ts src/**/*.test.ts"
   },
   "dependencies": {
     "@chenrun/db-control": "workspace:*",
