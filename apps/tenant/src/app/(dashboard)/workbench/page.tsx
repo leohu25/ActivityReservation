@@ -1,4 +1,4 @@
-import { getTenantWorkbenchData } from "@chenrun/feature-tenant-admin/server";
+import { getTenantWorkbenchData } from "@/kernel";
 import { WorkbenchView } from "@chenrun/feature-tenant-admin";
 
 /**

@@ -1,4 +1,3 @@
-import React from "react";
 import {
   CustomerView,
   CustomerSubject,
@@ -7,7 +6,7 @@ import {
   listTagsAction,
 } from "@chenrun/feature-customer-center";
 import { toPlainData } from "@chenrun/shared";
-import { getTenantSubjectPermissions } from "@chenrun/feature-tenant-admin/server";
+import { getTenantSubjectPermissions } from "@/kernel";
 
 export default async function CustomersPage() {
   const [custRes, catRes, tagsRes, permissions] = await Promise.all([

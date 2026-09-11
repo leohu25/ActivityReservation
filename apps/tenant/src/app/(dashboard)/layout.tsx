@@ -4,7 +4,7 @@ import { getServerAuthRuntime } from "@chenrun/auth";
 import { TopHeader, Sidebar, DashboardShell, Badge } from "@chenrun/ui";
 import { redirect } from "next/navigation";
 import { Building2 } from "lucide-react";
-import { getAuthorizedTenantNavSections } from "@chenrun/feature-tenant-admin/server";
+import { getAuthorizedTenantNavSections } from "@/kernel";
 
 interface DashboardLayoutProps {
   readonly children: React.ReactNode;

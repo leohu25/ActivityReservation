@@ -44,12 +44,18 @@ test("工作台页面源码中彻底清除任何硬编码 mock 拓扑数据与 m
     "工作台页面严禁出现写死的 dept_procurement_east_sub mock 标识",
   );
 
-  // 验证工作台接入了真实物理数据库查询与自驱拓扑装配（可位于切片服务端或页面）
-  const workbenchServerPath = path.resolve(
-    root,
-    "packages/features/tenant-admin/src/server/workbench.ts",
+  // 验证工作台接入了真实物理数据库查询与自驱拓扑装配（可位于切片服务端或内核装配层或页面）
+  const candidateServerPaths = [
+    path.resolve(root, "apps/tenant/src/kernel/workbench.ts"),
+    path.resolve(
+      root,
+      "packages/features/tenant-admin/src/server/workbench.ts",
+    ),
+  ];
+  const workbenchServerPath = candidateServerPaths.find((p) =>
+    fs.existsSync(p),
   );
-  const combinedContent = fs.existsSync(workbenchServerPath)
+  const combinedContent = workbenchServerPath
     ? fileContent + "\n" + fs.readFileSync(workbenchServerPath, "utf-8")
     : fileContent;
 

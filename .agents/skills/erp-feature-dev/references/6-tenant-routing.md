@@ -18,7 +18,7 @@ import {
   getCategoryTreeAction,
   listTagsAction,
 } from "@chenrun/feature-customer-center";
-import { getTenantSubjectPermissions } from "@chenrun/feature-tenant-admin/server";
+import { getTenantSubjectPermissions } from "@/kernel";
 
 export default async function CustomersPage() {
   // 1. 并行获取业务数据与 CASL 权限

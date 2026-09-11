@@ -14,6 +14,7 @@
 - `packages/auth/**`
 - `apps/**`
 - `packages/features/**`
+- `scripts/sync-features.mjs`
 - `skills-lock.json`
 - `.agents/skills/**`
 - `scripts/check-boundary.mjs`

@@ -1,4 +1,3 @@
-import React from "react";
 import {
   QuoteView,
   CustomerQuoteSubject,
@@ -7,7 +6,7 @@ import {
   listStoresAction,
 } from "@chenrun/feature-customer-center";
 import { toPlainData } from "@chenrun/shared";
-import { getTenantSubjectPermissions } from "@chenrun/feature-tenant-admin/server";
+import { getTenantSubjectPermissions } from "@/kernel";
 
 export default async function QuotesPage() {
   const [quotesRes, custRes, storesRes, permissions] = await Promise.all([

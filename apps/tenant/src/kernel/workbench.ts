@@ -9,7 +9,6 @@ import {
   getAccessibleWhere,
   getFieldMode,
   type AppPrismaAbility,
-  type FieldAccessMode,
 } from "@chenrun/authorization";
 import {
   getTenantDbManager,
@@ -21,79 +20,17 @@ import {
   procurementCatalog,
   type ProcurementAction,
 } from "@chenrun/feature-procurement-center";
+import type {
+  EmployeeProfileDTO,
+  WorkbenchDataDTO,
+  WorkbenchPageData,
+} from "@chenrun/feature-tenant-admin";
 
-export interface EmployeeProfileDTO {
-  readonly id: string;
-  readonly memberId: string | null;
-  readonly employeeNo: string | null;
-  readonly nameSnapshot: string;
-  readonly emailSnapshot: string;
-  readonly jobTitle: string | null;
-  readonly status: string;
-  readonly department: {
-    readonly id: string;
-    readonly name: string;
-    readonly code: string;
-  } | null;
-  readonly position: {
-    readonly id: string;
-    readonly name: string;
-    readonly code: string;
-  } | null;
-}
-
-export interface WorkbenchDataDTO {
-  readonly kind: "authenticated";
-  readonly org: {
-    readonly name: string;
-    readonly slug: string;
-    readonly authorizationVersion: number;
-  };
-  readonly user: {
-    readonly name: string;
-    readonly role: string;
-  };
-  readonly profile: EmployeeProfileDTO | null;
-  readonly treeCount: number;
-  readonly sqlWhere: unknown;
-  readonly fieldModes: {
-    readonly supplierName: FieldAccessMode;
-    readonly costPrice: FieldAccessMode;
-    readonly quantity: FieldAccessMode;
-  };
-  readonly permissions: {
-    readonly canReadOrder: boolean;
-    readonly canCreateOrder: boolean;
-    readonly canAuditOrder: boolean;
-    readonly canExportOrder: boolean;
-  };
-}
-
-export interface WorkbenchUnauthenticatedDTO {
-  readonly kind: "unauthenticated";
-  readonly message: string;
-  readonly isNoOrg: boolean;
-}
-
-export interface WorkbenchBlockedDTO {
-  readonly kind: "blocked";
-  readonly message: string;
-  readonly status?: string;
-}
-
-export type WorkbenchPageData =
-  | WorkbenchDataDTO
-  | WorkbenchUnauthenticatedDTO
-  | WorkbenchBlockedDTO;
+export type { EmployeeProfileDTO, WorkbenchDataDTO, WorkbenchPageData };
 
 /**
  * 获取租户工作台页面所需的完整纯数据 DTO (Server-Side Facade)
- * 严格遵从 RSC 纯数据与 Fail-Closed 准入门禁原则：
- * 1. 签名 Session 校验租户上下文
- * 2. 真实直连物理数据库，校验 EmployeeProfile 准入门禁
- * 3. 自驱解析部门拓扑树
- * 4. 动态编译 CASL Ability、计算数据下推 sqlWhere 与字段三态 fieldModes
- * 5. 全量数据经 toPlainData 清洗后输出，杜绝 Class / 函数跨 RSC 边界泄露
+ * 装配在 apps/tenant/src/kernel，聚合业务能力与四层门禁
  */
 export async function getTenantWorkbenchData(): Promise<WorkbenchPageData> {
   const reqHeaders = await headers();

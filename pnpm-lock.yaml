@@ -446,12 +446,6 @@ importers:
       '@chenrun/db-tenant':
         specifier: workspace:*
         version: link:../../db-tenant
-      '@chenrun/feature-customer-center':
-        specifier: workspace:*
-        version: link:../customer-center
-      '@chenrun/feature-procurement-center':
-        specifier: workspace:*
-        version: link:../procurement-center
       '@chenrun/shared':
         specifier: workspace:*
         version: link:../../shared

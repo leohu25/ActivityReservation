@@ -2,7 +2,7 @@
 
 ## 状态
 
-已采纳 (Accepted)
+已采纳 (Accepted) - *注：第 2、3 条中关于生成的注册表与授权服务下沉至 tenant-admin 的条款已由 ADR-006 废止并修订至 apps/tenant/src/kernel*
 
 ## 上下文
 

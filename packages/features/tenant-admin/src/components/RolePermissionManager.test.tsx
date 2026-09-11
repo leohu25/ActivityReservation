@@ -4,6 +4,85 @@ import React from "react";
 import { renderToString } from "react-dom/server";
 import { RolePermissionManager } from "./RolePermissionManager";
 import type { TenantRoleItem } from "../types";
+import type { ModulePermissionDescriptor } from "../permission-registry";
+
+const mockPermissionTree: ModulePermissionDescriptor[] = [
+    {
+        moduleKey: "customer",
+        label: "客户中心",
+        iconName: "UserCheck",
+        pages: [
+            {
+                resource: "customer.customers",
+                subject: "Customer",
+                label: "客户档案",
+                actions: [{ action: "read", label: "查看" }],
+            },
+            {
+                resource: "customer.stores",
+                subject: "CustomerStore",
+                label: "门店档案",
+                actions: [{ action: "read", label: "查看" }],
+            },
+            {
+                resource: "customer.categories-tags",
+                subject: "CustomerCategory",
+                label: "分类与标签",
+                actions: [{ action: "read", label: "查看" }],
+            },
+            {
+                resource: "customer.quotes",
+                subject: "CustomerQuote",
+                label: "门店报价单",
+                actions: [{ action: "read", label: "查看" }],
+            },
+        ],
+    },
+    {
+        moduleKey: "procurement",
+        label: "采购订单中心",
+        iconName: "PackageCheck",
+        pages: [
+            {
+                resource: "procurement.order",
+                subject: "PurchaseOrder",
+                label: "采购订单管理",
+                actions: [
+                    { action: "read", label: "查看" },
+                    { action: "update", label: "编辑" },
+                ],
+                configurableFields: [
+                    { field: "costPrice", label: "成本价", sensitive: true },
+                ],
+            },
+        ],
+    },
+    {
+        moduleKey: "organization",
+        label: "组织架构",
+        iconName: "Users",
+        pages: [
+            {
+                resource: "organization.employee",
+                subject: "Employee",
+                label: "员工管理",
+                actions: [{ action: "read", label: "查看" }],
+            },
+            {
+                resource: "organization.department",
+                subject: "Department",
+                label: "部门管理",
+                actions: [{ action: "read", label: "查看" }],
+            },
+            {
+                resource: "organization.position",
+                subject: "Position",
+                label: "岗位管理",
+                actions: [{ action: "read", label: "查看" }],
+            },
+        ],
+    },
+];
 
 test("RolePermissionManager 彻底剔除 Owner 并正确渲染树状表格权限矩阵与各业务模块页面", () => {
     const sampleRoles: TenantRoleItem[] = [
@@ -81,6 +160,7 @@ test("RolePermissionManager 彻底剔除 Owner 并正确渲染树状表格权限
         React.createElement(RolePermissionManager, {
             initialRoles: sampleRoles,
             activeOrgId: "org_test",
+            permissionTree: mockPermissionTree,
         }),
     );
 
@@ -138,6 +218,7 @@ test("RolePermissionManager 支持展开字段策略并正确显示字段三态"
         React.createElement(RolePermissionManager, {
             initialRoles: roles,
             activeOrgId: "org_test",
+            permissionTree: mockPermissionTree,
         }),
     );
 

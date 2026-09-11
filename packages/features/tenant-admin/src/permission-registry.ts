@@ -1,5 +1,4 @@
 import { DataScope, type DataScopeType } from "@chenrun/authorization";
-import { globalTenantPermissionTree } from "./registry.generated";
 
 /** 权限动作配置项模型 */
 export interface ActionConfigItem {
@@ -56,11 +55,3 @@ export const DATA_SCOPE_SELECT_OPTIONS: Array<{
     desc: "允许访问全租户组织全部数据",
   },
 ];
-
-/**
- * 租户业务系统功能模块与权限树注册表
- * 由各切片 Manifest 编译期自描述贡献点自动聚合派生，杜绝在底座中硬编码各业务实体！
- */
-// SAFETY: globalTenantPermissionTree is derived from TenantFeatureManifests which conform to FeatureModulePermissionDescriptor schema
-export const TENANT_PERMISSION_TREE: readonly ModulePermissionDescriptor[] =
-  globalTenantPermissionTree as unknown as readonly ModulePermissionDescriptor[];

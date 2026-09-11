@@ -10,7 +10,6 @@ import {
   type RolePermissionPayload,
   type TenantFeatureManifest,
 } from "@chenrun/authorization";
-import { ALL_TENANT_MANIFESTS } from "../registry.generated";
 import type {
   CreateRoleInput,
   SaveRolePermissionsInput,
@@ -32,11 +31,11 @@ export class TenantRoleServiceError extends Error {
 }
 
 /**
- * 依据全局切片自描述清单契约 (ALL_TENANT_MANIFESTS) 动态自驱推导核心内置角色的四层权限模板
- * 彻底消除硬编码外部业务切片符号与资源（采购、客户等），形成真正的单一事实源 (SSoT)
+ * 依据切片自描述清单契约动态自驱推导核心内置角色的四层权限模板
+ * 彻底消除硬编码外部业务切片符号与资源，由调用方或应用层显式注入切片清单 (IoC)
  */
 export function deriveBuiltInRoleDefaults(
-  manifests: readonly TenantFeatureManifest[] = ALL_TENANT_MANIFESTS,
+  manifests: readonly TenantFeatureManifest[] = [],
 ): Record<"admin" | "member", RolePermissionPayload> {
   // 1. Admin: 赋予所有注册切片的全部合法 actions，数据范围赋予最大支持级别 (ALL / DEPT_TREE)
   const adminStatement: Record<string, string[]> = {};
@@ -134,7 +133,10 @@ export function deriveBuiltInRoleDefaults(
 
 /** 租户角色与权限管理领域服务 */
 export class TenantRoleService {
-  constructor(private readonly repository: AuthorizationRepository) {}
+  constructor(
+    private readonly repository: AuthorizationRepository,
+    private readonly manifests: readonly TenantFeatureManifest[] = [],
+  ) {}
 
   /** 查询指定租户下的全部角色清单（包含内置系统角色与自定义扩展角色） */
   async listTenantRoles(organizationId: string): Promise<TenantRoleItem[]> {
@@ -147,7 +149,7 @@ export class TenantRoleService {
     const items: TenantRoleItem[] = [];
 
     // 1. 确保可配置的核心内置角色在前排列（明确排除 owner，因为超级管理员具备所有权限且租户管理员不得管理超管）
-    const derivedDefaults = deriveBuiltInRoleDefaults();
+    const derivedDefaults = deriveBuiltInRoleDefaults(this.manifests);
     const builtInDefaults: Array<{
       role: BuiltInRole;
       name: string;

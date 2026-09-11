@@ -44,19 +44,20 @@ import {
   getSystemRoleDefaultsAction,
 } from "../actions";
 import {
-  TENANT_PERMISSION_TREE,
   DATA_SCOPE_SELECT_OPTIONS,
   type ModulePermissionDescriptor,
   type PagePermissionDescriptor,
 } from "../permission-registry";
 
-interface RolePermissionManagerProps {
+export interface RolePermissionManagerProps {
   readonly initialRoles: readonly TenantRoleItem[];
   readonly activeOrgId: string;
+  readonly permissionTree?: readonly ModulePermissionDescriptor[];
 }
 
 export function RolePermissionManager({
   initialRoles,
+  permissionTree = [],
 }: RolePermissionManagerProps) {
   // 过滤掉任何可能混入的 owner 角色（双重保护）
   const sanitizedInitialRoles = initialRoles.filter((r) => r.role !== "owner");
@@ -631,7 +632,7 @@ export function RolePermissionManager({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                  {TENANT_PERMISSION_TREE.map((mod) => {
+                  {permissionTree.map((mod) => {
                     const isExpanded = expandedModules[mod.moduleKey] ?? true;
                     // 只要模块下有任意一个页面拥有 read 权限，侧边栏自动点亮
                     const hasAnyPageVisible = mod.pages.some((p) => {

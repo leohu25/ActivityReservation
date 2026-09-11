@@ -5,11 +5,81 @@ import type {
   OrganizationMemberRecord,
   OrganizationRoleRecord,
 } from "@chenrun/db-control";
+import type { TenantFeatureManifest } from "@chenrun/authorization";
 import {
   TenantRoleService,
   TenantRoleServiceError,
   deriveBuiltInRoleDefaults,
 } from "./tenant-role-service";
+
+const sampleTestManifests: TenantFeatureManifest[] = [
+  {
+    id: "customer",
+    name: "客户中心",
+    order: 1,
+    permissionModules: [
+      {
+        moduleKey: "customer",
+        label: "客户中心",
+        iconName: "UserCheck",
+        pages: [
+          {
+            resource: "customer",
+            subject: "Customer",
+            label: "客户档案",
+            actions: [{ action: "read", label: "查看" }],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "procurement",
+    name: "采购中心",
+    order: 2,
+    permissionModules: [
+      {
+        moduleKey: "procurement",
+        label: "采购订单中心",
+        iconName: "PackageCheck",
+        pages: [
+          {
+            resource: "procurement.order",
+            subject: "PurchaseOrder",
+            label: "采购订单管理",
+            actions: [
+              { action: "read", label: "查看" },
+              { action: "audit", label: "审核" },
+            ],
+            configurableFields: [
+              { field: "costPrice", label: "成本价", sensitive: true },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "organization",
+    name: "组织架构",
+    order: 3,
+    permissionModules: [
+      {
+        moduleKey: "organization",
+        label: "组织架构",
+        iconName: "Users",
+        pages: [
+          {
+            resource: "organization.employee",
+            subject: "Employee",
+            label: "员工管理",
+            actions: [{ action: "read", label: "查看" }],
+          },
+        ],
+      },
+    ],
+  },
+];
 
 const now = new Date("2026-09-08T00:00:00.000Z");
 
@@ -121,7 +191,7 @@ test("listTenantRoles 对于未持久化配置的角色严格返回空权限 (Fa
 });
 
 test("deriveBuiltInRoleDefaults 动态自驱推导核心内置角色的推荐权限模板", () => {
-  const defaults = deriveBuiltInRoleDefaults();
+  const defaults = deriveBuiltInRoleDefaults(sampleTestManifests);
 
   // 1. admin 模板拥有各业务切片的全部权限
   assert.ok(defaults.admin.statement["procurement.order"]);

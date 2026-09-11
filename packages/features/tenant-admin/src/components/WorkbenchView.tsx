@@ -32,7 +32,7 @@ import type {
   WorkbenchPageData,
   WorkbenchDataDTO,
   EmployeeProfileDTO,
-} from "../server/workbench";
+} from "../types";
 
 /**
  * 租户会话未激活提示卡片

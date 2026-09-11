@@ -2,16 +2,11 @@ import { headers } from "next/headers";
 import { getCurrentTenantContext, getServerAuthRuntime } from "@chenrun/auth";
 import {
   CaslAbilityFactory,
-  filterNavSections,
   parsePersistedPermissions,
-  type FeatureNavSection,
   type FieldAccessMode,
 } from "@chenrun/authorization";
 import { toPlainData } from "@chenrun/shared";
-import {
-  globalTenantCatalog,
-  globalTenantNavSections,
-} from "../registry.generated";
+import { globalTenantCatalog } from "./registry.generated";
 
 export interface TenantSubjectPermissions {
   readonly actions: readonly string[];
@@ -89,30 +84,5 @@ export async function getTenantSubjectPermissions(
       actions: [],
       fieldPolicies: {},
     });
-  }
-}
-
-/**
- * 服务端获取当前登录租户成员已授权的导航菜单区块 (Server-Side Navigation Engine)
- * 使用 CASL Ability 过滤无权访问的项目与空分组，直接返回已裁切完毕的纯数据菜单
- */
-export async function getAuthorizedTenantNavSections(): Promise<
-  FeatureNavSection[]
-> {
-  try {
-    const reqHeaders = await headers();
-    const runtime = getServerAuthRuntime();
-    const tenantCtx = await getCurrentTenantContext(reqHeaders);
-    const factory = new CaslAbilityFactory(
-      runtime.tenantContextRepository,
-      globalTenantCatalog,
-    );
-    const ability = await factory.createForTenant(tenantCtx);
-
-    return filterNavSections(globalTenantNavSections, (action, subject) =>
-      ability.can(action as never, subject as never),
-    );
-  } catch {
-    return [];
   }
 }
