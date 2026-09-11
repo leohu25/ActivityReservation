@@ -16,7 +16,7 @@ export function DataTableDetailField({
   className,
 }: DataTableDetailFieldProps) {
   return (
-    <div className={cn("space-y-1", className)}>
+    <div className={cn("flex flex-col gap-1", className)}>
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="text-sm font-medium text-foreground">{children}</div>
     </div>

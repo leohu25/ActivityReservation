@@ -11,6 +11,7 @@ import {
   TableCell,
 } from "../../shadcn/table";
 import { Checkbox } from "../../shadcn/checkbox";
+import { Card } from "../../shadcn/card";
 import { useOptionalAbility } from "@chenrun/authorization";
 import { EmptyState } from "../../feedback/EmptyState";
 import { useDataTableContext } from "./DataTableContext";
@@ -84,10 +85,10 @@ export function DataTableContent<TData = any>({
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+      <Card className="overflow-hidden rounded-xl border-border bg-card p-0 shadow-xs">
         <Table>
           <TableHeader className="bg-muted/50 font-medium">
-            <TableRow className="hover:bg-transparent border-b border-border">
+            <TableRow className="border-b border-border hover:bg-transparent">
               {selectable ? (
                 <TableHead className="w-[40px] px-3">
                   <Checkbox
@@ -215,7 +216,7 @@ export function DataTableContent<TData = any>({
             )}
           </TableBody>
         </Table>
-      </div>
+      </Card>
     </div>
   );
 }

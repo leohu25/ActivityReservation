@@ -122,7 +122,7 @@ export function DataTableFacetedFilter({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-1" align="start">
-        <div className="p-1 space-y-1">
+        <div className="flex flex-col gap-1 p-1">
           {options.map((option) => {
             const isSelected = selectedSet.has(option.value);
             return (

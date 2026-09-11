@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { AbilityContext } from "@chenrun/authorization";
+import { Card } from "../../shadcn/card";
 import {
   DataTableContext,
   resolveDefaultVisibleColumnIds,
@@ -260,16 +261,16 @@ export function DataTableRoot<TData>({
   const content = (
     <DataTableContext.Provider value={value}>
       {integratedCard ? (
-        <div
+        <Card
           className={cn(
-            "w-full rounded-xl border border-border bg-card p-5 shadow-sm",
+            "w-full gap-3 rounded-xl border-border bg-card p-5 shadow-sm",
             className,
           )}
         >
-          <div className="flex flex-col gap-3 w-full">{children}</div>
-        </div>
+          {children}
+        </Card>
       ) : (
-        <div className={cn("flex flex-col gap-3 w-full", className)}>
+        <div className={cn("flex w-full flex-col gap-3", className)}>
           {children}
         </div>
       )}

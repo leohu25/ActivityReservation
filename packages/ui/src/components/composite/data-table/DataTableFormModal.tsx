@@ -106,7 +106,7 @@ export function DataTableFormModal<TRecord = any>({
       <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-xs font-bold tracking-wide text-primary-foreground shadow-xs">
         {badge}
       </span>
-      <div className="min-w-0 flex-1 space-y-1 pt-0.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-1 pt-0.5">
         <div className="text-base font-semibold tracking-tight text-foreground">
           {renderedTitle}
         </div>
@@ -219,7 +219,7 @@ export function DataTableFormModal<TRecord = any>({
           className,
         )}
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="border-b border-border/60 pb-4">{body}</div>
           {actionBar}
         </form>
@@ -239,7 +239,7 @@ export function DataTableFormModal<TRecord = any>({
           onSubmit={handleSubmit}
           className="flex max-h-[90vh] flex-col bg-card"
         >
-          <div className="flex-1 space-y-4 overflow-y-auto bg-card px-6 pb-5 pt-5">
+          <div className="flex flex-1 flex-col gap-4 overflow-y-auto bg-card px-6 pb-5 pt-5">
             {brandHeader}
             <DialogHeader className="sr-only">
               <DialogTitle>{renderedTitle}</DialogTitle>

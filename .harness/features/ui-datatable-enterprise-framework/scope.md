@@ -18,6 +18,15 @@ whitelist_patterns:
   - "packages/features/customer-center/src/actions.ts"
   - "packages/features/customer-center/src/types.ts"
   - "apps/tenant/src/app/**/customer/**"
+  # shadcn 外壳收敛（用户明确要求：Sidebar/TopHeader/ThemeToggle/Card/语义色）
+  - "packages/ui/src/components/layout/**"
+  - "packages/ui/src/components/templates/**"
+  - "packages/ui/src/components/shadcn/**"
+  - "packages/ui/src/hooks/**"
+  - "packages/ui/src/components/ThemeToggle.tsx"
+  - "packages/ui/src/components/DictionarySectionCard.tsx"
+  - "apps/*/src/app/globals.css"
+  - "apps/tenant/src/app/(dashboard)/layout.tsx"
 
 # 严禁越界的目录
 forbidden_patterns:
@@ -176,3 +185,8 @@ forbidden_patterns:
 - `packages/ui/src/components/composite/data-table/DataTableRowActions.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
 - `packages/ui/src/components/composite/data-table/DataTableToolbar.tsx` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
 - `packages/ui/src/components/composite/data-table/index.ts` # 理由：会话开发过程中检测到的联动修改，自动登记扩围
+- `packages/ui/src/components/shadcn/sidebar.tsx` # 理由：本会话安装官方 sidebar 并接入业务侧栏
+- `packages/ui/src/hooks/use-mobile.ts` # 理由：sidebar 官方依赖 useIsMobile
+- `apps/tenant/src/app/globals.css` # 理由：补齐 --sidebar-* 设计 token
+- `apps/control/src/app/globals.css` # 理由：补齐 --sidebar-* 设计 token
+- `apps/tenant/src/app/(dashboard)/layout.tsx` # 理由：顶栏企业徽标对齐 sidebar token

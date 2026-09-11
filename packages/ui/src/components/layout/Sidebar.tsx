@@ -1,6 +1,6 @@
 "use client";
 
-import React, { type ReactNode, useState, useEffect } from "react";
+import React, { type ReactNode, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -14,8 +14,35 @@ import {
   Settings,
   FileText,
   ChevronDown,
-  ChevronRight,
 } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "../shadcn/collapsible";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "../shadcn/hover-card";
+import {
+  Sidebar as SidebarRoot,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  useSidebar,
+} from "../shadcn/sidebar";
+import { cn } from "../../lib/utils";
 import { ThemeToggle } from "../ThemeToggle";
 
 /** 单个导航项模型（支持普通叶子链接或带子项的折叠分组） */
@@ -46,11 +73,11 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 
 function renderNavIcon(icon: ReactNode | string | undefined): ReactNode {
   if (!icon) {
-    return <LayoutDashboard className="size-4" />;
+    return <LayoutDashboard />;
   }
   if (typeof icon === "string") {
     const IconComponent = ICON_MAP[icon] || LayoutDashboard;
-    return <IconComponent className="size-4" />;
+    return <IconComponent />;
   }
   return icon;
 }
@@ -68,11 +95,10 @@ export interface SidebarProps {
   /** 可选：仅在非 Next.js 路由测试环境或需要强制受控路由时指定，生产中默认自动读取 usePathname() */
   readonly currentPath?: string;
   readonly can?: (action: string, subject: string) => boolean;
-  /** 允许的服务端序列化权限规则数组或白名单 key 集合 (例如: ['read:CustomerModule', 'read:Customer']) */
+  /** 允许的服务端序列化权限规则数组或白名单 key 集合 */
   readonly allowedPermissions?: readonly string[];
 }
 
-/** 递归检查项是否可见 */
 function isItemVisible(
   item: NavItem,
   can?: (action: string, subject: string) => boolean,
@@ -102,7 +128,6 @@ function isItemVisible(
   return true;
 }
 
-/** 过滤出当前用户可见的项列表 */
 function filterVisibleItems(
   items: readonly NavItem[],
   can?: (action: string, subject: string) => boolean,
@@ -135,7 +160,6 @@ function filterVisibleItems(
   return result;
 }
 
-/** 判断路径是否处于激活态 */
 function isPathActive(currentPath: string, targetHref?: string): boolean {
   if (!targetHref) {
     return false;
@@ -146,7 +170,6 @@ function isPathActive(currentPath: string, targetHref?: string): boolean {
   return currentPath === targetHref || currentPath.startsWith(targetHref + "/");
 }
 
-/** 检查组内是否存在被激活的子链接 */
 function hasActiveChild(item: NavItem, currentPath: string): boolean {
   const subItems = item.items ?? item.children;
   if (!subItems || subItems.length === 0) {
@@ -156,9 +179,137 @@ function hasActiveChild(item: NavItem, currentPath: string): boolean {
 }
 
 /**
- * ERP 统一后台左侧导航侧边栏
- * 遵循 Next.js App Router 官方标准：直接使用 usePathname() 与 next/link
- * 支持多级折叠树、依据当前路径自动展开高亮、布局持久挂载且页面无刷新软跳转
+ * 悬浮层子菜单链接
+ * 禁用 SidebarMenuSubButton（自带 group-data-[collapsible=icon]:hidden，折叠态会把内容藏掉）。
+ */
+function FlyoutMenuLinks({
+  subItems,
+  currentPath,
+}: {
+  subItems: readonly NavItem[];
+  currentPath: string;
+}) {
+  return (
+    <>
+      {subItems.map((child) => {
+        const active = isPathActive(currentPath, child.href);
+        return (
+          <Link
+            key={child.id}
+            href={child.href ?? "#"}
+            className={cn(
+              "flex h-8 min-w-0 items-center gap-2 rounded-md px-2 text-sm transition-colors",
+              "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              active
+                ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                : "text-sidebar-foreground",
+            )}
+          >
+            <span className="truncate">{child.label}</span>
+            {child.badge ? (
+              <span className="ml-auto text-[10px] font-normal text-muted-foreground">
+                {child.badge}
+              </span>
+            ) : null}
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
+/** 分组导航项：展开态 Collapsible；折叠态 HoverCard 悬浮菜单 */
+function NavGroupItem({
+  item,
+  currentPath,
+  open,
+  onOpenChange,
+}: {
+  item: NavItem;
+  currentPath: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { state } = useSidebar();
+  const childActive = hasActiveChild(item, currentPath);
+  const subItems = item.items ?? item.children ?? [];
+
+  if (state === "collapsed") {
+    return (
+      <SidebarMenuItem>
+        <HoverCard openDelay={50} closeDelay={150}>
+          <HoverCardTrigger asChild>
+            <SidebarMenuButton isActive={childActive}>
+              {renderNavIcon(item.icon)}
+              <span className="group-data-[collapsible=icon]:hidden">
+                {item.label}
+              </span>
+            </SidebarMenuButton>
+          </HoverCardTrigger>
+          <HoverCardContent
+            side="right"
+            align="start"
+            sideOffset={10}
+            collisionPadding={8}
+            className="max-h-[min(28rem,calc(100svh-2rem))] w-56 overflow-y-auto rounded-lg border border-sidebar-border bg-popover p-2 shadow-lg"
+          >
+            <div className="mb-1 px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+              {item.label}
+            </div>
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <FlyoutMenuLinks subItems={subItems} currentPath={currentPath} />
+            </div>
+          </HoverCardContent>
+        </HoverCard>
+        {item.badge ? <SidebarMenuBadge>{item.badge}</SidebarMenuBadge> : null}
+      </SidebarMenuItem>
+    );
+  }
+
+  return (
+    <Collapsible
+      open={open}
+      onOpenChange={onOpenChange}
+      className="group/collapsible"
+    >
+      <SidebarMenuItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuButton isActive={childActive} tooltip={item.label}>
+            {renderNavIcon(item.icon)}
+            <span>{item.label}</span>
+            <ChevronDown className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
+          </SidebarMenuButton>
+        </CollapsibleTrigger>
+        {item.badge ? <SidebarMenuBadge>{item.badge}</SidebarMenuBadge> : null}
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            {subItems.map((child) => (
+              <SidebarMenuSubItem key={child.id}>
+                <SidebarMenuSubButton
+                  asChild
+                  isActive={isPathActive(currentPath, child.href)}
+                >
+                  <Link href={child.href ?? "#"}>
+                    <span>{child.label}</span>
+                    {child.badge ? (
+                      <span className="ml-auto text-[10px] font-normal text-muted-foreground">
+                        {child.badge}
+                      </span>
+                    ) : null}
+                  </Link>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            ))}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
+  );
+}
+
+/**
+ * ERP 统一后台左侧导航
+ * 基于官方 shadcn Sidebar / SidebarMenu / Collapsible / HoverCard 组合。
  */
 export function Sidebar({
   sections,
@@ -167,25 +318,24 @@ export function Sidebar({
   can,
   allowedPermissions,
 }: SidebarProps) {
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
   const allowedPermissionsSet = allowedPermissions
     ? new Set(allowedPermissions)
     : undefined;
 
-  // 1. Next.js 官方标准：生产中由 usePathname() 自动获取激活路由（支持单测传入 currentPath 覆盖）
   const routerPath = usePathname();
   const currentPath = propCurrentPath ?? routerPath ?? "";
 
-  // 2. 确定数据源：若未提供 sections，支持将 navItems 适配为标准结构，默认空数组
   const effectiveSections: readonly NavSection[] =
     sections ?? (navItems ? [{ id: "custom", items: navItems }] : []);
 
-  // 3. 状态：记录折叠分组的展开/折叠状态
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>(
+    {},
+  );
 
-  // 4. 页面加载或路径变动时，自动展开含有当前激活页面的分组
   useEffect(() => {
     if (!currentPath) return;
-
     setOpenGroups((prev) => {
       const next = { ...prev };
       for (const section of effectiveSections) {
@@ -199,25 +349,73 @@ export function Sidebar({
     });
   }, [currentPath, effectiveSections]);
 
-  const toggleGroup = (groupId: string) => {
-    setOpenGroups((prev) => ({
-      ...prev,
-      [groupId]: !prev[groupId],
-    }));
+  const renderNavItem = (item: NavItem) => {
+    const subItems = item.items ?? item.children;
+    const isGroup = Boolean(subItems && subItems.length > 0);
+
+    if (isGroup) {
+      return (
+        <NavGroupItem
+          key={item.id}
+          item={item}
+          currentPath={currentPath}
+          open={openGroups[item.id] ?? hasActiveChild(item, currentPath)}
+          onOpenChange={(next) =>
+            setOpenGroups((prev) => ({
+              ...prev,
+              [item.id]: next,
+            }))
+          }
+        />
+      );
+    }
+
+    const isActive = isPathActive(currentPath, item.href);
+
+    return (
+      <SidebarMenuItem key={item.id}>
+        <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+          <Link href={item.href ?? "#"}>
+            {renderNavIcon(item.icon)}
+            <span>{item.label}</span>
+          </Link>
+        </SidebarMenuButton>
+        {item.badge ? <SidebarMenuBadge>{item.badge}</SidebarMenuBadge> : null}
+      </SidebarMenuItem>
+    );
   };
 
+  // 折叠态：摊平为单条连续菜单，避免多个 SidebarGroup 的 p-2 叠出不均间距
+  const flattenedItems = isCollapsed
+    ? effectiveSections.flatMap((section) =>
+        filterVisibleItems(section.items, can, allowedPermissionsSet),
+      )
+    : [];
+
   return (
-    <aside className="w-56 border-r border-slate-200/80 bg-white p-3.5 dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between shrink-0 select-none overflow-y-auto">
-      <div className="space-y-3.5">
-        {/* 顶部轻量标签 */}
-        <div className="flex items-center gap-1.5 px-2.5 text-xs font-bold tracking-wider text-slate-400 uppercase">
-          <Layers className="size-3.5 text-slate-400" />
+    <SidebarRoot
+      collapsible="icon"
+      className="top-16 h-[calc(100svh-4rem)] border-r"
+    >
+      <SidebarHeader className="border-b border-sidebar-border/60">
+        <div className="flex items-center gap-1.5 px-2 text-xs font-bold tracking-wider text-muted-foreground uppercase group-data-[collapsible=icon]:hidden">
+          <Layers className="size-3.5 shrink-0" />
           <span>核心功能导航</span>
         </div>
+        <div className="hidden size-8 items-center justify-center group-data-[collapsible=icon]:flex">
+          <Layers className="size-4 text-muted-foreground" />
+        </div>
+      </SidebarHeader>
 
-        {/* 导航分区块列表 */}
-        <div className="space-y-4">
-          {effectiveSections.map((section) => {
+      <SidebarContent>
+        {isCollapsed ? (
+          <SidebarGroup className="group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:py-1">
+            <SidebarMenu className="group-data-[collapsible=icon]:gap-0.5">
+              {flattenedItems.map(renderNavItem)}
+            </SidebarMenu>
+          </SidebarGroup>
+        ) : (
+          effectiveSections.map((section) => {
             const visibleItems = filterVisibleItems(
               section.items,
               can,
@@ -228,148 +426,29 @@ export function Sidebar({
             }
 
             return (
-              <div key={section.id} className="space-y-1">
+              <SidebarGroup key={section.id}>
                 {section.title ? (
-                  <div className="px-2.5 pt-1.5 pb-1 text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
+                  <SidebarGroupLabel className="text-[11px] font-bold tracking-wider uppercase">
                     {section.title}
-                  </div>
+                  </SidebarGroupLabel>
                 ) : null}
-
-                <nav className="space-y-0.5">
-                  {visibleItems.map((item) => {
-                    const subItems = item.items ?? item.children;
-                    const isGroup = subItems && subItems.length > 0;
-
-                    if (isGroup) {
-                      // 是否有子链接被激活
-                      const childActive = hasActiveChild(item, currentPath);
-                      const isOpen = openGroups[item.id] ?? childActive;
-
-                      return (
-                        <div key={item.id} className="space-y-0.5">
-                          {/* 分组标题展开按钮 */}
-                          <button
-                            type="button"
-                            onClick={() => toggleGroup(item.id)}
-                            className={`group flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-sm font-semibold transition-all duration-150 ${
-                              childActive
-                                ? "text-blue-600 dark:text-blue-400"
-                                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-slate-100"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <span
-                                className={`transition-colors ${
-                                  childActive
-                                    ? "text-blue-600 dark:text-blue-400"
-                                    : "text-slate-400 group-hover:text-slate-700 dark:text-slate-500 dark:group-hover:text-slate-300"
-                                }`}
-                              >
-                                {renderNavIcon(item.icon)}
-                              </span>
-                              <span>{item.label}</span>
-                              {item.badge ? (
-                                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                                  {item.badge}
-                                </span>
-                              ) : null}
-                            </div>
-                            <span className="text-slate-400 transition-transform duration-150">
-                              {isOpen ? (
-                                <ChevronDown className="size-3.5" />
-                              ) : (
-                                <ChevronRight className="size-3.5" />
-                              )}
-                            </span>
-                          </button>
-
-                          {/* 折叠二级子项列表 */}
-                          {isOpen ? (
-                            <div className="ml-5 border-l border-slate-100 pl-3 py-0.5 space-y-0.5 dark:border-slate-800">
-                              {subItems.map((child) => {
-                                const isSubActive = isPathActive(
-                                  currentPath,
-                                  child.href,
-                                );
-
-                                return (
-                                  <Link
-                                    key={child.id}
-                                    href={child.href ?? "#"}
-                                    className={`group flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-sm transition-all duration-150 ${
-                                      isSubActive
-                                        ? "bg-blue-50 font-semibold text-blue-700 dark:bg-blue-950/40 dark:text-blue-300"
-                                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-slate-200"
-                                    }`}
-                                  >
-                                    <span>{child.label}</span>
-                                    {child.badge ? (
-                                      <span className="text-[10px] font-normal text-slate-400">
-                                        {child.badge}
-                                      </span>
-                                    ) : null}
-                                  </Link>
-                                );
-                              })}
-                            </div>
-                          ) : null}
-                        </div>
-                      );
-                    }
-
-                    // 单级叶子项
-                    const isActive = isPathActive(currentPath, item.href);
-
-                    return (
-                      <Link
-                        key={item.id}
-                        href={item.href ?? "#"}
-                        className={`group flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-sm font-semibold transition-all duration-150 ${
-                          isActive
-                            ? "bg-blue-600 text-white shadow-xs shadow-blue-500/30"
-                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-100"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span
-                            className={`transition-colors ${
-                              isActive
-                                ? "text-white"
-                                : "text-slate-400 group-hover:text-slate-700 dark:text-slate-500 dark:group-hover:text-slate-300"
-                            }`}
-                          >
-                            {renderNavIcon(item.icon)}
-                          </span>
-                          <span>{item.label}</span>
-                        </div>
-                        {item.badge ? (
-                          <span
-                            className={`rounded px-1.5 py-0.5 text-[10px] ${
-                              isActive
-                                ? "bg-blue-700 text-white"
-                                : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
-                            }`}
-                          >
-                            {item.badge}
-                          </span>
-                        ) : null}
-                      </Link>
-                    );
-                  })}
-                </nav>
-              </div>
+                <SidebarGroupContent>
+                  <SidebarMenu>{visibleItems.map(renderNavItem)}</SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
             );
-          })}
-        </div>
-      </div>
+          })
+        )}
+      </SidebarContent>
 
-      {/* 底部主题切换 */}
-      <div className="flex items-center justify-between px-1 pt-2">
-        <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
-          外观
-        </span>
-        <ThemeToggle />
-      </div>
-    </aside>
+      <SidebarFooter className="border-t border-sidebar-border/60">
+        <div className="flex items-center justify-between gap-2 px-1 py-1 group-data-[collapsible=icon]:hidden">
+          <span className="text-xs font-medium text-muted-foreground">
+            外观
+          </span>
+          <ThemeToggle />
+        </div>
+      </SidebarFooter>
+    </SidebarRoot>
   );
 }

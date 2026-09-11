@@ -64,7 +64,7 @@ export function DataTableFilterBar({
             className="h-10 gap-1.5 px-4 text-sm shadow-xs"
             onClick={onSearch}
           >
-            <Search className="size-3.5" />
+            <Search data-icon="inline-start" />
             {searchText}
           </Button>
         ) : null}
@@ -75,7 +75,7 @@ export function DataTableFilterBar({
             className="h-10 gap-1.5 border-border bg-card px-4 text-sm shadow-xs hover:bg-muted/40"
             onClick={onReset}
           >
-            <RotateCcw className="size-3.5" />
+            <RotateCcw data-icon="inline-start" />
             {resetText}
           </Button>
         ) : null}
@@ -88,7 +88,7 @@ export function DataTableFilterBar({
           className="h-10 gap-1.5 border-dashed border-border bg-card px-3 text-sm font-normal shadow-xs hover:bg-muted/40"
           onClick={onAdvancedFilter}
         >
-          <SlidersHorizontal className="size-3.5 text-muted-foreground" />
+          <SlidersHorizontal data-icon="inline-start" className="text-muted-foreground" />
           {advancedText}
           {advancedActiveCount > 0 ? (
             <span className="ml-0.5 inline-flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">

@@ -6,6 +6,7 @@ import { useOptionalAbility } from "@chenrun/authorization";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -235,51 +236,55 @@ export function DataTableRowActions<TRecord>({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[140px] text-xs">
-            {menuOnly && !hideView && (canView || keepUnauthorized) && (
-              <DropdownMenuItem
-                disabled={!onView}
-                onClick={() => onView?.(record)}
-                className="gap-2 cursor-pointer"
-              >
-                <span>查看详情</span>
-              </DropdownMenuItem>
-            )}
-            {menuOnly && !hideEdit && (canEdit || keepUnauthorized) && (
-              <DropdownMenuItem
-                disabled={!onEdit}
-                onClick={() => onEdit?.(record)}
-                className="gap-2 cursor-pointer"
-              >
-                <span>编辑记录</span>
-              </DropdownMenuItem>
-            )}
+            <DropdownMenuGroup>
+              {menuOnly && !hideView && (canView || keepUnauthorized) && (
+                <DropdownMenuItem
+                  disabled={!onView}
+                  onClick={() => onView?.(record)}
+                  className="gap-2 cursor-pointer"
+                >
+                  <span>查看详情</span>
+                </DropdownMenuItem>
+              )}
+              {menuOnly && !hideEdit && (canEdit || keepUnauthorized) && (
+                <DropdownMenuItem
+                  disabled={!onEdit}
+                  onClick={() => onEdit?.(record)}
+                  className="gap-2 cursor-pointer"
+                >
+                  <span>编辑记录</span>
+                </DropdownMenuItem>
+              )}
 
-            {validExtraActions.map((item) => (
-              <DropdownMenuItem
-                key={item.label}
-                onClick={() => runAction(item)}
-                className={cn(
-                  "gap-2 cursor-pointer",
-                  item.variant === "destructive" && "text-destructive",
-                )}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </DropdownMenuItem>
-            ))}
+              {validExtraActions.map((item) => (
+                <DropdownMenuItem
+                  key={item.label}
+                  onClick={() => runAction(item)}
+                  className={cn(
+                    "gap-2 cursor-pointer",
+                    item.variant === "destructive" && "text-destructive",
+                  )}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
 
             {showDelete && (
               <>
                 {(menuHasBuiltIn || validExtraActions.length > 0) && (
                   <DropdownMenuSeparator />
                 )}
-                <DropdownMenuItem
-                  disabled={deleteDisabled}
-                  onClick={() => setDeleteConfirmOpen(true)}
-                  className="gap-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
-                >
-                  <span>删除记录</span>
-                </DropdownMenuItem>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem
+                    disabled={deleteDisabled}
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    className="gap-2 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                  >
+                    <span>删除记录</span>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
               </>
             )}
           </DropdownMenuContent>

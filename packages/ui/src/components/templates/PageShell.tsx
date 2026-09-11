@@ -2,6 +2,7 @@
 
 import React, { type ReactNode } from "react";
 import { FeedbackBanner } from "../feedback/FeedbackBanner";
+import { cn } from "../../lib/utils";
 
 export interface PageShellProps {
   readonly title: string;
@@ -37,17 +38,15 @@ export function PageShell({
   contentClassName,
 }: PageShellProps) {
   return (
-    <div className={className ?? "space-y-6"}>
+    <div className={cn("flex flex-col gap-6", className)}>
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
             {icon}
             <span>{title}</span>
           </h1>
           {description ? (
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {description}
-            </p>
+            <p className="text-xs text-muted-foreground">{description}</p>
           ) : null}
         </div>
         {actions ? (

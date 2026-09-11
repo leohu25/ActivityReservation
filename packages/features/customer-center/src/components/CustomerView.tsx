@@ -8,9 +8,13 @@ import {
   DataTableRowActions,
   DataTableDetailDrawer,
   DataTableFormModal,
+  Field,
+  FieldGroup,
+  FieldLabel,
   Input,
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -336,12 +340,14 @@ export function CustomerView({
                 <SelectValue placeholder="全部" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">全部</SelectItem>
-                {categories.map((c) => (
-                  <SelectItem key={c.categoryCode} value={c.categoryCode}>
-                    {c.categoryName}
-                  </SelectItem>
-                ))}
+                <SelectGroup>
+                  <SelectItem value="ALL">全部</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.categoryCode} value={c.categoryCode}>
+                      {c.categoryName}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           </DataTable.InputGroup>
@@ -372,7 +378,7 @@ export function CustomerView({
           }
         >
           {(c) => (
-            <div className="space-y-3 text-sm">
+            <div className="flex flex-col gap-3 text-sm">
               <DataTable.DetailPanel title="基础信息">
                 <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                   <DataTable.DetailField label="联系人">
@@ -415,28 +421,28 @@ export function CustomerView({
           }}
         >
           {({ record }) => (
-            <div className="rounded-xl border border-border/70 bg-background/60 p-4 space-y-4">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground block mb-1.5">
-                  客户企业名称
-                </label>
-                <Input defaultValue={record?.customerName} />
-              </div>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="customer-name">客户企业名称</FieldLabel>
+                <Input id="customer-name" defaultValue={record?.customerName} />
+              </Field>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground block mb-1.5">
-                    联系人
-                  </label>
-                  <Input defaultValue={record?.contactPerson} />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground block mb-1.5">
-                    联系电话
-                  </label>
-                  <Input defaultValue={record?.contactPhone} />
-                </div>
+                <Field>
+                  <FieldLabel htmlFor="contact-person">联系人</FieldLabel>
+                  <Input
+                    id="contact-person"
+                    defaultValue={record?.contactPerson}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="contact-phone">联系电话</FieldLabel>
+                  <Input
+                    id="contact-phone"
+                    defaultValue={record?.contactPhone}
+                  />
+                </Field>
               </div>
-            </div>
+            </FieldGroup>
           )}
         </DataTableFormModal>
       </DataTable.Workspace>

@@ -1,6 +1,7 @@
 export * from "./lib/utils";
 export { useSafeRouter } from "./lib/use-safe-router";
 export { useListUrlNav, type ListUrlPatch } from "./lib/use-list-url-nav";
+export { useIsMobile } from "./hooks/use-mobile";
 // 官方 CASL 客户端范式（AbilityProvider / Can / useAbility）
 export {
   TenantAbilityProvider,
@@ -20,7 +21,13 @@ export * from "./components/composite/data-table";
 export * from "./components/composite/auth";
 export * from "./components/composite/form";
 export * from "./components/layout/TopHeader";
-export * from "./components/layout/Sidebar";
+// 业务侧边栏覆盖 shadcn 同名 Sidebar 导出（保留既有 @chenrun/ui API）
+export {
+  Sidebar,
+  type NavItem,
+  type NavSection,
+  type SidebarProps,
+} from "./components/layout/Sidebar";
 // 3 模板层
 export * from "./components/templates";
 export * from "./components/ThemeProvider";

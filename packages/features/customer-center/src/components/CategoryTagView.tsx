@@ -171,14 +171,14 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
   }));
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       {/* 顶部标题区 */}
-      <div className="flex justify-between items-center pb-4 border-b">
-        <div>
+      <div className="flex items-center justify-between border-b pb-4">
+        <div className="min-w-0 flex-1">
           <h1 className="text-xl font-bold text-foreground">
             分类与标签字典管理
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="mt-1 text-sm text-muted-foreground">
             维护客户多级分类树与业务策略标签，用于客户建档、快速筛选与阶梯报价/配送时段智能匹配。
           </p>
         </div>
@@ -186,7 +186,7 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
 
       {/* 支持选项卡切换或并排双栏 */}
       <Tabs defaultValue="all" className="w-full">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <TabsList className="bg-muted">
             <TabsTrigger value="all" className="gap-1.5 text-xs">
               <LayoutGrid className="size-3.5" />
@@ -205,19 +205,15 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
 
         {/* 1. 并排双栏总览 */}
         <TabsContent value="all" className="mt-0">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <DictionarySectionCard
               title="客户分类（多级支持）"
               description="按行业或业态构建树状分类（如：机关食堂、品牌连锁、生鲜商超）"
               icon={<FolderTree className="size-4 text-primary" />}
               searchPlaceholder="搜索分类名称或编码..."
               actionButton={
-                <Button
-                  size="sm"
-                  onClick={() => setShowCatModal(true)}
-                  className="font-semibold shadow-xs"
-                >
-                  <Plus className="size-3.5 mr-1" />
+                <Button size="sm" onClick={() => setShowCatModal(true)}>
+                  <Plus data-icon="inline-start" />
                   <span>新建分类</span>
                 </Button>
               }
@@ -231,12 +227,8 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
               icon={<Tag className="size-4 text-primary" />}
               searchPlaceholder="搜索标签名称或编码..."
               actionButton={
-                <Button
-                  size="sm"
-                  onClick={() => setShowTagModal(true)}
-                  className="font-semibold shadow-xs"
-                >
-                  <Plus className="size-3.5 mr-1" />
+                <Button size="sm" onClick={() => setShowTagModal(true)}>
+                  <Plus data-icon="inline-start" />
                   <span>新建标签</span>
                 </Button>
               }
@@ -254,12 +246,8 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
             icon={<FolderTree className="size-4 text-primary" />}
             searchPlaceholder="搜索分类名称或编码..."
             actionButton={
-              <Button
-                size="sm"
-                onClick={() => setShowCatModal(true)}
-                className="font-semibold shadow-xs"
-              >
-                <Plus className="size-3.5 mr-1" />
+              <Button size="sm" onClick={() => setShowCatModal(true)}>
+                <Plus data-icon="inline-start" />
                 <span>新建分类</span>
               </Button>
             }
@@ -276,12 +264,8 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
             icon={<Tag className="size-4 text-primary" />}
             searchPlaceholder="搜索标签名称或编码..."
             actionButton={
-              <Button
-                size="sm"
-                onClick={() => setShowTagModal(true)}
-                className="font-semibold shadow-xs"
-              >
-                <Plus className="size-3.5 mr-1" />
+              <Button size="sm" onClick={() => setShowTagModal(true)}>
+                <Plus data-icon="inline-start" />
                 <span>新建标签</span>
               </Button>
             }

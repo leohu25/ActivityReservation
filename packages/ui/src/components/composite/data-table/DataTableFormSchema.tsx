@@ -8,6 +8,7 @@ import { Switch } from "../../shadcn/switch";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -112,7 +113,7 @@ export function DataTableFormFields<TValues extends object>({
                 spanClass,
               )}
             >
-              <div className="min-w-0 space-y-0.5">
+              <div className="flex min-w-0 flex-col gap-0.5">
                 <div className="text-xs font-medium text-foreground">
                   {field.label}
                   {field.required ? (
@@ -178,11 +179,13 @@ function renderFieldControl(
           <SelectValue placeholder={field.placeholder ?? "请选择"} />
         </SelectTrigger>
         <SelectContent>
-          {field.options.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>
-              {opt.label}
-            </SelectItem>
-          ))}
+          <SelectGroup>
+            {field.options.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
         </SelectContent>
       </Select>
     );

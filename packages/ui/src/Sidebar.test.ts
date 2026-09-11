@@ -3,6 +3,13 @@ import assert from "node:assert/strict";
 import React from "react";
 import { renderToString } from "react-dom/server";
 import { Sidebar, type NavSection } from "./components/layout/Sidebar";
+import { SidebarProvider } from "./components/shadcn/sidebar";
+
+function renderSidebar(element: React.ReactElement) {
+  return renderToString(
+    React.createElement(SidebarProvider, null, element),
+  );
+}
 
 const mockSections: readonly NavSection[] = [
   {
@@ -95,7 +102,7 @@ const mockSections: readonly NavSection[] = [
 ];
 
 test("Sidebar 正确渲染传入的导航区块与各多级菜单分组", () => {
-  const html = renderToString(
+  const html = renderSidebar(
     React.createElement(Sidebar, {
       sections: mockSections,
       currentPath: "/workbench",
@@ -120,7 +127,7 @@ test("Sidebar 正确渲染传入的导航区块与各多级菜单分组", () => 
 });
 
 test("Sidebar 依据当前路由自动展开所属父级分组并高亮对应子项", () => {
-  const html = renderToString(
+  const html = renderSidebar(
     React.createElement(Sidebar, {
       sections: mockSections,
       currentPath: "/settings/company",
@@ -132,8 +139,8 @@ test("Sidebar 依据当前路由自动展开所属父级分组并高亮对应子
   assert.ok(html.includes("基础设置"));
   assert.ok(html.includes("安全设置"));
 
-  // 校验激活样式包含特定高亮类
-  assert.ok(html.includes("bg-blue-50"));
+  // 官方 SidebarMenuSubButton 激活态
+  assert.ok(html.includes('data-active="true"'));
 });
 
 test("Sidebar 支持通过 can 回调执行功能权限过滤", () => {
@@ -145,7 +152,7 @@ test("Sidebar 支持通过 can 回调执行功能权限过滤", () => {
     return true;
   };
 
-  const html = renderToString(
+  const html = renderSidebar(
     React.createElement(Sidebar, {
       sections: mockSections,
       currentPath: "/workbench",
@@ -167,7 +174,7 @@ test("Sidebar 兼容扁平 navItems 传参模式", () => {
     { id: "custom-1", label: "自定义单页", href: "/custom/page" },
   ];
 
-  const html = renderToString(
+  const html = renderSidebar(
     React.createElement(Sidebar, {
       navItems: customItems,
       currentPath: "/custom/page",
@@ -193,7 +200,7 @@ test("Sidebar 支持传递字符串 icon 名称 (支持 RSC 跨端序列化)", (
     },
   ];
 
-  const html = renderToString(
+  const html = renderSidebar(
     React.createElement(Sidebar, {
       sections: customSections,
       currentPath: "/procurement/orders",
@@ -202,5 +209,5 @@ test("Sidebar 支持传递字符串 icon 名称 (支持 RSC 跨端序列化)", (
 
   assert.ok(html.includes("采购中心"));
   assert.ok(html.includes('href="/procurement/orders"'));
-  assert.ok(html.includes("lucide-package-check"));
+  assert.ok(/lucide-package-check|package-check/i.test(html));
 });

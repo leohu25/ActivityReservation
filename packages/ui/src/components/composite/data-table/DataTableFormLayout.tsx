@@ -1,6 +1,7 @@
 "use client";
 
 import React, { type ReactNode } from "react";
+import { Field, FieldLabel, FieldDescription } from "../../shadcn/field";
 import { cn } from "../../../lib/utils";
 
 export interface DataTableFormFieldProps {
@@ -23,16 +24,14 @@ export function DataTableFormField({
   className,
 }: DataTableFormFieldProps) {
   return (
-    <div className={cn("min-w-0 space-y-1.5", className)}>
-      <label className="block text-xs font-medium text-foreground">
+    <Field className={cn("min-w-0 gap-1.5", className)}>
+      <FieldLabel>
         {label}
-        {required ? <span className="text-destructive ml-0.5">*</span> : null}
-      </label>
+        {required ? <span className="ml-0.5 text-destructive">*</span> : null}
+      </FieldLabel>
       {children}
-      {hint ? (
-        <p className="text-[11px] text-muted-foreground">{hint}</p>
-      ) : null}
-    </div>
+      {hint ? <FieldDescription className="text-[11px]">{hint}</FieldDescription> : null}
+    </Field>
   );
 }
 
@@ -82,12 +81,12 @@ export function DataTableFormSection({
   return (
     <section
       className={cn(
-        "space-y-3 rounded-xl border border-border/70 bg-background/60 p-4",
+        "flex flex-col gap-3 rounded-xl border border-border/70 bg-background/60 p-4",
         className,
       )}
     >
       {title || description ? (
-        <div className="space-y-0.5">
+        <div className="flex flex-col gap-0.5">
           {title ? (
             <h3 className="text-sm font-medium text-foreground">{title}</h3>
           ) : null}
@@ -125,7 +124,7 @@ export function DataTableFormBanner({
       {icon ? (
         <span className="mt-0.5 shrink-0 text-primary">{icon}</span>
       ) : null}
-      <div className="min-w-0 space-y-0.5">
+      <div className="flex min-w-0 flex-col gap-0.5">
         <div className="text-sm font-medium text-foreground">{title}</div>
         {description ? (
           <p className="text-xs leading-relaxed text-muted-foreground">

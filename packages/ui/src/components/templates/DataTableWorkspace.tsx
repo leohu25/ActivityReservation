@@ -7,6 +7,7 @@ import { Input } from "../shadcn/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -174,7 +175,7 @@ export function DataTableWorkspace<TData>({
                 onClick={onRefresh}
                 className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
               >
-                <RefreshCw className="size-3.5 text-muted-foreground" />
+                <RefreshCw data-icon="inline-start" className="text-muted-foreground" />
                 {refreshText}
               </Button>
             ) : null}
@@ -187,7 +188,7 @@ export function DataTableWorkspace<TData>({
                 onClick={onExport}
                 className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
               >
-                <Download className="size-3.5 text-muted-foreground" />
+                <Download data-icon="inline-start" className="text-muted-foreground" />
                 {exportText}
               </DataTableActionButton>
             ) : null}
@@ -203,7 +204,7 @@ export function DataTableWorkspace<TData>({
                 onClick={onCreate}
                 className="gap-1.5 shadow-xs"
               >
-                <Plus className="size-3.5" />
+                <Plus data-icon="inline-start" />
                 {createText}
               </DataTableActionButton>
             ) : null}
@@ -239,14 +240,16 @@ export function DataTableWorkspace<TData>({
                       <SelectValue placeholder={statusAllLabel} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={statusAllValue}>
-                        {statusAllLabel}
-                      </SelectItem>
-                      {statusOptions?.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
+                      <SelectGroup>
+                        <SelectItem value={statusAllValue}>
+                          {statusAllLabel}
                         </SelectItem>
-                      ))}
+                        {statusOptions?.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                 </DataTableInputGroup>

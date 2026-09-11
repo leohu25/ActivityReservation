@@ -7,6 +7,7 @@ import { Checkbox } from "../../shadcn/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -85,36 +86,38 @@ export function DataTableColumnSettings({
         </div>
         <DropdownMenuSeparator className="my-1" />
         <div className="max-h-72 overflow-y-auto py-0.5">
-          {panelColumns.map((col) => {
-            const checked = visibleColumnIds.has(col.id);
-            const locked = Boolean(col.lockVisible);
-            return (
-              <label
-                key={col.id}
-                className={cn(
-                  "flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-muted/60",
-                  locked && "cursor-not-allowed opacity-70",
-                )}
-              >
-                <Checkbox
-                  checked={checked}
-                  disabled={locked}
-                  onCheckedChange={() => {
-                    if (!locked) toggleColumnVisibility(col.id);
-                  }}
-                  aria-label={`切换列 ${col.id}`}
-                />
-                <span className="truncate text-foreground">
-                  {typeof col.header === "string" ? col.header : col.id}
-                </span>
-                {locked ? (
-                  <span className="ml-auto text-[10px] text-muted-foreground">
-                    锁定
+          <DropdownMenuGroup>
+            {panelColumns.map((col) => {
+              const checked = visibleColumnIds.has(col.id);
+              const locked = Boolean(col.lockVisible);
+              return (
+                <label
+                  key={col.id}
+                  className={cn(
+                    "flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-muted/60",
+                    locked && "cursor-not-allowed opacity-70",
+                  )}
+                >
+                  <Checkbox
+                    checked={checked}
+                    disabled={locked}
+                    onCheckedChange={() => {
+                      if (!locked) toggleColumnVisibility(col.id);
+                    }}
+                    aria-label={`切换列 ${col.id}`}
+                  />
+                  <span className="truncate text-foreground">
+                    {typeof col.header === "string" ? col.header : col.id}
                   </span>
-                ) : null}
-              </label>
-            );
-          })}
+                  {locked ? (
+                    <span className="ml-auto text-[10px] text-muted-foreground">
+                      锁定
+                    </span>
+                  ) : null}
+                </label>
+              );
+            })}
+          </DropdownMenuGroup>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

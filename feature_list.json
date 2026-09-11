@@ -218,11 +218,11 @@
     {
       "id": "ui-datatable-enterprise-framework",
       "name": "【UI组件体系】工业级通用列表积木框架升级与开发规范沉淀 (Enterprise DataTable Framework & Dev Skill)",
-      "description": "基于 shadcn 纯标准原子组件升级 @chenrun/ui 通用 DataTable 积木套件：1. 紧凑排版与自增序号列 (showIndex)；2. 基于 DropdownMenu+Checkbox 的动态列显示/隐藏 (DataTable.ColumnSettings)；3. 常用筛选与高级筛选插槽 (DataTable.FilterBar)；4. 紧凑数字分页器与记录范围显示 (DataTable.Pagination)；5. 贯通 Fail-Closed 权限闭环（顶部/行级自定义按钮与特殊功能插槽挂载权限）；6. 在 .agents/skills/erp-feature-dev/ 沉淀标准列表与表单实战开发手册（详述自定义按钮、权限绑定与字段三态）。",
+      "description": "基于 shadcn 纯标准原子组件升级 @chenrun/ui 通用 DataTable 积木套件：1. 紧凑排版与自增序号列 (showIndex)；2. 基于 DropdownMenu+Checkbox 的动态列显示/隐藏 (DataTable.ColumnSettings)；3. 常用筛选与高级筛选插槽 (DataTable.FilterBar)；4. 紧凑数字分页器与记录范围显示 (DataTable.Pagination)；5. 贯通 Fail-Closed 权限闭环（顶部/行级自定义按钮与特殊功能插槽挂载权限）；6. 在 .agents/skills/erp-feature-dev/ 沉淀标准列表与表单实战开发手册（详述自定义按钮、权限绑定与字段三态）。追加：官方 Sidebar 外壳接入、折叠 HoverCard 悬浮子菜单、顶栏/主题切换/Card/语义色与 shadcn skill 范式收敛。",
       "dependencies": ["foundation-day0-db-self-healing"],
       "status": "completed",
       "owner": "implementer",
-      "evidence": "落地一体化白卡 Root/Header/FilterBar/InputGroup/ColumnSettings/Content(showIndex)/Pagination 数字页码/RowActions 平铺+折叠/FormModal 与 DetailDrawer 居中工业风弹窗/FormSection·FieldGrid·Banner；ui 包 tsc 0 错误、单测 27/27、全仓 13 包 check 全绿；erp-feature-dev 沉淀完整 DataTable 手册"
+      "evidence": "一体化 DataTable 积木 + 服务端分页闭环完成；本会话接入官方 sidebar/use-mobile，业务 Sidebar 展开 Collapsible、折叠 HoverCard+摊平菜单，TopHeader 用 Avatar/Badge/SidebarTrigger 且 bg-sidebar 与侧栏同色，ThemeToggle→ToggleGroup，DashboardShell→SidebarProvider+Inset，DataTable/Card/InputGroup/Empty/FieldGroup/SelectGroup/data-icon/gap 范式修复，双端 --sidebar CSS；ui tsc 0 错、单测 34/34、customer-center 与 tenant check 通过"
     },
     {
       "id": "arch-authz-consolidation",

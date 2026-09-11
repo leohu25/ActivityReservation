@@ -33,9 +33,9 @@ export function DataTableHeader({
         className,
       )}
     >
-      <div className="min-w-0 flex-1 space-y-1">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
         {category ? (
-          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary/80">
+          <div className="text-[10px] font-semibold tracking-[0.14em] text-primary/80 uppercase">
             {category}
           </div>
         ) : null}

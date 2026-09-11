@@ -84,7 +84,7 @@ export function DataTableFilterDrawer({
               </SheetDescription>
             )}
           </SheetHeader>
-          <div className="py-4 space-y-4">{children}</div>
+          <div className="flex flex-col gap-4 py-4">{children}</div>
         </div>
         <SheetFooter className="pt-4 border-t border-border/60 flex sm:justify-between gap-2">
           {onReset && (

@@ -30,8 +30,19 @@
 - [x] `listCustomersAction` / `customers/page.tsx` 接入 searchParams 受控分页
 - [x] `CustomerView` 翻页与筛选经 URL 同步，RSC 重新拉取当前页
 
+## 追加：shadcn 外壳与范式收敛（本会话）
+
+- [x] 安装官方 `sidebar` + `use-mobile`；补齐 tenant/control 双端 `--sidebar-*` CSS token
+- [x] 业务 `Sidebar` 基于官方 Sidebar/Collapsible/HoverCard 重写：展开态 Collapsible，折叠态 HoverCard 悬浮子菜单（普通 Link，规避 icon 态 `hidden`）
+- [x] 折叠态摊平为单条连续菜单，消除多 `SidebarGroup` padding 叠距
+- [x] `TopHeader` 改 Avatar+Badge+SidebarTrigger，色 token 对齐 `bg-sidebar`
+- [x] `ThemeToggle` 改 ToggleGroup；`DashboardShell` 改 SidebarProvider+SidebarInset
+- [x] DataTable 白卡/表格外框改 Card；Select 包 SelectGroup；Dropdown 包 DropdownMenuGroup
+- [x] DictionarySectionCard 搜索改 InputGroup、空态改 Empty；CustomerView 表单改 FieldGroup/Field
+- [x] Button 图标统一 `data-icon`；`space-y-*` 收敛为 `flex gap-*`
+
 ## 验证证据
 
-- `packages/ui`: `tsc --noEmit` PASS，`tsx --test` 28/28 PASS
-- `packages/features/customer-center`: check PASS，test 9/9 PASS
+- `packages/ui`: `tsc --noEmit` PASS，`tsx --test` 34/34 PASS
+- `packages/features/customer-center`: check PASS
 - `apps/tenant`: check PASS

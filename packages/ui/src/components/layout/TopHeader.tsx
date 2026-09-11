@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Button } from "../shadcn/button";
 import { Loader2 } from "lucide-react";
+import { Button } from "../shadcn/button";
+import { Badge } from "../shadcn/badge";
+import { Avatar, AvatarFallback } from "../shadcn/avatar";
+import { SidebarTrigger } from "../shadcn/sidebar";
 
 export interface TopHeaderProps {
   readonly user?: {
@@ -12,10 +15,12 @@ export interface TopHeaderProps {
   readonly orgSwitcherSlot?: ReactNode;
   readonly onSignOut?: () => void | Promise<void>;
   readonly onOpenLogin?: () => void;
+  /** 是否显示侧边栏折叠触发器，默认 true */
+  readonly showSidebarTrigger?: boolean;
 }
 
 /**
- * ERP 统一后台顶部栏 (遵循现代工业轻量数智风)
+ * ERP 统一后台顶部栏
  * 包含：系统品牌、租户切换槽位、当前用户信息与安全退出/登录操作
  */
 export function TopHeader({
@@ -23,6 +28,7 @@ export function TopHeader({
   orgSwitcherSlot,
   onSignOut,
   onOpenLogin,
+  showSidebarTrigger = true,
 }: TopHeaderProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -56,46 +62,52 @@ export function TopHeader({
     }
   };
 
+  const displayName = user?.name || user?.email?.split("@")[0] || "";
+  const initial = (displayName || user?.email || "?")[0]?.toUpperCase() ?? "?";
+
   return (
-    <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b border-slate-200/80 bg-white/95 px-6 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/95">
-      <div className="flex items-center gap-6">
-        {/* 系统品牌 Logo 区 */}
+    <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b border-sidebar-border bg-sidebar px-4 text-sidebar-foreground md:px-6">
+      <div className="flex min-w-0 items-center gap-3 md:gap-4">
+        {showSidebarTrigger ? <SidebarTrigger className="-ml-1" /> : null}
+
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white font-black text-sm shadow-sm shadow-blue-500/25 ring-1 ring-blue-500/20">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sidebar-primary text-sm font-black text-sidebar-primary-foreground shadow-xs">
             CR
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-base font-bold tracking-tight text-slate-900 dark:text-slate-100">
+              <span className="truncate text-base font-bold tracking-tight text-sidebar-foreground">
                 宸润数智 ERP
               </span>
-              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60">
+              <Badge variant="secondary" className="text-[10px] font-bold">
                 SaaS Pro
-              </span>
+              </Badge>
             </div>
-            <p className="text-[10px] text-slate-400 font-medium">
+            <p className="truncate text-[10px] font-medium text-muted-foreground">
               数字化供应链与制造运营系统
             </p>
           </div>
         </div>
 
-        {/* 租户组织切换器槽位 */}
-        {user && orgSwitcherSlot}
+        {user ? orgSwitcherSlot : null}
       </div>
 
-      {/* 右侧用户操作区 */}
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-3">
         {user ? (
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50/80 py-1 pl-1.5 pr-3 dark:border-slate-800 dark:bg-slate-800/80">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-xs">
-                {(user.name || user.email)[0]?.toUpperCase()}
-              </div>
-              <div className="flex flex-col text-left leading-tight">
-                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  {user.name || user.email.split("@")[0]}
+            <div className="flex items-center gap-2 rounded-full border border-sidebar-border bg-muted/40 py-1 pl-1.5 pr-3">
+              <Avatar size="sm">
+                <AvatarFallback className="bg-sidebar-primary text-xs font-bold text-sidebar-primary-foreground">
+                  {initial}
+                </AvatarFallback>
+              </Avatar>
+              <div className="hidden flex-col text-left leading-tight sm:flex">
+                <span className="text-xs font-bold text-sidebar-foreground">
+                  {displayName}
                 </span>
-                <span className="text-[10px] text-slate-400">{user.email}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {user.email}
+                </span>
               </div>
             </div>
 
@@ -104,11 +116,14 @@ export function TopHeader({
               size="sm"
               disabled={isLoggingOut}
               onClick={handleSignOutClick}
-              className="text-xs font-medium text-slate-600 hover:text-slate-900 cursor-pointer"
+              className="cursor-pointer text-xs font-medium"
             >
-              {isLoggingOut && (
-                <Loader2 className="size-3 animate-spin mr-1 text-slate-500" />
-              )}
+              {isLoggingOut ? (
+                <Loader2
+                  data-icon="inline-start"
+                  className="animate-spin text-muted-foreground"
+                />
+              ) : null}
               <span>{isLoggingOut ? "退出中..." : "退出登录"}</span>
             </Button>
           </div>
@@ -117,7 +132,7 @@ export function TopHeader({
             variant="default"
             size="sm"
             onClick={handleLoginClick}
-            className="font-bold shadow-sm shadow-blue-600/20 cursor-pointer"
+            className="cursor-pointer font-bold"
           >
             登录 / 注册
           </Button>
