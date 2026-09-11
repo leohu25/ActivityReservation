@@ -1,8 +1,14 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "../../shadcn/button";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "../../shadcn/pagination";
 import {
   Select,
   SelectContent,
@@ -49,6 +55,10 @@ function buildPageItems(
   return items;
 }
 
+/**
+ * 紧凑分页条：组合官方 shadcn Pagination 原语 + Select。
+ * 保留工业风「共 N 条 / 范围 / 条/页」信息密度。
+ */
 export function DataTablePagination({
   pageSizeOptions = [10, 20, 50, 100],
   showRange = true,
@@ -87,6 +97,11 @@ export function DataTablePagination({
     onPageChange?.(1, newSize);
   };
 
+  const go = (newPage: number) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    handlePageChange(newPage);
+  };
+
   return (
     <div
       className={cn(
@@ -96,7 +111,9 @@ export function DataTablePagination({
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span>
-          共 <span className="font-semibold text-foreground font-mono">{total}</span> 条
+          共{" "}
+          <span className="font-semibold text-foreground font-mono">{total}</span>{" "}
+          条
         </span>
         {showRange && total > 0 ? (
           <span className="text-muted-foreground/80">
@@ -126,54 +143,55 @@ export function DataTablePagination({
           <span className="text-xs">条/页</span>
         </div>
 
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            className="size-7 p-0"
-            onClick={() => handlePageChange(page - 1)}
-            disabled={!canPreviousPage}
-            title="上一页"
-          >
-            <ChevronLeft className="size-3.5" />
-          </Button>
-
-          {pageItems.map((item, idx) =>
-            item === "ellipsis" ? (
-              <span
-                key={`e-${idx}`}
-                className="inline-flex size-7 items-center justify-center text-muted-foreground"
-              >
-                …
-              </span>
-            ) : (
-              <Button
-                key={item}
-                variant={item === page ? "default" : "outline"}
-                size="sm"
+        <Pagination className="mx-0 w-auto justify-end">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                aria-disabled={!canPreviousPage}
                 className={cn(
-                  "size-7 p-0 font-mono text-xs",
-                  item === page && "pointer-events-none",
+                  "h-7 gap-0 px-2 text-xs",
+                  !canPreviousPage && "pointer-events-none opacity-50",
                 )}
-                onClick={() => handlePageChange(item)}
-                title={`第 ${item} 页`}
-              >
-                {item}
-              </Button>
-            ),
-          )}
+                onClick={go(page - 1)}
+              />
+            </PaginationItem>
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="size-7 p-0"
-            onClick={() => handlePageChange(page + 1)}
-            disabled={!canNextPage}
-            title="下一页"
-          >
-            <ChevronRight className="size-3.5" />
-          </Button>
-        </div>
+            {pageItems.map((item, idx) =>
+              item === "ellipsis" ? (
+                <PaginationItem key={`e-${idx}`}>
+                  <span className="inline-flex size-7 items-center justify-center text-muted-foreground">
+                    …
+                  </span>
+                </PaginationItem>
+              ) : (
+                <PaginationItem key={item}>
+                  <PaginationLink
+                    href="#"
+                    isActive={item === page}
+                    size="icon"
+                    className="size-7 font-mono text-xs"
+                    onClick={go(item)}
+                  >
+                    {item}
+                  </PaginationLink>
+                </PaginationItem>
+              ),
+            )}
+
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                aria-disabled={!canNextPage}
+                className={cn(
+                  "h-7 gap-0 px-2 text-xs",
+                  !canNextPage && "pointer-events-none opacity-50",
+                )}
+                onClick={go(page + 1)}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       </div>
     </div>
   );

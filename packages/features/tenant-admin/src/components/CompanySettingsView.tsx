@@ -12,7 +12,6 @@ import {
   Button,
   Badge,
   AuthorizedField,
-  type AbilityLike,
 } from "@chenrun/ui";
 import { Building2, Save, CheckCircle2, AlertCircle } from "lucide-react";
 import type { CompanyProfileData, UpdateCompanyProfileInput } from "../types";
@@ -21,16 +20,14 @@ import { updateCompanyProfileAction } from "../actions";
 export interface CompanySettingsViewProps {
   readonly initialData: CompanyProfileData;
   readonly isReadOnly?: boolean;
-  readonly ability?: AbilityLike | null;
 }
 
 /**
- * 企业资料设置面板组件 (纯白浮动大圆角卡片，现代数智工业风)
+ * 企业资料设置面板：AuthorizedField 三态来自 AbilityProvider（settings layout）。
  */
 export function CompanySettingsView({
   initialData,
   isReadOnly = false,
-  ability,
 }: CompanySettingsViewProps) {
   const [formData, setFormData] = useState<UpdateCompanyProfileInput>({
     companyName: initialData.companyName || "",
@@ -132,7 +129,6 @@ export function CompanySettingsView({
           </CardHeader>
           <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <AuthorizedField
-              ability={ability}
               subject="CompanyProfile"
               field="companyName"
               action="update"
@@ -149,7 +145,6 @@ export function CompanySettingsView({
             </AuthorizedField>
 
             <AuthorizedField
-              ability={ability}
               subject="CompanyProfile"
               field="shortName"
               action="update"
@@ -165,7 +160,6 @@ export function CompanySettingsView({
             </AuthorizedField>
 
             <AuthorizedField
-              ability={ability}
               subject="CompanyProfile"
               field="creditCode"
               action="update"
@@ -181,7 +175,6 @@ export function CompanySettingsView({
             </AuthorizedField>
 
             <AuthorizedField
-              ability={ability}
               subject="CompanyProfile"
               field="legalPerson"
               action="update"
@@ -210,7 +203,6 @@ export function CompanySettingsView({
           </CardHeader>
           <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <AuthorizedField
-              ability={ability}
               subject="CompanyProfile"
               field="contactPhone"
               action="update"
@@ -226,7 +218,6 @@ export function CompanySettingsView({
             </AuthorizedField>
 
             <AuthorizedField
-              ability={ability}
               subject="CompanyProfile"
               field="contactEmail"
               action="update"
@@ -244,7 +235,6 @@ export function CompanySettingsView({
 
             <div className="md:col-span-2">
               <AuthorizedField
-                ability={ability}
                 subject="CompanyProfile"
                 field="address"
                 action="update"

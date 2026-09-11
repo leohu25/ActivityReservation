@@ -7,6 +7,7 @@ import {
   CompanySettingsView,
 } from "@chenrun/feature-tenant-admin";
 import { Card } from "@chenrun/ui";
+import { getTenantSubjectPermissions } from "@/kernel";
 
 /**
  * 租户企业信息管理页面 (Server Component - 极薄装配线)
@@ -51,8 +52,14 @@ export default async function SettingsCompanyPage() {
     .split(",")
     .map((r) => r.trim())
     .filter(Boolean);
+
+  const companyPerms = await getTenantSubjectPermissions("CompanyProfile");
+  const canReadCompany = companyPerms.actions.includes("read");
+  // 过渡兜底：历史 admin 无 statement 时避免锁死
   const isTenantAdmin =
-    roleList.includes("owner") || roleList.includes("admin");
+    canReadCompany ||
+    roleList.includes("owner") ||
+    roleList.includes("admin");
 
   if (!isTenantAdmin) {
     return (

@@ -14,6 +14,7 @@ export * from "./errors";
 export * from "./api";
 export * from "./types";
 export * from "./utils";
+export * from "./permissions";
 
 // 成熟三方工具套件统一导出与封装
 export * as radash from "radash";

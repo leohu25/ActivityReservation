@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { AbilityContext } from "@chenrun/authorization";
 import {
   DataTableContext,
   resolveDefaultVisibleColumnIds,
@@ -8,11 +9,6 @@ import {
   type DataTableContextValue,
 } from "./DataTableContext";
 import { cn } from "../../../lib/utils";
-
-export interface PlainTablePermissions {
-  readonly actions: readonly string[];
-  readonly fieldPolicies?: Readonly<Record<string, string>>;
-}
 
 export interface DataTableRootProps<TData> {
   data: readonly TData[];
@@ -27,11 +23,15 @@ export interface DataTableRootProps<TData> {
   total?: number;
   /** 翻页回调：由业务层请求服务端 API 拉取目标页 */
   onPageChange?: (page: number, pageSize: number) => void;
+  /** 业务实体 Subject；Ability 一律来自 AbilityProvider（或下方 ability 测试/注入入口） */
   subject?: string;
+  /**
+   * 可选：直接注入 CASL Ability 实例（测试或非 Provider 场景）。
+   * 生产页面优先在上层使用 TenantAbilityProvider。
+   */
   ability?: {
-    can(action: string, subject: string, field?: string): boolean;
+    can(action: string, subject?: string, field?: string): boolean;
   };
-  permissions?: PlainTablePermissions;
   /**
    * 一体化白卡容器。默认 true：
    * 渲染 `bg-card border shadow-xs rounded-xl`，将标题/筛选/表格/分页整合为一体化操作容器。
@@ -57,7 +57,6 @@ export function DataTableRoot<TData>({
   onPageChange,
   subject,
   ability: explicitAbility,
-  permissions,
   integratedCard = true,
   clientSidePagination = false,
   children,
@@ -164,40 +163,6 @@ export function DataTableRoot<TData>({
     setVisibleColumnIds(new Set(defaultVisibleIds));
   }, [defaultVisibleIds]);
 
-  const effectiveAbility = React.useMemo(() => {
-    if (explicitAbility) {
-      return explicitAbility;
-    }
-    if (!permissions) {
-      return undefined;
-    }
-    return {
-      can(action: string, s: string, field?: string) {
-        if (subject && s && s !== subject) {
-          return false;
-        }
-        if (!permissions.actions.includes(action)) {
-          return false;
-        }
-        // 与 CASL 字段规则对齐：HIDDEN 剥离；READONLY 不可写
-        if (
-          field &&
-          permissions.fieldPolicies?.[field] === "HIDDEN"
-        ) {
-          return false;
-        }
-        if (
-          field &&
-          (action === "create" || action === "update") &&
-          permissions.fieldPolicies?.[field] === "READONLY"
-        ) {
-          return false;
-        }
-        return true;
-      },
-    };
-  }, [explicitAbility, permissions, subject]);
-
   const allRowKeys = React.useMemo(
     () => pageData.map((item) => rowKey(item)),
     [pageData, rowKey],
@@ -270,7 +235,6 @@ export function DataTableRoot<TData>({
       toggleColumnVisibility,
       resetColumnVisibility,
       subject,
-      ability: effectiveAbility,
     }),
     [
       data,
@@ -290,11 +254,10 @@ export function DataTableRoot<TData>({
       toggleColumnVisibility,
       resetColumnVisibility,
       subject,
-      effectiveAbility,
     ],
   );
 
-  return (
+  const content = (
     <DataTableContext.Provider value={value}>
       {integratedCard ? (
         <div
@@ -312,4 +275,13 @@ export function DataTableRoot<TData>({
       )}
     </DataTableContext.Provider>
   );
+
+  // 官方范式：显式 ability 时经 AbilityProvider 下发，下游统一 useOptionalAbility
+  if (explicitAbility) {
+    return (
+      <AbilityContext value={explicitAbility as never}>{content}</AbilityContext>
+    );
+  }
+
+  return content;
 }

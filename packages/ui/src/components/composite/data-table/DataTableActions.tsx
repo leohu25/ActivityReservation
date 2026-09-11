@@ -1,6 +1,7 @@
 "use client";
 
 import React, { type ReactNode } from "react";
+import { useOptionalAbility } from "@chenrun/authorization";
 import { Button } from "../../shadcn/button";
 import {
   Tooltip,
@@ -48,15 +49,15 @@ export function DataTableActionButton({
   className,
   ...props
 }: DataTableActionButtonProps) {
-  const { subject: contextSubject, ability } = useDataTableContext();
+  const { subject: contextSubject } = useDataTableContext();
+  const ability = useOptionalAbility();
 
   const targetSubject = explicitSubject || contextSubject;
 
-  // 判定是否有权限执行该 action (严格遵循 Fail-Closed 原则)
+  // Fail-Closed：声明了 action 却缺 subject/ability 时拒绝；未声明 action 视为非受控按钮
   const hasPermission = React.useMemo(() => {
     if (!action) return true;
-    if (!targetSubject) return true;
-    if (!ability) return false;
+    if (!targetSubject || !ability) return false;
     return ability.can(action, targetSubject, field);
   }, [action, ability, targetSubject, field]);
 
@@ -114,11 +115,12 @@ export function DataTableActions({
   children,
   className,
 }: DataTableActionsProps) {
-  const { ability, subject, isAnySelected, selectedKeys } =
-    useDataTableContext();
+  const { subject, isAnySelected, selectedKeys } = useDataTableContext();
+  const ability = useOptionalAbility();
 
   const can = (action: string, field?: string) => {
-    if (!ability || !subject) return true;
+    // Fail-Closed：缺 ability/subject 一律拒绝，禁止无上下文放行
+    if (!ability || !subject) return false;
     return ability.can(action, subject, field);
   };
 

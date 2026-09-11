@@ -1,11 +1,13 @@
 import {
   StoreView,
-  CustomerStoreSubject,
   listStoresAction,
   listCustomersAction,
 } from "@chenrun/feature-customer-center";
+import type {
+  CustomerListItem,
+  StoreListItem,
+} from "@chenrun/feature-customer-center/types";
 import { toPlainData } from "@chenrun/shared";
-import { getTenantSubjectPermissions } from "@/kernel";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -20,6 +22,7 @@ function readInt(sp: SearchParams, key: string, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
+/** 门店档案页：权限由 customer/layout 的 AbilityProvider 注入 */
 export default async function StoresPage({
   searchParams,
 }: {
@@ -32,7 +35,7 @@ export default async function StoresPage({
   const customerCode = readOne(sp, "customer");
   const status = readOne(sp, "status");
 
-  const [storesRes, custRes, permissions] = await Promise.all([
+  const [storesRes, custRes] = await Promise.all([
     listStoresAction({
       page,
       pageSize,
@@ -41,25 +44,24 @@ export default async function StoresPage({
       status: status || undefined,
     }),
     listCustomersAction({ page: 1, pageSize: 100 }),
-    getTenantSubjectPermissions(CustomerStoreSubject),
   ]);
 
   const storeList =
     storesRes.success && storesRes.data
       ? toPlainData(storesRes.data)
       : { items: [], total: 0, page: 1, pageSize };
-  const stores = Array.isArray(storeList)
-    ? storeList
-    : (storeList.items ?? []);
+  const stores = (
+    Array.isArray(storeList) ? storeList : (storeList.items ?? [])
+  ) as StoreListItem[];
   const total = Array.isArray(storeList)
     ? storeList.length
     : (storeList.total ?? 0);
 
   const custList =
     custRes.success && custRes.data ? toPlainData(custRes.data) : null;
-  const customers = Array.isArray(custList)
+  const customers = (Array.isArray(custList)
     ? custList
-    : ((custList?.items as never[]) ?? []);
+    : ((custList?.items as never[]) ?? [])) as CustomerListItem[];
 
   return (
     <StoreView
@@ -71,7 +73,6 @@ export default async function StoresPage({
       initialCustomer={customerCode}
       initialStatus={status}
       customers={customers}
-      permissions={permissions}
     />
   );
 }

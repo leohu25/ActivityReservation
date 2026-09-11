@@ -90,34 +90,25 @@ export const customerPageContract: FeaturePagePermissionDescriptor = {
 
 ---
 
-## 前台组件消费模式 (`CustomerView.tsx`)
+## 前台组件消费模式（官方 AbilityProvider，禁止旧双轨）
 
-页面组件接收服务端下发的权限与字段策略：
+权限快照在 **切片 layout** 注入，View **只收业务数据**，不再接收 `permissions`/`ability` props。
 
 ```tsx
+// packages/features/customer-center/src/components/CustomerView.tsx
+"use client";
+import { useAbility } from "@chenrun/authorization";
+import { DataTable } from "@chenrun/ui";
+
 interface Props {
   initialCustomers: CustomerListItem[];
-  permissions?: {
-    readonly actions: readonly string[];
-    readonly fieldPolicies?: Readonly<Record<string, string>>;
-  };
+  // 禁止：permissions?: {...} / ability?: {...}
 }
 
-export function CustomerView({ initialCustomers, permissions }: Props) {
-  // 1. 构造页面级 CASL Ability
-  const ability = React.useMemo(() => {
-    if (!permissions) return undefined;
-    return {
-      can(action: string, subject?: string, field?: string) {
-        if (subject && subject !== customerPageContract.subject) return false;
-        if (!permissions.actions.includes(action)) return false;
-        if (field && permissions.fieldPolicies?.[field] === "HIDDEN") return false;
-        return true;
-      },
-    };
-  }, [permissions]);
+export function CustomerView({ initialCustomers }: Props) {
+  // 命令式 can()（如导出字段过滤）用官方 useAbility；按钮显隐交给 ActionButton
+  const ability = useAbility();
 
-  // 2. 表格定义挂载受控字段 (用于 DataTable 物理列剥离)
   const columns: ColumnDef<CustomerListItem>[] = [
     {
       id: "creditLimit",
@@ -125,17 +116,21 @@ export function CustomerView({ initialCustomers, permissions }: Props) {
       header: "授信额度",
       cell: (row) => formatCurrency(row.creditLimit),
     },
-    // ...
   ];
 
-  // 3. 操作按钮：页面直接声明，由 ActionButton 按权限显隐（约定大于配置）
-  //    不需要手写 canExport && <Button>；不需要的按钮用 hide* 或不写
-  //    <DataTable.ActionButton action="create" onClick={...}>新增</DataTable.ActionButton>
-  //    <DataTable.ActionButton action="export" onClick={...}>导出</DataTable.ActionButton>
-  //    行操作默认详情/编辑/删除；hideView / hideEdit / hideDelete 显式关闭
-  //    页面 hide 或不渲染的按钮 → 契约同步移除该 action，角色目录不再出现
+  return (
+    <DataTable.Workspace
+      data={initialCustomers}
+      columns={columns}
+      rowKey={(c) => c.customerCode}
+      subject={customerPageContract.subject} // 只传 subject
+      title="客户档案"
+    />
+  );
 }
 ```
+
+完整注入链路与 layout 样板见 **`references/7-casl-ability-provider.md`**（标杆：`customer/layout.tsx` + `CustomerAbilityBoundary`）。
 
 ### 自定义扩展动作
 

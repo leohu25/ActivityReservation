@@ -41,6 +41,7 @@ export {
 
 export {
   assertEditableFields,
+  createSubjectAbility,
   FieldPolicy,
   FieldPolicyError,
   getFieldMode,
@@ -52,6 +53,8 @@ export {
   resolveFieldAccess,
   type FieldAccessMode,
   type RoleFieldPolicyConfig,
+  type SubjectAbilityLike,
+  type SubjectPermissionsPayload,
 } from "./fields/field-policy";
 
 export {
@@ -76,4 +79,16 @@ export {
   AbilityContext,
   createReactAbilityAdapter,
   useAbility,
+  Can,
 } from "./adapters/react";
+export {
+  createAbilityFromSnapshot,
+  snapshotToRawRules,
+  type AbilitySnapshot,
+  type AppClientAbility,
+} from "./adapters/client-ability";
+export {
+  TenantAbilityProvider,
+  useOptionalAbility,
+  useSubjectCan,
+} from "./adapters/ability-provider";

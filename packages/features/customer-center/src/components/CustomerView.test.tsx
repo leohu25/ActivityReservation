@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToString } from "react-dom/server";
+import { TenantAbilityProvider } from "@chenrun/authorization";
 import { CustomerView } from "./CustomerView";
 import { customerPageContract } from "../contracts/customer.contract";
 import type { CustomerListItem } from "../types";
@@ -21,32 +22,46 @@ const mockCustomers: CustomerListItem[] = [
   },
 ];
 
+/** 官方范式：测试通过 AbilityProvider 注入，而非 View 私有 props */
+function renderCustomerView(
+  ui: React.ReactElement,
+  permissions: {
+    actions: readonly string[];
+    fieldPolicies?: Readonly<Record<string, string>>;
+  },
+) {
+  return renderToString(
+    <TenantAbilityProvider
+      snapshots={{
+        subject: customerPageContract.subject,
+        actions: permissions.actions,
+        fieldPolicies: permissions.fieldPolicies,
+      }}
+    >
+      {ui}
+    </TenantAbilityProvider>,
+  );
+}
+
+function customerViewProps(overrides: Partial<React.ComponentProps<typeof CustomerView>> = {}) {
+  return {
+    initialCustomers: mockCustomers,
+    categories: [],
+    tags: [],
+    ...overrides,
+  };
+}
+
 test("CustomerView 依据 export 权限动态控制【导出数据】按钮渲染", () => {
-  // 场景 1: 拥有 export 动作权限
-  const htmlWithExport = renderToString(
-    React.createElement(CustomerView, {
-      initialCustomers: mockCustomers,
-      categories: [],
-      tags: [],
-      permissions: {
-        actions: ["read", "export"],
-        fieldPolicies: {},
-      },
-    }),
+  const htmlWithExport = renderCustomerView(
+    React.createElement(CustomerView, customerViewProps()),
+    { actions: ["read", "export"], fieldPolicies: {} },
   );
   assert.match(htmlWithExport, /导出/, "拥有 export 权限时应渲染导出按钮");
 
-  // 场景 2: 未拥有 export 动作权限 → 对普通用户隐藏
-  const htmlWithoutExport = renderToString(
-    React.createElement(CustomerView, {
-      initialCustomers: mockCustomers,
-      categories: [],
-      tags: [],
-      permissions: {
-        actions: ["read"],
-        fieldPolicies: {},
-      },
-    }),
+  const htmlWithoutExport = renderCustomerView(
+    React.createElement(CustomerView, customerViewProps()),
+    { actions: ["read"], fieldPolicies: {} },
   );
   assert.doesNotMatch(
     htmlWithoutExport,
@@ -56,21 +71,16 @@ test("CustomerView 依据 export 权限动态控制【导出数据】按钮渲�
 });
 
 test("CustomerView 严格执行 HIDDEN 字段策略隐藏对应列与数据", () => {
-  // 场景 1: customerCode, customerName, status 被配置为 HIDDEN
-  const htmlWithHidden = renderToString(
-    React.createElement(CustomerView, {
-      initialCustomers: mockCustomers,
-      categories: [],
-      tags: [],
-      permissions: {
-        actions: ["read"],
-        fieldPolicies: {
-          customerCode: "HIDDEN",
-          customerName: "HIDDEN",
-          status: "HIDDEN",
-        },
+  const htmlWithHidden = renderCustomerView(
+    React.createElement(CustomerView, customerViewProps()),
+    {
+      actions: ["read"],
+      fieldPolicies: {
+        customerCode: "HIDDEN",
+        customerName: "HIDDEN",
+        status: "HIDDEN",
       },
-    }),
+    },
   );
 
   assert.doesNotMatch(
@@ -99,21 +109,16 @@ test("CustomerView 严格执行 HIDDEN 字段策略隐藏对应列与数据", ()
     "HIDDEN 状态列头应被隐藏",
   );
 
-  // 场景 2: 字段权限全量放行
-  const htmlAllowed = renderToString(
-    React.createElement(CustomerView, {
-      initialCustomers: mockCustomers,
-      categories: [],
-      tags: [],
-      permissions: {
-        actions: ["read"],
-        fieldPolicies: {
-          customerCode: "EDITABLE",
-          customerName: "EDITABLE",
-          status: "EDITABLE",
-        },
+  const htmlAllowed = renderCustomerView(
+    React.createElement(CustomerView, customerViewProps()),
+    {
+      actions: ["read"],
+      fieldPolicies: {
+        customerCode: "EDITABLE",
+        customerName: "EDITABLE",
+        status: "EDITABLE",
       },
-    }),
+    },
   );
 
   assert.match(
@@ -136,7 +141,6 @@ test("CustomerView 严格执行 HIDDEN 字段策略隐藏对应列与数据", ()
 });
 
 test("CustomerView 与 customerPageContract 契约 100% 对齐（无幽灵动作与遗漏受控字段）", () => {
-  // 1. 验证契约动作完整声明，不包含未授权幽灵动作
   const contractActions = customerPageContract.actions.map((a) => a.action);
   assert.deepEqual(contractActions, [
     "read",
@@ -147,7 +151,6 @@ test("CustomerView 与 customerPageContract 契约 100% 对齐（无幽灵动作
     "toggle_status",
   ]);
 
-  // 2. 验证契约中的受控字段已覆盖关键业务主数据
   const contractFields = (customerPageContract.configurableFields || []).map(
     (f) => f.field,
   );
@@ -155,17 +158,9 @@ test("CustomerView 与 customerPageContract 契约 100% 对齐（无幽灵动作
   assert.ok(contractFields.includes("customerName"), "契约必须包含客户名称");
   assert.ok(contractFields.includes("status"), "契约必须包含状态");
 
-  // 3. 验证当赋予所有契约动作时，顶部主操作按钮与行级操作触发器全部正确渲染
-  const fullHtml = renderToString(
-    React.createElement(CustomerView, {
-      initialCustomers: mockCustomers,
-      categories: [],
-      tags: [],
-      permissions: {
-        actions: contractActions,
-        fieldPolicies: {},
-      },
-    }),
+  const fullHtml = renderCustomerView(
+    React.createElement(CustomerView, customerViewProps()),
+    { actions: contractActions, fieldPolicies: {} },
   );
   assert.match(fullHtml, /新增/, "具有 create 权限时必须渲染新建按钮");
   assert.match(fullHtml, /导出/, "具有 export 权限时必须渲染导出按钮");
@@ -174,7 +169,6 @@ test("CustomerView 与 customerPageContract 契约 100% 对齐（无幽灵动作
     /打开操作菜单/,
     "具有行级操作权限时必须渲染操作菜单触发器",
   );
-  // 契约必须声明自定义扩展动作（菜单项在 Dropdown Portal 内，SSR 不输出文案）
   assert.ok(
     contractActions.includes("toggle_status"),
     "契约必须声明 toggle_status 以驱动停用/启用权限",
@@ -182,7 +176,6 @@ test("CustomerView 与 customerPageContract 契约 100% 对齐（无幽灵动作
 });
 
 test("CustomerView 停用客户受 toggle_status 契约动作控制（行操作权限过滤）", () => {
-  // 直接验证 plain ability 对自定义 action 的判定链路
   const withToggle = {
     can(action: string) {
       return ["read", "update", "delete", "export", "toggle_status"].includes(
@@ -199,7 +192,6 @@ test("CustomerView 停用客户受 toggle_status 契约动作控制（行操作�
   assert.equal(withToggle.can("toggle_status"), true);
   assert.equal(withoutToggle.can("toggle_status"), false);
 
-  // 契约声明了该动作后，角色目录 / Catalog 才会出现
   const toggleAct = customerPageContract.actions.find(
     (a) => a.action === "toggle_status",
   );

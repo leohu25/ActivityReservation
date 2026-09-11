@@ -10,10 +10,10 @@ import {
   type ColumnDef,
 } from "@chenrun/ui";
 import { exportContractCsv } from "@chenrun/shared";
+import { useAbility } from "@chenrun/authorization";
 import { updateQuoteStatusAction } from "../actions";
 import { CreateQuoteModal } from "./CreateQuoteModal";
 import { CustomerQuoteField, quotePageContract } from "../contracts";
-import { isFieldAllowedForAction } from "@chenrun/authorization";
 import type {
   QuoteListItem,
   CustomerListItem,
@@ -34,13 +34,6 @@ interface Props {
   customers: CustomerListItem[];
   /** 可选门店字典列表 */
   stores: StoreListItem[];
-  ability?: {
-    can(action: string, subject: string, field?: string): boolean;
-  };
-  permissions?: {
-    readonly actions: readonly string[];
-    readonly fieldPolicies?: Readonly<Record<string, string>>;
-  };
 }
 
 /**
@@ -55,20 +48,8 @@ export function QuoteView({
   initialStatus = "",
   customers,
   stores,
-  ability: explicitAbility,
-  permissions,
 }: Props) {
-  const ability = React.useMemo(() => {
-    if (explicitAbility) return explicitAbility;
-    if (!permissions) return undefined;
-    return {
-      can(action: string, subject?: string, field?: string) {
-        if (subject && subject !== quotePageContract.subject) return false;
-        if (!permissions.actions.includes(action)) return false;
-        return isFieldAllowedForAction(permissions.fieldPolicies, action, field);
-      },
-    };
-  }, [explicitAbility, permissions]);
+  const ability = useAbility();
   const { navigateList, router } = useListUrlNav();
   const [quotes, setQuotes] = useState<QuoteListItem[]>(initialQuotes);
   const [total, setTotal] = useState(initialTotal ?? initialQuotes.length);
@@ -290,13 +271,12 @@ export function QuoteView({
   ];
 
   return (
-    <DataTable.Workspace
-      data={quotes}
-      columns={columns}
-      rowKey={(q: QuoteListItem) => q.quoteId}
-      subject={quotePageContract.subject}
-      ability={ability}
-      permissions={permissions}
+    <>
+      <DataTable.Workspace
+        data={quotes}
+        columns={columns}
+        rowKey={(q: QuoteListItem) => q.quoteId}
+        subject={quotePageContract.subject}
       title="客户阶梯价与报价单"
       description="按门店、客户、区域维护商品报价明细。报价优先级：门店专属报价 > 客户通用报价 > 区域保底报价。"
       page={page}
@@ -382,6 +362,7 @@ export function QuoteView({
           onCreated={() => router?.refresh()}
         />
       )}
-    </DataTable.Workspace>
+      </DataTable.Workspace>
+    </>
   );
 }

@@ -151,5 +151,7 @@ test("AuthorizedField 在具有读写权限时自动推导 EDITABLE 正常交互
   assert.match(html, /供应商名称/);
   assert.match(html, /测试供应商/);
   assert.doesNotMatch(html, /只读/);
-  assert.doesNotMatch(html, /disabled/);
+  // 仅校验控件禁用属性，避免误伤 FieldLabel 样式类名中的 peer-disabled 等字样
+  assert.doesNotMatch(html, /<input[^>]*\sdisabled(\s|>|\/)/i);
+  assert.doesNotMatch(html, /<input[^>]*\sreadonly(\s|>|\/)/i);
 });

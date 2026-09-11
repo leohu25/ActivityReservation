@@ -1,6 +1,6 @@
 ---
 name: erp-feature-dev
-description: 辰润 ERP 业务切片全生命周期工程开发指南。涵盖数据建模迁移、页面纯数据契约 (contracts/)、领域服务实现、defineServerAction + CASL 写路径守卫、工业风 UI (DataTable 约定大于配置/Toast/单次确认)、租户路由与 Manifest 对齐测试。按阶段 Schedule 推进并渐进式按需读取对应子文档。
+description: 辰润 ERP 业务切片全生命周期工程开发指南。涵盖数据建模、页面纯数据契约、领域服务、defineServerAction + CASL 写路径守卫、官方 CASL 客户端范式（layout AbilityProvider + useAbility）、工业风 UI、租户路由与 Manifest 对齐测试。按阶段 Schedule 推进并渐进式按需读取子文档。
 color: blue
 emoji: 🚀
 vibe: 架构标准化、契约即事实源、底层机制防错、无感响应
@@ -27,10 +27,11 @@ agent_created: true
 7. **一体化卡片容器**：列表页必须用 `DataTable.Root` 白卡整合标题/筛选/表格/分页，严禁零散漂浮在页面底色上（详见 `references/5-ui-components.md`）。
 8. **写路径强制 CASL**：Server Action 写/删/状态变更必须 `assert*Ability(ability, action, subject)`，与页面按钮同一动作名（详见 `references/4-server-actions.md`）。
 9. **BA 只管进门**：Better Auth 仅负责登录/会话/组织成员；业务权限只认 CASL（ADR-007），禁止用 BA `hasPermission` 查业务资源。
-10. **列表优先 shadcn**：简单列表/表单直接用 `Table`/`Form`/`Dialog`；需要统一工具栏时再用 `DataTable.Workspace`（可选加速，非强制）。
-11. **表单优先 shadcn Form**：短表单直接 `Form`+`Field`；长表单/AI 批量字段可用 `FormFields` Schema（可选）。
-12. **导出走契约**：CSV 导出用 `exportContractCsv(rows, contract.configurableFields, ...)`，禁止手写 fieldKeys。
-13. **原子层 = shadcn 目录**：`packages/ui/.../shadcn/` 仅允许 `npx shadcn@latest add` 引入；禁止手写；业务不得裸写控件样式。
+10. **客户端权限 = 官方 AbilityProvider（教科书）**：RSC layout 拉快照 → `TenantAbilityProvider` 注入 → View 只 `useAbility()`/积木；**禁止** View 自建 plain ability、禁止把 `permissions` 传进 View/Workspace（详见 `references/7-casl-ability-provider.md`，标杆 `customer-center`）。
+11. **列表优先 shadcn**：简单列表/表单直接用 `Table`/`Form`/`Dialog`；需要统一工具栏时再用 `DataTable.Workspace`（可选加速，非强制）。
+12. **表单优先 shadcn Form**：短表单直接 `Form`+`Field`；长表单/AI 批量字段可用 `FormFields` Schema（可选）。
+13. **导出走契约**：CSV 导出用 `exportContractCsv(rows, contract.configurableFields, ...)`，禁止手写 fieldKeys。
+14. **原子层 = shadcn 目录**：`packages/ui/.../shadcn/` 仅允许 `npx shadcn@latest add` 引入；禁止手写；业务不得裸写控件样式。
 
 ---
 
@@ -51,8 +52,9 @@ packages/features/<feature-name>/
 │   │   └── <domain>.service.ts        # 领域纯业务服务 (防腐/单调递增/级联校验)
 │   ├── actions.ts                     # defineServerAction + CASL 守卫
 │   ├── components/
-│   │   ├── <Page>View.tsx             # 工业风页面组件 (DataTable/Toast/单次确认)
-│   │   └── <Page>View.test.tsx        # 页面与契约 100% 对齐自动化单测
+│   │   ├── <Slice>AbilityBoundary.tsx  # 官方 CASL：快照编译 + TenantAbilityProvider
+│   │   ├── <Page>View.tsx             # 工业风页面（只收业务数据 + subject；无 permissions props）
+│   │   └── <Page>View.test.tsx        # TenantAbilityProvider 包裹的契约对齐单测
 │   ├── manifest.ts                    # 切片自描述清单 (导航 + permissionModules 组装契约)
 │   ├── types.ts                       # 领域数据传输对象与展示接口
 │   └── index.ts                       # 切片外部公共导出
@@ -88,6 +90,6 @@ Phase 7: 契约对齐单测与全栈验证
 | **Phase 2<br>纯数据契约** | 编写无 JSX、无 DOM 的纯数据契约，定义受控字段枚举与操作权限。 | • `src/contracts/<page>.contract.ts`<br>• 字段与动作自包含 | `references/1-contracts.md` |
 | **Phase 3<br>领域服务** | 封装核心业务、自增编码算法、状态机级联与删除业务防护。 | • `src/services/<domain>.service.ts`<br>• 业务单测通过 | `references/3-services.md` |
 | **Phase 4<br>安全 Actions** | 使用 `defineServerAction` 包装所有 Actions，彻底消除序列化异常与样板代码。 | • `src/actions.ts`<br>• 100% 自动 `toPlainData` | `references/4-server-actions.md` |
-| **Phase 5<br>工业风交互** | 基于 `@chenrun/ui` 构建，单次对话框确认、Toast 右上角通知、React State 零白屏响应。 | • `src/components/<Page>View.tsx`<br>• 零 `window.location.reload` | `references/5-ui-components.md` |
-| **Phase 6<br>路由与清单** | 租户端挂载 RSC 页面，切片根目录配置 `manifest.ts` 暴露自描述导航。 | • `apps/tenant/src/app/...`<br>• `src/manifest.ts` | `references/6-tenant-routing.md` |
+| **Phase 5<br>工业风交互** | 基于 `@chenrun/ui` 构建；官方 CASL Provider（layout 注入）+ `useAbility`/积木；单次确认、Toast、零白屏。 | • `src/components/<Page>View.tsx`（无 permissions props）<br>• 零 `window.location.reload` | `references/5-ui-components.md`<br>`references/7-casl-ability-provider.md` |
+| **Phase 6<br>路由与清单** | 租户端 `layout.tsx` 挂 `*AbilityBoundary`；page 只取业务数据；`manifest.ts` 暴露导航。 | • `apps/tenant/.../<slice>/layout.tsx`<br>• `src/manifest.ts` | `references/6-tenant-routing.md`<br>`references/7-casl-ability-provider.md` |
 | **Phase 7<br>对齐单测** | 编写页面与契约 100% 对齐自动化单测，执行全栈门禁验证。 | • `<Page>View.test.tsx`<br>• `pnpm check` & `pnpm test` 全绿 | `references/6-tenant-routing.md` |

@@ -9,18 +9,23 @@ import {
   DataTableDetailDrawer,
   DataTableFormModal,
   Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   toast,
   useListUrlNav,
   type ColumnDef,
 } from "@chenrun/ui";
 import { exportContractCsv } from "@chenrun/shared";
+import { useAbility } from "@chenrun/authorization";
 import {
   createCustomerAction,
   updateCustomerStatusAction,
   deleteCustomerAction,
 } from "../actions";
 import { CustomerField, customerPageContract } from "../contracts";
-import { isFieldAllowedForAction } from "@chenrun/authorization";
 import type {
   CustomerListItem,
   CustomerCategoryItem,
@@ -39,13 +44,6 @@ interface Props {
   initialStatus?: string;
   categories: CustomerCategoryItem[];
   tags: CustomerTagItem[];
-  ability?: {
-    can(action: string, subject: string, field?: string): boolean;
-  };
-  permissions?: {
-    readonly actions: readonly string[];
-    readonly fieldPolicies?: Readonly<Record<string, string>>;
-  };
 }
 
 const SETTLEMENT_LABELS: Record<string, string> = {
@@ -64,20 +62,9 @@ export function CustomerView({
   initialStatus = "",
   categories,
   tags,
-  ability: explicitAbility,
-  permissions,
 }: Props) {
-  const ability = React.useMemo(() => {
-    if (explicitAbility) return explicitAbility;
-    if (!permissions) return undefined;
-    return {
-      can(action: string, subject?: string, field?: string) {
-        if (subject && subject !== customerPageContract.subject) return false;
-        if (!permissions.actions.includes(action)) return false;
-        return isFieldAllowedForAction(permissions.fieldPolicies, action, field);
-      },
-    };
-  }, [explicitAbility, permissions]);
+  // 官方范式：Ability 一律来自上层 AbilityProvider（customer layout）
+  const ability = useAbility();
   const { navigateList, router } = useListUrlNav();
   const [customers, setCustomers] = useState(initialCustomers);
   const [total, setTotal] = useState(initialTotal ?? initialCustomers.length);
@@ -307,8 +294,6 @@ export function CustomerView({
         columns={columns}
         rowKey={(c: CustomerListItem) => c.customerCode}
         subject={customerPageContract.subject}
-        ability={ability}
-        permissions={permissions}
         title="客户档案"
         description="维护企业客户主数据、结算方式、授信与服务时间。一个客户下可挂载多个履约门店。"
         page={page}
@@ -338,23 +323,27 @@ export function CustomerView({
         }}
         filterExtra={
           <DataTable.InputGroup label="客户分类" className="w-48">
-            <select
+            <Select
               value={selectedCat || "ALL"}
-              onChange={(e) => {
-                const next = e.target.value === "ALL" ? "" : e.target.value;
-                setSelectedCat(next);
+              onValueChange={(next) => {
+                const value = next === "ALL" ? "" : next;
+                setSelectedCat(value);
                 setPage(1);
-                navigateList({ page: 1, category: next });
+                navigateList({ page: 1, category: value });
               }}
-              className="w-full h-10 px-3 border-0 bg-transparent text-sm text-foreground focus:outline-none"
             >
-              <option value="ALL">全部</option>
-              {categories.map((c) => (
-                <option key={c.categoryCode} value={c.categoryCode}>
-                  {c.categoryName}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-10 border-0 bg-transparent shadow-none focus:ring-0">
+                <SelectValue placeholder="全部" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">全部</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c.categoryCode} value={c.categoryCode}>
+                    {c.categoryName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </DataTable.InputGroup>
         }
         onSearch={() => {

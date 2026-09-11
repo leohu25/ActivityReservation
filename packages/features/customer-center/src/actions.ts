@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { defineServerAction } from "@chenrun/shared";
+import { pickReadableFields } from "@chenrun/authorization";
 import { assertCustomerAbility, getTenantCustomerContext } from "./server/session";
 import {
   CustomerCategoryTagService,
@@ -121,7 +122,14 @@ export const listCustomersAction = defineServerAction(
   }) => {
     const { client, ability } = await getTenantCustomerContext();
     assertCustomerAbility(ability, "read", CustomerSubject);
-    return CustomerService.listCustomers(client, filter);
+    const result = await CustomerService.listCustomers(client, filter);
+    // 服务端物理剥离 HIDDEN 敏感字段，杜绝仅前端藏列仍外泄 payload
+    return {
+      ...result,
+      items: result.items.map((item) =>
+        pickReadableFields(ability, CustomerSubject, item as Record<string, unknown>),
+      ),
+    };
   },
   "获取客户列表失败",
 );
@@ -194,7 +202,17 @@ export const listStoresAction = defineServerAction(
   }) => {
     const { client, ability } = await getTenantCustomerContext();
     assertCustomerAbility(ability, "read", CustomerStoreSubject);
-    return CustomerStoreService.listStores(client, filter);
+    const result = await CustomerStoreService.listStores(client, filter);
+    return {
+      ...result,
+      items: result.items.map((item) =>
+        pickReadableFields(
+          ability,
+          CustomerStoreSubject,
+          item as Record<string, unknown>,
+        ),
+      ),
+    };
   },
   "获取门店列表失败",
 );
@@ -267,7 +285,17 @@ export const listQuotesAction = defineServerAction(
   }) => {
     const { client, ability } = await getTenantCustomerContext();
     assertCustomerAbility(ability, "read", CustomerQuoteSubject);
-    return CustomerQuoteService.listQuotes(client, filter);
+    const result = await CustomerQuoteService.listQuotes(client, filter);
+    return {
+      ...result,
+      items: result.items.map((item) =>
+        pickReadableFields(
+          ability,
+          CustomerQuoteSubject,
+          item as Record<string, unknown>,
+        ),
+      ),
+    };
   },
   "获取报价单列表失败",
 );
