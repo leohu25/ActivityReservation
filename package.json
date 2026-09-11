@@ -6,7 +6,7 @@
     "init": "./init.sh",
     "status": "./scripts/status.sh",
     "verify": "./scripts/verify.sh",
-    "session:end": "./scripts/session-end.sh",
+    "session:end": "node .harness/lifecycle/session-end.mjs",
     "ui:add": "npx shadcn@latest add -y --overwrite -c packages/ui",
     "sync:features": "node scripts/sync-features.mjs && node scripts/sync-tenant-schema.mjs",
     "db:migrate:check": "pnpm --filter @chenrun/db-migrate check",

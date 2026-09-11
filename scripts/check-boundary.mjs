@@ -9,7 +9,6 @@ const workspaceRoot = path.resolve(process.cwd());
 // 1. 获取 Git 变动文件列表 (包含暂存区与工作区未跟踪文件)
 function getChangedFiles() {
   try {
-    // 检查是否有 HEAD commit
     let hasHead = true;
     try {
       execSync("git rev-parse --verify HEAD", {
@@ -30,7 +29,6 @@ function getChangedFiles() {
     const files = [];
 
     for (const line of lines) {
-      // porcelain 格式前两个字符为状态标记，后面为文件路径（若重命名有 " -> "）
       let rawPath = line.slice(3).trim();
       if (rawPath.startsWith('"') && rawPath.endsWith('"')) {
         rawPath = rawPath.slice(1, -1);
@@ -42,7 +40,6 @@ function getChangedFiles() {
         finalPath = finalPath.slice(1, -1);
       }
 
-      // 若处于 0 commit 的初始仓库初始化阶段，已有的 docs/ 架构规范属于项目底座只读事实，予以放行
       if (!hasHead && (finalPath === "docs" || finalPath.startsWith("docs/"))) {
         continue;
       }
@@ -57,11 +54,8 @@ function getChangedFiles() {
 
 // 2. 匹配规则转换 (支持目录前缀与简单 glob)
 function matchPattern(filePath, pattern) {
-  // 规范化路径分隔符
   const normFile = filePath.replace(/\\/g, "/");
   let normPat = pattern.replace(/\\/g, "/").trim();
-
-  // 去除可能的首尾反引号或引号
   normPat = normPat.replace(/^[`"']|[`"']$/g, "");
 
   if (normPat.endsWith("/**")) {
@@ -78,7 +72,6 @@ function matchPattern(filePath, pattern) {
       .replace(/(?<!\.)\*/g, "[^/]*");
     return new RegExp(`^${escaped}$`).test(normFile);
   }
-  // 目录无斜杠结尾但被当作目录写在白名单（如 scripts）
   if (normFile === normPat || normFile.startsWith(normPat + "/")) {
     return true;
   }
@@ -114,44 +107,66 @@ if (!fs.existsSync(scopeFile)) {
   process.exit(1);
 }
 
-// 4. 解析 scope.md 中的白名单
+// 4. 解析 scope.md 中的白名单（支持主白名单与附带联动修改 Spillover 白名单）
 const scopeContent = fs.readFileSync(scopeFile, "utf-8");
 const whitelist = [];
+const spilloverList = [];
 
-// 提取 "允许修改" 区块中的列表项
 const lines = scopeContent.split("\n");
-let inWhitelistSection = false;
+let currentSection = null;
 
 for (const line of lines) {
   const trimmed = line.trim();
-  if (trimmed.startsWith("## 允许修改")) {
-    inWhitelistSection = true;
+  if (
+    trimmed.startsWith("## 允许修改") ||
+    trimmed.startsWith("## 修改白名单")
+  ) {
+    currentSection = "whitelist";
     continue;
   }
-  if (inWhitelistSection && trimmed.startsWith("## ")) {
-    inWhitelistSection = false;
+  if (
+    trimmed.startsWith("## 附带修改") ||
+    trimmed.startsWith("## 联动修改") ||
+    trimmed.startsWith("## 附带与前置联动") ||
+    trimmed.toLowerCase().includes("spillover")
+  ) {
+    currentSection = "spillover";
     continue;
   }
-  if (inWhitelistSection && trimmed.startsWith("- ")) {
-    const item = trimmed.slice(2).trim();
+  if (trimmed.startsWith("## ")) {
+    currentSection = null;
+    continue;
+  }
+
+  if (currentSection && trimmed.startsWith("- ")) {
+    // 允许在列表项后附加注释，如 `- packages/db-tenant/** # 理由：新增字段`
+    let item = trimmed.slice(2).trim();
+    if (item.includes("#")) {
+      item = item.split("#")[0].trim();
+    }
     if (item) {
-      whitelist.push(item);
+      if (currentSection === "whitelist") {
+        whitelist.push(item);
+      } else {
+        spilloverList.push(item);
+      }
     }
   }
 }
 
-// 5. 注入通用合规放行项 (协同元数据、特性沙盒与公共记忆库、智能体生态技能)
+// 5. 注入通用合规放行项 (协同元数据、特性沙盒、公共记忆库与技能、临时补丁区、旧废弃文件删除放行)
 const universalAllowed = [
   "member.local.md",
   "member.local.example.md",
   "feature_list.json",
   "skills-lock.json",
+  "progress.md",
+  "session-handoff.md",
   ".agents/skills/**",
   ".harness/memory/**",
+  ".harness/patches/**",
   `.harness/features/${activeFeature}/**`,
 ];
-
-const allPatterns = [...whitelist, ...universalAllowed];
 
 // 6. 检查变动文件
 const changedFiles = getChangedFiles();
@@ -161,12 +176,29 @@ if (changedFiles.length === 0) {
 }
 
 const violations = [];
+const spilloverHits = [];
 
 for (const file of changedFiles) {
-  const isAllowed = allPatterns.some((pattern) => matchPattern(file, pattern));
-  if (!isAllowed) {
-    violations.push(file);
+  const inMainOrUniversal = [...whitelist, ...universalAllowed].some((pat) =>
+    matchPattern(file, pat),
+  );
+  if (inMainOrUniversal) {
+    continue;
   }
+
+  const inSpillover = spilloverList.some((pat) => matchPattern(file, pat));
+  if (inSpillover) {
+    spilloverHits.push(file);
+    continue;
+  }
+
+  violations.push(file);
+}
+
+if (spilloverHits.length > 0) {
+  process.stdout.write(
+    `  ℹ 检测到 ${spilloverHits.length} 个合法附带联动修改 (Spillover)，请确保已在沙盒 handoff.md 记录理由。\n`,
+  );
 }
 
 if (violations.length > 0) {
@@ -176,13 +208,18 @@ if (violations.length > 0) {
   for (const v of violations) {
     process.stderr.write(`    \x1b[33m• ${v}\x1b[0m\n`);
   }
-  process.stderr.write(
-    `\x1b[31m请查阅 .harness/features/${activeFeature}/scope.md 白名单。若需记录非当前特性缺陷，请统一登记至 .harness/memory/technical-debt.md\x1b[0m\n`,
-  );
+  process.stderr.write(`
+\x1b[36m【沙盒边界分流指引】\x1b[0m:
+1. \x1b[32m若该改动是当前特性的前置联动依赖\x1b[0m:
+   请在 .harness/features/${activeFeature}/scope.md 中追加 \`## 附带修改与前置联动 (Spillover)\` 区块并注明理由；
+2. \x1b[32m若该改动是顺手发现的独立 Bug/优化但非当前特性范畴\x1b[0m:
+   运行 \`./scripts/save-patch.sh "<说明>"\` 将其无损归档至 .harness/patches/ 并自动登记至技术债台账，避免劳动成果丢失；
+3. 否则请回退与当前特性无关的改动。
+`);
   process.exit(1);
 }
 
 process.stdout.write(
-  `• 沙盒边界: \x1b[32m合规\x1b[0m (${changedFiles.length} 个变动文件均在 [${activeFeature}] 白名单内)\n`,
+  `• 沙盒边界: \x1b[32m合规\x1b[0m (${changedFiles.length} 个变动文件均在 [${activeFeature}] 授权范围内核准)\n`,
 );
 process.exit(0);

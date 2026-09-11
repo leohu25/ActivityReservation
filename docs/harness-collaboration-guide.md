@@ -84,13 +84,13 @@
 - 编码完成后，必须运行 `verification.md` 中的专属测试，并执行全栈门禁 `./scripts/verify.sh`；
 - 确保：类型检查 0 错误、单元测试 100% 通过、静态规范 0 违规。
 
-### 5. 换手交接与归档 (`./scripts/session-end.sh`)
+### 5. 换手交接与归档 (`pnpm session:end`)
 
-- 将测试通过日志和变更文件回填到 `progress.md` 和 `handoff.md`（及根目录 `session-handoff.md`）；
-- 运行生命周期收尾校验命令 `./scripts/session-end.sh`（或 `pnpm session:end`），校验交接状态完备性：
+- 将测试通过日志和变更文件回填到当前特性的 `.harness/features/<id>/progress.md` 和 `handoff.md`；
+- 运行生命周期收尾校验命令 `node .harness/lifecycle/session-end.mjs`（或 `pnpm session:end`），校验交接状态完备性：
   - 若任务全部闭环且验证充分，方可在 `feature_list.json` 中将状态改为 `completed`，且必须附带 `evidence` 验证凭据；
   - 若会话结束但任务未完，在 `handoff.md` 明确记录下一步动作，供下一任开发者/智能体秒级接力；
-  - 会话结束前确保门禁 `./scripts/verify.sh` 和收尾校验 `./scripts/session-end.sh` 双 100% 通过。
+  - 会话结束前确保门禁 `./scripts/verify.sh` 和收尾校验 `pnpm session:end` 双 100% 通过。
 
 ---
 

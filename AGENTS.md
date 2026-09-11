@@ -29,7 +29,7 @@
 - **单特性聚焦 (One feature at a time)**：每次会话仅认领一个前置依赖已满足的未完成特性（以 `feature_list.json` 为准）。
 - **严格范围边界**：严格受限在对应特性的 `scope.md` 白名单文件内修改代码，严禁越界。
 - **门禁由钩子兜底 (No manual gate runs)**：日常开发**不要**主动运行全量 `./scripts/verify.sh`（耗时且由 `pre-commit` 自动兜底）；即时反馈仅对改动文件执行单测或 `lsp_diagnostics`。
-- **单源状态收敛**：进度与交接记录维护在 `progress.md`、`session-handoff.md` 与特性沙盒；架构漂移与经验沉淀至 `.harness/memory/`。
+- **单源状态收敛**：进度与交接记录严格收敛至各特性沙盒（`.harness/features/<id>/progress.md` 与 `handoff.md`），全局状态以 `feature_list.json` 为唯一事实源；架构漂移与经验沉淀至 `.harness/memory/`。根目录不保存易冲突的会话临时文件。
 - **保持整洁可重启**：结束时保证工作区随时可重新运行 `./init.sh`。
 
 ---
@@ -51,18 +51,18 @@
 
 - [ ] 目标业务功能与逻辑全部实现完毕。
 - [ ] 专属自动化测试及全栈门禁 `./scripts/verify.sh` 100% 执行通过（由 `pre-commit` 钩子提交时验证）。
-- [ ] 真实任务进展与验证证据已记录至 `progress.md`、特性沙盒及 `feature_list.json`。
+- [ ] 真实任务进展与验证证据已记录至特性沙盒（`progress.md` / `handoff.md`）及 `feature_list.json`。
 - [ ] 仓库保持干净且可无缝重启（运行 `./init.sh` 正常）。
 
 ---
 
 ## 会话结束规程 (End of Session)
 
-1. 更新 `progress.md`、`session-handoff.md` 及对应特性的 `progress.md` / `handoff.md`。
+1. 更新当前激活特性的 `.harness/features/<id>/progress.md` 与 `handoff.md`。
 2. 更新 `feature_list.json` 中的特性完成状态与真实证据。
 3. 登记发现的非当前特性范围的技术债到 `.harness/memory/technical-debt.md`。
 4. 提交代码（由 `pre-commit` 钩子自动执行门禁验证）；除非明确要求，无需额外手动重跑全量门禁。
-5. 运行 `./scripts/session-end.sh` 执行物理收尾校验。
+5. 运行 `pnpm session:end`（或 `node .harness/lifecycle/session-end.mjs`）执行物理收尾校验。
 
 ---
 
@@ -78,8 +78,8 @@
 # 全栈门禁自检 (git commit 时由 .git/hooks/pre-commit 自动调用，平时无需手动运行)
 ./scripts/verify.sh
 
-# 会话收尾与交接状态校验
-./scripts/session-end.sh
+# 会话收尾与交接状态校验 (直接执行 Harness 生命周期收尾，或通过 pnpm session:end)
+node .harness/lifecycle/session-end.mjs
 ```
 
 ---

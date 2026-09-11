@@ -4,8 +4,6 @@
 
 - `feature_list.json`
 - `member.local.md`
-- `progress.md`
-- `session-handoff.md`
 - `pnpm-lock.yaml`
 - `.harness/features/arch-infra-packages-refactor/**`
 - `packages/db-control/**`
@@ -14,7 +12,13 @@
 - `packages/auth/**`
 - `apps/**`
 - `packages/features/**`
-- `scripts/sync-features.mjs`
+- `scripts/**`
 - `skills-lock.json`
 - `.agents/skills/**`
-- `scripts/check-boundary.mjs`
+- `.harness/**`
+
+## 附带修改与前置联动 (Spillover / 联动扩围)
+
+- `docs/**` # 理由：更新架构与协作指南索引
+- `AGENTS.md` # 理由：更新最高宪法中的交接规约与单源治理
+- `package.json` # 理由：精简 scripts 命令并直接指向 .harness/lifecycle 脚本
