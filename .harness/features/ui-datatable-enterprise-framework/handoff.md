@@ -19,7 +19,7 @@
 2. **技能沉淀**：`.agents/skills/erp-feature-dev/references/5-ui-components.md` DataTable 手册
 3. **服务端分页闭环**：Customer 列表 RSC + URL 受控分页
 
-## 3. 本会话追加交付（shadcn 外壳收敛）
+## 3. 本会话追加交付（shadcn 外壳收敛与架构文档治理）
 
 1. **官方 sidebar 接入**：`packages/ui/src/components/shadcn/sidebar.tsx` + `hooks/use-mobile.ts`
 2. **业务 Sidebar**（`layout/Sidebar.tsx`）：
@@ -30,10 +30,15 @@
 4. **ThemeToggle** → `ToggleGroup`；**DashboardShell** → `SidebarProvider` + `SidebarInset`
 5. **shadcn skill 范式修复**：InputGroup 搜索、Empty 空态、FieldGroup 表单、SelectGroup、DropdownMenuGroup、`data-icon`、`gap-*`
 6. **CSS**：tenant/control `globals.css` 补齐 `--sidebar-*` 变量
+7. **架构与权限文档体系全面梳理**：
+   - `docs/ARCHITECTURE.md` 重构为高维概述与全局全景索引
+   - 4 篇专项技术解析文档建档（`permissions/permission-architecture-deep-dive.md`、`architecture/saas-multitenant-architecture.md`、`architecture/database-migration-engine.md`、`architecture/fdd-vertical-slice-architecture.md`）
+   - `docs/` 分门别类治理（`permissions/`、`architecture/`、`deployment/`、`collaboration/`、`archive/`）并清理过时草案、归档早期 PRD
+   - 对齐 `AGENTS.md` 地图索引，Harness 协同 100% 绿色自洽
 
 ## 4. 下一会话启动指引
 
 1. 业务页面按 `references/5-ui-components.md` §2 范式装配 DataTable。
-2. 侧栏折叠悬浮层是官方 HoverCard 组合，非 Sidebar 内置 API；若要完全贴官方可退回纯 Tooltip 或 `collapsible="offcanvas"`。
+2. 架构设计与权限机制统一查阅 `docs/ARCHITECTURE.md` 及各子目录专项文档。
 3. 顶栏/侧栏统一 `sidebar-*` token；内容区保持 `bg-background`。
-4. 验证：`cd packages/ui && pnpm check && pnpm test`（34/34）。
+4. 验证：`cd packages/ui && pnpm check && pnpm test`（34/34）；`./scripts/status.sh`。

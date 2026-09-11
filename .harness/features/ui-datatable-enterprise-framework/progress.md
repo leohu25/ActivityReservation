@@ -41,8 +41,23 @@
 - [x] DictionarySectionCard 搜索改 InputGroup、空态改 Empty；CustomerView 表单改 FieldGroup/Field
 - [x] Button 图标统一 `data-icon`；`space-y-*` 收敛为 `flex gap-*`
 
+## 追加：架构与权限全链路文档体系重构（本会话）
+
+- [x] 基于子智能体并发调研权限全链路（前端门禁/字段三态/后端四层模型/SQL下推/字段剥离）与整体架构规划
+- [x] 架构总纲白皮书重构：`docs/ARCHITECTURE.md` 定位为高维概述与全局索引中枢
+- [x] 单独建立 4 篇专项深度技术文档：
+  - `docs/permissions/permission-architecture-deep-dive.md` (权限全链路)
+  - `docs/architecture/saas-multitenant-architecture.md` (多租户SaaS架构)
+  - `docs/architecture/database-migration-engine.md` (数据库演进引擎)
+  - `docs/architecture/fdd-vertical-slice-architecture.md` (垂直切片架构)
+- [x] `docs/` 目录结构化分类与治理：划分 `permissions/`、`architecture/`、`deployment/`、`collaboration/`、`archive/`
+- [x] 清理过时草案（删除 3 篇临时草案），归档 4 篇早期 PRD 需求规格至 `docs/archive/`
+- [x] 同步更新 `AGENTS.md` 索引地图与全量 Markdown 跳转链接，保持 Harness 协同 100% 确定性
+
 ## 验证证据
 
 - `packages/ui`: `tsc --noEmit` PASS，`tsx --test` 34/34 PASS
 - `packages/features/customer-center`: check PASS
 - `apps/tenant`: check PASS
+- `docs/**`: `lsp_diagnostics` 11 篇活跃文档 0 错误，链接完全自洽
+
