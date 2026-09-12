@@ -6,7 +6,7 @@
 ## 0. 为什么是这个形态
 
 | 约束 | 结论 |
-|------|------|
+| ------ | ------ |
 | RSC 不能传 Ability 实例 | 只传可序列化快照 `{ subject, actions, fieldPolicies }` |
 | 官方 `@casl/react` | 客户端用同一套规则 `createMongoAbility` 重建实例 |
 | Next App Router | Client 边界挂 `AbilityProvider` 完全合法 |
@@ -32,12 +32,12 @@ Server Action  assert*Ability(...)   ← 安全真相永远在服务端
 ## 1. 四个入口（必须记住）
 
 | 角色 | API | 位置 |
-|------|-----|------|
+| ------ | ----- | ------ |
 | 拉权限 | `getTenantSubjectPermissions(subject)` | `apps/tenant/src/kernel` |
-| 编快照 | `buildCustomerAbilitySnapshots` / 自建 `AbilitySnapshot[]` | 切片 `components/*AbilityBoundary.tsx` |
+| 编快照 | `buildCustomerAbilitySnapshots` / 自建 `AbilitySnapshot[]` | Business Area `shared/ui/*AbilityBoundary.tsx` |
 | 注入 | `TenantAbilityProvider snapshots={...}` | 切片 layout 或 Boundary |
 | 消费 | `useAbility()` / `Can` / DataTable 积木 | Client View |
-| 写路径 | `assert*Ability(ability, action, subject)` | `src/actions.ts` |
+| 写路径 | `assert*Ability(ability, action, subject)` | Feature `actions.ts` |
 
 导出（均可从 `@chenrun/authorization` 或 `@chenrun/ui`）：
 
@@ -59,7 +59,7 @@ import {
 ### 2.1 切片 Ability Boundary（Client）
 
 ```tsx
-// packages/features/<slice>/src/components/<Slice>AbilityBoundary.tsx
+// packages/features/<business-area>/src/shared/ui/<Area>AbilityBoundary.tsx
 "use client";
 import React from "react";
 import {
@@ -101,11 +101,9 @@ export function SliceAbilityBoundary({
 
 ```tsx
 // apps/tenant/src/app/(dashboard)/<slice>/layout.tsx
-import {
-  SliceAbilityBoundary,
-  CustomerSubject,
-  CustomerStoreSubject,
-} from "@chenrun/feature-<slice>";
+import { SliceAbilityBoundary } from "@chenrun/feature-<area>/shared";
+import { CustomerSubject } from "@chenrun/feature-<area>/customer-management";
+import { CustomerStoreSubject } from "@chenrun/feature-<area>/store-management";
 import { getTenantSubjectPermissions } from "@/kernel";
 
 export default async function SliceLayout({
@@ -130,8 +128,8 @@ export default async function SliceLayout({
 
 ```tsx
 // page.tsx — 禁止再 getTenantSubjectPermissions、禁止传 permissions/ability
-const [listRes] = await Promise.all([listXxxAction({ page, pageSize })]);
-return <XxxView initialItems={items} initialTotal={total} />;
+const pageData = await listXxxQuery({ page, pageSize });
+return <XxxView initialItems={pageData.items} initialTotal={pageData.total} />;
 ```
 
 ### 2.4 View 只声明 subject + useAbility
@@ -169,7 +167,7 @@ export function XxxView({ initialItems }: Props) {
 `createAbilityFromSnapshot` 将快照编译为 CASL `RawRule[]`：
 
 | fieldPolicies | read | create/update |
-|---------------|------|----------------|
+| --------------- | ------ | ---------------- |
 | 无策略 | `{ action, subject }` 全字段 | 同左 |
 | `HIDDEN` | **不进入** `fields` | 不可写 |
 | `READONLY` | 进入 `fields` | **不进入** writable fields |
@@ -184,7 +182,7 @@ Fail-Closed：`actions: []` → 一切拒绝；无 Provider 时 `useOptionalAbil
 积木内部统一 `useOptionalAbility()`（或 Root 显式 `ability` 时经 AbilityProvider 再下发）：
 
 | 积木 | 行为 |
-|------|------|
+| ------ | ------ |
 | `DataTable.ActionButton` | 无 ability/subject → 拒绝；`action` 未授权 → 隐藏/置灰 |
 | `DataTable.Content` | `ColumnDef.field` 无 `read` → 整列剥离 |
 | `AuthField` / `AuthorizedField` | HIDDEN 不渲染；READONLY → shadcn `Field` + `Badge「只读」` + 控件 disabled |

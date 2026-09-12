@@ -73,7 +73,7 @@ export const TENANT_CATALOG = {
 
 ## 三、 多切片 Schema 动态聚合机制 (`@db-migrate-extension`)
 
-在 FDD 垂直切片架构下，租户模型并非集中存放在单一巨石 Schema 中，而是由各业务切片就近声明：
+在 Feature-based Vertical Slice 业务模块架构下，租户模型并非集中存放在单一巨石 Schema 中，而是由各业务区域就近声明：
 
 - **基础组织人事**：`packages/db-tenant/prisma/schema.prisma`
 - **采购管理中心**：`packages/features/procurement-center/prisma/schema.prisma`

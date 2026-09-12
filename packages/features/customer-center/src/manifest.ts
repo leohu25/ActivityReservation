@@ -1,14 +1,20 @@
 import type { TenantFeatureManifest } from "@chenrun/authorization";
 import {
   CustomerSubject,
-  CustomerStoreSubject,
-  CustomerCategorySubject,
-  CustomerQuoteSubject,
   customerPageContract,
-  storePageContract,
+} from "./features/customer-management/contract";
+import {
+  CustomerCategorySubject,
   categoryTagPageContract,
+} from "./features/customer-management/classification/contract";
+import {
+  CustomerStoreSubject,
+  storePageContract,
+} from "./features/store-management/contract";
+import {
+  CustomerQuoteSubject,
   quotePageContract,
-} from "./contracts";
+} from "./features/quotation-management/contract";
 
 export const customerManifest: TenantFeatureManifest = {
   id: "customer-center",

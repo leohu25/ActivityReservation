@@ -11,7 +11,7 @@ import {
   derivePermissionTree,
 } from "@chenrun/authorization";
 import { tenantAdminManifest } from "@chenrun/feature-tenant-admin";
-import { customerManifest } from "@chenrun/feature-customer-center";
+import { customerManifest } from "@chenrun/feature-customer-center/manifest";
 import { procurementManifest } from "@chenrun/feature-procurement-center";
 
 export const ALL_TENANT_MANIFESTS: readonly TenantFeatureManifest[] = [

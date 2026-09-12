@@ -137,9 +137,8 @@ for (const filePath of allFiles) {
 
   // 5. 检查 UI 组件单元测试文件是否就近放置 (Colocation)
   // 规则：禁止在 UI 包 src 根目录下平铺 *.test.ts / *.test.tsx，组件测试必须与组件同级放置
-  const isDirectlyUnderUiSrc = /^packages\/ui\/src\/[^/]+\.test\.(ts|tsx)$/.test(
-    relPath,
-  );
+  const isDirectlyUnderUiSrc =
+    /^packages\/ui\/src\/[^/]+\.test\.(ts|tsx)$/.test(relPath);
   if (isDirectlyUnderUiSrc) {
     violations.push({
       file: relPath,
@@ -189,6 +188,17 @@ for (const root of scanRoots) {
 
 const internalImportRegex =
   /from\s+["'](@chenrun\/[^"'/]+)(?:\/[^"']*)?["']|import\s+["'](@chenrun\/[^"'/]+)(?:\/[^"']*)?["']/g;
+const internalPackagePathRegex = /["']@chenrun\/[^"']+\/src\//g;
+const featurePackagePrefix = "@chenrun/feature-";
+const horizontalPlatformPackages = new Set([
+  "@chenrun/auth",
+  "@chenrun/authorization",
+  "@chenrun/db-control",
+  "@chenrun/db-tenant",
+  "@chenrun/ui",
+  "@chenrun/shared",
+  "@chenrun/biz-shared",
+]);
 
 for (const pkg of workspacePackages) {
   const pkgFiles = allFiles.filter((f) => {
@@ -199,11 +209,44 @@ for (const pkg of workspacePackages) {
   for (const filePath of pkgFiles) {
     const relPath = path.relative(workspaceRoot, filePath).replace(/\\/g, "/");
     const content = fs.readFileSync(filePath, "utf-8");
+
+    if (internalPackagePathRegex.test(content)) {
+      violations.push({
+        file: relPath,
+        line: 1,
+        rule: "严禁通过 /src/ 穿透工作区包内部实现；必须使用 package.json exports 声明的公共入口",
+        code: "import from @chenrun/*/src/*",
+      });
+    }
+    internalPackagePathRegex.lastIndex = 0;
+
     let match;
     internalImportRegex.lastIndex = 0;
     while ((match = internalImportRegex.exec(content)) !== null) {
       const importedPkg = match[1] || match[2];
       if (importedPkg === pkg.name) continue;
+      if (
+        pkg.name?.startsWith(featurePackagePrefix) &&
+        importedPkg.startsWith(featurePackagePrefix)
+      ) {
+        violations.push({
+          file: relPath,
+          line: 1,
+          rule: "业务 Feature Package 禁止直接依赖另一个 Feature；跨 Feature 组合必须位于 apps/* 装配层",
+          code: `import from "${importedPkg}"`,
+        });
+      }
+      if (
+        horizontalPlatformPackages.has(pkg.name) &&
+        importedPkg.startsWith(featurePackagePrefix)
+      ) {
+        violations.push({
+          file: relPath,
+          line: 1,
+          rule: "Horizontal Shared / Platform Module 禁止反向依赖业务 Feature",
+          code: `import from "${importedPkg}"`,
+        });
+      }
       if (!pkg.declaredDeps.has(importedPkg)) {
         violations.push({
           file: relPath,
@@ -213,6 +256,77 @@ for (const pkg of workspacePackages) {
         });
       }
     }
+  }
+}
+
+const customerCenterRoot = path.join(
+  workspaceRoot,
+  "packages/features/customer-center/src",
+);
+const retiredCustomerCenterEntries = [
+  "actions.ts",
+  "types.ts",
+  "index.ts",
+  "services",
+  "contracts",
+  "components",
+  "server",
+];
+for (const entry of retiredCustomerCenterEntries) {
+  const retiredPath = path.join(customerCenterRoot, entry);
+  if (fs.existsSync(retiredPath)) {
+    violations.push({
+      file: path.relative(workspaceRoot, retiredPath).replace(/\\/g, "/"),
+      line: 1,
+      rule: "Customer Center 已迁移为 Feature-based Vertical Slice，禁止恢复根级横向技术层或旧兼容入口",
+      code: entry,
+    });
+  }
+}
+
+const customerCenterFiles = allFiles.filter((filePath) =>
+  path
+    .relative(workspaceRoot, filePath)
+    .replace(/\\/g, "/")
+    .startsWith("packages/features/customer-center/src/"),
+);
+for (const filePath of customerCenterFiles) {
+  const relPath = path.relative(workspaceRoot, filePath).replace(/\\/g, "/");
+  const content = fs.readFileSync(filePath, "utf-8");
+  const isServerEntry =
+    relPath.endsWith("/public.server.ts") || relPath.endsWith("/queries.ts");
+  const isAction = relPath.endsWith("/actions.ts");
+  const isClientSafe =
+    relPath.endsWith("/public.ts") || relPath.includes("/ui/");
+
+  if (isServerEntry && !/^import\s+["']server-only["'];/m.test(content)) {
+    violations.push({
+      file: relPath,
+      line: 1,
+      rule: "Customer Center 的 Query 与服务端公共入口必须显式声明 import \"server-only\"",
+      code: relPath,
+    });
+  }
+  if (isAction && !/^\s*["']use server["'];/m.test(content)) {
+    violations.push({
+      file: relPath,
+      line: 1,
+      rule: "Customer Center mutation actions 必须显式声明 \"use server\"",
+      code: relPath,
+    });
+  }
+  if (
+    isClientSafe &&
+    /(next\/(headers|cache)|@chenrun\/db-tenant|\.server["']|\/queries["'])/.test(
+      content,
+    )
+  ) {
+    violations.push({
+      file: relPath,
+      line: 1,
+      rule: "Customer Center Client-safe API/UI 禁止导入数据库、Next.js 服务端能力或 Query 服务端入口",
+      code: relPath,
+    });
   }
 }
 

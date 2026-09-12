@@ -42,12 +42,15 @@ function discoverFeatureManifests() {
         const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, "utf-8"));
         const manifestCode = fs.readFileSync(manifestPath, "utf-8");
 
-        // 匹配 export const xxxManifest
+        // 匹配 export const xxxManifest；优先使用显式 manifest subpath。
         const match = manifestCode.match(/export\s+const\s+(\w+Manifest)\s*:/);
         if (match) {
+          const manifestSubpath = pkg.exports?.["./manifest"]
+            ? `${pkg.name}/manifest`
+            : pkg.name;
           discovered.push({
             dirName: entry.name,
-            packageName: pkg.name,
+            packageName: manifestSubpath,
             exportName: match[1],
             isTenantAdmin: entry.name === "tenant-admin",
           });

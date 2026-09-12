@@ -1,43 +1,34 @@
-# 架构决策记录 (ADR 0004)：Turborepo 多应用解耦与 FDD 垂直切片规范
+# 架构决策记录 (ADR 0004)：Turborepo 多应用解耦与 Feature-based Vertical Slice 规范
 
 ## 状态
 
-已采纳 (Accepted)
+已采纳 (Accepted，2026-09-12 术语修订)
+
+> 文件名中的 `fdd` 为历史路径，正文以本次修订后的术语为准。
 
 ## 上下文
 
-在项目早期迭代中，平台运营商管理功能曾尝试作为子路由集成在 `apps/tenant/src/app/(platform)/platform-admin/` 中，且组件与业务服务按照传统技术层分散在 `components/` 与 `lib/services/` 中。
-这种模式存在两个核心架构缺陷：
-
-1. **应用边界混淆**：`apps/tenant` 属于单租户物理隔离域（强制需要用户登录并切换指定 Organization，数据操作直连特定租户物理库）；而平台总控属于跨租户全局运维域（直接基于 Control DB 调度，无单租户隔离限制）。两类上下文耦合在同一应用中导致鉴权与路由混淆。
-2. **缺乏 FDD 垂直内聚**：传统的“文件类型横向分层”（app/ 路由、components/ 组件、lib/ 服务）使得每一个特性的代码碎片化分布，业务逻辑无法作为自包含模块被复用和独立单测。
+项目早期曾将平台运营商管理功能集成在租户应用中，并把业务代码按 `components/`、`lib/services/` 等技术类型分散。这同时造成应用安全边界混淆和业务代码霰弹式分布。
 
 ## 决策
 
-1. **Turborepo 多应用双核解耦 (`apps/`)**：
-   - **`apps/tenant`**：纯粹的租户 SaaS ERP 业务主应用。仅运行在租户上下文下，受 RBAC、数据范围 (Data Scope) 与字段策略拦截，直连对应租户物理库。
-   - **`apps/platform`**：独立的平台运营商总控应用（Platform Super Admin Portal）。独立部署（如 `admin.erp.com` 或独立端口），负责多租户全生命周期管理、物理独立库自动开通与监控。
-   - **极薄路由原则 (Thin Routing)**：`apps/*/src/app/` 下的页面和布局仅作为胶水装配层（检查认证上下文 -> 挂载 Feature 组件），严禁在 `apps/` 内部编写复杂的业务服务、直接 SQL 查询或巨石组件。
-
-2. **FDD (Feature-Driven Development) 垂直切片规范 (`packages/features/`)**：
-   - 所有业务逻辑统一内聚为独立特性包（如 `packages/features/platform-admin`、`packages/features/procurement-center`、`packages/features/tenant-rbac`）。
-   - 每个垂直切片必须自包含以下要素：
-
-     ```text
-     packages/features/<feature-name>/
-     ├── components/       # 该特性的专属 UI 呈现组件 (受 Permission/Field 控制)
-     ├── services/         # 该特性的领域服务、数据访问与核心业务规则
-     ├── permissions.ts    # 该特性的权限事实源 (Better Auth statement 与 CASL 契约)
-     ├── types.ts          # 该特性的领域类型、DTO 与入参契约
-     ├── index.ts          # 纯净的统一对外暴露出口
-     └── *.test.ts         # 该特性的专属自动化单元测试
-     ```
-
-3. **底座与通用包职责正交**：
-   - `packages/auth`、`packages/authorization`、`packages/db-control`、`packages/db-tenant`、`packages/ui`、`packages/shared` 仅作为通用基础设施与原子抽象，严禁掺杂具体业务切片的私有逻辑。
+1. **Turborepo 多应用解耦**：
+   - `apps/tenant`：租户 SaaS ERP 应用，只运行在租户上下文下；
+   - `apps/control`：平台运营商总控应用，负责跨租户生命周期和 Control DB 能力；
+   - `apps/*` 是 Composition Root，App Router 页面与布局负责路由、Provider、权限快照和业务模块装配。
+2. **Feature-based Vertical Slice 业务模块**：
+   - `packages/features/*` 沿业务方向组织 Business Area / Feature Group；
+   - Business Area 内按 Feature、Sub-Feature 和 Use Case 内聚 Contract、Types、Service、Query、mutation Action、UI 与测试；
+   - Server Component 读取使用 server-only Query，Client mutation 使用 Server Action；
+   - 包通过 `package.json#exports` 暴露业务语义 API，禁止跨包穿透内部文件。
+3. **Horizontal Shared / Platform Modules**：
+   - `auth`、`authorization`、`db-control`、`db-tenant`、`ui`、`shared` 与 `biz-shared` 横向提供稳定基础能力；
+   - Feature Package 之间禁止直接依赖，横向基础模块禁止反向依赖具体业务 Feature；多 Feature 组合位于应用装配层。
+4. **Feature-Driven 开发治理**：FDD 用于业务分析、Feature List、任务拆解与按 Feature 验收，不作为代码架构名称。
+5. **Selective DDD**：只有复杂业务不变量、状态机、事务一致性边界或领域计算出现时，才在对应 Feature 内按需使用 DDD。
 
 ## 影响与后果
 
-- **高度内聚**：开发或重构某个业务特性时，智能体或团队成员的修改范围完全收敛在该特性的文件夹内，认知负荷与改动冲突降至最低。
-- **杜绝越权与上下文泄漏**：租户端与平台端彻底从物理部署和代码层隔离，杜绝平台超管功能被普通租户越权调用的风险。
-- **未来扩展平滑**：新的业务模块（如库存、销售、财务）只需按照规范在 `packages/features/` 新建切片，然后在 `apps/tenant` 对应路由挂载即可。
+- Tenant 与 Control 的部署、会话和数据库边界保持清晰；
+- 同一业务能力的代码就近共存，减少跨技术目录跳转；
+- 简单业务保持轻量，复杂领域仍保留演进为 DDD 模型的能力。

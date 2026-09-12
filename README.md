@@ -2,7 +2,7 @@
 
 基于 **Next.js 16 (App Router)** + **React 19** + **TypeScript** + **Tailwind CSS v4** + **PostgreSQL (Database-per-tenant 物理隔离)** 构建的现代化工业制造与供应链多租户 SaaS ERP 系统。
 
-项目采用 **FDD (Feature-Driven Development) 垂直切片架构** 与 **Turborepo + pnpm Monorepo** 模块化工程治理体系。
+项目采用基于 **Turborepo + pnpm Workspace** 的 **Modular Monorepo**。业务模块使用 **Feature-based Vertical Slice Architecture**，认证、授权、数据库、UI 与 Shared 等采用 **Horizontal Shared / Platform Modules**；业务分析与任务拆解使用 Feature-Driven Development（FDD）思想，复杂 Feature 内按需使用 DDD。
 
 ---
 
@@ -148,11 +148,11 @@ chenrun-erp-nextjs/
 │   ├── db-tenant/                # 租户物理库 (Tenant DB) 动态路由连接池与迁移运行器
 │   ├── shared/                   # 全局共享纯函数工具库 (Result, Dayjs, Radash 等)
 │   ├── ui/                       # 基于 shadcn/ui + Tailwind v4 的工业级数智风组件库
-│   └── features/                 # FDD 垂直切片业务特性包
-│       ├── control-admin/        # 总控台运维与租户生命周期业务切片
-│       ├── tenant-admin/         # 租户组织架构、岗位与角色权限业务切片
-│       ├── procurement-center/   # 采购中心业务切片 (订单、审批流、字段三态拦截)
-│       └── customer-center/      # 客户中心业务切片 (客户、门店、多级分类、报价单)
+│   └── features/                 # Feature-based Vertical Slice 业务模块集合
+│       ├── control-admin/        # 总控台运维与租户生命周期业务区域
+│       ├── tenant-admin/         # 租户组织架构、岗位与角色权限业务区域
+│       ├── procurement-center/   # 采购中心业务区域 (订单、审批流、字段三态拦截)
+│       └── customer-center/      # Customer Center Business Area / Feature Group
 ├── tooling/
 │   └── db-migrate/               # 统一数据库迁移与多租户基线演进引擎 (@chenrun/db-migrate)
 ├── .harness/                     # 智能体协同工程最高宪法、沙盒边界与持久记忆库

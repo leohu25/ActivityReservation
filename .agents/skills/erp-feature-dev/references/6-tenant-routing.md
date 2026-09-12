@@ -14,14 +14,14 @@
 
 ```tsx
 // apps/tenant/src/app/(dashboard)/customer/layout.tsx
+import { CustomerAbilityBoundary } from "@chenrun/feature-customer-center/shared";
+import { CustomerSubject } from "@chenrun/feature-customer-center/customer-management";
+import { CustomerStoreSubject } from "@chenrun/feature-customer-center/store-management";
+import { CustomerQuoteSubject } from "@chenrun/feature-customer-center/quotation-management";
 import {
-  CustomerAbilityBoundary,
-  CustomerSubject,
-  CustomerStoreSubject,
-  CustomerQuoteSubject,
   CustomerCategorySubject,
   CustomerTagSubject,
-} from "@chenrun/feature-customer-center";
+} from "@chenrun/feature-customer-center/customer-management/classification";
 import { getTenantSubjectPermissions } from "@/kernel";
 
 export default async function CustomerLayout({
@@ -49,13 +49,34 @@ export default async function CustomerLayout({
 
 ```tsx
 // apps/tenant/src/app/(dashboard)/customer/customers/page.tsx
-import { CustomerView, listCustomersAction } from "@chenrun/feature-customer-center";
+import { CustomerView } from "@chenrun/feature-customer-center/customer-management";
+import {
+  listCustomersQuery,
+  getCategoryTreeQuery,
+  listTagsQuery,
+} from "@chenrun/feature-customer-center/customer-management/server";
 
-export default async function CustomersPage() {
-  const [custRes] = await Promise.all([listCustomersAction({ page, pageSize })]);
-  const customers = custRes.success && custRes.data ? custRes.data : [];
+export default async function CustomersPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  // 直接通过 server-only queries 纯服务端获取数据，不绕调 Server Actions
+  const [custRes, categories, tags] = await Promise.all([
+    listCustomersQuery({ page: 1, pageSize: 20 }),
+    getCategoryTreeQuery(),
+    listTagsQuery(),
+  ]);
 
-  return <CustomerView initialCustomers={customers} categories={[]} tags={[]} />;
+  return (
+    <CustomerView
+      initialCustomers={custRes.items}
+      initialTotal={custRes.total}
+      categories={categories}
+      tags={tags}
+    />
+  );
 }
 ```
 

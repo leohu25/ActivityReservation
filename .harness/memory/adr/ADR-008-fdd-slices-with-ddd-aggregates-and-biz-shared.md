@@ -1,43 +1,38 @@
-# 架构决策记录 (ADR 0008)：宏观 FDD 垂直切片、微观 DDD 聚合根与三级共享体系架构
+# 架构决策记录 (ADR 0008)：业务能力垂直内聚、选择性 DDD 与三级共享体系
 
 ## 状态
 
-已采纳 (Accepted) - 2026-09-12
+已采纳 (Accepted，2026-09-12 术语与结构修订)
+
+> 文件名中的 `fdd-slices-with-ddd-aggregates` 为历史路径。此前把 UI 文件夹归类称为“微观 DDD 聚合根”并不准确；本 ADR 以修订后的决策为准。
 
 ## 上下文
 
-随着 ERP 业务模块（客户中心、采购中心、仓储物流等）持续扩展，原有架构暴露了三大结构性痛点：
-
-1. **切片内部平铺混乱**：在 `packages/features/customer-center/src/components/` 根目录下，同时平铺了客户档案、报价单、履约门店、分类与标签的所有视图与弹窗文件，文件职责模糊，缺乏业务实体自闭环边界；
-2. **跨切片共享失位**：采购中心与销售订单等模块存在高度相似的单据审批流、明细物料行和业务状态机枚举，但原有仓库只有纯技术底座 `packages/shared` 与 `packages/ui`，业务级公共能力无处安放；
-3. **列表与表单模式割裂**：列表组件有标准 `DataTable.Workspace`，但弹窗表单大量手写重复模态框，缺乏“新增、编辑、查看三态合一”的 Schema 驱动体系。
+Customer Center 早期在 `src/components/` 中平铺客户、报价、门店、分类与标签 UI。第一次治理只把 UI 移入页面概念目录，Contract、Service、Action 和 Types 仍按技术层位于包根，因此没有形成真正的业务垂直内聚。同时，跨业务共享和列表/表单模板仍需明确边界。
 
 ## 决策
 
-1. **确立“宏观 FDD 垂直切片 + 微观 DDD 聚合根”规范**：
-   - **宏观（仓库级）**：继续按 Feature-Driven Development（FDD）组织独立业务切片（`packages/features/*`），切片间物理隔离、零耦合；
-   - **微观（切片内部）**：组件层按 Domain-Driven Design（DDD）聚合根划分自闭环子目录。例如 `customer-center/src/components/` 下划分为：
-     - `customers/`：客户主档案视图与表单；
-     - `quotes/`：报价单视图与明细；
-     - `stores/`：履约门店视图与表单；
-     - `categories-tags/`：分类树与业务标签；
-     - `shared/`：切片私有复用微组件。
-
-2. **建立“三级分层共享体系” (Three-Tier Shared Hierarchy)**：
-   - **Level 1（纯技术底座）**：`packages/shared` 与 `packages/ui`。完全无业务语义，纯工具与纯设计系统（shadcn 原子 + 无业务模板）；
-   - **Level 2（业务中台共享）**：新建 `packages/biz-shared`（`@chenrun/biz-shared`）。承接跨业务切片的 ERP 业务模式（单据流转状态机、审批弹窗、动态明细行表格、远程搜索防抖选择器）；
-   - **Level 3（切片内部共享）**：各切片内部 `src/components/shared/`。承接仅在当前特性切片不同实体间复用的私有资产。
-
-3. **推广 TypeScript + Zod Schema 驱动与三态表单（增/改/查）**：
-   - 在 `@chenrun/ui` 导出通用的 `CrudFormModal` 模板；
-   - 支持 `create`（可填/校验）、`edit`（初值带入/关键主键锁定）、`view`（全字段置灰只读/隐藏提交按钮）；
-   - 坚持 80/20 法则与逃生通道：80% 通用表单走 Schema 驱动，20% 复杂极端业务直接使用 shadcn 原生 JSX 对话框。
-
-4. **对齐 Next.js 极薄路由理念**：
-   - `apps/tenant/src/app` 继续遵循极薄组装原则，仅负责 Session 取回、CASL 快照传递与主视图挂载。
+1. **业务能力垂直内聚**：
+   - Customer Center 定位为 Business Area / Feature Group；
+   - Customer Management、Store Management、Quotation Management 是 Feature；
+   - Classification 是 Customer Management 下的 Sub-Feature；
+   - Create Classification 等端到端目标是 Vertical Slice / Use Case；
+   - Feature 内就近组织 `contract.ts`、`types.ts`、`service.ts`、`queries.ts`、`actions.ts`、`ui/` 及测试。
+2. **不把目录误称为 DDD 模型**：页面或组件目录不自动等于 Aggregate、Subdomain 或 Bounded Context。简单业务不创建完整 DDD 分层；复杂 Feature 出现真实不变量或一致性边界时再按需建模。
+3. **三级共享体系**：
+   - Level 1：`packages/shared` 与 `packages/ui`，纯技术基础能力；
+   - Level 2：`packages/biz-shared`，经过验证的跨业务稳定模式；
+   - Level 3：Business Area 内 `src/shared/`，仅供本业务区域多个 Feature 复用。
+4. **Next.js 运行时边界**：
+   - RSC 读取通过 `public.server.ts` 暴露的 server-only Query；
+   - Client mutation 通过 colocated Server Action；
+   - `public.ts` 只暴露 Client-safe UI、Contract 与类型；
+   - App Router 保持极薄，仅负责框架参数和模块装配。
+5. **Schema 驄动表单保留**：通用增改查表单继续优先使用 `@chenrun/ui` 的 Schema 驱动模板，同时保留复杂业务使用原生组合组件的逃生通道。
 
 ## 影响与后果
 
-- 业务切片内部结构高度内聚，单个实体的视图、弹窗与 Schema 自闭环；
-- 彻底解决平铺导致的代码杂乱，消灭跨切片隐式循环依赖；
-- 列表与表单开发效率大幅提升，沉淀标准工业风资产。
+- Customer Center 从 UI 收纳升级为完整业务能力垂直切片；
+- 公共 API 按业务语义而非技术层暴露；
+- DDD 成为复杂 Feature 的可选建模工具，而不是强制目录模板；
+- 共享能力按作用范围逐级提升，避免 `shared` 或 `biz-shared` 膨胀。

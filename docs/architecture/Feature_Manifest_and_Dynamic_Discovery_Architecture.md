@@ -1,7 +1,7 @@
 # 架构资产：业务切片自描述契约 (Feature Manifest) 与构建期自动发现体系
 
 > **版本**：v1.0.0  
-> **适用范围**：Next.js 16 (Turbopack) + React 19 + TypeScript Monorepo + FDD 垂直切片架构  
+> **适用范围**：Next.js 16 (Turbopack) + React 19 + TypeScript Modular Monorepo + Feature-based Vertical Slice Architecture
 > **核心目标**：实现业务切片 100% 自包含（菜单、路由、CASL 权限、敏感字段自描述），根治“改一处动四处”的土豆代码，彻底净化 UI 库与 Thin App 边界，达成零运行时 I/O 开销的编译期特性自动发现。
 
 ---

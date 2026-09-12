@@ -1,18 +1,14 @@
+import { CustomerSubject } from "@chenrun/feature-customer-center/customer-management";
 import {
-  CustomerAbilityBoundary,
   CustomerCategorySubject,
-  CustomerQuoteSubject,
-  CustomerStoreSubject,
-  CustomerSubject,
   CustomerTagSubject,
-} from "@chenrun/feature-customer-center";
+} from "@chenrun/feature-customer-center/customer-management/classification";
+import { CustomerQuoteSubject } from "@chenrun/feature-customer-center/quotation-management";
+import { CustomerAbilityBoundary } from "@chenrun/feature-customer-center/shared";
+import { CustomerStoreSubject } from "@chenrun/feature-customer-center/store-management";
 import { getTenantSubjectPermissions } from "@/kernel";
 
-/**
- * 客户中心官方 CASL 布局边界：
- * 一次拉取本切片全部 Subject 权限快照，经 AbilityProvider 注入整棵子树。
- * 下级 page/View 只声明 subject，禁止再传 ability/permissions。
- */
+/** Customer Center Business Area 的统一 CASL Provider 装配边界。 */
 export default async function CustomerLayout({
   children,
 }: {
@@ -28,13 +24,7 @@ export default async function CustomerLayout({
 
   return (
     <CustomerAbilityBoundary
-      permissions={{
-        customer,
-        store,
-        quote,
-        category,
-        tag,
-      }}
+      permissions={{ customer, store, quote, category, tag }}
     >
       {children}
     </CustomerAbilityBoundary>

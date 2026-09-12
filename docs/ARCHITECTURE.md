@@ -139,7 +139,7 @@ graph TD
 
 ---
 
-### 4. FDD 垂直切片与构建期动态自发现
+### 4. Feature-based Vertical Slice 与构建期动态自发现
 
 系统全面推行 **垂直切片 (Feature-Driven Development)** 架构规范，杜绝横向技术分层带来的依赖蔓延：
 
@@ -197,10 +197,10 @@ graph TD
 
 | ADR 编号 | 决策记录路径 | 核心决策要点 |
 | :--- | :--- | :--- |
-| **ADR-001** | [ADR-001: FDD 垂直切片与 Harness 工程架构](../.harness/memory/adr/ADR-001-fdd-and-harness.md) | 确立垂直切片架构规范与智能体工程协作体系 |
+| **ADR-001** | [ADR-001: Modular Monorepo、Feature-based Vertical Slice 与 Harness 工程架构](../.harness/memory/adr/ADR-001-fdd-and-harness.md) | 确立模块化 Monorepo、业务垂直切片与智能体工程协作体系 |
 | **ADR-002** | [ADR-002: Database-per-tenant 物理隔离战略](../.harness/memory/adr/ADR-002-database-per-tenant.md) | 确立放弃共享单库、全面采用物理分库隔离的战略决策 |
 | **ADR-003** | [ADR-003: Better Auth 与 CASL 四层权限闭环](../.harness/memory/adr/ADR-003-four-tier-permissions.md) | 确立 Better Auth 认证与 CASL 授权分工以及四层权限模型 |
-| **ADR-004** | [ADR-004: FDD 垂直切片与多 App 解耦](../.harness/memory/adr/ADR-004-fdd-vertical-slices-and-multi-app.md) | 消除内部 HTTP 伪接口自调，推行 RSC 直调应用服务 |
+| **ADR-004** | [ADR-004: Feature-based Vertical Slice 与多 App 解耦](../.harness/memory/adr/ADR-004-fdd-vertical-slices-and-multi-app.md) | 消除内部 HTTP 伪接口自调，推行 RSC 直调应用服务 |
 | **ADR-005** | [ADR-005: 特性清单与构建期动态自发现](../.harness/memory/adr/ADR-005-feature-manifest-and-build-time-discovery.md) | 确立构建期扫描静态聚合清单、解决 Turbopack 限制 |
 | **ADR-006** | [ADR-006: 租户应用 Kernel 装配与切片解耦机制](../.harness/memory/adr/ADR-006-app-kernel-assembly-and-slice-decoupling.md) | 拨乱反正消除兄弟切片横向依赖，确立顶层 Kernel 装配与 IoC |
 

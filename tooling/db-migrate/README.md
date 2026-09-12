@@ -120,7 +120,7 @@ tooling/db-migrate/
 
 ### 1. 多 Feature Schema 聚合机制 (`@db-migrate-extension`)
 
-工业制造 ERP 采用 FDD 垂直切片架构，各业务中心各自维护其 `prisma/schema.prisma`（如 `procurement-center`、`customer-center`）。
+工业制造 ERP 的业务模块采用 Feature-based Vertical Slice Architecture，各 Business Area 各自维护其 `prisma/schema.prisma`（如 `procurement-center`、`customer-center`）。
 
 - **模型所属权 (Owner)**：每个实体表只能有一个 Owner（如 `Department` 归属 `db-tenant`）；
 - **显式切片扩展 (Extension)**：当采购单需要反向关联部门（`orders PurchaseOrder[]`）时，在切片 Schema 中使用专用注解：

@@ -5,8 +5,9 @@
 > ⚠️ **核心红线**：
 >
 > 1. **严禁原始实体直出**：Prisma 查询返回的带有 `Decimal`、`Date`、`BigInt` 的对象，如果直接作为 Server Action 的返回值返回给前端，Next.js 会在控制台抛出 `Only plain objects can be passed to Client Components. Decimal objects are not supported` 错误；
-> 2. **统一使用 `defineServerAction` 包装器**：彻底消灭手工写 `try...catch` 和人工调用 `toPlainData` 的重复代码，由机制底层确保 100% 自动序列化；
-> 3. **写路径强制 CASL**：create/update/delete/状态变更必须 `assert*Ability`，与页面按钮同一 `(action, subject)`（ADR-007：业务权限只认 CASL）。
+> 2. **RSC 读取与 mutation 分离**：Server Component 初始读取使用 `server-only` Query；只有客户端触发的 mutation 使用 Server Action；
+> 3. **统一使用 `defineServerAction` 包装 mutation**：由机制确保返回值安全序列化并消灭重复 `try...catch`；
+> 4. **写路径强制 CASL**：create/update/delete/状态变更必须 `assert*Ability`，与页面按钮同一 `(action, subject)`（ADR-007：业务权限只认 CASL）。
 
 ---
 
@@ -22,22 +23,12 @@ import { defineServerAction } from "@chenrun/shared";
 import {
   assertCustomerAbility,
   getTenantCustomerContext,
-} from "./server/session";
-import { CustomerService } from "./services";
-import { CustomerSubject } from "./contracts";
+} from "../../assembly/context";
+import { CustomerService } from "./service";
+import { CustomerSubject } from "./contract";
 import type { CreateCustomerInput } from "./types";
 
-// 1. 读路径：同样校验 read
-export const listCustomersAction = defineServerAction(
-  async (filter?: { keyword?: string; page?: number }) => {
-    const { client, ability } = await getTenantCustomerContext();
-    assertCustomerAbility(ability, "read", CustomerSubject);
-    return CustomerService.listCustomers(client, filter);
-  },
-  "获取客户列表失败",
-);
-
-// 2. 写路径：create
+// 写路径：create
 export const createCustomerAction = defineServerAction(
   async (input: CreateCustomerInput) => {
     const { client, ability } = await getTenantCustomerContext();
@@ -49,7 +40,7 @@ export const createCustomerAction = defineServerAction(
   "创建客户失败",
 );
 
-// 3. 自定义扩展动作：与契约 action 名一致
+// 自定义扩展动作：与契约 action 名一致
 export const updateCustomerStatusAction = defineServerAction(
   async (customerCode: string, status: "ACTIVE" | "DISABLED") => {
     const { client, ability } = await getTenantCustomerContext();
@@ -69,18 +60,32 @@ export const updateCustomerStatusAction = defineServerAction(
 
 ---
 
-## Session 必须注入 Ability
+## 业务区域运行时 Ability 装配 (`src/assembly/context.ts`)
+
+为了彻底解除底层 `shared/server` 基础设施对具体 Feature 业务契约的反向依赖，权限编译与装配统一置于 Business Area 的装配层：
 
 ```ts
-// src/server/session.ts（以 customer-center 为标杆）
+// src/assembly/context.ts（以 customer-center 为标杆）
+import { CaslAbilityFactory, type AppAbility } from "@chenrun/authorization";
+import { ForbiddenError } from "@casl/ability";
+import { getServerAuthRuntime } from "@chenrun/auth";
+import { getTenantContext } from "../shared/server/tenant-context";
+import { customerCatalog } from "../catalog";
+
 export async function getTenantCustomerContext() {
-  // ... Better Auth 会话 + 员工门禁 + 租户库 ...
+  const baseCtx = await getTenantContext();
+  const runtime = getServerAuthRuntime();
   const factory = new CaslAbilityFactory(
     runtime.tenantContextRepository,
     customerCatalog, // 来自 src/catalog.ts，由 manifest 契约派生
   );
-  const ability = await factory.createForTenant(tenantCtx);
-  return { client, ability, organizationId, userId, memberId, role };
+  const ability = await factory.createForTenant({
+    organizationId: baseCtx.organizationId,
+    member: { id: baseCtx.memberId },
+    user: { id: baseCtx.userId },
+  } as any);
+
+  return { ...baseCtx, ability };
 }
 
 export function assertCustomerAbility(

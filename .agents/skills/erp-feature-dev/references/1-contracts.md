@@ -6,7 +6,7 @@
 
 ## 核心工程红线
 
-1. **严禁手写两套平行世界**：切片内**彻底废除**平铺的 `permissions.ts`，每个页面必须在 `src/contracts/<page>.contract.ts` 中自包含维护自己的实体符号、受控字段枚举与页面契约；
+1. **严禁手写两套平行世界**：切片内**彻底废除**平铺的 `permissions.ts`，每个页面必须在 Feature/Sub-Feature 的 `contract.ts` 中自包含维护自己的实体符号、受控字段枚举与页面契约；
 2. **契约即事实源**：契约里有的，前台有按钮可点、后台有选项可配；契约里没有的，两端物理级绝不出现（杜绝空头支票与幽灵权限）；
 3. **受控列必带身份证**：表格列凡涉及受控主数据字段，必须显式挂载 `field: MyField.XXX`，否则 CASL 无法执行 `HIDDEN` 物理列剥离；
 4. **标准动作预制 + 自定义扩展**：`read/create/update/delete/export` 按页面勾选；页面特有操作（如 `toggle_status`）在契约 `actions` 中声明独立标识；运行时动作清单由 Catalog `getDeclaredActions(subject)` 派生，禁止第二份硬编码白名单；
@@ -16,17 +16,21 @@
 
 ## 契约目录规范
 
+在遵循 **Feature-based Vertical Slice Architecture** 的业务切片中，契约同级就近放置在各自 Feature / Sub-Feature 目录下，消灭顶层大平铺：
+
 ```bash
-packages/features/<feature-name>/src/
-├── contracts/                        # 页面纯数据契约目录 (SSoT)
-│   ├── <page-a>.contract.ts          # 页面 A 专属契约 (实体符号 + 字段枚举 + 页面契约)
-│   ├── <page-b>.contract.ts          # 页面 B 专属契约
-│   └── index.ts                      # 统一聚合导出
+packages/features/<business-area>/src/features/
+├── <feature-a>/
+│   ├── contract.ts                   # 核心特性 A 专属契约 (实体符号 + 字段枚举 + 页面契约)
+│   └── <sub-feature>/
+│       └── contract.ts               # 子特性专属契约
+└── <feature-b>/
+    └── contract.ts                   # 核心特性 B 专属契约
 ```
 
 ---
 
-## 契约编写模板 (`src/contracts/<page>.contract.ts`)
+## 契约编写模板 (Feature/Sub-Feature 的 `contract.ts`)
 
 契约必须是**无 React DOM / 无 JSX** 的纯 TypeScript 数据对象（确保兼容 Next.js RSC 服务端序列化与编译期静态提取）：
 
@@ -95,7 +99,7 @@ export const customerPageContract: FeaturePagePermissionDescriptor = {
 权限快照在 **切片 layout** 注入，View **只收业务数据**，不再接收 `permissions`/`ability` props。
 
 ```tsx
-// packages/features/customer-center/src/components/CustomerView.tsx
+// packages/features/customer-center/src/features/customer-management/ui/CustomerView.tsx
 "use client";
 import { useAbility } from "@chenrun/authorization";
 import { DataTable } from "@chenrun/ui";

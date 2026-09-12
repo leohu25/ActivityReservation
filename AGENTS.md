@@ -1,8 +1,16 @@
 # AGENTS.md — 智能体协同工程最高宪法 (Harness Engineering Constitution)
 
-本项目采用 **FDD (Feature-Driven Development) 垂直切片架构** 与 **Harness 智能体工程协同体系**。
+本项目采用 **Modular Monorepo + Feature-based Vertical Slice Architecture** 与 **Harness 智能体工程协同体系**。
 
 - **业务定位**：现代化工业制造与供应链多租户 SaaS ERP 系统（涵盖平台管控端 Control 与租户端 Tenant）。
+- **代码架构**：`packages/features/*` 纵向组织业务模块；认证、授权、数据库、UI 与 Shared 等以 Horizontal Shared / Platform Modules 横向支撑；复杂 Feature 内按需使用 DDD。
+  - **业务层级（中英对照）**：
+    - `Business Area / Feature Group`（业务领域 / 特性集群，如客户中心）；
+    - `Feature`（核心业务特性 / 独立业务功能，如客户管理、门店管理）；
+    - `Sub-Feature`（子特性 / 附属业务能力，如分类与标签）；
+    - `Vertical Slice / Use Case`（垂直切片 / 业务用例，如创建分类、生效报价）。
+  - **包暴露范式**：业务包通过 `package.json#exports` 暴露语义子路径（区分 Client-Safe 与 `/server` 纯服务端入口），符合现代 Turborepo 与 Next.js 最佳实践，禁止大杂烩根 Barrel File 与跨包内部路径穿透。
+- **开发方法**：业务分析与任务拆解采用 Feature-Driven Development（FDD）思想，FDD 不作为架构名称。
 - **核心技术栈**：Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS v4 + PostgreSQL (Database-per-tenant 物理隔离) + Better Auth + CASL + Turborepo / pnpm Monorepo。
 
 > ⚠️ **地图索引定位与防膨胀规约 (Map Index & Anti-Bloat Invariant)**
@@ -41,7 +49,7 @@
 3. **严禁引入跨包幽灵依赖**：引用 `@chenrun/*` 内部兄弟包时，必须在当前模块 `package.json` 显式声明 `"workspace:*"` 并执行 `pnpm install`。
 4. **严禁硬编码权限与越权**：权限必须由 Better Auth `statement` 与 CASL 强类型判定（详见 `ADR-003` 与 `.harness/context/tier-3-deep-dives.md`）。
 5. **严禁绕过租户隔离**：PostgreSQL Database-per-Tenant 物理隔离，业务数据必须由 Tenant Context 路由，严禁直拼连接串（详见 `ADR-002` 与 `.harness/context/tier-3-deep-dives.md`）。
-6. **严禁破坏分层架构**：Server Components 直调 Application Service，严禁自发 HTTP 绕调内部 REST API（详见 `ADR-004` 与 `.harness/context/tier-2-domain-matrix.md`）。
+6. **严禁破坏运行时与模块边界**：Server Components 通过 Feature 的 server-only Query 读取，严禁自发 HTTP 绕调内部 REST API、穿透包内部实现或让横向平台模块反向依赖业务 Feature（详见 `ADR-004` 与 `.harness/context/tier-2-domain-matrix.md`）。
 
 ---
 

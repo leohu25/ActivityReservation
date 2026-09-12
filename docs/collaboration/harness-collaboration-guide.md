@@ -114,7 +114,7 @@
 请调用 `harness-creator` skill，为当前项目从零初始化一套完整的 Harness 协同工程体系。
 
 请遵循以下核心要求：
-1. 架构模式：FDD (Feature-Driven Development) 垂直切片架构；
+1. 代码架构：Modular Monorepo + Feature-based Vertical Slice；业务分析与任务拆解采用 Feature-Driven Development（FDD）思想；
 2. 初始化根目录最高宪法：AGENTS.md、CLAUDE.md、init.sh、feature_list.json、member.local.example.md；
 3. 初始化 .harness/ 基础设施：agents/、context/、docs/、lifecycle/、memory/ (含 ADR 模板)、features/ 目录；
 4. 建立 ./scripts/verify.sh 门禁脚本，包含类型检查与测试验证；

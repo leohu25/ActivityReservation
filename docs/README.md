@@ -24,7 +24,7 @@ docs/
 ├── architecture/                    # 【核心架构】多租户 SaaS 基础设施、迁移演进与切片规范
 │   ├── saas-multitenant-architecture.md                       # 多租户 SaaS 架构与隔离机制
 │   ├── database-migration-engine.md                           # 数据库自愈与演进引擎架构解析
-│   ├── fdd-vertical-slice-architecture.md                     # FDD 垂直切片规范与架构设计
+│   ├── fdd-vertical-slice-architecture.md                     # Feature-based Vertical Slice 架构（历史文件名）
 │   └── Feature_Manifest_and_Dynamic_Discovery_Architecture.md # 特性清单与构建期动态自发现规范
 ├── deployment/                      # 【生产运维】部署拓扑、Docker 容器化与运维实战
 │   └── DEPLOYMENT.md                # 生产与多环境部署实战指南

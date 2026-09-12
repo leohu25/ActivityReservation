@@ -1,108 +1,91 @@
 # @chenrun/feature-customer-center
 
-辰润 ERP 的**客户中心与门店报价垂直切片模块（Customer & Store Management Feature）**。
+辰润 ERP 的 **Customer Center Business Area / Feature Group（客户中心业务领域 / 特性集群）**。
 
-## 1. 模块定位与职责
+## 架构定位
 
-本模块专注于企业客户资产、销售网点与报价策略的统一数字化管理：
+本包是 Modular Monorepo 中的业务区域包，内部采用 Feature-based Vertical Slice Architecture（基于特性的垂直切片架构）：
 
-- **数据契约与 DTO (`contracts/`)**：
-  - `customer.contract.ts`: 客户主数据、等级（VIP/普通）、跟进状态、联系方式契约。
-  - `store.contract.ts`: 客户旗下门店网点信息、地址、负责人。
-  - `quote.contract.ts`: 阶梯价格与报价单条目。
-  - `category-tag.contract.ts`: 客户多维行业标签与分类体系。
-- **客户领域服务 (`services/`)**：
-  - `customer-service.ts`: 客户生命周期（潜在、签约、流失）、信用额度与档案维护。
-  - `store-service.ts`: 门店网点维护。
-  - `quote-service.ts`: 客户报价历史、有效期限与审批支持。
-  - `category-tag-service.ts`: 客户分类标签树构建与管理。
-- **Next.js Server Actions (`actions.ts`)**：提供客户、门店、报价单和分类标签的增删改查 Server Actions，数据由 `toPlainData` 完成安全序列化。
-- **专属业务交互组件 (`components/`)**：
-  - `CustomerView`: 客户主数据台账与详情管理。
-  - `StoreView`: 门店网点视图。
-  - `QuoteView`: 客户专属报价管理。
-  - `CategoryTagView`: 标签分类编排视图。
-- **模块清单元数据 (`manifest.ts`)**：注册客户中心导航菜单项及权限动作。
+- `customer-management/`：Customer Management Feature（客户管理核心特性）；
+- `customer-management/classification/`：Classification Sub-Feature（分类与标签子特性）；
+- `store-management/`：Store Management Feature（门店管理核心特性）；
+- `quotation-management/`：Quotation Management Feature（报价管理核心特性）；
+- `shared/`：仅供 Customer Center 内多个 Feature 复用的基础设施与 UI 能力。
 
-## 2. 内部架构与目录结构（遵循微观 DDD 聚合根收敛）
+`Create Customer`（创建客户）、`Create Classification`（创建分类）、`Disable Store`（停用门店）、`Activate Quote`（生效报价）等是 Vertical Slice / Use Case（垂直切片 / 业务用例）。当前规模下，同一 Feature 的用例集中在 `queries.ts`、`actions.ts` 与 `service.ts` 中，不机械创建“一用例一目录”，兼顾高内聚与防过度设计。
 
 ```text
 packages/features/customer-center/
-├── src/
-│   ├── contracts/                    # 纯 TypeScript 业务契约与 CASL 权限点
-│   │   ├── category-tag.contract.ts  # 分类标签契约
-│   │   ├── customer.contract.ts      # 客户实体契约与校验规则
-│   │   ├── quote.contract.ts         # 报价单契约
-│   │   ├── store.contract.ts         # 门店契约
-│   │   └── index.ts
-│   ├── services/                     # 领域服务实现与单测
-│   │   ├── category-tag-service.ts
-│   │   ├── customer-service.ts
-│   │   ├── quote-service.ts
-│   │   ├── store-service.ts
-│   │   └── index.ts
-│   ├── components/                   # 专属 UI 视图（按业务聚合根收敛目录）
-│   │   ├── customers/                # 📂 客户档案聚合
-│   │   │   ├── CustomerView.tsx      # 客户工作台主视图
-│   │   │   └── CreateCustomerModal.tsx
-│   │   ├── quotes/                   # 📂 报价单聚合
-│   │   │   ├── QuoteView.tsx
-│   │   │   └── CreateQuoteModal.tsx
-│   │   ├── stores/                   # 📂 门店网点聚合
-│   │   │   ├── StoreView.tsx
-│   │   │   └── CreateStoreModal.tsx
-│   │   ├── categories-tags/          # 📂 分类与标签聚合
-│   │   │   ├── CategoryTagView.tsx
-│   │   │   ├── CreateCategoryModal.tsx
-│   │   │   └── CreateTagModal.tsx
-│   │   ├── shared/                   # 📂 切片内部私有共享
-│   │   │   └── CustomerAbilityBoundary.tsx
-│   │   └── index.ts                  # 组件统一门面导出
-│   ├── server/                       # 租户上下文服务端提取
-│   ├── actions.ts                    # Next.js Server Actions
-│   ├── manifest.ts                   # 导航与功能清单元数据
-│   ├── types.ts                      # 领域类型
-│   └── index.ts                      # 统一导出入口
-└── package.json
+├── prisma/schema.prisma
+└── src/
+    ├── features/
+    │   ├── customer-management/
+    │   │   ├── classification/
+    │   │   ├── contract.ts
+    │   │   ├── types.ts
+    │   │   ├── service.ts
+    │   │   ├── queries.ts
+    │   │   ├── actions.ts
+    │   │   ├── ui/
+    │   │   ├── public.ts
+    │   │   └── public.server.ts
+    │   ├── store-management/
+    │   └── quotation-management/
+    ├── shared/
+    ├── catalog.ts
+    └── manifest.ts
 ```
 
-## 3. 核心 API 与使用示例
+## 运行时边界与 Server/Client 物理隔离
 
-### 3.1 消费客户领域服务
+严格遵守 Next.js App Router 运行时边界：
+
+- **Server Component 读取**：`public.server.ts` → `queries.ts`（标注 `server-only`）→ Tenant Context / CASL 断言 → `service.ts`；
+- **Client mutation**：UI 组件 → `actions.ts`（标注 `"use server"`）→ `defineServerAction` 认证与 CASL 拦截 → `service.ts`；
+- **客户端安全出口**：`public.ts` 仅导出前端安全的 UI 视图、纯数据 Contract 与类型，绝不泄露 Node 运行时或 DB Client；
+- **内部实现私有化**：Service 仅作为包内领域实现，严禁向 `apps/tenant` 等外部模块直接暴露；
+- **物理安全序列化**：原始 Prisma 数据在 Query 或 Action 出口处统一完成敏感字段脱敏裁剪与安全序列化。
+
+## 官方规范公共 API (Package Subpath Exports)
+
+本包遵循 Turborepo 与 Next.js 官方最佳实践，彻底废除根目录大杂烩 Barrel File 与内部 `/src/` 穿透，统一使用 `package.json#exports` 暴露强类型业务子路径：
 
 ```ts
-import { getCustomerService } from "@chenrun/feature-customer-center";
+// 1. 引入前端 UI 与纯契约（Client-Safe，支持 Client Components）
+import {
+  CustomerView,
+  CustomerSubject,
+  type CustomerListItem,
+} from "@chenrun/feature-customer-center/customer-management";
 
-const service = await getCustomerService();
-const customers = await service.listCustomers({
-  page: 1,
-  pageSize: 20,
-  keyword: "辰润",
-});
+// 2. 引入纯服务端查询（Server-Only，仅限 RSC 服务端组件使用）
+import { listCustomersQuery } from "@chenrun/feature-customer-center/customer-management/server";
+
+// 3. 引入子特性（Sub-Feature）组件
+import { CategoryTagView } from "@chenrun/feature-customer-center/customer-management/classification";
+
+// 4. 引入主应用装配清单
+import { customerManifest } from "@chenrun/feature-customer-center/manifest";
 ```
 
-### 3.2 客户组件集成
+旧根入口和按技术层暴露的 `/types`、`/actions`、`/services`、`/components` 已彻底物理删除，零历史包袱。
 
-```tsx
-import { CustomerView } from "@chenrun/feature-customer-center";
+## DDD 使用原则
 
-export function CustomerManagePage() {
-  return <CustomerView />;
-}
-```
+本包坚持“按需引入，杜绝过度设计”原则：当前业务规模下不套用全套 DDD 笨重分层（Entity 类、Repository 接口、CQRS 总线等）。仅在特定 Feature 出现复杂状态机、重要业务不变量、明确事务一致性边界或复杂领域计算（如报价单的三级优先级匹配算法）时，才在 Feature 内部按需提炼纯 Domain Policy 或核心行为模型。页面和文件夹绝不能等同于 Aggregate（聚合根）或 Bounded Context（限界上下文）。
 
-## 4. 架构原则与红线
-
-1. **严格物理隔离**：所有客户与报价数据落库于租户物理库，绝不允许管控库混存。
-2. **敏感联系信息保护**：客户手机号、关键联系人受 CASL 字段权限及脱敏保护（`AuthorizedField` / `maskPhone`）。
-3. **高内聚业务切片**：客户中心相关契约、服务与组件完全内聚于本包，禁止与其他业务切片产生循环依赖。
-
-## 5. 验证命令
+## 验证
 
 ```bash
 # 类型检查
 pnpm --filter @chenrun/feature-customer-center check
 
-# 运行单元测试
+# 专属单测 (12/12)
 pnpm --filter @chenrun/feature-customer-center test
+
+# 宿主应用类型对齐检查
+pnpm --filter tenant check
+
+# 架构依赖边界扫描
+node scripts/check-redlines.mjs
 ```
