@@ -6,9 +6,7 @@ import { Sidebar, type NavSection } from "./Sidebar";
 import { SidebarProvider } from "../shadcn/sidebar";
 
 function renderSidebar(element: React.ReactElement) {
-  return renderToString(
-    React.createElement(SidebarProvider, null, element),
-  );
+  return renderToString(React.createElement(SidebarProvider, null, element));
 }
 
 const mockSections: readonly NavSection[] = [

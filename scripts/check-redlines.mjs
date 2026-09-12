@@ -117,9 +117,40 @@ for (const filePath of allFiles) {
       }
     });
   }
+
+  // 4. 检查全页强刷 window.location.reload()
+  lines.forEach((line, idx) => {
+    if (
+      /window\.location\.reload\s*\(/.test(line) &&
+      !line.includes("// redline-ignore") &&
+      !relPath.includes("OrgSwitcher.tsx") && // 租户物理切换需强制刷新全量 Session 与物理库连接池
+      !relPath.includes("RolePermissionManager.tsx")
+    ) {
+      violations.push({
+        file: relPath,
+        line: idx + 1,
+        rule: "严禁在业务页面调用 window.location.reload() 强刷页面 (必须由 React 状态驱动或调用 router?.refresh())",
+        code: line.trim(),
+      });
+    }
+  });
+
+  // 5. 检查 UI 组件单元测试文件是否就近放置 (Colocation)
+  // 规则：禁止在 UI 包 src 根目录下平铺 *.test.ts / *.test.tsx，组件测试必须与组件同级放置
+  const isDirectlyUnderUiSrc = /^packages\/ui\/src\/[^/]+\.test\.(ts|tsx)$/.test(
+    relPath,
+  );
+  if (isDirectlyUnderUiSrc) {
+    violations.push({
+      file: relPath,
+      line: 1,
+      rule: "严禁在 packages/ui/src 根目录平铺孤儿测试文件 (必须与被测组件同级放置 Colocation，如 components/layout/Sidebar.test.ts)",
+      code: relPath,
+    });
+  }
 }
 
-// 规则 4：严禁引入跨包幽灵依赖 (Ghost Dependency)
+// 规则 6：严禁引入跨包幽灵依赖 (Ghost Dependency)
 // 源码中引用了 @chenrun/* 内部包，但该包所在模块的 package.json 中未显式声明依赖
 const workspacePackages = [];
 function findPackageJsonDirs(dir) {

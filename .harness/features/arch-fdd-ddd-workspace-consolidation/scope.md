@@ -34,3 +34,4 @@
 - `packages/ui/src/components/composite/auth/AuthorizedField.test.ts` # 1 file @ 5038be78，联动修改自动登记
 - `packages/ui/src/components/feedback/Toast.test.ts` # 1 file @ 5038be78，联动修改自动登记
 - `packages/ui/src/components/layout/Sidebar.test.ts` # 1 file @ 5038be78，联动修改自动登记
+- `scripts/check-redlines.mjs` # 1 file @ 40fb8788，联动修改自动登记
