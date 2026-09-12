@@ -8,7 +8,7 @@ import {
   createColumnsFromSchema,
   FormFields,
   type FormFieldSchema,
-} from "./index";
+} from "../../index";
 
 // 1. 真实 Zod 校验 Schema
 const customerFormSchema = z.object({

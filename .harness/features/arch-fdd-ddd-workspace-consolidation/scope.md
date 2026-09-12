@@ -30,3 +30,7 @@
 - `packages/features/procurement-center/src/components/ProcurementOrderCenter.test.tsx` # 1 file @ 90af681d，联动修改自动登记
 - `packages/features/tenant-admin/src/components/**` # 3 files @ 40e5be48，联动修改自动登记
 - `packages/ui/src/components/composite/form/**` # 6 files @ 40e5be48，联动修改自动登记
+- `packages/ui/package.json` # 1 file @ 5038be78，联动修改自动登记
+- `packages/ui/src/components/composite/auth/AuthorizedField.test.ts` # 1 file @ 5038be78，联动修改自动登记
+- `packages/ui/src/components/feedback/Toast.test.ts` # 1 file @ 5038be78，联动修改自动登记
+- `packages/ui/src/components/layout/Sidebar.test.ts` # 1 file @ 5038be78，联动修改自动登记

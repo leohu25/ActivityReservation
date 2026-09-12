@@ -6,7 +6,7 @@ import {
   AuthorizedField,
   deriveFieldMode,
   type AbilityLike,
-} from "./components/composite/auth/AuthField";
+} from "./AuthField";
 
 test("deriveFieldMode 遵循设计方案规则正确推导三态", () => {
   const readOnlyAbility: AbilityLike = {

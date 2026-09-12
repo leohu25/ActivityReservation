@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToString } from "react-dom/server";
-import { Sidebar, type NavSection } from "./components/layout/Sidebar";
-import { SidebarProvider } from "./components/shadcn/sidebar";
+import { Sidebar, type NavSection } from "./Sidebar";
+import { SidebarProvider } from "../shadcn/sidebar";
 
 function renderSidebar(element: React.ReactElement) {
   return renderToString(

@@ -33,6 +33,7 @@ agent_created: true
 13. **导出走契约**：CSV 导出用 `exportContractCsv(rows, contract.configurableFields, ...)`，禁止手写 fieldKeys。
 14. **原子层 = shadcn 目录**：`packages/ui/.../shadcn/` 仅允许 `npx shadcn@latest add` 引入；禁止手写；业务不得裸写控件样式。
 15. **单一 Zod 强类型驱动与 Table 列派生**：表单增改查弹窗统一使用 `CrudFormModal`，强制传入 `schema: z.ZodType` 执行 safeParse 运行时红字校验拦截，消灭无校验双分支；列表优先使用 `DataTable.createColumnsFromSchema(schema)` 派生标准表格列定义。
+16. **测试同级就近共存 (Colocation)**：遵循 Next.js 官方最佳实践，单元测试文件必须与被测试的目标组件/服务处于同一目录下（如 `CustomerView.tsx` 与 `CustomerView.test.tsx` 同级，`CrudFormModal.tsx` 与 `CrudFormModal.test.tsx` 同级），严禁在模块根目录平铺孤儿测试文件。
 
 ---
 
