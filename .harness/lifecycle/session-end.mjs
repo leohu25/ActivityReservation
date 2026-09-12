@@ -3,24 +3,16 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { execSync } from "node:child_process";
+import { resolveActiveFeature } from "./resolve-feature.mjs";
 
 const workspaceRoot = path.resolve(process.cwd());
-const localMember = path.join(workspaceRoot, "member.local.md");
 const featureListPath = path.join(workspaceRoot, "feature_list.json");
 
 // Fail-only：错误进 errors[]，成功静默（至多一行）
 const errors = [];
-let activeFeature = "none";
+const active = resolveActiveFeature(workspaceRoot);
 
-if (fs.existsSync(localMember)) {
-  const content = fs.readFileSync(localMember, "utf-8");
-  const matchFeature = content.match(
-    /active_feature_id:\s*["']?([^"'\s]+)["']?/,
-  );
-  activeFeature = matchFeature ? matchFeature[1] : "none";
-}
-
-// 1. 总账与公共记忆
+// 1. 总账与公共记忆检查
 if (!fs.existsSync(featureListPath)) {
   errors.push("缺少全局特性总账: feature_list.json");
 }
@@ -33,35 +25,32 @@ for (const rel of [
   }
 }
 
-// 2. 激活特性沙盒工件
-if (activeFeature && activeFeature !== "none") {
-  const featDir = path.join(
-    workspaceRoot,
-    `.harness/features/${activeFeature}`,
-  );
+// 2. 激活特性沙盒工件与防虚假完成检查
+if (active.id) {
+  const featDir = path.join(workspaceRoot, `.harness/features/${active.id}`);
   for (const name of ["progress.md", "handoff.md"]) {
     if (!fs.existsSync(path.join(featDir, name))) {
       errors.push(
-        `特性沙盒缺少 ${name}: .harness/features/${activeFeature}/${name}`,
+        `特性沙盒缺少 ${name}: .harness/features/${active.id}/${name}`,
       );
     }
   }
+}
 
-  if (fs.existsSync(featureListPath)) {
-    try {
-      const listData = JSON.parse(fs.readFileSync(featureListPath, "utf-8"));
-      const featMeta = listData.features?.find((f) => f.id === activeFeature);
+if (fs.existsSync(featureListPath)) {
+  try {
+    const listData = JSON.parse(fs.readFileSync(featureListPath, "utf-8"));
+    // 防虚假完成：任何标记为 completed 的特性必须具备真实 evidence
+    for (const f of listData.features ?? []) {
       if (
-        featMeta?.status === "completed" &&
-        (!featMeta.evidence || featMeta.evidence.trim() === "")
+        f.status === "completed" &&
+        (!f.evidence || f.evidence.trim() === "")
       ) {
-        errors.push(
-          `违规完成: ${activeFeature} 标记 completed 但 evidence 为空`,
-        );
+        errors.push(`违规完成: ${f.id} 标记 completed 但 evidence 为空`);
       }
-    } catch (e) {
-      errors.push(`feature_list.json 解析失败: ${e.message}`);
     }
+  } catch (e) {
+    errors.push(`feature_list.json 解析失败: ${e.message}`);
   }
 }
 
@@ -86,8 +75,7 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-const featNote =
-  activeFeature && activeFeature !== "none" ? activeFeature : "global";
+const featNote = active.id ? `${active.id} (${active.source})` : "global";
 const dirtyNote = dirtyCount > 0 ? ` | dirty ${dirtyCount}` : "";
 process.stdout.write(`✔ session-end ok (${featNote}${dirtyNote})\n`);
 process.exit(0);

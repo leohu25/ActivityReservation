@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { execSync } from "node:child_process";
+import { resolveActiveFeature } from "../../.harness/lifecycle/resolve-feature.mjs";
 
 function findWorkspaceRoot(startDir = process.cwd()) {
   let curr = path.resolve(startDir);
@@ -89,21 +90,12 @@ function matchPattern(filePath, pattern) {
   return normFile === normPat;
 }
 
-// 3. 解析 active feature
-const memberFile = path.join(workspaceRoot, "member.local.md");
-if (!fs.existsSync(memberFile)) {
-  process.stdout.write("• 沙盒边界: 未设定 member.local.md (跳过物理拦截)\n");
-  process.exit(0);
-}
+// 3. 解析当前激活特性 (三级自适应：member.local.md -> Git 分支 -> feature_list.json)
+const active = resolveActiveFeature(workspaceRoot);
+const activeFeature = active.id;
 
-const memberContent = fs.readFileSync(memberFile, "utf-8");
-const matchFeature = memberContent.match(
-  /active_feature_id:\s*["']?([^"'\s]+)["']?/,
-);
-const activeFeature = matchFeature ? matchFeature[1] : null;
-
-if (!activeFeature || activeFeature === "none") {
-  process.stdout.write("• 沙盒边界: 无激活特性 (跳过物理拦截)\n");
+if (!activeFeature) {
+  process.stdout.write("• 沙盒边界: 全局基线模式 (跳过物理拦截)\n");
   process.exit(0);
 }
 
@@ -139,7 +131,6 @@ for (const line of lines) {
 
 // 始终允许的基础协作系统文件 (全局基础设施安全区)
 const safeInfrastructurePatterns = [
-  "member.local.md",
   "feature_list.json",
   "pnpm-lock.yaml",
   "package.json",
@@ -193,7 +184,10 @@ function appendToScope(newRelPath) {
       fs.appendFileSync(scopeFile, "\n" + entry, "utf-8");
     }
   } catch (err) {
-    console.warn(`[Boundary] 自动登记 scope.md 失败 (${newRelPath}):`, err.message);
+    console.warn(
+      `[Boundary] 自动登记 scope.md 失败 (${newRelPath}):`,
+      err.message,
+    );
   }
 }
 

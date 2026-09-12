@@ -44,11 +44,12 @@ node -e "JSON.parse(require('fs').readFileSync('${WORKSPACE_ROOT}/feature_list.j
 echo -e "• 元数据  : ${GREEN}合法${NC}"
 
 # 2. 特性沙盒与边界
-if [ -f "${WORKSPACE_ROOT}/member.local.md" ]; then
-  ACTIVE_FEAT=$(grep 'active_feature_id:' "${WORKSPACE_ROOT}/member.local.md" | head -n 1 | awk -F '"' '{print $2}')
-  if [ -n "$ACTIVE_FEAT" ]; then
-    echo -e "• 特性沙盒: ${GREEN}${ACTIVE_FEAT}${NC}"
-  fi
+FEAT_INFO=$(node "${WORKSPACE_ROOT}/.harness/lifecycle/resolve-feature.mjs" --source 2>/dev/null || echo "none|global")
+ACTIVE_FEAT=$(echo "${FEAT_INFO}" | cut -d'|' -f1)
+FEAT_SOURCE=$(echo "${FEAT_INFO}" | cut -d'|' -f2)
+
+if [ "${ACTIVE_FEAT}" != "none" ] && [ -n "${ACTIVE_FEAT}" ]; then
+  echo -e "• 特性沙盒: ${GREEN}${ACTIVE_FEAT}${NC} (来源: ${FEAT_SOURCE})"
 fi
 run_quiet "沙盒边界" node "${WORKSPACE_ROOT}/scripts/check/check-boundary.mjs"
 

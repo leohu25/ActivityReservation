@@ -10,14 +10,15 @@ NC='\033[0m'
 
 echo -e "${BLUE}>>> 工作区协同状态${NC}"
 
-# 1. 检查 member.local.md
-MEMBER_FILE="${WORKSPACE_ROOT}/member.local.md"
-if [ -f "${MEMBER_FILE}" ]; then
-  ACTIVE_FEAT=$(grep 'active_feature_id:' "${MEMBER_FILE}" | head -n 1 | awk -F '"' '{print $2}')
-  ROLE_FOCUS=$(grep 'role_focus:' "${MEMBER_FILE}" | head -n 1 | awk -F '"' '{print $2}')
-  echo -e "• 协同上下文: 激活特性: ${GREEN}${ACTIVE_FEAT:-none}${NC} | 角色焦点: ${GREEN}@${ROLE_FOCUS:-none}${NC}"
+# 1. 检查当前激活特性 (三级自适应解析)
+FEAT_INFO=$(node "${WORKSPACE_ROOT}/.harness/lifecycle/resolve-feature.mjs" --source 2>/dev/null || echo "none|global")
+ACTIVE_FEAT=$(echo "${FEAT_INFO}" | cut -d'|' -f1)
+FEAT_SOURCE=$(echo "${FEAT_INFO}" | cut -d'|' -f2)
+
+if [ "${ACTIVE_FEAT}" != "none" ] && [ -n "${ACTIVE_FEAT}" ]; then
+  echo -e "• 协同上下文: 激活特性: ${GREEN}${ACTIVE_FEAT}${NC} (来源: ${FEAT_SOURCE})"
 else
-  echo -e "• 协同上下文: ${YELLOW}未设定 member.local.md (公共模式)${NC}"
+  echo -e "• 协同上下文: ${YELLOW}全局基线模式 (未锁定特性)${NC}"
 fi
 
 # 2. 检查 Git 仓库状态

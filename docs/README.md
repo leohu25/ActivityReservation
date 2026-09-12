@@ -29,6 +29,7 @@ docs/
 ├── deployment/                      # 【生产运维】部署拓扑、Docker 容器化与运维实战
 │   └── DEPLOYMENT.md                # 生产与多环境部署实战指南
 ├── collaboration/                   # 【工程协同】团队与多智能体协作机制
+│   ├── agent-development-workflow.md                          # 智能体全生命周期开发工作流指南 (SOP)
 │   └── harness-collaboration-guide.md                         # Harness 协同指南
 └── archive/                         # 【历史归档】已完成阶段性使命的初期 PRD 与闭环设计底座
     ├── README.md                    # 归档背景与现行架构映射说明

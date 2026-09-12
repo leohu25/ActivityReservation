@@ -1,6 +1,6 @@
 # 模块 1：页面纯数据契约 (contracts/) 与权限体系
 
-在系统多租户 SaaS ERP 中，所有业务切片（`packages/features/*`）的权限体系严格采用**页面纯数据契约（Page Permission Contract）作为单一事实源（SSoT）**。
+在现代企业级多租户 SaaS 架构体系中，所有业务切片（`packages/features/*`）的权限体系严格采用**页面纯数据契约（Page Permission Contract）作为单一事实源（SSoT）**。
 
 ---
 

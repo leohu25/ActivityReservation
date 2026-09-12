@@ -1,6 +1,6 @@
 # 模块 2：数据建模与租户库物理演进
 
-系统 ERP 采用 **PostgreSQL Database-per-tenant 物理隔离** 架构。业务切片在各自包内独立维护模型定义，框架统一聚合至 `@base/db-tenant` 并由 `tooling/db-migrate` 负责多租户版本演进与平滑升级。
+本系统采用 **PostgreSQL Database-per-tenant 物理隔离** 架构。业务切片在各自包内独立维护模型定义，框架统一聚合至 `@base/db-tenant` 并由 `tooling/db-migrate` 负责多租户版本演进与平滑升级。
 
 ---
 

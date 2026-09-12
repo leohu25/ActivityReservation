@@ -1,6 +1,6 @@
 # 模块 5：工业风 UI 交互与反馈规范
 
-系统 ERP 采用现代化数智工业风规范，全面基于 `@base/ui`（shadcn/ui 体系）构建。
+本系统采用现代化数智工业风规范，全面基于 `@base/ui`（shadcn/ui 体系）构建。
 
 ## 0. 三层 UI 资产模型
 
@@ -428,7 +428,7 @@ const columns: ColumnDef<CustomerItem>[] = createColumnsFromSchema(entitySchema,
   onOpenChange={setOpen}
   record={editing}
   title={(r) => (r ? `编辑客户：${r.name}` : "新建客户")}
-  description="净配菜 ERP · 操作过程自动留痕"
+  description="操作过程自动留痕"
   onSubmit={handleSubmit}
   headerExtra={
     <DataTable.FormBanner
