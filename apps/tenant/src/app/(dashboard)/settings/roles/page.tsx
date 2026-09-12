@@ -1,9 +1,9 @@
 import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
-import { getServerAuthRuntime } from "@chenrun/auth";
-import { RolePermissionManager } from "@chenrun/feature-tenant-admin/role-management";
-import { listTenantRolesQuery } from "@chenrun/feature-tenant-admin/role-management/server";
-import { Card } from "@chenrun/ui";
+import { getServerAuthRuntime } from "@base/auth";
+import { RolePermissionManager } from "@base/feature-tenant-admin/role-management";
+import { listTenantRolesQuery } from "@base/feature-tenant-admin/role-management/server";
+import { Card } from "@base/ui";
 import {
   ALL_TENANT_MANIFESTS,
   globalTenantPermissionTree,
@@ -12,7 +12,7 @@ import {
 
 /**
  * 租户角色与权限管理页面 (Server Component - 极薄装配线)
- * 仅负责读取当前激活租户上下文并装配 @chenrun/feature-tenant-admin 业务切片
+ * 仅负责读取当前激活租户上下文并装配 @base/feature-tenant-admin 业务切片
  */
 export default async function SettingsRolesPage() {
   const runtime = getServerAuthRuntime();

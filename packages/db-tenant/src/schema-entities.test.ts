@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import type { TenantPrisma } from "./index";
-import type { ControlPrisma } from "@chenrun/db-control";
+import type { ControlPrisma } from "@base/db-control";
 
 test("Tenant DB Schema 契约支持 Position、CompanyProfile 及增强版 EmployeeProfile 与 Department", () => {
   // 1. 验证 DepartmentCreateInput 包含 leaderMemberId, sort, status
@@ -56,7 +56,7 @@ test("Tenant DB Schema 契约支持 Position、CompanyProfile 及增强版 Emplo
     creditCode: "91330100MA2XXXXX1",
     legalPerson: "王总",
     contactPhone: "0571-88888888",
-    contactEmail: "contact@chenrun.com",
+    contactEmail: "contact@example.com",
     address: "浙江省杭州市高新区科技大厦",
     timezone: "Asia/Shanghai",
     currency: "CNY",

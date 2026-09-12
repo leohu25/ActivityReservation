@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToString } from "react-dom/server";
-import { TenantAbilityProvider } from "@chenrun/authorization";
+import { TenantAbilityProvider } from "@base/authorization";
 import { StoreView } from "./StoreView";
 import { storePageContract } from "../contract";
 import type { CustomerListItem } from "../../customer-management/types";

@@ -1,6 +1,6 @@
-# 宸润数智 ERP (Chenrun Digital SaaS ERP)
+# 通用多租户 SaaS 基础设施与应用底座 (Next SaaS Base)
 
-基于 **Next.js 16 (App Router)** + **React 19** + **TypeScript** + **Tailwind CSS v4** + **PostgreSQL (Database-per-tenant 物理隔离)** 构建的现代化工业制造与供应链多租户 SaaS ERP 系统。
+基于 **Next.js 16 (App Router)** + **React 19** + **TypeScript** + **Tailwind CSS v4** + **PostgreSQL (Database-per-tenant 物理隔离)** 构建的现代化多租户 SaaS 基础设施与业务底座。
 
 项目采用基于 **Turborepo + pnpm Workspace** 的 **Modular Monorepo**。业务模块使用 **Feature-based Vertical Slice Architecture**，认证、授权、数据库、UI 与 Shared 等采用 **Horizontal Shared / Platform Modules**；业务分析与任务拆解使用 Feature-Driven Development（FDD）思想，复杂 Feature 内按需使用 DDD。
 
@@ -109,7 +109,7 @@ pnpm run lint
 
 ### 数据库管理与演进 (`tooling/db-migrate`)
 
-本项目采用 `@chenrun/db-migrate` 统一治理平台控制库与多租户舰队的数据库演进：
+本项目采用 `@base/db-migrate` 统一治理平台控制库与多租户舰队的数据库演进：
 
 ```bash
 # 1. 一致性检查（校验当前所有 Schema 与已提交的迁移/基线/Catalog 是否一致）
@@ -139,24 +139,24 @@ pnpm run db:migrate:catalog
 详细系统架构、领域拓扑、租户物理隔离与鉴权协议设计请参见：[系统整体架构设计文档 (`docs/ARCHITECTURE.md`)](docs/ARCHITECTURE.md)。
 
 ```text
-chenrun-erp-nextjs/
+next-saas-base/
 ├── apps/
 │   ├── control/                  # 平台总控端 App (Next.js 16, 端口 3001)
 │   └── tenant/                   # 租户业务端 App (Next.js 16, 端口 3000)
 ├── packages/
-│   ├── auth/                     # 基于 Better Auth 的身份认证核心包
-│   ├── authorization/            # CASL 强类型四层权限体系与数据范围下推引擎
-│   ├── db-control/               # 平台总控库 (Control DB) Prisma 驱动与 CLI
-│   ├── db-tenant/                # 租户物理库 (Tenant DB) 动态路由连接池与迁移运行器
-│   ├── shared/                   # 全局共享纯函数工具库 (Result, Dayjs, Radash 等)
-│   ├── ui/                       # 基于 shadcn/ui + Tailwind v4 的工业级数智风组件库
+│   ├── auth/                     # 基于 Better Auth 的身份认证核心包 (@base/auth)
+│   ├── authorization/            # CASL 强类型四层权限体系与数据范围下推引擎 (@base/authorization)
+│   ├── db-control/               # 平台总控库 (Control DB) Prisma 驱动与 CLI (@base/db-control)
+│   ├── db-tenant/                # 租户物理库 (Tenant DB) 动态路由连接池与迁移运行器 (@base/db-tenant)
+│   ├── shared/                   # 全局共享纯函数工具库 (@base/shared)
+│   ├── ui/                       # 基于 shadcn/ui + Tailwind v4 的工业级数智风组件库 (@base/ui)
 │   └── features/                 # Feature-based Vertical Slice 业务模块集合
 │       ├── control-admin/        # 总控台运维与租户生命周期业务区域
 │       ├── tenant-admin/         # 租户组织架构、岗位与角色权限业务区域
-│       ├── procurement-center/   # 采购中心业务区域 (订单、审批流、字段三态拦截)
-│       └── customer-center/      # Customer Center Business Area / Feature Group
+│       ├── procurement-center/   # 采购中心业务切片示例
+│       └── customer-center/      # 客户中心业务切片示例
 ├── tooling/
-│   └── db-migrate/               # 统一数据库迁移与多租户基线演进引擎 (@chenrun/db-migrate)
+│   └── db-migrate/               # 统一数据库迁移与多租户基线演进引擎 (@base/db-migrate)
 ├── .harness/                     # 智能体协同工程最高宪法、沙盒边界与持久记忆库
 ├── compose.local.yaml            # 本地 PostgreSQL 容器编排
 └── turbo.json                    # Turborepo 任务编排与精准增量缓存配置

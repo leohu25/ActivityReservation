@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import type { ControlPrismaClient } from "@chenrun/db-control";
-import type { TenantPrismaClient } from "@chenrun/db-tenant";
+import type { ControlPrismaClient } from "@base/db-control";
+import type { TenantPrismaClient } from "@base/db-tenant";
 import {
   TenantSettingsService,
   DEFAULT_GENERAL_SETTINGS,

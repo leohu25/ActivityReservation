@@ -1,7 +1,7 @@
 import React from "react";
 import { headers } from "next/headers";
-import { getServerAuthRuntime } from "@chenrun/auth";
-import { TopHeader, Sidebar, DashboardShell, Badge } from "@chenrun/ui";
+import { getServerAuthRuntime } from "@base/auth";
+import { TopHeader, Sidebar, DashboardShell, Badge } from "@base/ui";
 import { redirect } from "next/navigation";
 import { Building2 } from "lucide-react";
 import { getAuthorizedTenantNavSections } from "@/kernel";
@@ -12,7 +12,7 @@ interface DashboardLayoutProps {
 
 /**
  * 后台系统主布局（Server Component - 极薄装配线）
- * 真实读取当前请求的 Better Auth Session 与租户组织信息，挂载 @chenrun/ui 布局组件
+ * 真实读取当前请求的 Better Auth Session 与租户组织信息，挂载 @base/ui 布局组件
  * 遵循单企业独立会话模式：顶部栏仅展示当前登录企业身份徽标，彻底移除租户切换器
  */
 export default async function DashboardLayout({

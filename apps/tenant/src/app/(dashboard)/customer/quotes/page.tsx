@@ -1,12 +1,12 @@
-import type { CustomerListItem } from "@chenrun/feature-customer-center/customer-management";
-import { listCustomersQuery } from "@chenrun/feature-customer-center/customer-management/server";
+import type { CustomerListItem } from "@base/feature-customer-center/customer-management";
+import { listCustomersQuery } from "@base/feature-customer-center/customer-management/server";
 import {
   QuoteView,
   type QuoteListItem,
-} from "@chenrun/feature-customer-center/quotation-management";
-import { listQuotesQuery } from "@chenrun/feature-customer-center/quotation-management/server";
-import type { StoreListItem } from "@chenrun/feature-customer-center/store-management";
-import { listStoresQuery } from "@chenrun/feature-customer-center/store-management/server";
+} from "@base/feature-customer-center/quotation-management";
+import { listQuotesQuery } from "@base/feature-customer-center/quotation-management/server";
+import type { StoreListItem } from "@base/feature-customer-center/store-management";
+import { listStoresQuery } from "@base/feature-customer-center/store-management/server";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 

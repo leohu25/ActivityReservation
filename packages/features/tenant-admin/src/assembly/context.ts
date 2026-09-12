@@ -1,5 +1,5 @@
-import { getServerAuthRuntime } from "@chenrun/auth";
-import { CaslAbilityFactory, type AppAbility } from "@chenrun/authorization";
+import { getServerAuthRuntime } from "@base/auth";
+import { CaslAbilityFactory, type AppAbility } from "@base/authorization";
 import { tenantAdminCatalog } from "../catalog";
 import {
   getTenantDbContext,

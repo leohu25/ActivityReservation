@@ -25,6 +25,6 @@
 ## 二、 实际验证记录
 
 - `node scripts/check-entity-baseline.mjs`：扫描全部业务实体，审计基线与豁免逻辑校验通过。
-- `pnpm --filter @chenrun/feature-customer-center test`：20 个测试用例全部通过（含 4 组行级数据范围端到端攻防测试）。
+- `pnpm --filter @base/feature-customer-center test`：20 个测试用例全部通过（含 4 组行级数据范围端到端攻防测试）。
 - `pnpm check`：14 个包全量 TypeScript 严格类型检查通过。
 - `./scripts/verify.sh`：沙盒边界、红线扫描、实体基线、业务切片、门禁单测、类型扫描 6 项门禁全部一次性通过。

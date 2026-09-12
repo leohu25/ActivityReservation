@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import { ThemeProvider, Toaster } from "@chenrun/ui";
+import { ThemeProvider, Toaster } from "@base/ui";
 import "./globals.css";
 
 export const metadata: Metadata = {

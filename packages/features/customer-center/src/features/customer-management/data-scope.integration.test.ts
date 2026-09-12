@@ -4,7 +4,7 @@ import {
   CaslAbilityFactory,
   DataScope,
   getAccessibleWhere,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 import { customerCatalog } from "../../catalog";
 import { CustomerSubject } from "../../features/customer-management/contract";
 import { CustomerService } from "../../features/customer-management/service";
@@ -12,7 +12,7 @@ import { CustomerService } from "../../features/customer-management/service";
 describe("客户中心行级数据权限端到端下推验证 (Data Scope Integration)", () => {
   const mockTenantContext = {
     organizationId: "org-tenant-01",
-    user: { id: "user-alice", email: "alice@chenrun.com" },
+    user: { id: "user-alice", email: "alice@example.com" },
     member: { id: "mem-alice", role: "sales_rep" },
     session: { id: "sess-01" },
   } as any;

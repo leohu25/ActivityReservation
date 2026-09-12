@@ -21,9 +21,9 @@ import {
   toast,
   useListUrlNav,
   type ColumnDef,
-} from "@chenrun/ui";
-import { exportContractCsv } from "@chenrun/shared";
-import { useAbility } from "@chenrun/authorization";
+} from "@base/ui";
+import { exportContractCsv } from "@base/shared";
+import { useAbility } from "@base/authorization";
 import {
   createCustomerAction,
   updateCustomerAction,
@@ -476,9 +476,12 @@ export function CustomerView({
                     (item.customerCode || item.id) === targetCode
                       ? {
                           ...item,
-                          customerName: record.customerName || item.customerName,
-                          contactPerson: record.contactPerson || item.contactPerson,
-                          contactPhone: record.contactPhone || item.contactPhone,
+                          customerName:
+                            record.customerName || item.customerName,
+                          contactPerson:
+                            record.contactPerson || item.contactPerson,
+                          contactPhone:
+                            record.contactPhone || item.contactPhone,
                         }
                       : item,
                   ),

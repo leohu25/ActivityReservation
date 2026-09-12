@@ -7,7 +7,7 @@ import {
   FormFields,
   type FormFieldSchema,
   toast,
-} from "@chenrun/ui";
+} from "@base/ui";
 import { createCategoryAction } from "../actions";
 import type { CustomerCategoryItem } from "../types";
 

@@ -4,7 +4,7 @@ import React from "react";
 import {
   TenantAbilityProvider,
   type AbilitySnapshot,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 import { ProcurementOrderSubject } from "../contracts";
 
 export interface ProcurementAbilityPermissions {

@@ -1,4 +1,4 @@
-import { derivePermissionCatalog } from "@chenrun/authorization";
+import { derivePermissionCatalog } from "@base/authorization";
 import { procurementManifest } from "./manifest";
 
 export * from "./contracts";

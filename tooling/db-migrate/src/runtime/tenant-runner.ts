@@ -3,12 +3,12 @@ import type {
   TenantDatabaseRecord,
   TenantMigrationRecord,
   TenantMigrationRepository,
-} from "@chenrun/db-control";
+} from "@base/db-control";
 import type {
   SecretResolver,
   TenantSqlExecutor,
   TenantSqlExecutorFactory,
-} from "@chenrun/db-tenant";
+} from "@base/db-tenant";
 import type {
   MigrationPreflightResult,
   MigrationRuntimeCatalog,
@@ -101,7 +101,7 @@ export class TenantMigrationRunner {
     const executor = await this.getExecutor(database);
     try {
       await executor.execute("SELECT pg_advisory_lock(hashtext($1))", [
-        `chenrun-tenant-migrate:${organizationId}`,
+        `base-tenant-migrate:${organizationId}`,
       ]);
       const preflight = await this.preflightTenant(organizationId);
       if (!preflight.executable) throw new Error(preflight.messages.join("; "));
@@ -149,7 +149,7 @@ export class TenantMigrationRunner {
     } finally {
       try {
         await executor.execute("SELECT pg_advisory_unlock(hashtext($1))", [
-          `chenrun-tenant-migrate:${organizationId}`,
+          `base-tenant-migrate:${organizationId}`,
         ]);
       } finally {
         await executor.close();

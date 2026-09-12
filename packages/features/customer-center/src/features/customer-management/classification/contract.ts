@@ -1,7 +1,7 @@
 import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 
 /** 客户分类与标签实体与资源标识 (SSoT) */
 export const CustomerCategorySubject = "CustomerCategory";

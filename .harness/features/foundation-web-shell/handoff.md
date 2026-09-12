@@ -16,7 +16,7 @@
    - 权限工作台 `src/app/(dashboard)/workbench/page.tsx`：实时读取实库数据并可视化下推四层权限；
    - 业务订单页 `src/app/(dashboard)/procurement/orders/page.tsx`：带 CASL 动态按钮鉴权、字段控制与数据范围过滤的真实业务页面。
 3. **引入 shadcn/ui 组件体系**：
-   - 在 `@chenrun/ui` 中构建 `Button`, `Card`, `Input`, `Badge` 及 `cn` 样式工具；
+   - 在 `@base/ui` 中构建 `Button`, `Card`, `Input`, `Badge` 及 `cn` 样式工具；
    - 字段三态门禁 `<PermissionField>` 深度融合 shadcn/ui 样式。
 4. **前后端实库直连无死数据**：
    - 通过 Better Auth 前后端客户端与 Server Components 直调 Control DB，根据真实租户身份实时编译 CASL Ability 并执行 `@casl/prisma` 条件下推。
@@ -25,7 +25,7 @@
 
 ## 门禁验证证据
 
-- `pnpm --filter @chenrun/ui test`：3/3 PASS
+- `pnpm --filter @base/ui test`：3/3 PASS
 - `pnpm test`：42/42 PASS（覆盖全部 5 个测试包）
 - `pnpm check`：8/8 packages PASS
 - `pnpm build`：PASS（构建 6 个动静态 App Router 路由）

@@ -1,5 +1,5 @@
 /**
- * @chenrun/shared - 企业组织架构与层级树形数据结构工具
+ * @base/shared - 企业组织架构与层级树形数据结构工具
  */
 
 export interface TreeNodeLike {

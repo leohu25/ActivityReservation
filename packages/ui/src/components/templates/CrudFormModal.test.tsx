@@ -63,7 +63,7 @@ test("Zod Schema: safeParse 严格拦截不合法数据并产生准确错误信�
 
   // 合法数据校验通过
   const validData = {
-    customerName: "辰润生鲜旗舰店",
+    customerName: "示例零售旗舰店",
     contactPhone: "13812345678",
     creditLimit: 50000,
   };
@@ -215,7 +215,7 @@ test("createColumnsFromSchema: 根据 Zod Schema 自动派生 Table 列契约", 
 
   // 格式化输出测试
   const mockRow: CustomerRow = {
-    customerName: "辰润集团",
+    customerName: "示例企业集团",
     contactPhone: "13800000000",
     creditLimit: 125000,
     status: "ACTIVE",

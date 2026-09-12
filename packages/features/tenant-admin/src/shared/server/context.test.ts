@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createMongoAbility } from "@casl/ability";
-import type { AppAbility } from "@chenrun/authorization";
+import type { AppAbility } from "@base/authorization";
 import { assertTenantAdminAbility } from "./tenant-context";
 import {
   DepartmentSubject,

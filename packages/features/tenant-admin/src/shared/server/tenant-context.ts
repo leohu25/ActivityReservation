@@ -1,12 +1,9 @@
 import { headers } from "next/headers";
-import { getCurrentTenantContext, type TenantContext } from "@chenrun/auth";
-import {
-  getTenantDbManager,
-  type TenantPrismaClient,
-} from "@chenrun/db-tenant";
-import type { ControlPrismaClient } from "@chenrun/db-control";
+import { getCurrentTenantContext, type TenantContext } from "@base/auth";
+import { getTenantDbManager, type TenantPrismaClient } from "@base/db-tenant";
+import type { ControlPrismaClient } from "@base/db-control";
 import { ForbiddenError } from "@casl/ability";
-import type { AppAbility } from "@chenrun/authorization";
+import type { AppAbility } from "@base/authorization";
 
 export interface TenantDbContext {
   readonly organizationId: string;
@@ -19,14 +16,14 @@ export interface TenantDbContext {
 
 /**
  * 纯技术底层：解析并获取当前租户物理数据库客户端与员工门禁校验。
- * 仅依赖横向平台包（@chenrun/auth、@chenrun/db-tenant），绝不依赖业务 Feature 契约或目录。
+ * 仅依赖横向平台包（@base/auth、@base/db-tenant），绝不依赖业务 Feature 契约或目录。
  */
 export async function getTenantDbContext(): Promise<TenantDbContext> {
   const reqHeaders = await headers();
   const tenantCtx = await getCurrentTenantContext(reqHeaders);
 
   const { getServerAuthRuntime, assertTenantAccessGate } = await import(
-    "@chenrun/auth"
+    "@base/auth"
   );
   const runtime = getServerAuthRuntime();
 
@@ -64,7 +61,7 @@ export async function getTenantDbContext(): Promise<TenantDbContext> {
  * 获取 Control DB 客户端
  */
 export async function getControlDbClient(): Promise<ControlPrismaClient> {
-  const { getServerAuthRuntime } = await import("@chenrun/auth");
+  const { getServerAuthRuntime } = await import("@base/auth");
   const runtime = getServerAuthRuntime();
   return runtime.prisma;
 }

@@ -2,12 +2,12 @@ import {
   PrismaControlDbRepository,
   type ControlPrismaClient,
   type TenantMigrationRepository,
-} from "@chenrun/db-control";
+} from "@base/db-control";
 import {
   TenantDatabaseSeeder,
   createDefaultPgSqlExecutorFactory,
-} from "@chenrun/db-tenant";
-import { DatabaseMigrationService } from "@chenrun/db-migrate";
+} from "@base/db-tenant";
+import { DatabaseMigrationService } from "@base/db-migrate";
 import { assertControlAdmin } from "../../shared/server/control-guard";
 import type { MigrationDashboardData, TenantFleetItem } from "./types";
 

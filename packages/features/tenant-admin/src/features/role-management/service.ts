@@ -1,7 +1,7 @@
 import type {
   AuthorizationRepository,
   OrganizationRoleRecord,
-} from "@chenrun/db-control";
+} from "@base/db-control";
 import {
   BUILT_IN_ROLES,
   type BuiltInRole,
@@ -12,7 +12,7 @@ import {
   serializeRolePermissions,
   type RolePermissionPayload,
   type TenantFeatureManifest,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 import type {
   CreateRoleInput,
   SaveRolePermissionsInput,

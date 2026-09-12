@@ -7,7 +7,7 @@
 node scripts/check-entity-baseline.mjs
 
 # 2. 执行客户中心专属单测（含数据范围权限过滤与软删除断言）
-pnpm --filter @chenrun/feature-customer-center test
+pnpm --filter @base/feature-customer-center test
 
 # 3. 执行全栈类型检查
 pnpm check

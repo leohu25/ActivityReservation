@@ -48,9 +48,9 @@
 ## 三、 设计边界与依赖
 
 - **依赖包**：
-  - `@chenrun/authorization`：提供 `resolveEmployeeTopology`, `getAccessibleWhere`, `resolveDataScopeConditions`
-  - `@chenrun/db-tenant`：提供 `TenantPrismaClient` 与 `resolveEmployeeTopology` 依赖的部门拓扑查询
-  - `@chenrun/feature-customer-center`：核心落地受控切片
+  - `@base/authorization`：提供 `resolveEmployeeTopology`, `getAccessibleWhere`, `resolveDataScopeConditions`
+  - `@base/db-tenant`：提供 `TenantPrismaClient` 与 `resolveEmployeeTopology` 依赖的部门拓扑查询
+  - `@base/feature-customer-center`：核心落地受控切片
 - **不变量**：
   - 必须保持软删除安全（默认过滤 `isDeleted: false`）；
   - 严禁绕过租户隔离；

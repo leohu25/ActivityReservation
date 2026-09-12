@@ -16,6 +16,6 @@
 - 2026-09-11 侧边栏整页刷新缺陷修复（官方正统架构重构）：
   - 彻底删除 `app-sidebar.tsx` 包装层，`layout.tsx` 零多余代码直接消费 `<Sidebar />`；
   - `Sidebar.tsx` 内置 Next.js 16 官方 `next/link` 与 `usePathname()`，拔除假解耦；
-  - `pnpm --filter @chenrun/ui test` → 14/14 PASS（100% 通过）；
+  - `pnpm --filter @base/ui test` → 14/14 PASS（100% 通过）；
   - `pnpm check` → 14/14 tasks PASS，0 类型错误；
   - `node scripts/check-redlines.mjs` → 192 文件 0 违规。

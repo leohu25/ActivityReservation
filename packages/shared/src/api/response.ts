@@ -1,5 +1,5 @@
 /**
- * @chenrun/shared - 统一 HTTP API 响应契约与工厂
+ * @base/shared - 统一 HTTP API 响应契约与工厂
  */
 
 export interface ApiSuccessResponse<T = unknown> {

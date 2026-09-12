@@ -5,7 +5,7 @@
 1. 采购订单中心恢复搜索、状态过滤与刷新；
 2. 新增 `packages/biz-shared` 骨架；
 3. Customer Center UI 按 customers、quotes、stores、categories-tags、shared 初步归类；
-4. `@chenrun/ui` 导出 CrudFormModal；
+4. `@base/ui` 导出 CrudFormModal；
 5. 当时的类型检查、测试与门禁通过。
 
 ## 术语修正

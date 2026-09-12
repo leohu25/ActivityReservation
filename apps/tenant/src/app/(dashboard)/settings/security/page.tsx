@@ -1,9 +1,9 @@
 import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
-import { getServerAuthRuntime } from "@chenrun/auth";
-import { SecuritySettingsView } from "@chenrun/feature-tenant-admin/tenant-settings";
-import { getSecuritySettingsQuery } from "@chenrun/feature-tenant-admin/tenant-settings/server";
-import { Card } from "@chenrun/ui";
+import { getServerAuthRuntime } from "@base/auth";
+import { SecuritySettingsView } from "@base/feature-tenant-admin/tenant-settings";
+import { getSecuritySettingsQuery } from "@base/feature-tenant-admin/tenant-settings/server";
+import { Card } from "@base/ui";
 
 /**
  * 租户安全设置管理页面 (Server Component - 极薄装配线)

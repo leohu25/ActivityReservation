@@ -14,13 +14,13 @@
 
 ## 1. 统一 Action 包装器 (`defineServerAction`)
 
-所有 Server Actions 统一使用 `@chenrun/shared` 导出的 `defineServerAction`，并在创建/更新时注入操作人审计：
+所有 Server Actions 统一使用 `@base/shared` 导出的 `defineServerAction`，并在创建/更新时注入操作人审计：
 
 ```ts
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { defineServerAction } from "@chenrun/shared";
+import { defineServerAction } from "@base/shared";
 import {
   assertCustomerAbility,
   getTenantCustomerContext,
@@ -74,12 +74,12 @@ export const updateCustomerStatusAction = defineServerAction(
 
 ```ts
 // src/assembly/context.ts（以 customer-center 为标杆）
-import { getServerAuthRuntime } from "@chenrun/auth";
+import { getServerAuthRuntime } from "@base/auth";
 import {
   CaslAbilityFactory,
   type AppPrismaAbility,
-} from "@chenrun/authorization";
-import { resolveEmployeeTopology } from "@chenrun/db-tenant";
+} from "@base/authorization";
+import { resolveEmployeeTopology } from "@base/db-tenant";
 import { ForbiddenError } from "@casl/ability";
 import {
   getTenantDbContext,

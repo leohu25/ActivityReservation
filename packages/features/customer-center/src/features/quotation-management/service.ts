@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { TenantPrismaClient } from "@chenrun/db-tenant";
+import type { TenantPrismaClient } from "@base/db-tenant";
 import type { CreateQuoteInput, ListQuoteFilter } from "./types";
 
 export interface ListQuotesResult {

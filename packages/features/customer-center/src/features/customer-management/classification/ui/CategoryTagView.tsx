@@ -11,7 +11,7 @@ import {
   TabsContent,
   toast,
   useSafeRouter,
-} from "@chenrun/ui";
+} from "@base/ui";
 import { updateCategoryStatusAction, updateTagStatusAction } from "../actions";
 import { CreateCategoryModal } from "./CreateCategoryModal";
 import { CreateTagModal } from "./CreateTagModal";

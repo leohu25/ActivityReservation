@@ -1,7 +1,7 @@
 import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 
 /** 基础设置实体与资源标识 (SSoT) */
 export const GeneralSettingsSubject = "GeneralSettings";

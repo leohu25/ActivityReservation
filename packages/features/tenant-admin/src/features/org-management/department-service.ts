@@ -1,10 +1,10 @@
-import type { TenantPrismaClient } from "@chenrun/db-tenant";
+import type { TenantPrismaClient } from "@base/db-tenant";
 import {
   buildTree,
   BusinessError,
   ConflictError,
   NotFoundError,
-} from "@chenrun/shared";
+} from "@base/shared";
 import type {
   CreateDepartmentInput,
   DepartmentTreeNode,
@@ -76,7 +76,7 @@ export class DepartmentService {
       }
     }
 
-    // 4. 将扁平部门数据预装配为带统计信息的节点列表，并复用 @chenrun/shared 的 buildTree 统一构建树
+    // 4. 将扁平部门数据预装配为带统计信息的节点列表，并复用 @base/shared 的 buildTree 统一构建树
     const departmentNodes = allDepts.map((raw) => ({
       id: raw.id,
       name: raw.name,

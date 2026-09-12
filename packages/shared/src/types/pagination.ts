@@ -1,5 +1,5 @@
 /**
- * @chenrun/shared - 分页请求参数与标准化分页结果
+ * @base/shared - 分页请求参数与标准化分页结果
  */
 
 import { DEFAULT_PAGINATION } from "../constants";

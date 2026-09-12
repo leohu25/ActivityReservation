@@ -28,7 +28,7 @@ import {
   Badge,
   Input,
   useSubjectCan,
-} from "@chenrun/ui";
+} from "@base/ui";
 import {
   DataScope,
   FieldPolicy,
@@ -37,7 +37,7 @@ import {
   type DataScopeType,
   type FieldAccessMode,
   type RolePermissionPayload,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 import type { TenantRoleItem } from "../types";
 import { CreateRoleModal } from "./CreateRoleModal";
 import {
@@ -242,7 +242,7 @@ export function RolePermissionManager({
     });
   };
 
-  // 5. 字段策略推导与修改（单一规则源：@chenrun/authorization resolveFieldAccess）
+  // 5. 字段策略推导与修改（单一规则源：@base/authorization resolveFieldAccess）
   const getFieldAccess = (
     subject: string,
     field: string,

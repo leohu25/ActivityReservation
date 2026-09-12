@@ -8,7 +8,7 @@
   - `src/app/(dashboard)/workbench/page.tsx`：直连 PostgreSQL 实库的工作台与四层权限联动面板
   - `src/app/(dashboard)/procurement/orders/page.tsx`：采购中心订单列表与动态 CASL / 数据范围下推业务路由
 - [x] 深度集成 **shadcn/ui** 设计体系：
-  - 在 `@chenrun/ui` 中集成 `Button`, `Card`, `Input`, `Badge` 及 `cn()` 工具函数
+  - 在 `@base/ui` 中集成 `Button`, `Card`, `Input`, `Badge` 及 `cn()` 工具函数
   - 将 `<PermissionField>` 与 shadcn/ui 无缝融合，支持 `HIDDEN`, `READONLY`, `EDITABLE`
 - [x] 前后端完全真实打通：
   - 通过 Better Auth 前后端客户端实现真实登录、注册与租户切换
@@ -19,7 +19,7 @@
 
 ## 验证记录
 
-- `pnpm --filter @chenrun/ui test`：3/3 PASS
+- `pnpm --filter @base/ui test`：3/3 PASS
 - `pnpm test`：5/5 packages，42/42 PASS
 - `pnpm check`：8/8 packages PASS
 - `pnpm build`：PASS（包含 6 个 App Router 动静态路由）
@@ -44,12 +44,12 @@
   - 直接 `import Link from "next/link"` 与 `import { usePathname } from "next/navigation"`；
   - 路由状态直接由 `usePathname()` 驱动，保证软导航与 Layout 状态保留；
   - 兼顾单测：支持可选 `currentPath` 覆盖，适配纯 Node 环境 `renderToString` 断言；
-- `(dashboard)/layout.tsx` 保持极简：直接引入并渲染 `@chenrun/ui` 导出的 `<Sidebar allowedPermissions={...} />`；
+- `(dashboard)/layout.tsx` 保持极简：直接引入并渲染 `@base/ui` 导出的 `<Sidebar allowedPermissions={...} />`；
 - 保留 `(dashboard)/loading.tsx` 骨架屏，遵循官方 Instant Loading States 范式。
 
 ### 验证证据
 
-- `pnpm --filter @chenrun/ui test`：14/14 PASS（100% 通过）
+- `pnpm --filter @base/ui test`：14/14 PASS（100% 通过）
 - `pnpm check`：14/14 tasks PASS（0 类型错误）
 - `node scripts/check-redlines.mjs`：192 个源码文件 0 红线违规
 - 运行时验证：菜单切换为官方 Soft Navigation 局部替换，手风琴展开状态完整保留，零全页刷新。

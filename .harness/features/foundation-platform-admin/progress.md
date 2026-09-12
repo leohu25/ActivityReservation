@@ -13,7 +13,7 @@
   - 调度 `researcher` 调研 `packages/db-control`、`packages/db-tenant` 与 `apps/tenant` 现有能力；
   - 明确租户全生命周期状态机 (`PROVISIONING` -> `ACTIVE` <-> `SUSPENDED` / `FAILED`) 与 Database-per-Tenant 自动创建流程。
 - [x] **阶段 2: 服务层与底座契约落地 (Service & Contract)**
-  - 在 `apps/tenant/package.json` 引入 `@chenrun/db-control` 与 `@chenrun/db-tenant`；
+  - 在 `apps/tenant/package.json` 引入 `@base/db-control` 与 `@base/db-tenant`；
   - 封装平台超管身份识别守卫 (`checkIsPlatformAdmin`, `assertPlatformAdmin`)，默认 Fail-Closed；
   - 实现 `PlatformAdminService`：
     - 查询所有租户列表与其物理数据库状态、Schema 版本及统计卡片（总数、运行中、挂起、故障）；
@@ -34,7 +34,7 @@
   - **概念体系收敛**：响应用户架构决策，将概念混淆的 `platform` 全面收敛为 `control`（Control Plane / 控制平面）；
   - **目录与包结构升级**：
     - 将应用目录由 `apps/platform` 正式重命名为 `apps/control`（package: `control`）；
-    - 将特性包由 `packages/features/platform-admin` 升级为 `packages/features/control-admin`（package: `@chenrun/feature-control-admin`）；
+    - 将特性包由 `packages/features/platform-admin` 升级为 `packages/features/control-admin`（package: `@base/feature-control-admin`）；
   - **彻底去除历史包袱与叠词**：
     - 消除 `ControlConsoleClient` 等叠词与暴露框架细节的技术后缀；
     - 删除无用的历史单页大杂烩代码，全面按领域职责正交命名（`ControlLayout`、`ControlMetrics`、`OverviewPage`、`TenantsView`、`TenantsPage`、`ControlLogin`、`ProvisionTenantDialog`、`TenantLifecycleTable`）；

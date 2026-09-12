@@ -1,6 +1,6 @@
-# @chenrun/biz-shared
+# @base/biz-shared
 
-辰润 ERP 跨业务切片（Cross-Feature Slices）通用业务中台公共资产库。
+通用 SaaS 跨业务切片（Cross-Feature Slices）通用业务中台公共资产库。
 
 ## 定位与职责边界
 
@@ -36,4 +36,4 @@
 ### 禁止事项
 
 - 严禁反向依赖任何 `packages/features/*` 业务切片；
-- 严禁存放与 ERP 业务无关的纯技术工具（应沉淀至 `@chenrun/shared`）或纯 UI 原子组件（应沉淀至 `@chenrun/ui`）。
+- 严禁存放与 ERP 业务无关的纯技术工具（应沉淀至 `@base/shared`）或纯 UI 原子组件（应沉淀至 `@base/ui`）。

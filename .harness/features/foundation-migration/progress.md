@@ -18,9 +18,9 @@
 
 ## 三、 验证证据
 
-- `pnpm --filter @chenrun/db-control test`：6/6 PASS
-- `pnpm --filter @chenrun/db-tenant test`：13/13 PASS
-- `pnpm --filter @chenrun/tenant-migrate test`：3/3 PASS
+- `pnpm --filter @base/db-control test`：6/6 PASS
+- `pnpm --filter @base/db-tenant test`：13/13 PASS
+- `pnpm --filter @base/tenant-migrate test`：3/3 PASS
 - 全仓单测 `pnpm test`：62/62 PASS
 - 全仓类型扫描 `pnpm check`：9/9 packages PASS
 - 生产构建 `pnpm build`：PASS

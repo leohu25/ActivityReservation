@@ -14,16 +14,16 @@
 ## 二、 实际验证记录
 
 - `pnpm --config.dangerouslyAllowAllBuilds=true install`：PASS，9 个 Workspace 安装完成。
-- `CONTROL_DATABASE_URL=postgresql://user:pass@localhost:5432/saas_control pnpm --filter @chenrun/db-control prisma:validate`：PASS，Schema valid。
-- 同环境变量运行 `pnpm --filter @chenrun/db-control generate`：PASS，Prisma Client 7.10.0 生成成功。
-- `pnpm --filter @chenrun/auth test`：PASS，10/10（含 Better Auth 构造、Organization API、可信 Headers 入口及 Handler 导出）。
-- `pnpm --filter @chenrun/db-control test`：PASS，3/3（含 Prisma Organization/Member/Session Schema 契约）。
-- `pnpm --filter @chenrun/db-tenant test`：PASS，8/8（含关闭期间并发 drain 与 fail-closed）。
+- `CONTROL_DATABASE_URL=postgresql://user:pass@localhost:5432/saas_control pnpm --filter @base/db-control prisma:validate`：PASS，Schema valid。
+- 同环境变量运行 `pnpm --filter @base/db-control generate`：PASS，Prisma Client 7.10.0 生成成功。
+- `pnpm --filter @base/auth test`：PASS，10/10（含 Better Auth 构造、Organization API、可信 Headers 入口及 Handler 导出）。
+- `pnpm --filter @base/db-control test`：PASS，3/3（含 Prisma Organization/Member/Session Schema 契约）。
+- `pnpm --filter @base/db-tenant test`：PASS，8/8（含关闭期间并发 drain 与 fail-closed）。
 - `pnpm check`：PASS，8/8 packages。
 - `pnpm build`：PASS，Next.js 生产构建成功，Auth 路由为动态服务端路由。
 - `docker compose up -d --wait saas-control-postgres`：PASS，`chenrun-saas-control-postgres` 健康，绑定 `127.0.0.1:55432`。
-- 使用本地连接执行 `pnpm --filter @chenrun/db-control db:push`：PASS，`saas_control.public` 与 Prisma Schema 同步。
-- `pnpm --filter @chenrun/auth test:integration`：PASS，1/1；真实注册、Organization/Member、active Session、TenantDatabase 映射及可信 Tenant Context 全链路通过，并精准清理测试数据。
+- 使用本地连接执行 `pnpm --filter @base/db-control db:push`：PASS，`saas_control.public` 与 Prisma Schema 同步。
+- `pnpm --filter @base/auth test:integration`：PASS，1/1；真实注册、Organization/Member、active Session、TenantDatabase 映射及可信 Tenant Context 全链路通过，并精准清理测试数据。
 - 集成后 PostgreSQL 定向残留查询：测试用户、Organization、TenantDatabase 映射均为 0。
 - 复跑现有单测：Auth 10/10、Control DB 3/3、Tenant DB 8/8，合计 21/21 PASS。
 - `./scripts/verify.sh` 与 `./init.sh`：PASS。

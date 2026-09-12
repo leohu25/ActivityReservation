@@ -1,9 +1,9 @@
 import { ForbiddenError } from "@casl/ability";
 import type { AnyMongoAbility } from "@casl/ability";
 import { permittedFieldsOf } from "@casl/ability/extra";
-import { FieldPolicy, type FieldAccessMode } from "@chenrun/shared";
+import { FieldPolicy, type FieldAccessMode } from "@base/shared";
 
-export { FieldPolicy, type FieldAccessMode } from "@chenrun/shared";
+export { FieldPolicy, type FieldAccessMode } from "@base/shared";
 
 /**
  * 角色字段策略配置契约
@@ -154,31 +154,31 @@ export function assertEditableFields<T extends Record<string, unknown>>(
  * READONLY 可读不可写；EDITABLE 可读可写。
  */
 export function resolveFieldAccess(input: {
-  readonly explicit?: FieldAccessMode | null;
-  readonly hasRead?: boolean;
-  readonly hasWrite?: boolean;
+ readonly explicit?: FieldAccessMode | null;
+ readonly hasRead?: boolean;
+ readonly hasWrite?: boolean;
 }): FieldAccessMode {
-  if (input.explicit) {
-    return input.explicit;
-  }
-  if (input.hasWrite) {
-    return FieldPolicy.EDITABLE;
-  }
-  if (input.hasRead) {
-    return FieldPolicy.READONLY;
-  }
-  return FieldPolicy.HIDDEN;
+ if (input.explicit) {
+  return input.explicit;
+ }
+ if (input.hasWrite) {
+  return FieldPolicy.EDITABLE;
+ }
+ if (input.hasRead) {
+  return FieldPolicy.READONLY;
+ }
+ return FieldPolicy.HIDDEN;
 }
 
 /**
- * 前端 plain ability 的字段级判定（实现收敛至 @chenrun/shared，此处再导出保持领域包 API 稳定）。
+ * 前端 plain ability 的字段级判定（实现收敛至 @base/shared，此处再导出保持领域包 API 稳定）。
  */
 export {
-  createSubjectAbility,
-  isFieldAllowedForAction,
-  type SubjectAbilityLike,
-  type SubjectPermissionsPayload,
-} from "@chenrun/shared";
+ createSubjectAbility,
+ isFieldAllowedForAction,
+ type SubjectAbilityLike,
+ type SubjectPermissionsPayload,
+} from "@base/shared";
 
 /**
  * 通用字段可见性生成器 (Field Visibility Map Generator)

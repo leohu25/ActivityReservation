@@ -10,7 +10,7 @@ import {
   Input,
   Button,
   Badge,
-} from "@chenrun/ui";
+} from "@base/ui";
 import {
   Users,
   UserPlus,
@@ -43,7 +43,7 @@ import {
   transferPositionAction,
   transferRolesAction,
 } from "../actions";
-import { flattenTree } from "@chenrun/shared";
+import { flattenTree } from "@base/shared";
 
 export interface EmployeeViewProps {
   readonly initialEmployees: readonly EmployeeItem[];

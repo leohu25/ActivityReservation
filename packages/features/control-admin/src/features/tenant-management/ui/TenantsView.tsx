@@ -15,7 +15,7 @@ import {
   toggleTenantStatusAction,
   getTenantDetailAction,
 } from "../actions";
-import { toast, FormDialog } from "@chenrun/ui";
+import { toast, FormDialog } from "@base/ui";
 
 export interface TenantsViewProps {
   /** 租户列表及其物理库生命周期状态 */

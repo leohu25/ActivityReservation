@@ -23,7 +23,7 @@
 ## 验证记录
 
 - 单元测试：`pnpm test` (39/39 PASS，其中 authorization 27/27 全部通过)
-- 实库集成：`pnpm --filter @chenrun/authorization test:integration` (1/1 PASS)
+- 实库集成：`pnpm --filter @base/authorization test:integration` (1/1 PASS)
 - 类型检查：`pnpm check` (8/8 packages 全部通过)
 - 门禁自检：`./scripts/verify.sh` (边界合规、40 个源码无红线违规全部通过)
 - 环境自检：`./init.sh` (环境健康可重启)

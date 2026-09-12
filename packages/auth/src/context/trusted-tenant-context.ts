@@ -1,4 +1,4 @@
-import type { TenantContextRepository } from "@chenrun/db-control";
+import type { TenantContextRepository } from "@base/db-control";
 import {
  resolveTenantContext,
  type AuthSessionInput,

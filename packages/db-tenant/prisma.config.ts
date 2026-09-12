@@ -9,9 +9,9 @@ export default defineConfig({
   datasource: {
     url:
       process.env.TENANT_DATABASE_URL ||
-      "postgresql://gemini_local:gemini_local_only@127.0.0.1:55433/saas_control?schema=public",
+      "postgresql://base_local:base_local_only@127.0.0.1:55433/saas_control?schema=public",
     shadowDatabaseUrl:
       process.env.SHADOW_DATABASE_URL ||
-      "postgresql://gemini_local:gemini_local_only@127.0.0.1:55433/saas_control?schema=public",
+      "postgresql://base_local:base_local_only@127.0.0.1:55433/saas_control?schema=public",
   },
 });

@@ -2,7 +2,7 @@ import {
   STANDARD_DATA_SCOPES,
   StandardAction,
   type FeaturePagePermissionDescriptor,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 
 export const TenantManagementSubject = "ControlTenant";
 export const TenantManagementResource = "control.tenant";

@@ -66,7 +66,7 @@
 
 ## 三、 核心契约与数据模型规范
 
-所有契约定义收敛于核心授权包 `@chenrun/authorization` 的 `manifest.ts` 中：
+所有契约定义收敛于核心授权包 `@base/authorization` 的 `manifest.ts` 中：
 
 ### 1. 切片自描述清单 (`TenantFeatureManifest`)
 
@@ -118,7 +118,7 @@ export interface FeatureNavSection {
 
 ## 四、 纯函数派生与过滤引擎
 
-为了确保单源收敛，系统提供了一套无副作用的纯函数工具套件（收敛于 `@chenrun/authorization`）：
+为了确保单源收敛，系统提供了一套无副作用的纯函数工具套件（收敛于 `@base/authorization`）：
 
 | 派生工具函数 | 核心职责 | 消费场景 |
 | :--- | :--- | :--- |
@@ -173,7 +173,7 @@ export interface FeatureNavSection {
 import {
   STANDARD_DATA_SCOPES,
   type TenantFeatureManifest,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 
 export const warehouseManifest: TenantFeatureManifest = {
   id: "warehouse-center",

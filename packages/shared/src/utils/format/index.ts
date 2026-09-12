@@ -1,5 +1,5 @@
 /**
- * @chenrun/shared - 企业级数值、货币、日期与容量格式化工具
+ * @base/shared - 企业级数值、货币、日期与容量格式化工具
  * 基于成熟 dayjs 与原生 Intl.NumberFormat 深度优化
  */
 

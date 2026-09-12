@@ -1,7 +1,7 @@
 import {
   ProcurementAbilityBoundary,
   ProcurementOrderSubject,
-} from "@chenrun/feature-procurement-center";
+} from "@base/feature-procurement-center";
 import { getTenantSubjectPermissions } from "@/kernel";
 
 /**

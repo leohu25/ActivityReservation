@@ -1,13 +1,13 @@
 "use client";
 
 import React, { cloneElement, isValidElement, useContext } from "react";
-import { FieldPolicy, type FieldAccessMode } from "@chenrun/shared";
-import { useOptionalAbility } from "@chenrun/authorization";
+import { FieldPolicy, type FieldAccessMode } from "@base/shared";
+import { useOptionalAbility } from "@base/authorization";
 import { Field, FieldLabel } from "../../shadcn/field";
 import { Badge } from "../../shadcn/badge";
 import { DataTableContext } from "../data-table/DataTableContext";
 
-export type { FieldAccessMode } from "@chenrun/shared";
+export type { FieldAccessMode } from "@base/shared";
 
 export interface AbilityLike {
   can(action: string, subject: string, field?: string): boolean;
@@ -87,8 +87,7 @@ export function AuthField({
   const tableContext = useContext(DataTableContext);
   const caslAbility = useOptionalAbility();
 
-  const ability =
-    explicitAbility !== undefined ? explicitAbility : caslAbility;
+  const ability = explicitAbility === undefined ? caslAbility : explicitAbility;
   const subject = explicitSubject || tableContext?.subject || "";
 
   const resolvedMode = deriveFieldMode(ability, subject, field, action, mode);

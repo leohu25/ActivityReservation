@@ -1,6 +1,6 @@
-# @chenrun/feature-tenant-admin
+# @base/feature-tenant-admin
 
-辰润 ERP 的 **Tenant Admin Business Area / Feature Group（租户管理中心业务领域 / 特性集群）**。
+通用 SaaS 的 **Tenant Admin Business Area / Feature Group（租户管理中心业务领域 / 特性集群）**。
 
 ## 架构定位
 
@@ -45,33 +45,33 @@ import {
   DepartmentView,
   EmployeeView,
   PositionView,
-} from "@chenrun/feature-tenant-admin/org-management";
+} from "@base/feature-tenant-admin/org-management";
 import {
   listDepartmentTreeQuery,
   listEmployeesQuery,
   listPositionsQuery,
-} from "@chenrun/feature-tenant-admin/org-management/server";
+} from "@base/feature-tenant-admin/org-management/server";
 
 // 2. 角色与权限管理
-import { RolePermissionManager } from "@chenrun/feature-tenant-admin/role-management";
-import { listTenantRolesQuery } from "@chenrun/feature-tenant-admin/role-management/server";
+import { RolePermissionManager } from "@base/feature-tenant-admin/role-management";
+import { listTenantRolesQuery } from "@base/feature-tenant-admin/role-management/server";
 
 // 3. 企业系统设置
 import {
   CompanySettingsView,
   GeneralSettingsView,
   SecuritySettingsView,
-} from "@chenrun/feature-tenant-admin/tenant-settings";
+} from "@base/feature-tenant-admin/tenant-settings";
 import {
   getCompanyProfileQuery,
   getGeneralSettingsQuery,
   getSecuritySettingsQuery,
-} from "@chenrun/feature-tenant-admin/tenant-settings/server";
+} from "@base/feature-tenant-admin/tenant-settings/server";
 
 // 4. 工作台与公共能力
-import { WorkbenchView } from "@chenrun/feature-tenant-admin/workbench";
-import { TenantAdminAbilityBoundary } from "@chenrun/feature-tenant-admin/shared";
-import { tenantAdminManifest } from "@chenrun/feature-tenant-admin/manifest";
+import { WorkbenchView } from "@base/feature-tenant-admin/workbench";
+import { TenantAdminAbilityBoundary } from "@base/feature-tenant-admin/shared";
+import { tenantAdminManifest } from "@base/feature-tenant-admin/manifest";
 ```
 
 旧根入口和按技术层暴露的 `/types`、`/actions`、`/services`、`/components` 已彻底物理删除，零历史包袱。
@@ -80,8 +80,8 @@ import { tenantAdminManifest } from "@chenrun/feature-tenant-admin/manifest";
 
 ```bash
 # 运行单元测试
-pnpm --filter @chenrun/feature-tenant-admin test
+pnpm --filter @base/feature-tenant-admin test
 
 # 类型安全检查
-pnpm --filter @chenrun/feature-tenant-admin check
+pnpm --filter @base/feature-tenant-admin check
 ```

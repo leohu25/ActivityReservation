@@ -1,6 +1,6 @@
-# @chenrun/ui
+# @base/ui
 
-辰润 ERP 的工业风 UI 体系。分三层：
+通用 SaaS 的工业风 UI 体系。分三层：
 
 | 层 | 目录 | 职责 |
 | ---- | ------ | ------ |
@@ -28,7 +28,7 @@ import {
   PageShell, DashboardShell, DataTable.Workspace,
   // hooks / utils
   useSafeRouter, useListUrlNav, toast,
-} from "@chenrun/ui";
+} from "@base/ui";
 ```
 
 ### 分层选用指引
@@ -46,7 +46,7 @@ import {
 ### Schema 驱动实战 (Zod + CrudFormModal + Table Columns)
 
 ```tsx
-import { z, CrudFormModal, createColumnsFromSchema } from "@chenrun/ui";
+import { z, CrudFormModal, createColumnsFromSchema } from "@base/ui";
 
 // 1. 定义实体 Zod Schema（SSoT 唯一事实源：校验 + 字段名推导）
 const customerSchema = z.object({

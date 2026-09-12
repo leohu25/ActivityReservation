@@ -1,4 +1,4 @@
-import type { TenantMigrationStatus } from "@chenrun/db-control";
+import type { TenantMigrationStatus } from "@base/db-control";
 import type { TenantSqlExecutor } from "./sql-executor";
 
 /**

@@ -113,22 +113,19 @@ test("TenantDatabaseSeeder 基线种子初始化与幂等执行", async () => {
   const seeder = new TenantDatabaseSeeder();
 
   const seedInput: TenantSeedInput = {
-    organizationId: "org_chenrun_test",
+    organizationId: "org_base_test",
     organizationName: "宸润制造集团",
     ownerUserId: "usr_owner_001",
     ownerMemberId: "mem_owner_001",
     ownerName: "张三",
-    ownerEmail: "zhangsan@chenrun.com",
+    ownerEmail: "zhangsan@example.com",
   };
 
   // 1. 初次执行种子填充
   const firstResult = await seeder.seedTenant(executor, seedInput);
   assert.equal(firstResult.rootDepartmentId, "dept_root");
   assert.equal(firstResult.seededPositionsCount, 3);
-  assert.equal(
-    firstResult.ownerEmployeeProfileId,
-    "emp_org_chenrun_test_owner",
-  );
+  assert.equal(firstResult.ownerEmployeeProfileId, "emp_org_base_test_owner");
 
   // 验证数据正确注入
   assert.equal(executor.departments.length, 1);
@@ -148,17 +145,14 @@ test("TenantDatabaseSeeder 基线种子初始化与幂等执行", async () => {
   assert.equal(profile?.employeeNo, "E0001");
   assert.equal(profile?.departmentId, "dept_root");
   assert.equal(profile?.nameSnapshot, "张三");
-  assert.equal(profile?.emailSnapshot, "zhangsan@chenrun.com");
+  assert.equal(profile?.emailSnapshot, "zhangsan@example.com");
   assert.equal(profile?.status, "ACTIVE");
 
   // 2. 再次执行种子填充（测试幂等性）
   const secondResult = await seeder.seedTenant(executor, seedInput);
   assert.equal(secondResult.rootDepartmentId, "dept_root");
   assert.equal(secondResult.seededPositionsCount, 0); // 不重复插入
-  assert.equal(
-    secondResult.ownerEmployeeProfileId,
-    "emp_org_chenrun_test_owner",
-  );
+  assert.equal(secondResult.ownerEmployeeProfileId, "emp_org_base_test_owner");
 
   // 集合总数保持不变
   assert.equal(executor.departments.length, 1);

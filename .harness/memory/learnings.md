@@ -24,7 +24,7 @@
 ## 4. 统一数据库演进：新库基线与老库增量升级
 
 - **痛点**：多租户物理隔离下若由 Next.js 服务在请求中动态调用 Prisma CLI 执行 Schema 扫描或 `prisma db push`，打包后因路径重写极易触发 `ENOENT`，且引发并发死锁；老租户库若无审计账本也无法追溯和重试。
-- **解法**：建立统一演进工具包 `@chenrun/db-migrate`：
+- **解法**：建立统一演进工具包 `@base/db-migrate`：
   - **新库开通**：直接执行预生成并经过哈希校验的最新版本全量 Baseline SQL，0 秒初始化并注入基础 Seed，彻底与运行期 Prisma CLI 解耦；
   - **老库升级**：在 Control DB 维护 `TenantMigration` 集中账本；通过 `pnpm db:migrate:generate` 显式生成带风险审查元数据的增量迁移补丁；生产环境通过带 PostgreSQL Advisory Lock 的事务升级引擎受控批量执行。
 
@@ -62,8 +62,8 @@
   - **组件添加后的标准化流程 (SOP)**：
     1. **命令下发**：根目录执行 `pnpm ui:add <组件名>`；
     2. **依赖闭环**：检查 `packages/ui/package.json`，确保 CLI 下载引入的新依赖（如 `@radix-ui/*`）声明完整，避免幽灵依赖；
-    3. **统一导出**：在 `packages/ui/src/index.ts` 中显式追加 `export * from "./components/<组件名>";`，使全仓业务应用直接从 `@chenrun/ui` 导入；
-    4. **质量验证**：执行 `pnpm --filter @chenrun/ui check && pnpm --filter @chenrun/ui test`；
+    3. **统一导出**：在 `packages/ui/src/index.ts` 中显式追加 `export * from "./components/<组件名>";`，使全仓业务应用直接从 `@base/ui` 导入；
+    4. **质量验证**：执行 `pnpm --filter @base/ui check && pnpm --filter @base/ui test`；
     5. **门禁自检**：运行 `./scripts/verify.sh` 确保类型零错误、无幽灵依赖。
 
 ## 8. 严禁主观猜测与私造轮子，遇到疑难强制检索官方规范 (Official Docs First)
@@ -88,7 +88,7 @@
   - **组件边界原则**：在针对 Next.js 生态的专用应用与 UI 库中，**严禁用冗余的 `LinkComponent` 抽象层把原本两行代码的原生 `next/link` 和 `usePathname` 搞得支离破碎**；直接遵循官方标准，组件自身原生接入 `next/link`。
 - **全栈固化工程规范 (Iron Rules)**：
   1. **零冗余胶水层**：禁止在路由组目录制造类似于 `app-sidebar.tsx` 这种仅仅为了桥接 `Link` 的空壳组件，`layout.tsx` 直接消费 UI 库导出的标准组件；
-  2. **官方正统依赖**：由于本项目核心架构即为 Next.js 16 App Router，`@chenrun/ui` 显式依赖 `next`，直接 `import Link from "next/link"` 与 `import { usePathname } from "next/navigation"`；
+  2. **官方正统依赖**：由于本项目核心架构即为 Next.js 16 App Router，`@base/ui` 显式依赖 `next`，直接 `import Link from "next/link"` 与 `import { usePathname } from "next/navigation"`；
   3. **兼顾单测受控能力**：为纯 Node 环境的 `renderToString` 单测保留可选的 `currentPath` 覆盖入参（`const currentPath = propCurrentPath ?? routerPath ?? ""`），保证既有官方正统体验，又兼顾 100% 纯函数式测试能力；
   4. **局部骨架标配**：所有路由组必须在同级配置 `loading.tsx`，在 RSC 增量取数期间提供即时骨架屏（Instant Loading States），杜绝页面跳转卡顿错觉。
 

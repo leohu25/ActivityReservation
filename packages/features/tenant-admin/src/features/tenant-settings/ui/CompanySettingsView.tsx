@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
-import { FieldPolicy } from "@chenrun/authorization";
+import { FieldPolicy } from "@base/authorization";
 import {
   Card,
   CardHeader,
@@ -12,7 +12,7 @@ import {
   Button,
   Badge,
   AuthorizedField,
-} from "@chenrun/ui";
+} from "@base/ui";
 import { Building2, Save, CheckCircle2, AlertCircle } from "lucide-react";
 import type { CompanyProfileData, UpdateCompanyProfileInput } from "../types";
 import { updateCompanyProfileAction } from "../actions";

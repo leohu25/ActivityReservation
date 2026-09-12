@@ -7,7 +7,7 @@ import type {
   RecordMigrationStartInput,
   RecordMigrationSuccessInput,
   RecordMigrationFailureInput,
-} from "@chenrun/db-control";
+} from "@base/db-control";
 import {
   TenantMigrationRunner,
   TenantMigrationError,

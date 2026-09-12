@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { signIn, signUp } from "@chenrun/auth/client";
+import { signIn, signUp } from "@base/auth/client";
 import { useRouter } from "next/navigation";
-import { toast } from "@chenrun/ui";
+import { toast } from "@base/ui";
 import {
   ShieldCheck,
   Mail,

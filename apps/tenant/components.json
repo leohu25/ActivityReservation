@@ -12,8 +12,8 @@
   "iconLibrary": "lucide",
   "aliases": {
     "components": "@/components",
-    "utils": "@chenrun/ui/lib/utils",
-    "ui": "@chenrun/ui/components",
+    "utils": "@base/ui/lib/utils",
+    "ui": "@base/ui/components",
     "lib": "@/lib",
     "hooks": "@/hooks"
   }

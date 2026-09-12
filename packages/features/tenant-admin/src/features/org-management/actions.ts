@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { defineServerAction } from "@chenrun/shared";
-import { pickReadableFields } from "@chenrun/authorization";
+import { defineServerAction } from "@base/shared";
+import { pickReadableFields } from "@base/authorization";
 import {
   getTenantAdminContext,
   assertTenantAdminAbility,

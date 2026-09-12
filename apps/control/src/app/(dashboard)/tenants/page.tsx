@@ -1,6 +1,6 @@
 import React from "react";
-import { TenantsView } from "@chenrun/feature-control-admin/tenant-management";
-import { listTenantsQuery } from "@chenrun/feature-control-admin/tenant-management/server";
+import { TenantsView } from "@base/feature-control-admin/tenant-management";
+import { listTenantsQuery } from "@base/feature-control-admin/tenant-management/server";
 
 export const dynamic = "force-dynamic";
 

@@ -1,4 +1,4 @@
-import type { FieldAccessMode } from "@chenrun/authorization";
+import type { FieldAccessMode } from "@base/authorization";
 
 export interface EmployeeProfileDTO {
   readonly id: string;

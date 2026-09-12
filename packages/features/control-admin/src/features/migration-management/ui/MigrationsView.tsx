@@ -16,7 +16,7 @@ import {
   Badge,
   toast,
   FormDialog,
-} from "@chenrun/ui";
+} from "@base/ui";
 import {
   Database,
   Layers,

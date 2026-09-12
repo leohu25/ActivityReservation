@@ -12,7 +12,7 @@ export {
   Can,
   useAbility,
   type AbilitySnapshot,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 // 1 shadcn 层
 export * from "./components/shadcn";
 // 2 组件层
@@ -21,7 +21,7 @@ export * from "./components/composite/data-table";
 export * from "./components/composite/auth";
 export * from "./components/composite/form";
 export * from "./components/layout/TopHeader";
-// 业务侧边栏覆盖 shadcn 同名 Sidebar 导出（保留既有 @chenrun/ui API）
+// 业务侧边栏覆盖 shadcn 同名 Sidebar 导出（保留既有 @base/ui API）
 export {
   Sidebar,
   type NavItem,

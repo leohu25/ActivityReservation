@@ -5,15 +5,15 @@
 | 检查项 | 命令 | 结果 |
 | :--- | :--- | :--- |
 | 依赖安装 | `pnpm --config.dangerouslyAllowAllBuilds=true install` | PASS |
-| Prisma Schema | `CONTROL_DATABASE_URL=postgresql://user:pass@localhost:5432/saas_control pnpm --filter @chenrun/db-control prisma:validate` | PASS |
+| Prisma Schema | `CONTROL_DATABASE_URL=postgresql://user:pass@localhost:5432/saas_control pnpm --filter @base/db-control prisma:validate` | PASS |
 | PostgreSQL 17 | `docker compose up -d --wait saas-control-postgres` | PASS，`127.0.0.1:55432` healthy |
-| Prisma Client | 使用本地连接运行 `pnpm --filter @chenrun/db-control generate` | PASS，v7.10.0 |
-| Schema 部署 | 使用本地连接运行 `pnpm --filter @chenrun/db-control db:push` | PASS，真实 `saas_control` 已同步 |
-| 真实认证集成 | 使用本地连接运行 `pnpm --filter @chenrun/auth test:integration` | PASS，1/1 |
+| Prisma Client | 使用本地连接运行 `pnpm --filter @base/db-control generate` | PASS，v7.10.0 |
+| Schema 部署 | 使用本地连接运行 `pnpm --filter @base/db-control db:push` | PASS，真实 `saas_control` 已同步 |
+| 真实认证集成 | 使用本地连接运行 `pnpm --filter @base/auth test:integration` | PASS，1/1 |
 | 精准清理复核 | PostgreSQL 按测试 email/slug/secretRef 前缀计数 | PASS，0/0/0 残留 |
-| Auth/Tenant Context | `pnpm --filter @chenrun/auth test` | PASS，10/10 |
-| Control DB Repository / Schema | `pnpm --filter @chenrun/db-control test` | PASS，3/3 |
-| Tenant DB Manager | `pnpm --filter @chenrun/db-tenant test` | PASS，8/8 |
+| Auth/Tenant Context | `pnpm --filter @base/auth test` | PASS，10/10 |
+| Control DB Repository / Schema | `pnpm --filter @base/db-control test` | PASS，3/3 |
+| Tenant DB Manager | `pnpm --filter @base/db-tenant test` | PASS，8/8 |
 | 全仓类型检查 | `pnpm check` | PASS，8/8 |
 | Next.js 生产构建 | `pnpm build` | PASS |
 | 全栈门禁 | `./scripts/verify.sh` | PASS，27 个变更边界合规、20 个源码无红线、8/8 类型检查 |

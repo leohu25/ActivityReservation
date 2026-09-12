@@ -10,12 +10,12 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@chenrun/auth": "workspace:*",
-    "@chenrun/db-control": "workspace:*",
-    "@chenrun/db-tenant": "workspace:*",
-    "@chenrun/feature-control-admin": "workspace:*",
-    "@chenrun/shared": "workspace:*",
-    "@chenrun/ui": "workspace:*",
+    "@base/auth": "workspace:*",
+    "@base/db-control": "workspace:*",
+    "@base/db-tenant": "workspace:*",
+    "@base/feature-control-admin": "workspace:*",
+    "@base/shared": "workspace:*",
+    "@base/ui": "workspace:*",
     "better-auth": "1.7.3",
     "lucide-react": "^1.41.0",
     "next": "16.3.4",

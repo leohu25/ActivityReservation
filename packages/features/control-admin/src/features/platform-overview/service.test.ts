@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { PlatformOverviewService } from "./service";
-import type { ControlPrismaClient } from "@chenrun/db-control";
+import type { ControlPrismaClient } from "@base/db-control";
 
 test("PlatformOverviewService 大盘统计与超管鉴权", async () => {
   const fakePrisma = {

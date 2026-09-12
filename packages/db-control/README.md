@@ -1,4 +1,4 @@
-# @chenrun/db-control
+# @base/db-control
 
 多租户 SaaS 系统的**管控面与全局拓扑事实源（Control Plane Database & Metadata Store）**。
 
@@ -36,7 +36,7 @@ packages/db-control/
 ### 3.1 创建 Control DB 客户端
 
 ```ts
-import { createControlPrismaClient, PrismaControlDbRepository } from "@chenrun/db-control";
+import { createControlPrismaClient, PrismaControlDbRepository } from "@base/db-control";
 
 const prisma = createControlPrismaClient(process.env.CONTROL_DATABASE_URL!);
 const controlRepo = new PrismaControlDbRepository(prisma);
@@ -45,7 +45,7 @@ const controlRepo = new PrismaControlDbRepository(prisma);
 ### 3.2 消费抽象仓储接口（解耦 Prisma 细节）
 
 ```ts
-import type { TenantContextRepository, AuthorizationRepository } from "@chenrun/db-control";
+import type { TenantContextRepository, AuthorizationRepository } from "@base/db-control";
 
 // 用于解析当前用户在租户中的身份与租户物理库路由
 const member = await controlRepo.findMember(organizationId, userId);
@@ -65,8 +65,8 @@ const roles = await controlRepo.findOrganizationRoles(organizationId, ["admin", 
 
 ```bash
 # 运行类型检查
-pnpm --filter @chenrun/db-control check
+pnpm --filter @base/db-control check
 
 # 运行单元测试
-pnpm --filter @chenrun/db-control test
+pnpm --filter @base/db-control test
 ```

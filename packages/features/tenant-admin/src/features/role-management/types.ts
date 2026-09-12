@@ -1,7 +1,4 @@
-import type {
-  DataScopeType,
-  RolePermissionPayload,
-} from "@chenrun/authorization";
+import type { DataScopeType, RolePermissionPayload } from "@base/authorization";
 
 /** 租户角色展示信息模型 */
 export interface TenantRoleItem {

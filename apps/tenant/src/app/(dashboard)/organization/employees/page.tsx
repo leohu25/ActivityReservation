@@ -1,14 +1,14 @@
 import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
-import { getServerAuthRuntime } from "@chenrun/auth";
-import { EmployeeView } from "@chenrun/feature-tenant-admin/org-management";
+import { getServerAuthRuntime } from "@base/auth";
+import { EmployeeView } from "@base/feature-tenant-admin/org-management";
 import {
   listDepartmentTreeQuery,
   listEmployeesQuery,
   listPositionsQuery,
-} from "@chenrun/feature-tenant-admin/org-management/server";
-import { listTenantRolesQuery } from "@chenrun/feature-tenant-admin/role-management/server";
-import { Card } from "@chenrun/ui";
+} from "@base/feature-tenant-admin/org-management/server";
+import { listTenantRolesQuery } from "@base/feature-tenant-admin/role-management/server";
+import { Card } from "@base/ui";
 
 /**
  * 员工档案与人事管理页面 (Server Component - 极薄装配层)

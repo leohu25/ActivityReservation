@@ -64,7 +64,7 @@ function loadEnvironment(workspaceRoot: string): void {
 
 function help(): void {
   console.log(`
-@chenrun/db-migrate
+@base/db-migrate
 
   db-migrate baseline --scope <platform|tenant> [--version <version>] [--reset]
   db-migrate generate --scope <platform|tenant> --name <name>

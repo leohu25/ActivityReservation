@@ -1,5 +1,5 @@
 {
-  "name": "@chenrun/feature-control-admin",
+  "name": "@base/feature-control-admin",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -24,13 +24,13 @@
     "react-dom": "^19.0.0"
   },
   "dependencies": {
-    "@chenrun/auth": "workspace:*",
-    "@chenrun/authorization": "workspace:*",
-    "@chenrun/db-control": "workspace:*",
-    "@chenrun/db-migrate": "workspace:*",
-    "@chenrun/db-tenant": "workspace:*",
-    "@chenrun/shared": "workspace:*",
-    "@chenrun/ui": "workspace:*",
+    "@base/auth": "workspace:*",
+    "@base/authorization": "workspace:*",
+    "@base/db-control": "workspace:*",
+    "@base/db-migrate": "workspace:*",
+    "@base/db-tenant": "workspace:*",
+    "@base/shared": "workspace:*",
+    "@base/ui": "workspace:*",
     "better-auth": "1.7.3",
     "lucide-react": "^1.41.0",
     "next": "16.3.4"

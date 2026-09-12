@@ -1,15 +1,12 @@
 import { headers } from "next/headers";
-import { getCurrentTenantContext } from "@chenrun/auth";
-import {
-  CaslAbilityFactory,
-  type AppPrismaAbility,
-} from "@chenrun/authorization";
+import { getCurrentTenantContext } from "@base/auth";
+import { CaslAbilityFactory, type AppPrismaAbility } from "@base/authorization";
 import {
   getTenantDbManager,
   resolveEmployeeTopology,
   type TenantPrismaClient,
   type ResolvedDepartmentTopology,
-} from "@chenrun/db-tenant";
+} from "@base/db-tenant";
 import { procurementCatalog } from "../index";
 import type { ProcurementAction } from "../contracts";
 import { ProcurementOrderService } from "../services/procurement-order-service";
@@ -33,7 +30,7 @@ export async function getTenantProcurementContext(): Promise<TenantProcurementCo
   const tenantCtx = await getCurrentTenantContext(reqHeaders);
 
   const { getServerAuthRuntime, assertTenantAccessGate } = await import(
-    "@chenrun/auth"
+    "@base/auth"
   );
   const runtime = getServerAuthRuntime();
 

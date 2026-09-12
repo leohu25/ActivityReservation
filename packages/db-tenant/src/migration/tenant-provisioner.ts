@@ -1,7 +1,7 @@
 import type {
   TenantDatabaseRecord,
   TenantMigrationRepository,
-} from "@chenrun/db-control";
+} from "@base/db-control";
 import type { TenantSqlExecutorFactory } from "./sql-executor";
 import type { TenantMigrationRunner } from "./migration-runner";
 import type {

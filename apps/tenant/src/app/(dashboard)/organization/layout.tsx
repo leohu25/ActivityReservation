@@ -1,4 +1,4 @@
-import { TenantAdminAbilityBoundary } from "@chenrun/feature-tenant-admin/shared";
+import { TenantAdminAbilityBoundary } from "@base/feature-tenant-admin/shared";
 import { getTenantSubjectPermissions } from "@/kernel";
 
 /**

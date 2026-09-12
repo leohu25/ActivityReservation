@@ -1,6 +1,6 @@
-# 辰润 ERP 数据库自愈与演进引擎架构解析 (Database Migration & Self-Healing Engine)
+# 系统 ERP 数据库自愈与演进引擎架构解析 (Database Migration & Self-Healing Engine)
 
-> **文档定位**：本文档为辰润数智 ERP 专用数据库演进与自愈引擎 (`tooling/db-migrate`) 的专项深度技术设计与实现原理解析文档，涵盖 12-Factor 原则践行、运行期零 Prisma CLI 依赖、动态切片 Schema 聚合 (`@db-migrate-extension`)、Day 0 数据库自愈状态机与分布式咨询锁机制。
+> **文档定位**：本文档为系统数智 ERP 专用数据库演进与自愈引擎 (`tooling/db-migrate`) 的专项深度技术设计与实现原理解析文档，涵盖 12-Factor 原则践行、运行期零 Prisma CLI 依赖、动态切片 Schema 聚合 (`@db-migrate-extension`)、Day 0 数据库自愈状态机与分布式咨询锁机制。
 > **关联架构索引**：[《系统整体架构白皮书》](../ARCHITECTURE.md) | [《生产与多环境部署实战指南》](../deployment/DEPLOYMENT.md) | [ADR-002: Database-per-tenant 物理隔离战略](../../.harness/memory/adr/ADR-002-database-per-tenant.md)
 
 ---
@@ -16,7 +16,7 @@
 3. **租户开辟并发惊群与非原子性**：
    面对数百个租户物理库的动态开辟与升级，通过子进程反复派生 CLI 进程极其缓慢且容易超时，一旦建表过程中断，极易残留不可控的半成品数据库。
 
-为此，辰润 ERP 自主设计了轻量级、确定性的数据库演进引擎 **`tooling/db-migrate`**，严格践行云原生 **12-Factor App 原则**（特别是 Codebase、Build/Release/Run、Admin Processes、Disposability）。
+为此，系统 ERP 自主设计了轻量级、确定性的数据库演进引擎 **`tooling/db-migrate`**，严格践行云原生 **12-Factor App 原则**（特别是 Codebase、Build/Release/Run、Admin Processes、Disposability）。
 
 ---
 

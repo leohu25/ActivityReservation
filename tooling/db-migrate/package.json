@@ -1,5 +1,5 @@
 {
-  "name": "@chenrun/db-migrate",
+  "name": "@base/db-migrate",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -17,9 +17,9 @@
     "test": "tsx --test --test-reporter=../../scripts/reporter/fail-only-reporter.mjs src/**/*.test.ts"
   },
   "dependencies": {
-    "@chenrun/db-control": "workspace:*",
-    "@chenrun/db-tenant": "workspace:*",
-    "@chenrun/shared": "workspace:*",
+    "@base/db-control": "workspace:*",
+    "@base/db-tenant": "workspace:*",
+    "@base/shared": "workspace:*",
     "better-auth": "1.7.3",
     "pg": "^8.23.0"
   },

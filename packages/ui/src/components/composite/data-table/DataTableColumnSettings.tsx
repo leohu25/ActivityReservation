@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../shadcn/dropdown-menu";
-import { useOptionalAbility } from "@chenrun/authorization";
+import { useOptionalAbility } from "@base/authorization";
 import { useDataTableContext } from "./DataTableContext";
 import { cn } from "../../../lib/utils";
 

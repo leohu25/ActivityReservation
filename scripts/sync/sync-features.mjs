@@ -85,13 +85,13 @@ function discoverFeatureManifests() {
 
 function generateRegistryCode(features) {
   const imports = [
-    'import type { TenantFeatureManifest } from "@chenrun/authorization";',
+    'import type { TenantFeatureManifest } from "@base/authorization";',
     "import {",
     "  deriveCatalogDefinitions,",
     "  derivePermissionCatalog,",
     "  deriveNavSections,",
     "  derivePermissionTree,",
-    '} from "@chenrun/authorization";',
+    '} from "@base/authorization";',
   ];
 
   for (const f of features) {

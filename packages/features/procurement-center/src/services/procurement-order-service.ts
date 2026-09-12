@@ -4,14 +4,14 @@ import {
   assertEditableFields,
   getAccessibleWhere,
   pickReadableFields,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 import {
   BusinessError,
   formatCurrency,
   ForbiddenError,
   NotFoundError,
-} from "@chenrun/shared";
-import type { TenantPrismaClient, TenantPrisma } from "@chenrun/db-tenant";
+} from "@base/shared";
+import type { TenantPrismaClient, TenantPrisma } from "@base/db-tenant";
 import {
   type ProcurementField,
   ProcurementOrderStatus,

@@ -12,7 +12,7 @@ import {
 } from "../../shadcn/table";
 import { Checkbox } from "../../shadcn/checkbox";
 import { Card } from "../../shadcn/card";
-import { useOptionalAbility } from "@chenrun/authorization";
+import { useOptionalAbility } from "@base/authorization";
 import { EmptyState } from "../../feedback/EmptyState";
 import { useDataTableContext } from "./DataTableContext";
 import { cn } from "../../../lib/utils";

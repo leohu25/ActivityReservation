@@ -12,7 +12,7 @@ import {
   CardContent,
   Button,
   Badge,
-} from "@chenrun/ui";
+} from "@base/ui";
 import {
   Server,
   Database,

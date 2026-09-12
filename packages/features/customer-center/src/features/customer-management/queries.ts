@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getAccessibleWhere, pickReadableFields } from "@chenrun/authorization";
+import { getAccessibleWhere, pickReadableFields } from "@base/authorization";
 import {
   assertCustomerAbility,
   getTenantCustomerContext,
@@ -8,7 +8,7 @@ import {
 import { CustomerSubject } from "./contract";
 import { CustomerService } from "./service";
 import type { CustomerListItem, ListCustomerFilter } from "./types";
-import { toPlainData } from "@chenrun/shared";
+import { toPlainData } from "@base/shared";
 
 export async function listCustomersQuery(filter: ListCustomerFilter = {}) {
   const { client, ability } = await getTenantCustomerContext();

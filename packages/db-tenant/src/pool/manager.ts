@@ -6,7 +6,7 @@ import {
 import type {
   TenantContextRepository,
   TenantDatabaseRecord,
-} from "@chenrun/db-control";
+} from "@base/db-control";
 
 export interface TenantDbClient {
   $disconnect(): Promise<void>;

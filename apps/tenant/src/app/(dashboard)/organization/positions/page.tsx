@@ -1,12 +1,12 @@
 import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
-import { getServerAuthRuntime } from "@chenrun/auth";
+import { getServerAuthRuntime } from "@base/auth";
 import {
   PositionView,
   type PositionItem,
-} from "@chenrun/feature-tenant-admin/org-management";
-import { listPositionsQuery } from "@chenrun/feature-tenant-admin/org-management/server";
-import { Card } from "@chenrun/ui";
+} from "@base/feature-tenant-admin/org-management";
+import { listPositionsQuery } from "@base/feature-tenant-admin/org-management/server";
+import { Card } from "@base/ui";
 
 /**
  * 岗位字典管理页面 (Server Component - 极薄装配层)

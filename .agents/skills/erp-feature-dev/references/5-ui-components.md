@@ -1,6 +1,6 @@
 # 模块 5：工业风 UI 交互与反馈规范
 
-辰润 ERP 采用现代化数智工业风规范，全面基于 `@chenrun/ui`（shadcn/ui 体系）构建。
+系统 ERP 采用现代化数智工业风规范，全面基于 `@base/ui`（shadcn/ui 体系）构建。
 
 ## 0. 三层 UI 资产模型
 
@@ -54,10 +54,10 @@ const { items, total } = await listAction({ page, pageSize, keyword });
 
 ## 1. 统一通知组件 (Toast)
 
-在 `@chenrun/ui` 中封装了基于 `sonner` 的统一通知工具：
+在 `@base/ui` 中封装了基于 `sonner` 的统一通知工具：
 
 ```tsx
-import { toast } from "@chenrun/ui";
+import { toast } from "@base/ui";
 
 toast.success("客户创建成功");
 toast.error(res.error || "删除客户失败");
@@ -317,7 +317,7 @@ const columns: ColumnDef<Customer>[] = [
 对于 80% 的通用 CRUD 业务表单，推荐使用基于 **TypeScript + Zod Schema 真实运行时驱动** 的 `CrudFormModal`，实现新增、编辑、查看三态合一复用：
 
 ```tsx
-import { z, CrudFormModal, type DataTableFormFieldSchema } from "@chenrun/ui";
+import { z, CrudFormModal, type DataTableFormFieldSchema } from "@base/ui";
 
 // 1. 真实 Zod Schema 校验（负责格式验证与运行时拦截）
 const customerSchema = z.object({
@@ -390,7 +390,7 @@ const customerFormFields: DataTableFormFieldSchema[] = [
 为了消除每个页面反复手动书写大量同质化 `allColumns = [...]` 的代码，提供根据 Zod Schema 快速生成 `ColumnDef` 的辅助工具：
 
 ```tsx
-import { z, createColumnsFromSchema, type ColumnDef } from "@chenrun/ui";
+import { z, createColumnsFromSchema, type ColumnDef } from "@base/ui";
 
 const entitySchema = z.object({
   customerCode: z.string().describe("客户编码"),

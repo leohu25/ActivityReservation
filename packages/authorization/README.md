@@ -1,11 +1,11 @@
-# @chenrun/authorization
+# @base/authorization
 
-辰润 ERP 的**四层细粒度权限判定核心与 CASL 能力工厂引擎（Four-tier Authorization Kernel）**。
+通用 SaaS 的**四层细粒度权限判定核心与 CASL 能力工厂引擎（Four-tier Authorization Kernel）**。
 
 ## 1. 模块定位与职责
 
 本模块是多租户企业 ERP 系统的安全防线中枢，承接 ADR-003（四层权限防御体系）与 ADR-005（Feature Manifest 自描述清单架构）。
-它不负责登录鉴权（Who are you，由 `@chenrun/auth` 负责），而是专注于计算与执行**具体权能（What can you do & What can you see）**：
+它不负责登录鉴权（Who are you，由 `@base/auth` 负责），而是专注于计算与执行**具体权能（What can you do & What can you see）**：
 
 1. **第一层：功能操作权限 (Actions)**：基于 CASL 判定用户角色能否在特定资源上执行操作（`can("read", "ProcurementOrder")`）。
 2. **第二层：行级数据范围 (Data Scope)**：解析五种数据范围模式（`SELF`、`DEPT`、`DEPT_TREE`、`CUSTOM`、`ALL`），并下推生成安全 Prisma `where` 查询条件（`accessibleBy` / `getAccessibleWhere`）。
@@ -41,7 +41,7 @@ packages/authorization/
 ### 3.1 服务端构建 Ability 并执行数据与字段安全过滤
 
 ```ts
-import { CaslAbilityFactory, getAccessibleWhere, pickReadableFields } from "@chenrun/authorization";
+import { CaslAbilityFactory, getAccessibleWhere, pickReadableFields } from "@base/authorization";
 
 // 1. 编译当前租户身份的 CASL Ability
 const factory = new CaslAbilityFactory({ catalog, repository: controlRepo });
@@ -63,7 +63,7 @@ const safeOrders = orders.map((order) =>
 
 ```tsx
 "use client";
-import { createReactAbilityAdapter } from "@chenrun/authorization/react";
+import { createReactAbilityAdapter } from "@base/authorization/react";
 import { orderCatalog } from "./order.contract";
 
 const { Can } = createReactAbilityAdapter(orderCatalog);
@@ -92,8 +92,8 @@ export function OrderActionBar({ order }: { order: ProcurementOrder }) {
 
 ```bash
 # 类型检查
-pnpm --filter @chenrun/authorization check
+pnpm --filter @base/authorization check
 
 # 单元测试与端到端权限断言 (36 个测试用例全部通过)
-pnpm --filter @chenrun/authorization test
+pnpm --filter @base/authorization test
 ```

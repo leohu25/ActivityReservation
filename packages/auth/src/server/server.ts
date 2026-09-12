@@ -5,13 +5,13 @@ import {
   createControlPrismaClient,
   PrismaControlDbRepository,
   type ControlPrismaClient,
-} from "@chenrun/db-control";
+} from "@base/db-control";
 import {
   getMigrationCatalog,
   platformBootstrapAdminFromEnv,
   PlatformMigrationRunner,
   seedPlatformBootstrapAdmin,
-} from "@chenrun/db-migrate/platform";
+} from "@base/db-migrate/platform";
 import {
   createTrustedTenantContextResolver,
   type TrustedSessionReader,

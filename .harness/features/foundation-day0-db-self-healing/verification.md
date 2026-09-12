@@ -3,14 +3,14 @@
 ## 验证执行命令
 
 ```bash
-pnpm --filter @chenrun/db-migrate test
-pnpm --filter @chenrun/db-migrate check
-pnpm --filter @chenrun/db-control test
-pnpm --filter @chenrun/db-control check
-pnpm --filter @chenrun/db-tenant test
-pnpm --filter @chenrun/db-tenant check
-pnpm --filter @chenrun/auth test
-pnpm --filter @chenrun/auth check
+pnpm --filter @base/db-migrate test
+pnpm --filter @base/db-migrate check
+pnpm --filter @base/db-control test
+pnpm --filter @base/db-control check
+pnpm --filter @base/db-tenant test
+pnpm --filter @base/db-tenant check
+pnpm --filter @base/auth test
+pnpm --filter @base/auth check
 ```
 
 ## 判定准则

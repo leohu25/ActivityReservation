@@ -13,10 +13,10 @@
 ## 验证记录
 
 - Prisma validate/generate/db push：PASS，Prisma 7.10.0，PostgreSQL 17 实库 Schema 同步。
-- `pnpm --filter @chenrun/auth test`：10/10 PASS。
-- `pnpm --filter @chenrun/authorization test`：7/7 PASS；覆盖目录校验、默认拒绝、多角色并集、owner/admin 静态权限、坏 JSON/未知/跨组织、catalog-bound 服务端与 React adapter。
-- `pnpm --filter @chenrun/db-control test`：4/4 PASS。
-- `pnpm --filter @chenrun/authorization test:integration`：1/1 PASS；使用 authorization 包内测试权限 fixture，真实验证注册、Organization、动态角色、跨组织同名角色、Member buyer 角色、CASL 编译闭环；foundation 测试不反向依赖 procurement。
+- `pnpm --filter @base/auth test`：10/10 PASS。
+- `pnpm --filter @base/authorization test`：7/7 PASS；覆盖目录校验、默认拒绝、多角色并集、owner/admin 静态权限、坏 JSON/未知/跨组织、catalog-bound 服务端与 React adapter。
+- `pnpm --filter @base/db-control test`：4/4 PASS。
+- `pnpm --filter @base/authorization test:integration`：1/1 PASS；使用 authorization 包内测试权限 fixture，真实验证注册、Organization、动态角色、跨组织同名角色、Member buyer 角色、CASL 编译闭环；foundation 测试不反向依赖 procurement。
 - `pnpm check`：8/8 packages PASS；`catalog.type-contract.tsx` 的 `@ts-expect-error` 已紧邻对应 JSX attribute，证明未知 action/subject 无法编译且 directive 被实际消费，合法 catalog 常量可编译。
 - `pnpm build`：PASS，`/api/auth/[...all]` 使用应用 AC composition root。
 - `./scripts/verify.sh`：PASS，29 个变更文件边界合规、33 个源码无红线违规。

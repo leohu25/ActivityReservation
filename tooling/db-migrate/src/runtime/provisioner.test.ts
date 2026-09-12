@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { TenantMigrationRepository } from "@chenrun/db-control";
-import type {
-  TenantDatabaseSeeder,
-  TenantSqlExecutor,
-} from "@chenrun/db-tenant";
+import type { TenantMigrationRepository } from "@base/db-control";
+import type { TenantDatabaseSeeder, TenantSqlExecutor } from "@base/db-tenant";
 import type { MigrationRuntimeCatalog } from "../core/types";
 import { DatabaseInitializationError } from "./platform-runner";
 import { TenantDatabaseProvisioner } from "./provisioner";

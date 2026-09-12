@@ -1,6 +1,6 @@
 import { hashPassword } from "better-auth/crypto";
-import type { ControlPrismaClient } from "@chenrun/db-control";
-import type { TenantPrismaClient } from "@chenrun/db-tenant";
+import type { ControlPrismaClient } from "@base/db-control";
+import type { TenantPrismaClient } from "@base/db-tenant";
 import type {
   DirectCreateEmployeeInput,
   EmployeeItem,

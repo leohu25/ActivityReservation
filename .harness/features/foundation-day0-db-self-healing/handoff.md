@@ -27,11 +27,11 @@
 
 ## 三、门禁与测试回执
 
-- `pnpm --filter @chenrun/db-migrate test`：18/18 PASS。
-- `pnpm --filter @chenrun/feature-control-admin test`：3/3 PASS。
-- `pnpm --filter @chenrun/db-tenant test`：25/25 PASS。
-- `pnpm --filter @chenrun/auth test`：15/15 PASS。
-- `pnpm --filter @chenrun/db-control test`：7/7 PASS。
+- `pnpm --filter @base/db-migrate test`：18/18 PASS。
+- `pnpm --filter @base/feature-control-admin test`：3/3 PASS。
+- `pnpm --filter @base/db-tenant test`：25/25 PASS。
+- `pnpm --filter @base/auth test`：15/15 PASS。
+- `pnpm --filter @base/db-control test`：7/7 PASS。
 - `pnpm check` (全仓 13 个包)：13/13 PASS，0 错误。
 - `pnpm test` (全仓单测)：11/11 测试包全部 PASS (总计 140+ 单测全绿)。
 - `./init.sh` 5 步自检通过。

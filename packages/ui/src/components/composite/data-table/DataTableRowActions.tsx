@@ -2,7 +2,7 @@
 
 import React, { type ReactNode, useState } from "react";
 import { MoreHorizontal } from "lucide-react";
-import { useOptionalAbility } from "@chenrun/authorization";
+import { useOptionalAbility } from "@base/authorization";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -109,9 +109,7 @@ export function DataTableRowActions<TRecord>({
   const resolvedInline: RowActionItem<TRecord>[] = React.useMemo(() => {
     if (inlineActions) {
       return inlineActions.filter((item) =>
-        item.action
-          ? canPerform(item.action) || keepUnauthorized
-          : true,
+        item.action ? canPerform(item.action) || keepUnauthorized : true,
       );
     }
     if (menuOnly) return [];
@@ -161,9 +159,7 @@ export function DataTableRowActions<TRecord>({
   });
 
   const validExtraActions = extraActions.filter((item) =>
-    item.action
-      ? canPerform(item.action) || keepUnauthorized
-      : true,
+    item.action ? canPerform(item.action) || keepUnauthorized : true,
   );
 
   const showDelete = !hideDelete && (canDelete || keepUnauthorized);

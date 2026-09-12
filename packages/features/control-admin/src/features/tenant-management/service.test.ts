@@ -6,7 +6,7 @@ import type {
   ControlPrismaClient,
   TenantDatabaseRecord,
   TenantDatabaseStatus,
-} from "@chenrun/db-control";
+} from "@base/db-control";
 
 test("TenantManagementService 租户开通逻辑、初始凭证、预置角色与状态管控", async () => {
   const orgMap = new Map<

@@ -1,7 +1,7 @@
 import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 
 /** 角色权限管理实体与资源标识 (SSoT) */
 export const RoleManagementSubject = "RoleManagement";

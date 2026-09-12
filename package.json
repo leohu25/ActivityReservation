@@ -1,5 +1,5 @@
 {
-  "name": "chenrun-erp-nextjs",
+  "name": "next-saas-base",
   "private": true,
   "packageManager": "pnpm@11.1.2",
   "scripts": {
@@ -9,12 +9,12 @@
     "session:end": "node .harness/lifecycle/session-end.mjs",
     "ui:add": "npx shadcn@latest add -y --overwrite -c packages/ui",
     "sync:features": "node scripts/sync/sync-features.mjs && node scripts/sync/sync-tenant-schema.mjs",
-    "db:migrate:check": "pnpm --filter @chenrun/db-migrate check",
-    "db:migrate:catalog": "pnpm --filter @chenrun/db-migrate exec tsx src/cli.ts catalog",
-    "db:migrate:generate": "pnpm --filter @chenrun/db-migrate exec tsx src/cli.ts generate",
-    "db:migrate:baseline": "pnpm --filter @chenrun/db-migrate exec tsx src/cli.ts baseline",
-    "db:migrate:baseline:reset": "pnpm --filter @chenrun/db-migrate exec tsx src/cli.ts baseline --scope tenant --reset",
-    "db:platform:ensure": "pnpm --filter @chenrun/db-migrate exec tsx src/cli.ts ensure-platform",
+    "db:migrate:check": "pnpm --filter @base/db-migrate check",
+    "db:migrate:catalog": "pnpm --filter @base/db-migrate exec tsx src/cli.ts catalog",
+    "db:migrate:generate": "pnpm --filter @base/db-migrate exec tsx src/cli.ts generate",
+    "db:migrate:baseline": "pnpm --filter @base/db-migrate exec tsx src/cli.ts baseline",
+    "db:migrate:baseline:reset": "pnpm --filter @base/db-migrate exec tsx src/cli.ts baseline --scope tenant --reset",
+    "db:platform:ensure": "pnpm --filter @base/db-migrate exec tsx src/cli.ts ensure-platform",
     "build": "pnpm sync:features && pnpm db:migrate:check && turbo run build",
     "dev": "pnpm sync:features && pnpm db:migrate:check && turbo run dev",
     "dev:control": "pnpm db:migrate:check && pnpm db:platform:ensure && pnpm --filter control dev",
@@ -22,11 +22,11 @@
     "lint": "turbo run lint",
     "check": "pnpm sync:features && pnpm db:migrate:check && turbo run check",
     "test": "pnpm sync:features && turbo run test",
-    "db:control:diff": "pnpm --filter @chenrun/db-control db:diff",
-    "db:control:diff:sql": "pnpm --filter @chenrun/db-control db:diff:sql",
-    "db:control:push": "pnpm --filter @chenrun/db-control db:push",
-    "db:control:status": "pnpm --filter @chenrun/db-control db:status",
-    "db:control:gen": "pnpm --filter @chenrun/db-control generate"
+    "db:control:diff": "pnpm --filter @base/db-control db:diff",
+    "db:control:diff:sql": "pnpm --filter @base/db-control db:diff:sql",
+    "db:control:push": "pnpm --filter @base/db-control db:push",
+    "db:control:status": "pnpm --filter @base/db-control db:status",
+    "db:control:gen": "pnpm --filter @base/db-control generate"
   },
   "devDependencies": {
     "turbo": "^2.4.4",

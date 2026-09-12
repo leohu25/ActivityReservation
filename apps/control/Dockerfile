@@ -1,7 +1,7 @@
 # ==============================================================================
 # 平台管控端 (Control Admin) 生产多阶段构建 Dockerfile
 # 基于 Next.js 官方推荐 standalone 模式与轻量生产运行镜像
-# Monorepo 根上下文构建: docker build -t chenrun-control:latest -f apps/control/Dockerfile .
+# Monorepo 根上下文构建: docker build -t base-control:latest -f apps/control/Dockerfile .
 # ==============================================================================
 
 # 1. 基础环境
@@ -42,8 +42,8 @@ ENV NODE_ENV=production
 
 # 运行 Feature 同步、Prisma 客户端生成与独立打包
 RUN pnpm sync:features && \
-    pnpm --filter @chenrun/db-control generate && \
-    pnpm --filter @chenrun/db-tenant generate && \
+    pnpm --filter @base/db-control generate && \
+    pnpm --filter @base/db-tenant generate && \
     pnpm --filter control build
 
 # 4. 生产运行阶段 (Next.js 官方标准 Runner)

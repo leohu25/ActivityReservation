@@ -4,9 +4,9 @@
 
 | 检查项 | 命令 | 结果 |
 | :--- | :--- | :--- |
-| Authorization 单元测试 | `pnpm --filter @chenrun/authorization test` | PASS，27/27 用例全部通过 |
+| Authorization 单元测试 | `pnpm --filter @base/authorization test` | PASS，27/27 用例全部通过 |
 | 全仓单元测试 | `pnpm test` | PASS，39/39 用例全部通过（auth 10 + authorization 27 + db-control 4 - db-tenant 8） |
-| PostgreSQL 17 实库集成测试 | `pnpm --filter @chenrun/authorization test:integration` | PASS，1/1 用例通过 |
+| PostgreSQL 17 实库集成测试 | `pnpm --filter @base/authorization test:integration` | PASS，1/1 用例通过 |
 | 全仓 TypeScript 类型检查 | `pnpm check` | PASS，8/8 模块 0 错误 |
 | 全栈极速门禁 | `./scripts/verify.sh` | PASS，边界合规，40 个源码无红线违规 |
 | 环境可重启性自检 | `./init.sh` | PASS，环境完好可重启 |

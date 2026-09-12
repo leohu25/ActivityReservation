@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createMongoAbility } from "@casl/ability";
-import type { TenantContext } from "@chenrun/auth";
+import type { TenantContext } from "@base/auth";
 import type {
   AuthorizationRepository,
   OrganizationMemberRecord,
   OrganizationRoleRecord,
-} from "@chenrun/db-control";
+} from "@base/db-control";
 import { AbilityFactoryError, CaslAbilityFactory } from "./ability-factory";
 import {
   createPermissionCatalog,

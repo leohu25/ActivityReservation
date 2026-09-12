@@ -1,10 +1,10 @@
 import { headers } from "next/headers";
-import { getCurrentTenantContext, getServerAuthRuntime } from "@chenrun/auth";
+import { getCurrentTenantContext, getServerAuthRuntime } from "@base/auth";
 import {
   CaslAbilityFactory,
   filterNavSections,
   type FeatureNavSection,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 import {
   globalTenantCatalog,
   globalTenantNavSections,

@@ -16,7 +16,7 @@
 ## 决策
 
 1. **确立统一切片自描述契约 (`TenantFeatureManifest`)**：
-   - 在 `@chenrun/authorization` 中定义 `TenantFeatureManifest` 标准接口。
+   - 在 `@base/authorization` 中定义 `TenantFeatureManifest` 标准接口。
    - 每个业务切片包独立管理并在 `src/manifest.ts` 中自描述：
      - **导航贡献**：菜单区块、路由路径、名称与纯文本图标标识；
      - **权限贡献**：CASL 实体、Resource 标识与 Actions 集合；
@@ -31,7 +31,7 @@
    - 提供 `deriveCatalogDefinitions`、`derivePermissionCatalog`、`deriveNavSections` 与 `derivePermissionTree` 纯函数；
    - 提供 `filterNavSections` 服务端过滤引擎，在 SSR 渲染前根据当前用户 CASL Ability 完成菜单裁剪，实现严格的 Fail-Closed；
    - `packages/ui/Sidebar.tsx` 彻底移除业务菜单硬编码，降级为接收 `sections` 属性的纯 UI 积木；
-   - 彻底删除 `apps/tenant/src/lib/` 目录，相关授权服务下沉至 `@chenrun/feature-tenant-admin/server`。
+   - 彻底删除 `apps/tenant/src/lib/` 目录，相关授权服务下沉至 `@base/feature-tenant-admin/server`。
 
 ## 影响与后果
 

@@ -2,7 +2,7 @@ import type {
   TenantDatabaseRecord,
   TenantMigrationRecord,
   TenantMigrationRepository,
-} from "@chenrun/db-control";
+} from "@base/db-control";
 import type { SecretResolver } from "../pool/manager";
 import type {
   TenantSqlExecutor,

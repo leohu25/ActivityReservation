@@ -1,5 +1,5 @@
 /**
- * @chenrun/shared - 全局通用枚举与常量定义
+ * @base/shared - 全局通用枚举与常量定义
  */
 
 /**

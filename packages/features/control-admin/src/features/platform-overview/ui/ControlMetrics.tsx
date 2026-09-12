@@ -9,7 +9,7 @@ import {
   CardDescription,
   CardContent,
   Badge,
-} from "@chenrun/ui";
+} from "@base/ui";
 import {
   Building2,
   CheckCircle2,

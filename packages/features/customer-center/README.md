@@ -1,6 +1,6 @@
-# @chenrun/feature-customer-center
+# @base/feature-customer-center
 
-辰润 ERP 的 **Customer Center Business Area / Feature Group（客户中心业务领域 / 特性集群）**。
+通用 SaaS 的 **Customer Center Business Area / Feature Group（客户中心业务领域 / 特性集群）**。
 
 ## 架构定位
 
@@ -56,16 +56,16 @@ import {
   CustomerView,
   CustomerSubject,
   type CustomerListItem,
-} from "@chenrun/feature-customer-center/customer-management";
+} from "@base/feature-customer-center/customer-management";
 
 // 2. 引入纯服务端查询（Server-Only，仅限 RSC 服务端组件使用）
-import { listCustomersQuery } from "@chenrun/feature-customer-center/customer-management/server";
+import { listCustomersQuery } from "@base/feature-customer-center/customer-management/server";
 
 // 3. 引入子特性（Sub-Feature）组件
-import { CategoryTagView } from "@chenrun/feature-customer-center/customer-management/classification";
+import { CategoryTagView } from "@base/feature-customer-center/customer-management/classification";
 
 // 4. 引入主应用装配清单
-import { customerManifest } from "@chenrun/feature-customer-center/manifest";
+import { customerManifest } from "@base/feature-customer-center/manifest";
 ```
 
 旧根入口和按技术层暴露的 `/types`、`/actions`、`/services`、`/components` 已彻底物理删除，零历史包袱。
@@ -78,10 +78,10 @@ import { customerManifest } from "@chenrun/feature-customer-center/manifest";
 
 ```bash
 # 类型检查
-pnpm --filter @chenrun/feature-customer-center check
+pnpm --filter @base/feature-customer-center check
 
 # 专属单测 (12/12)
-pnpm --filter @chenrun/feature-customer-center test
+pnpm --filter @base/feature-customer-center test
 
 # 宿主应用类型对齐检查
 pnpm --filter tenant check

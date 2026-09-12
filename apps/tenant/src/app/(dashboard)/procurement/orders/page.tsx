@@ -1,7 +1,7 @@
 import { AlertCircle } from "lucide-react";
-import { Card } from "@chenrun/ui";
-import { ProcurementOrderCenter } from "@chenrun/feature-procurement-center";
-import { getProcurementOrdersPageData } from "@chenrun/feature-procurement-center/server";
+import { Card } from "@base/ui";
+import { ProcurementOrderCenter } from "@base/feature-procurement-center";
+import { getProcurementOrdersPageData } from "@base/feature-procurement-center/server";
 
 /**
  * 采购订单中心业务页面（极薄服务端装配组件）

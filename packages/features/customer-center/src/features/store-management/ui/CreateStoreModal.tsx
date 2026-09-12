@@ -8,7 +8,7 @@ import {
   FormFields,
   type FormFieldSchema,
   toast,
-} from "@chenrun/ui";
+} from "@base/ui";
 import { createStoreAction } from "../actions";
 import type { CustomerListItem } from "../../customer-management/types";
 

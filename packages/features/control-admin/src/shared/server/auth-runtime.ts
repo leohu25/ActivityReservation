@@ -1,4 +1,4 @@
-import { createServerAuth, type ServerAuthRuntime } from "@chenrun/auth";
+import { createServerAuth, type ServerAuthRuntime } from "@base/auth";
 
 let controlAuthSingleton: ServerAuthRuntime | undefined;
 

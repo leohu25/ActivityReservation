@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { computeSha256, parseMigrationFolderName } from "@chenrun/shared";
+import { computeSha256, parseMigrationFolderName } from "@base/shared";
 import type {
   BaselineArtifact,
   BaselineManifest,

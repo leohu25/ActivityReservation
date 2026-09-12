@@ -1,5 +1,5 @@
-import type { TenantPrismaClient } from "@chenrun/db-tenant";
-import type { PrismaQueryCondition } from "@chenrun/authorization";
+import type { TenantPrismaClient } from "@base/db-tenant";
+import type { PrismaQueryCondition } from "@base/authorization";
 import type {
   CreateCustomerInput,
   ListCustomerFilter,

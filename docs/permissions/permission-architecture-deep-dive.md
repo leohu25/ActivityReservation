@@ -1,13 +1,13 @@
-# 辰润 ERP 权限系统全链路架构与原理解析 (Permission Architecture Deep-Dive)
+# 系统 ERP 权限系统全链路架构与原理解析 (Permission Architecture Deep-Dive)
 
-> **文档定位**：本文档为辰润数智 ERP 权限系统的专项深度技术设计与实现原理解析文档，涵盖前端声明式门禁、后端四层权限模型、CASL 规则编译、SQL 自动下推、字段物理剥离以及从登录到查询的全链路端到端时序。
+> **文档定位**：本文档为系统数智 ERP 权限系统的专项深度技术设计与实现原理解析文档，涵盖前端声明式门禁、后端四层权限模型、CASL 规则编译、SQL 自动下推、字段物理剥离以及从登录到查询的全链路端到端时序。
 > **关联架构索引**：[《系统整体架构白皮书》](../ARCHITECTURE.md) | [《字段级权限设计资产》](./Field_Level_Permission_Architecture_and_Implementation.md) | [ADR-003: Better Auth 与 CASL 四层权限闭环](../../.harness/memory/adr/ADR-003-four-tier-permissions.md)
 
 ---
 
 ## 一、 权限系统总体设计理念
 
-辰润 ERP 面向现代化工业制造与供应链，业务涵盖多层级组织、复杂审批流与高敏感商业机密（采购成本价、客户阶梯报价、供应商授信额度等）。权限系统的设计严格确立三大工程哲学：
+系统 ERP 面向现代化工业制造与供应链，业务涵盖多层级组织、复杂审批流与高敏感商业机密（采购成本价、客户阶梯报价、供应商授信额度等）。权限系统的设计严格确立三大工程哲学：
 
 1. **Fail-Closed（默认关闭与绝对拒绝）**：
    任何未经显式授权的路由、操作动作（Action）、数据行（Row）或数据字段（Field），一律默认为“拒绝访问/不可见”。
@@ -179,7 +179,7 @@ export interface AbilitySnapshot {
 - **源码实现**：`packages/authorization/src/ability/prisma-access.ts`
 - **机制原理**：
   传统权限系统常将全量数据加载至 Node.js 内存，再通过循环过滤。在面对数十万条制造工单或采购明细时，会引发严重性能瓶颈与内存溢出（OOM）。
-  辰润 ERP 深度结合 `@casl/prisma`，在构建 `PrismaAbility` 时将数据范围转换为 CASL 规则条件：
+  系统 ERP 深度结合 `@casl/prisma`，在构建 `PrismaAbility` 时将数据范围转换为 CASL 规则条件：
 
   ```typescript
   export function getAccessibleWhere<TSubject extends string>(

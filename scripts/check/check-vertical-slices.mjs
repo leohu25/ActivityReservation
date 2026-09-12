@@ -417,7 +417,7 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
         if (isClientCode) {
           const dangerousServerPatterns = [
             /from\s+["']next\/(headers|cache)["']/,
-            /from\s+["']@chenrun\/db-tenant["']/,
+            /from\s+["']@base\/db-tenant["']/,
             /from\s+["'][^"']*\.server["']/,
             /from\s+["'][^"']*\/queries["']/,
           ];

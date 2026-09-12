@@ -1,6 +1,6 @@
 # 模块 2：数据建模与租户库物理演进
 
-辰润 ERP 采用 **PostgreSQL Database-per-tenant 物理隔离** 架构。业务切片在各自包内独立维护模型定义，框架统一聚合至 `@chenrun/db-tenant` 并由 `tooling/db-migrate` 负责多租户版本演进与平滑升级。
+系统 ERP 采用 **PostgreSQL Database-per-tenant 物理隔离** 架构。业务切片在各自包内独立维护模型定义，框架统一聚合至 `@base/db-tenant` 并由 `tooling/db-migrate` 负责多租户版本演进与平滑升级。
 
 ---
 
@@ -13,7 +13,7 @@ packages/features/<feature-name>/
 ```
 
 > ⚠️ **重要架构规约 (ADR-004)**：
-> 切片包内**严禁**自建私有 DB Client 或直连连接池。所有数据库访问统一消费平台共享包 `@chenrun/db-tenant` 导出的单例 `TenantPrismaClient`，由 `getTenant*Context()` 动态路由。
+> 切片包内**严禁**自建私有 DB Client 或直连连接池。所有数据库访问统一消费平台共享包 `@base/db-tenant` 导出的单例 `TenantPrismaClient`，由 `getTenant*Context()` 动态路由。
 
 ---
 

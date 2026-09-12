@@ -4,7 +4,7 @@ import type {
   OrganizationMemberRecord,
   TenantContextRepository,
   TenantDatabaseRecord,
-} from "@chenrun/db-control";
+} from "@base/db-control";
 import {
   assertTenantAccessGate,
   assertEmployeeActive,

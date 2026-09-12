@@ -2,7 +2,7 @@ import {
   STANDARD_DATA_SCOPES,
   StandardAction,
   type FeaturePagePermissionDescriptor,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 
 /** 部门实体与资源标识 (SSoT) */
 export const DepartmentSubject = "Department";

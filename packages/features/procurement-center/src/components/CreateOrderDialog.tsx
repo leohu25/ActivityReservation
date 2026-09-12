@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
-import type { FieldAccessMode } from "@chenrun/authorization";
+import type { FieldAccessMode } from "@base/authorization";
 import {
   Button,
   Card,
@@ -11,7 +11,7 @@ import {
   CardContent,
   Input,
   AuthorizedField,
-} from "@chenrun/ui";
+} from "@base/ui";
 import { Plus, X, Loader2, Building2 } from "lucide-react";
 import { createOrderAction } from "../actions";
 import type { ProcurementAnyAbility } from "../types";

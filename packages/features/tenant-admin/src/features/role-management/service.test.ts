@@ -4,8 +4,8 @@ import type {
   AuthorizationRepository,
   OrganizationMemberRecord,
   OrganizationRoleRecord,
-} from "@chenrun/db-control";
-import type { TenantFeatureManifest } from "@chenrun/authorization";
+} from "@base/db-control";
+import type { TenantFeatureManifest } from "@base/authorization";
 import {
   TenantRoleService,
   TenantRoleServiceError,

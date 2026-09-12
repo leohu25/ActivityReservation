@@ -28,7 +28,7 @@ Customer Center 早期在 `src/components/` 中平铺客户、报价、门店、
    - Client mutation 通过 colocated Server Action；
    - `public.ts` 只暴露 Client-safe UI、Contract 与类型；
    - App Router 保持极薄，仅负责框架参数和模块装配。
-5. **Schema 驄动表单保留**：通用增改查表单继续优先使用 `@chenrun/ui` 的 Schema 驱动模板，同时保留复杂业务使用原生组合组件的逃生通道。
+5. **Schema 驄动表单保留**：通用增改查表单继续优先使用 `@base/ui` 的 Schema 驱动模板，同时保留复杂业务使用原生组合组件的逃生通道。
 
 ## 影响与后果
 

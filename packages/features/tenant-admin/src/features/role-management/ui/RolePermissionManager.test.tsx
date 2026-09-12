@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToString } from "react-dom/server";
-import { TenantAbilityProvider } from "@chenrun/authorization";
+import { TenantAbilityProvider } from "@base/authorization";
 import { RolePermissionManager } from "./RolePermissionManager";
 import { RoleManagementSubject } from "../contract";
 import type { TenantRoleItem } from "../types";

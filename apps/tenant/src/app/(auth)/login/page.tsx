@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { signIn, signUp, authClient } from "@chenrun/auth/client";
+import { signIn, signUp, authClient } from "@base/auth/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -12,7 +12,7 @@ import {
   CardDescription,
   Input,
   Button,
-} from "@chenrun/ui";
+} from "@base/ui";
 import { ArrowLeft, Loader2, Building2, ChevronRight } from "lucide-react";
 
 interface OrgItem {
@@ -224,7 +224,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="operator@chenrun.com"
+                  placeholder="operator@example.com"
                   className="rounded-lg font-mono text-xs"
                 />
               </div>

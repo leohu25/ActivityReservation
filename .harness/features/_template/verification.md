@@ -4,7 +4,7 @@
 
 ```bash
 # 执行当前 Feature 专属单测（fail-only reporter：全绿仅一行 ok N/N，失败才展开）
-pnpm --filter @chenrun/<feature_id> test
+pnpm --filter @base/<feature_id> test
 
 # 执行全栈门禁自检
 ./scripts/verify.sh

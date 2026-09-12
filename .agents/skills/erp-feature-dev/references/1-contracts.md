@@ -1,6 +1,6 @@
 # 模块 1：页面纯数据契约 (contracts/) 与权限体系
 
-在辰润多租户 SaaS ERP 中，所有业务切片（`packages/features/*`）的权限体系严格采用**页面纯数据契约（Page Permission Contract）作为单一事实源（SSoT）**。
+在系统多租户 SaaS ERP 中，所有业务切片（`packages/features/*`）的权限体系严格采用**页面纯数据契约（Page Permission Contract）作为单一事实源（SSoT）**。
 
 ---
 
@@ -39,7 +39,7 @@ import {
   STANDARD_DATA_SCOPES,
   StandardAction,
   type FeaturePagePermissionDescriptor,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 
 // 1. 实体与资源标识 (CASL Subject & Resource)
 export const CustomerSubject = "Customer";
@@ -101,8 +101,8 @@ export const customerPageContract: FeaturePagePermissionDescriptor = {
 ```tsx
 // packages/features/customer-center/src/features/customer-management/ui/CustomerView.tsx
 "use client";
-import { useAbility } from "@chenrun/authorization";
-import { DataTable } from "@chenrun/ui";
+import { useAbility } from "@base/authorization";
+import { DataTable } from "@base/ui";
 
 interface Props {
   initialCustomers: CustomerListItem[];

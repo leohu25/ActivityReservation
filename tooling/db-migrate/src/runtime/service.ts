@@ -2,8 +2,8 @@ import type {
   SecretResolver,
   TenantDatabaseSeeder,
   TenantSqlExecutorFactory,
-} from "@chenrun/db-tenant";
-import type { TenantMigrationRepository } from "@chenrun/db-control";
+} from "@base/db-tenant";
+import type { TenantMigrationRepository } from "@base/db-control";
 import { getMigrationCatalog } from "./catalog";
 import { PlatformMigrationRunner } from "./platform-runner";
 import { TenantMigrationRunner } from "./tenant-runner";

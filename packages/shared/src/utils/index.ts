@@ -1,5 +1,5 @@
 /**
- * @chenrun/shared - 纯函数工具统一导出
+ * @base/shared - 纯函数工具统一导出
  */
 
 export * from "./format";

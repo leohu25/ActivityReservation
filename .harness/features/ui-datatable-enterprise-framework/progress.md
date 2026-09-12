@@ -2,7 +2,7 @@
 
 ## 多智能体拆分与推进状态
 
-- [x] **Lane 1 (UI Framework 一体化积木研发)**: 扩展 `@chenrun/ui` 复合积木零件与标准 shadcn 驱动样式
+- [x] **Lane 1 (UI Framework 一体化积木研发)**: 扩展 `@base/ui` 复合积木零件与标准 shadcn 驱动样式
   - [x] `DataTable.Root`: 支持 `integratedCard` 模式（默认一体化白卡容器 `bg-card border shadow-xs rounded-xl p-5`；按用户要求不引入顶部色带）
   - [x] `DataTable.Header`: 工作台标题栏积木（小标分类、标题竖条、说明文案、actions 插槽）
   - [x] `DataTableContext`: 注入 `visibleColumnIds` 与列切换/重置方法
@@ -15,7 +15,7 @@
   - [x] `DataTable.FormSection` / `FormFieldGrid` / `FormBanner`: 编辑弹窗分组与字段网格
 - [x] **Lane 2 (Testing & Quality Guard 质量守卫)**: 测试用例覆盖与门禁自检
   - [x] 覆盖 Root/Header/FilterBar/showIndex/Pagination/ColumnSettings 解析/权限按钮/行操作/详情与编辑弹窗
-  - [x] `@chenrun/ui` 类型检查 0 错误、单测 27/27 通过
+  - [x] `@base/ui` 类型检查 0 错误、单测 27/27 通过
   - [x] 全工作区 `pnpm -r check` 13/13 包通过
 - [x] **Lane 3 (Skill Documentation 经验沉淀)**: 沉淀开发手册至 `.agents/skills/erp-feature-dev/`
   - [x] 一体化卡片容器原则与标准装配范式

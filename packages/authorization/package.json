@@ -1,5 +1,5 @@
 {
-  "name": "@chenrun/authorization",
+  "name": "@base/authorization",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -18,9 +18,9 @@
     "@casl/ability": "7.0.1",
     "@casl/prisma": "^2.0.2",
     "@casl/react": "7.0.1",
-    "@chenrun/auth": "workspace:*",
-    "@chenrun/db-control": "workspace:*",
-    "@chenrun/shared": "workspace:*"
+    "@base/auth": "workspace:*",
+    "@base/db-control": "workspace:*",
+    "@base/shared": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.0.0"

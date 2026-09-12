@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createMongoAbility } from "@casl/ability";
 import { createPrismaAbility } from "@casl/prisma";
-import type { TenantPrismaClient } from "@chenrun/db-tenant";
+import type { TenantPrismaClient } from "@base/db-tenant";
 import type { ProcurementAnyAbility } from "../types";
 import { ProcurementOrderService } from "./procurement-order-service";
 

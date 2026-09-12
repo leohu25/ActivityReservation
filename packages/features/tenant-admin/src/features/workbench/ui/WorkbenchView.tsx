@@ -9,7 +9,7 @@ import {
   Input,
   Button,
   AuthorizedField,
-} from "@chenrun/ui";
+} from "@base/ui";
 import {
   Building2,
   Database,

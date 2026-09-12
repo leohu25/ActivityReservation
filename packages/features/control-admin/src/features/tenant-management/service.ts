@@ -2,22 +2,22 @@ import {
   PrismaControlDbRepository,
   type ControlPrismaClient,
   type TenantDatabaseStatus,
-} from "@chenrun/db-control";
+} from "@base/db-control";
 import {
   TenantDatabaseSeeder,
   createDefaultPgSqlExecutorFactory,
-} from "@chenrun/db-tenant";
+} from "@base/db-tenant";
 import {
   DatabaseMigrationService,
   TenantDatabaseProvisioner,
   type ProvisionTenantDatabaseResult,
-} from "@chenrun/db-migrate";
+} from "@base/db-migrate";
 import { hashPassword } from "better-auth/crypto";
 import {
   FieldPolicy,
   serializeRolePermissions,
   type RolePermissionPayload,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 import { assertControlAdmin } from "../../shared/server/control-guard";
 import type {
   ControlTenantItem,

@@ -15,7 +15,7 @@ import {
   Copy,
   Check,
 } from "lucide-react";
-import { Card, Button } from "@chenrun/ui";
+import { Card, Button } from "@base/ui";
 
 export interface ProvisionTenantDialogProps {
   /** 弹窗是否开启 */
@@ -218,7 +218,7 @@ export function ProvisionTenantDialog({
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="例如: 上海辰润制造有限公司"
+              placeholder="例如: 示例制造有限公司"
               className="w-full rounded-xl border border-border bg-muted/40 px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:bg-background focus:border-primary focus:outline-hidden transition-all"
             />
           </div>

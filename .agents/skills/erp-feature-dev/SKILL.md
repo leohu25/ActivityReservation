@@ -1,13 +1,13 @@
 ---
 name: erp-feature-dev
-description: 辰润 ERP 业务切片全生命周期工程开发指南。涵盖数据建模、页面纯数据契约、领域服务、defineServerAction + CASL 写路径守卫、官方 CASL 客户端范式（layout AbilityProvider + useAbility）、工业风 UI、租户路由与 Manifest 对齐测试。按阶段 Schedule 推进并渐进式按需读取子文档。
+description: 系统 ERP 业务切片全生命周期工程开发指南。涵盖数据建模、页面纯数据契约、领域服务、defineServerAction + CASL 写路径守卫、官方 CASL 客户端范式（layout AbilityProvider + useAbility）、工业风 UI、租户路由与 Manifest 对齐测试。按阶段 Schedule 推进并渐进式按需读取子文档。
 color: blue
 emoji: 🚀
 vibe: 架构标准化、契约即事实源、底层机制防错、无感响应
 agent_created: true
 ---
 
-# 辰润 ERP 业务切片开发规范与生命周期指南 (ERP Feature Dev)
+# 系统 ERP 业务切片开发规范与生命周期指南 (ERP Feature Dev)
 
 本项目采用 **Modular Monorepo + Feature-based Vertical Slice Architecture**。`packages/features/*` 纵向组织业务模块，认证、授权、数据库、UI 与 Shared 等 Horizontal Shared / Platform Modules 横向提供基础能力。业务分析与任务拆解采用 Feature-Driven Development（FDD）思想；复杂 Feature 内按需使用 DDD。
 
@@ -70,6 +70,6 @@ Phase 7: 契约对齐单测与全栈验证
 | **Phase 2<br>纯数据契约** | 编写无 JSX、无 DOM 的纯数据契约，定义受控字段枚举与操作权限。 | • Feature/Sub-Feature `contract.ts`<br>• 字段与动作自包含 | `references/1-contracts.md` |
 | **Phase 3<br>服务与 Query** | 封装核心业务、软删除安全校验，并建立 RSC server-only 读取与数据范围物理下推入口。 | • Feature `service.ts` / `queries.ts`<br>• 业务单测通过 | `references/3-services.md` |
 | **Phase 4<br>安全 Actions** | mutation 使用 `defineServerAction`，执行认证、CASL 守卫、操作人落库校验与序列化。 | • Feature `actions.ts`<br>• 读取不绕 Server Action | `references/4-server-actions.md` |
-| **Phase 5<br>工业风交互** | 基于 `@chenrun/ui` 构建；官方 CASL Provider（layout 注入）+ `useAbility`/积木；单次确认、Toast、零白屏。 | • Feature `ui/<Page>View.tsx`（无 permissions props）<br>• 零 `window.location.reload` | `references/5-ui-components.md`<br>`references/7-casl-ability-provider.md` |
+| **Phase 5<br>工业风交互** | 基于 `@base/ui` 构建；官方 CASL Provider（layout 注入）+ `useAbility`/积木；单次确认、Toast、零白屏。 | • Feature `ui/<Page>View.tsx`（无 permissions props）<br>• 零 `window.location.reload` | `references/5-ui-components.md`<br>`references/7-casl-ability-provider.md` |
 | **Phase 6<br>路由与清单** | 租户端 `layout.tsx` 挂 `*AbilityBoundary`；page 只取业务数据；`manifest.ts` 暴露导航。 | • `apps/tenant/.../<slice>/layout.tsx`<br>• `src/manifest.ts` | `references/6-tenant-routing.md`<br>`references/7-casl-ability-provider.md` |
 | **Phase 7<br>对齐单测** | 编写页面与契约 100% 对齐自动化单测，执行全栈门禁验证。 | • `<Page>View.test.tsx`<br>• `pnpm check` & `pnpm test` 全绿 | `references/6-tenant-routing.md` |

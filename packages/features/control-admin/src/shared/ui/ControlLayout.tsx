@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { TopHeader, Sidebar, DashboardShell, Badge } from "@chenrun/ui";
-import { signOut } from "@chenrun/auth/client";
+import { TopHeader, Sidebar, DashboardShell, Badge } from "@base/ui";
+import { signOut } from "@base/auth/client";
 import { BarChart3, Building2, Database, ShieldAlert } from "lucide-react";
 
 export interface ControlLayoutProps {
@@ -43,7 +43,7 @@ const CONTROL_NAV_SECTIONS = [
 
 /**
  * 平台控制平面 (Control Plane) 统一布局外壳
- * 直接复用 @chenrun/ui 的公共布局基建：DashboardShell + TopHeader + Sidebar
+ * 直接复用 @base/ui 的公共布局基建：DashboardShell + TopHeader + Sidebar
  * 免除 CASL 权限过滤，支持超管退出与品牌标识
  */
 export function ControlLayout({

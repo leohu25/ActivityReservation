@@ -1,5 +1,5 @@
 {
-  "name": "@chenrun/db-control",
+  "name": "@base/db-control",
   "version": "0.1.0",
   "private": true,
   "type": "module",

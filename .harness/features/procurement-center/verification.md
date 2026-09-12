@@ -3,7 +3,7 @@
 ## 专属验证命令
 
 ```bash
-pnpm --filter @chenrun/feature-procurement-center test
+pnpm --filter @base/feature-procurement-center test
 ./scripts/verify.sh
 ```
 

@@ -1,4 +1,4 @@
-import type { TenantFeatureManifest } from "@chenrun/authorization";
+import type { TenantFeatureManifest } from "@base/authorization";
 import {
   CustomerSubject,
   customerPageContract,

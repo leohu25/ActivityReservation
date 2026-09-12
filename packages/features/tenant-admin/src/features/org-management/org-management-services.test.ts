@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import type { ControlPrismaClient } from "@chenrun/db-control";
-import type { TenantPrismaClient } from "@chenrun/db-tenant";
+import type { ControlPrismaClient } from "@base/db-control";
+import type { TenantPrismaClient } from "@base/db-tenant";
 import { DepartmentService } from "./department-service";
 import { PositionService } from "./position-service";
 import { EmployeeManagementService } from "./employee-management-service";
@@ -119,7 +119,7 @@ test("DepartmentService 部门树形层级加载、防环调换与 Fail-Closed �
       positionId: "pos_gm",
       managerEmployeeId: null,
       nameSnapshot: "张总",
-      emailSnapshot: "gm@chenrun.com",
+      emailSnapshot: "gm@example.com",
       jobTitle: "总经理",
       status: "ACTIVE",
       joinedAt: new Date(),
@@ -137,7 +137,7 @@ test("DepartmentService 部门树形层级加载、防环调换与 Fail-Closed �
       positionId: "pos_sp",
       managerEmployeeId: "emp_1",
       nameSnapshot: "李销售",
-      emailSnapshot: "sales@chenrun.com",
+      emailSnapshot: "sales@example.com",
       jobTitle: "销售专员",
       status: "ACTIVE",
       joinedAt: new Date(),
@@ -493,7 +493,7 @@ test("EmployeeManagementService 直接录入建号、调岗调部门与版本号
     {
       id: "usr_existing",
       name: "已有全局用户",
-      email: "existing@chenrun.com",
+      email: "existing@example.com",
       emailVerified: true,
     },
   ];
@@ -733,7 +733,7 @@ test("EmployeeManagementService 直接录入建号、调岗调部门与版本号
     "org_test",
     {
       name: "新员工小王",
-      email: "wang@chenrun.com",
+      email: "wang@example.com",
       employeeNo: "E1001",
       departmentId: "dept_dev",
       positionId: "pos_engineer",
@@ -743,7 +743,7 @@ test("EmployeeManagementService 直接录入建号、调岗调部门与版本号
   );
 
   assert.equal(newEmp.name, "新员工小王");
-  assert.equal(newEmp.email, "wang@chenrun.com");
+  assert.equal(newEmp.email, "wang@example.com");
   assert.equal(newEmp.status, "ACTIVE");
   assert.equal(newEmp.roles[0], "buyer");
   assert.equal(authVersion, 2); // authorizationVersion incremented
@@ -759,7 +759,7 @@ test("EmployeeManagementService 直接录入建号、调岗调部门与版本号
     "org_test",
     {
       name: "已有全局用户",
-      email: "existing@chenrun.com",
+      email: "existing@example.com",
       employeeNo: "E1002",
       departmentId: "dept_root",
       positionId: "pos_lead",

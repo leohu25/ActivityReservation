@@ -1,13 +1,13 @@
-# 辰润数智 ERP 整体系统架构白皮书 (System Architecture Whitepaper)
+# 系统数智 ERP 整体系统架构白皮书 (System Architecture Whitepaper)
 
-> **文档定位**：本文档为辰润数智 ERP 系统的**架构总纲与全景索引导航**，旨在高维梳理系统定位、核心技术栈、分层拓扑、设计哲学与四大架构支柱。
+> **文档定位**：本文档为系统数智 ERP 系统的**架构总纲与全景索引导航**，旨在高维梳理系统定位、核心技术栈、分层拓扑、设计哲学与四大架构支柱。
 > **阅读规约**：本白皮书仅作为高维概述与全景索引；各项核心基础设施的详细实现原理、代码细节、端到端时序流转与数据迁移规格，请依照各章节指引查阅对应的专项深度技术文档。
 
 ---
 
 ## 一、 系统定位与业务边界
 
-辰润数智 ERP 是一套面向现代化数字化工业制造、中央厨房与冷链生鲜供应链的云原生企业级 SaaS 系统。
+系统数智 ERP 是一套面向现代化数字化工业制造、中央厨房与冷链生鲜供应链的云原生企业级 SaaS 系统。
 系统在顶层划分为两大物理与逻辑隔离的运行平面：
 
 1. **平台管控平面 (Control Plane - `apps/control`)**：
@@ -22,7 +22,7 @@
 | 层次 | 技术选型 | 版本/规范 | 选型考量与工程收益 |
 | :--- | :--- | :--- | :--- |
 | **前端应用框架** | Next.js App Router | `16.3.x` (Turbopack) | React Server Components (RSC) 直调应用层，消除网络瀑布流，原生流式渲染 |
-| **UI 交互与渲染** | React + Tailwind CSS | `React 19` + `Tailwind v4` | 现代工业风高密度交互，基于 `@chenrun/ui` 纯数据契约驱动受控三态渲染 |
+| **UI 交互与渲染** | React + Tailwind CSS | `React 19` + `Tailwind v4` | 现代工业风高密度交互，基于 `@base/ui` 纯数据契约驱动受控三态渲染 |
 | **持久层与 ORM** | Prisma + `@prisma/adapter-pg` | `7.10.x` | 强类型安全数据访问，驱动适配器解耦，支持 PostgreSQL 17 原生连接 |
 | **数据库存储引擎** | PostgreSQL | `17-alpine` | Database-per-tenant 物理隔离，事务级咨询锁支持，JSONB 策略高效存储 |
 | **身份认证引擎** | Better Auth + Organization 插件 | `1.7.x` | 会话状态轻量安全托管，多租户上下文隔离，支持动态角色模型 |
@@ -50,12 +50,12 @@ graph TD
     end
 
     subgraph Kernel["基础设施核心层 (Foundation & Shared Packages)"]
-        AuthCore["@chenrun/auth<br>(Better Auth 双端认证)"]
-        AuthzCore["@chenrun/authorization<br>(CASL 四层权限闭环)"]
-        DBControl["@chenrun/db-control<br>(总控库 Prisma 客户端)"]
-        DBTenant["@chenrun/db-tenant<br>(租户库动态连接池单例)"]
-        Shared["@chenrun/shared<br>(Result/ToPlainData 工具)"]
-        UI["@chenrun/ui<br>(工业风 DataTable/AuthGuard)"]
+        AuthCore["@base/auth<br>(Better Auth 双端认证)"]
+        AuthzCore["@base/authorization<br>(CASL 四层权限闭环)"]
+        DBControl["@base/db-control<br>(总控库 Prisma 客户端)"]
+        DBTenant["@base/db-tenant<br>(租户库动态连接池单例)"]
+        Shared["@base/shared<br>(Result/ToPlainData 工具)"]
+        UI["@base/ui<br>(工业风 DataTable/AuthGuard)"]
     end
 
     subgraph Engine["数据演进引擎 (Tooling Layer)"]

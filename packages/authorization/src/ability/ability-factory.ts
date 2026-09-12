@@ -1,10 +1,10 @@
 import { createMongoAbility, type MongoAbility } from "@casl/ability";
 import { createPrismaAbility, type PrismaAbility } from "@casl/prisma";
-import type { TenantContext } from "@chenrun/auth";
+import type { TenantContext } from "@base/auth";
 import type {
   AuthorizationRepository,
   OrganizationRoleRecord,
-} from "@chenrun/db-control";
+} from "@base/db-control";
 import type {
   CatalogAction,
   CatalogSubject,
@@ -467,9 +467,10 @@ export class CaslAbilityFactory<
     // 超级管理员 (owner) 默认具有全部固有最高操作权限与全量数据范围 (Wildcard/Bypass)
     if (roleNames.includes("owner")) {
       // SAFETY: ownerRules contains valid action/subject pairs conforming to createPrismaAbility parameter schema
-      const rawOwnerRules = this.buildOwnerActionRules() as unknown as Parameters<
-        typeof createPrismaAbility
-      >[0];
+      const rawOwnerRules =
+        this.buildOwnerActionRules() as unknown as Parameters<
+          typeof createPrismaAbility
+        >[0];
       // SAFETY: Cast to catalog-bound AppPrismaAbility ensuring compile-time action/subject contract
       return createPrismaAbility(rawOwnerRules) as unknown as AppPrismaAbility<
         CatalogAction<TDefinitions>,

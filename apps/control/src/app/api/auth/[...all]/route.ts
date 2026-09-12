@@ -1,5 +1,5 @@
 import { toNextJsHandler } from "better-auth/next-js";
-import { getControlAuthRuntime } from "@chenrun/feature-control-admin/shared/server";
+import { getControlAuthRuntime } from "@base/feature-control-admin/shared/server";
 
 /**
  * 控制平面认证路由处理程序 (Better Auth API Route)

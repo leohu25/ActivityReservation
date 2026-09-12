@@ -1,5 +1,5 @@
 {
-  "name": "@chenrun/auth",
+  "name": "@base/auth",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -15,8 +15,8 @@
     "test:integration": "tsx --test src/integration/*.integration.ts"
   },
   "dependencies": {
-    "@chenrun/db-control": "workspace:*",
-    "@chenrun/db-migrate": "workspace:*",
+    "@base/db-control": "workspace:*",
+    "@base/db-migrate": "workspace:*",
     "better-auth": "1.7.3"
   },
   "peerDependencies": {

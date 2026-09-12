@@ -7,7 +7,7 @@ import {
   FormFields,
   type FormFieldSchema,
   toast,
-} from "@chenrun/ui";
+} from "@base/ui";
 import { createPositionAction, updatePositionAction } from "../actions";
 import type { PositionItem } from "../types";
 

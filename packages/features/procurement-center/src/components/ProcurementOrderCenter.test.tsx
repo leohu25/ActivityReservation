@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
 import { renderToString } from "react-dom/server";
-import { TenantAbilityProvider } from "@chenrun/authorization";
+import { TenantAbilityProvider } from "@base/authorization";
 import {
   ProcurementOrderStatus,
   procurementOrderPageContract,

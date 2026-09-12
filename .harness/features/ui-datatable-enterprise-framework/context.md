@@ -2,7 +2,7 @@
 
 ## 目标（一句话）
 
-`@chenrun/ui` 复合 DataTable 积木：一体化白卡工作台（Header/FilterBar/Content/Pagination），shadcn 驱动、与业务解耦、Fail-Closed 权限贯通。
+`@base/ui` 复合 DataTable 积木：一体化白卡工作台（Header/FilterBar/Content/Pagination），shadcn 驱动、与业务解耦、Fail-Closed 权限贯通。
 
 ## 状态
 
@@ -31,7 +31,7 @@
 ## 完整文档指针（勿在此重复）
 
 | 内容 | 位置 |
-|------|------|
+| ------ | ------ |
 | 装配范式 / 红线 / 服务端分页示例 | `.agents/skills/erp-feature-dev/references/5-ui-components.md` |
 | 权限与字段三态 | `references/7-casl-ability-provider.md` |
 | UI 工业风 token | `.harness/context/design-system.md` |

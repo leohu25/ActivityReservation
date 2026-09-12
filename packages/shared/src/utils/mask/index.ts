@@ -1,5 +1,5 @@
 /**
- * @chenrun/shared - 敏感数据安全脱敏工具 (配合 ERP 字段权限与防泄漏保护)
+ * @base/shared - 敏感数据安全脱敏工具 (配合 ERP 字段权限与防泄漏保护)
  */
 
 /**
@@ -15,7 +15,7 @@ export function maskPhone(phone: string | null | undefined): string {
 }
 
 /**
- * 电子邮箱脱敏 (保留首字母和域名，如 z***@chenrun.com)
+ * 电子邮箱脱敏 (保留首字母和域名，如 z***@example.com)
  */
 export function maskEmail(email: string | null | undefined): string {
  if (!email) return "";

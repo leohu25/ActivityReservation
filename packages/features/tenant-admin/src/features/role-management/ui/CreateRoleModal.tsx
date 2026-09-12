@@ -7,7 +7,7 @@ import {
   FormFields,
   type FormFieldSchema,
   toast,
-} from "@chenrun/ui";
+} from "@base/ui";
 import { createRoleAction } from "../actions";
 
 export interface CreateRoleModalProps {

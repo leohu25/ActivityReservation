@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import type { ControlTenantItem } from "../types";
-import { DataTable, Badge, Button, type ColumnDef } from "@chenrun/ui";
+import { DataTable, Badge, Button, type ColumnDef } from "@base/ui";
 import {
   Plus,
   Database,
@@ -24,7 +24,7 @@ export interface TenantLifecycleTableProps {
 
 /**
  * 租户全景生命周期运维表格组件
- * 直接采用 @chenrun/ui 的一体化白卡 DataTable.Root 组合模板，
+ * 直接采用 @base/ui 的一体化白卡 DataTable.Root 组合模板，
  * 自定义行操作拓展，支持开通新租户、挂起管控与成员下钻详情，原生适配暗色与亮色模式
  */
 export function TenantLifecycleTable({

@@ -1,5 +1,5 @@
 /**
- * @chenrun/biz-shared
+ * @base/biz-shared
  * 辰润 ERP 跨业务切片通用业务中台公共资产库
  */
 

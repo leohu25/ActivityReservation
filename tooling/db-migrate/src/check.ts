@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { computeSha256 } from "@chenrun/shared";
+import { computeSha256 } from "@base/shared";
 import type { MigrationScope } from "./core/types";
 import {
   findWorkspaceRoot,

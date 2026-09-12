@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MigrationManagementService } from "./service";
-import type { ControlPrismaClient } from "@chenrun/db-control";
+import type { ControlPrismaClient } from "@base/db-control";
 
 test("MigrationManagementService 鉴权守卫与看板降级返回", async () => {
   const fakePrisma = {

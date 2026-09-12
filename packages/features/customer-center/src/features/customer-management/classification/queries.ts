@@ -1,6 +1,6 @@
 import "server-only";
 
-import { toPlainData } from "@chenrun/shared";
+import { toPlainData } from "@base/shared";
 import {
   assertCustomerAbility,
   getTenantCustomerContext,

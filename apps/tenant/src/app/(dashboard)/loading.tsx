@@ -1,5 +1,5 @@
 import React from "react";
-import { Card } from "@chenrun/ui";
+import { Card } from "@base/ui";
 
 /**
  * 租户端后台路由组加载骨架

@@ -2,7 +2,7 @@
 
 本项目采用 **Modular Monorepo + Feature-based Vertical Slice Architecture** 与 **Harness 智能体工程协同体系**。
 
-- **业务定位**：现代化工业制造与供应链多租户 SaaS ERP 系统（涵盖平台管控端 Control 与租户端 Tenant）。
+- **业务定位**：现代化多租户 SaaS 基础设施与通用业务底座（涵盖平台管控端 Control 与租户端 Tenant）。
 - **代码架构**：`packages/features/*` 纵向组织业务模块；认证、授权、数据库、UI 与 Shared 等以 Horizontal Shared / Platform Modules 横向支撑；复杂 Feature 内按需使用 DDD。
   - **业务层级（中英对照）**：
     - `Business Area / Feature Group`（业务领域 / 特性集群，如客户中心）；
@@ -46,7 +46,7 @@
 
 1. **严禁跨特性越权修改**：修改严格受限于特性 `scope.md` 白名单文件。
 2. **严禁带病开发与虚假完成**：代码必须保证 `git commit` 时 pre-commit 门禁一次性通过，**严禁用 `--no-verify` 绕过钩子**。
-3. **严禁引入跨包幽灵依赖**：引用 `@chenrun/*` 内部兄弟包时，必须在当前模块 `package.json` 显式声明 `"workspace:*"` 并执行 `pnpm install`。
+3. **严禁引入跨包幽灵依赖**：引用 `@base/*` 内部兄弟包时，必须在当前模块 `package.json` 显式声明 `"workspace:*"` 并执行 `pnpm install`。
 4. **严禁硬编码权限与越权**：权限必须由 Better Auth `statement` 与 CASL 强类型判定（详见 `ADR-003` 与 `.harness/context/tier-3-deep-dives.md`）。
 5. **严禁绕过租户隔离**：PostgreSQL Database-per-Tenant 物理隔离，业务数据必须由 Tenant Context 路由，严禁直拼连接串（详见 `ADR-002` 与 `.harness/context/tier-3-deep-dives.md`）。
 6. **严禁破坏运行时与模块边界**：Server Components 通过 Feature 的 server-only Query 读取，严禁自发 HTTP 绕调内部 REST API、穿透包内部实现或让横向平台模块反向依赖业务 Feature（详见 `ADR-004` 与 `.harness/context/tier-2-domain-matrix.md`）。

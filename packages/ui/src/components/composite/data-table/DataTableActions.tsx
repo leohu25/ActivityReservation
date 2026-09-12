@@ -1,7 +1,7 @@
 "use client";
 
 import React, { type ReactNode } from "react";
-import { useOptionalAbility } from "@chenrun/authorization";
+import { useOptionalAbility } from "@base/authorization";
 import { Button } from "../../shadcn/button";
 import {
   Tooltip,

@@ -1,6 +1,6 @@
-# @chenrun/feature-control-admin
+# @base/feature-control-admin
 
-辰润 ERP 的**平台总控端垂直切片模块（Control Plane Admin Feature）**。
+通用 SaaS 的**平台总控端垂直切片模块（Control Plane Admin Feature）**。
 
 ## 1. 模块定位与职责
 
@@ -41,7 +41,7 @@ packages/features/control-admin/
 ### 3.1 总控身份硬断言
 
 ```ts
-import { assertControlAdmin } from "@chenrun/feature-control-admin";
+import { assertControlAdmin } from "@base/feature-control-admin";
 
 // 在 Server Actions 或 Server Component 入口断言超级管理员
 const adminUser = await assertControlAdmin();
@@ -50,7 +50,7 @@ const adminUser = await assertControlAdmin();
 ### 3.2 消费总控服务
 
 ```ts
-import { getControlAdminService } from "@chenrun/feature-control-admin";
+import { getControlAdminService } from "@base/feature-control-admin";
 
 const service = getControlAdminService();
 const metrics = await service.getSystemMetrics();
@@ -59,7 +59,7 @@ const tenants = await service.listTenants({ page: 1, pageSize: 20 });
 
 ## 4. 架构原则与红线
 
-1. **严格限制在管控面操作**：本模块直接操作 Control DB（`@chenrun/db-control`），严禁在无租户凭据的情况下直连单一租户业务库。
+1. **严格限制在管控面操作**：本模块直接操作 Control DB（`@base/db-control`），严禁在无租户凭据的情况下直连单一租户业务库。
 2. **所有操作均受安全守卫保护**：导出的所有 Server Actions 必须前置调用 `assertControlAdmin`，杜绝未认证调用。
 3. **数据跨边界序列化**：通过 `toPlainData` 保证传输给客户端的数据均为纯对象（Plain Objects）。
 
@@ -67,8 +67,8 @@ const tenants = await service.listTenants({ page: 1, pageSize: 20 });
 
 ```bash
 # 类型检查
-pnpm --filter @chenrun/feature-control-admin check
+pnpm --filter @base/feature-control-admin check
 
 # 运行单元测试
-pnpm --filter @chenrun/feature-control-admin test
+pnpm --filter @base/feature-control-admin test
 ```

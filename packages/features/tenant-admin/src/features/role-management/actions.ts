@@ -1,13 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { defineServerAction } from "@chenrun/shared";
-import type { RolePermissionPayload } from "@chenrun/authorization";
+import { defineServerAction } from "@base/shared";
+import type { RolePermissionPayload } from "@base/authorization";
 import {
   getTenantAdminContext,
   assertTenantAdminAbility,
 } from "../../assembly/context";
-import { getServerAuthRuntime } from "@chenrun/auth";
+import { getServerAuthRuntime } from "@base/auth";
 import { RoleManagementSubject } from "./contract";
 import { TenantRoleService, deriveBuiltInRoleDefaults } from "./service";
 import type { TenantRoleItem } from "./types";

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { AbilityContext } from "@chenrun/authorization";
+import { AbilityContext } from "@base/authorization";
 import { Card } from "../../shadcn/card";
 import {
   DataTableContext,
@@ -280,7 +280,9 @@ export function DataTableRoot<TData>({
   // 官方范式：显式 ability 时经 AbilityProvider 下发，下游统一 useOptionalAbility
   if (explicitAbility) {
     return (
-      <AbilityContext value={explicitAbility as never}>{content}</AbilityContext>
+      <AbilityContext value={explicitAbility as never}>
+        {content}
+      </AbilityContext>
     );
   }
 

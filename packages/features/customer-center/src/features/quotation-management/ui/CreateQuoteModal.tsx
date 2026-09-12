@@ -11,7 +11,7 @@ import {
   Input,
   toast,
   type FormFieldSchema,
-} from "@chenrun/ui";
+} from "@base/ui";
 import { createQuoteAction } from "../actions";
 import type { CreateQuoteItemInput } from "../types";
 import type { CustomerListItem } from "../../customer-management/types";

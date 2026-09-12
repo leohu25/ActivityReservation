@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { defineServerAction } from "@chenrun/shared";
+import { defineServerAction } from "@base/shared";
 import {
   getTenantAdminContext,
   assertTenantAdminAbility,

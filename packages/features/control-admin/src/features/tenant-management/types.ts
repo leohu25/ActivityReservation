@@ -1,4 +1,4 @@
-import type { TenantDatabaseStatus } from "@chenrun/db-control";
+import type { TenantDatabaseStatus } from "@base/db-control";
 
 /**
  * 控制平面租户全景运维信息契约

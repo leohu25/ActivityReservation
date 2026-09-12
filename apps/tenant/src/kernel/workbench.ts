@@ -3,28 +3,28 @@ import {
   getCurrentTenantContext,
   getServerAuthRuntime,
   assertTenantAccessGate,
-} from "@chenrun/auth";
+} from "@base/auth";
 import {
   CaslAbilityFactory,
   getAccessibleWhere,
   getFieldMode,
   type AppPrismaAbility,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 import {
   getTenantDbManager,
   resolveEmployeeTopology,
   type ResolvedDepartmentTopology,
-} from "@chenrun/db-tenant";
-import { toPlainData } from "@chenrun/shared";
+} from "@base/db-tenant";
+import { toPlainData } from "@base/shared";
 import {
   procurementCatalog,
   type ProcurementAction,
-} from "@chenrun/feature-procurement-center";
+} from "@base/feature-procurement-center";
 import type {
   EmployeeProfileDTO,
   WorkbenchDataDTO,
   WorkbenchPageData,
-} from "@chenrun/feature-tenant-admin/workbench";
+} from "@base/feature-tenant-admin/workbench";
 
 export type { EmployeeProfileDTO, WorkbenchDataDTO, WorkbenchPageData };
 

@@ -1,12 +1,12 @@
 import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
-import { getServerAuthRuntime } from "@chenrun/auth";
+import { getServerAuthRuntime } from "@base/auth";
 import {
   DepartmentView,
   type DepartmentTreeNode,
-} from "@chenrun/feature-tenant-admin/org-management";
-import { listDepartmentTreeQuery } from "@chenrun/feature-tenant-admin/org-management/server";
-import { Card } from "@chenrun/ui";
+} from "@base/feature-tenant-admin/org-management";
+import { listDepartmentTreeQuery } from "@base/feature-tenant-admin/org-management/server";
+import { Card } from "@base/ui";
 
 /**
  * 部门拓扑架构管理页面 (Server Component - 极薄装配层)

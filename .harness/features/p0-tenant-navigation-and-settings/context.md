@@ -75,7 +75,7 @@
 
 ## 三、 范围内能力
 
-1. 升级 `@chenrun/ui` 的 `Sidebar` 支持多级分组折叠导航。
+1. 升级 `@base/ui` 的 `Sidebar` 支持多级分组折叠导航。
 2. 落地 `apps/tenant/src/app/(dashboard)/settings/company/`、`general/` 与 `security/` 三大页面。
 3. 封装 `TenantSettingsService` 处理租户设置读写与默认回退。
 4. 单元测试覆盖多级导航渲染逻辑与企业设置 Server Actions。

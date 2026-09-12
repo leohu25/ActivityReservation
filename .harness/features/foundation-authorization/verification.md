@@ -3,13 +3,13 @@
 | 检查项 | 命令 | 结果 |
 | :--- | :--- | :--- |
 | PostgreSQL 容器 | `docker compose up -d --wait saas-control-postgres` | PASS，PostgreSQL 17 healthy |
-| Prisma Schema | `pnpm --filter @chenrun/db-control prisma:validate` | PASS |
-| Prisma Client | `pnpm --filter @chenrun/db-control generate` | PASS，7.10.0 |
-| 实库 Schema | `pnpm --filter @chenrun/db-control db:push` | PASS，in sync |
-| Auth 回归 | `pnpm --filter @chenrun/auth test` | PASS，10/10 |
-| Authorization 单测 | `pnpm --filter @chenrun/authorization test` | PASS，7/7 |
-| Control DB 单测 | `pnpm --filter @chenrun/db-control test` | PASS，4/4 |
-| Dynamic Role 实库集成 | `pnpm --filter @chenrun/authorization test:integration` | PASS，1/1 |
+| Prisma Schema | `pnpm --filter @base/db-control prisma:validate` | PASS |
+| Prisma Client | `pnpm --filter @base/db-control generate` | PASS，7.10.0 |
+| 实库 Schema | `pnpm --filter @base/db-control db:push` | PASS，in sync |
+| Auth 回归 | `pnpm --filter @base/auth test` | PASS，10/10 |
+| Authorization 单测 | `pnpm --filter @base/authorization test` | PASS，7/7 |
+| Control DB 单测 | `pnpm --filter @base/db-control test` | PASS，4/4 |
+| Dynamic Role 实库集成 | `pnpm --filter @base/authorization test:integration` | PASS，1/1 |
 | Catalog 编译期契约 | `pnpm check`（含 `catalog.type-contract.tsx`） | PASS，合法常量可编译，未知 action/subject 的 `@ts-expect-error` 紧邻 JSX attribute 并被实际消费 |
 | 全仓类型检查 | `pnpm check` | PASS，8/8 |
 | Next.js 构建 | `pnpm build` | PASS |

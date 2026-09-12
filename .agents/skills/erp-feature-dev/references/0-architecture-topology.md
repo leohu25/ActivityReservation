@@ -95,7 +95,7 @@ contract.ts (契约)       ui/ (组件)                            queries.ts (�
 
 ### 绝对红线禁忌
 
-1. **外部禁止穿透内部路径**：外部应用（`apps/control`, `apps/tenant` 等）**严禁**直接 `import ... from "@chenrun/feature-xxx/src/..."`，只能通过 `package.json#exports` 暴露的语义子路径引用。
+1. **外部禁止穿透内部路径**：外部应用（`apps/control`, `apps/tenant` 等）**严禁**直接 `import ... from "@base/feature-xxx/src/..."`，只能通过 `package.json#exports` 暴露的语义子路径引用。
 2. **读写分离与服务端物理隔离**：
    - **读（Read）**：RSC `page.tsx` 直接通过 `./<feature>/server` 调用 `queries.ts` 读取数据，严禁通过 Server Action 绕读。
    - **写（Write）**：Client 组件通过 `actions.ts` 提交变更，必须被 `defineServerAction` 包装。
@@ -112,7 +112,7 @@ contract.ts (契约)       ui/ (组件)                            queries.ts (�
 
 ```json
 {
-  "name": "@chenrun/feature-example",
+  "name": "@base/feature-example",
   "exports": {
     "./feature-a": "./src/features/feature-a/public.ts",
     "./feature-a/server": "./src/features/feature-a/public.server.ts",

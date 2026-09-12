@@ -1,5 +1,5 @@
 {
-  "name": "@chenrun/db-tenant",
+  "name": "@base/db-tenant",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "test": "tsx --test --test-reporter=../../scripts/reporter/fail-only-reporter.mjs src/*.test.ts src/**/*.test.ts"
   },
   "dependencies": {
-    "@chenrun/db-control": "workspace:*",
+    "@base/db-control": "workspace:*",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "@prisma/client-runtime-utils": "7.10.0",

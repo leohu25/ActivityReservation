@@ -2,7 +2,7 @@ import {
   STANDARD_DATA_SCOPES,
   StandardAction,
   type FeaturePagePermissionDescriptor,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 
 export const MigrationManagementSubject = "ControlMigration";
 export const MigrationManagementResource = "control.migration";

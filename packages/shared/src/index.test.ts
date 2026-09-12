@@ -252,7 +252,7 @@ test("合规校验工具：统一社会信用代码、手机号与邮箱", () =>
   assert.equal(isValidMobilePhone("1381234567"), false);
 
   // 邮箱
-  assert.equal(isValidEmail("test@chenrun.com"), true);
+  assert.equal(isValidEmail("test@example.com"), true);
   assert.equal(isValidEmail("invalid-email"), false);
 });
 

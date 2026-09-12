@@ -1,7 +1,7 @@
 import "server-only";
 
-import { pickReadableFields } from "@chenrun/authorization";
-import { toPlainData } from "@chenrun/shared";
+import { pickReadableFields } from "@base/authorization";
+import { toPlainData } from "@base/shared";
 import {
   getTenantAdminContext,
   assertTenantAdminAbility,

@@ -209,7 +209,7 @@ volumes:
 平台控制库自动就绪后，企业租户的物理库采用**平台控制面按需动态自动化开辟**（无需运维去数据库敲 `CREATE DATABASE`）：
 
 1. 超管登录控制台后台（`https://control.yourdomain.com/tenants`）；
-2. 点击 **【开通新租户】 (Provision Tenant)**，输入企业名称（如 `辰润工业`）、Slug 代号（如 `chenrun-ind`）、Owner 邮箱与密码；
+2. 点击 **【开通新租户】 (Provision Tenant)**，输入企业名称（如 `系统工业`）、Slug 代号（如 `chenrun-ind`）、Owner 邮箱与密码；
 3. 点击提交，后台引擎（`TenantDatabaseProvisioner`）全自动执行：
    - 物理创建数据库 `tenant_chenrun_ind`；
    - 加锁并自动执行租户端最新全量 Baseline SQL（部门、岗位、员工、采购、客户、报价单等）；
@@ -230,7 +230,7 @@ volumes:
 - 生产更新前，执行独立迁移命令：
 
   ```bash
-  pnpm --filter @chenrun/db-migrate db-migrate catalog
+  pnpm --filter @base/db-migrate db-migrate catalog
   ```
 
 - 平台端增量升级通过管理后台 `/migrations` 中枢或独立运维任务触发；

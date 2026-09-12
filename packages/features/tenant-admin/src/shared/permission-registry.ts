@@ -3,7 +3,7 @@ import {
   type DataScopeType,
   type FeatureModulePermissionDescriptor,
   type FeaturePagePermissionDescriptor,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 
 export type PagePermissionDescriptor = FeaturePagePermissionDescriptor;
 export type ModulePermissionDescriptor = FeatureModulePermissionDescriptor;

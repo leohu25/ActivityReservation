@@ -2,7 +2,7 @@ import React from "react";
 import {
   TenantAbilityProvider,
   type AbilitySnapshot,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 import { CustomerSubject } from "../../features/customer-management/contract";
 import {
   CustomerCategorySubject,

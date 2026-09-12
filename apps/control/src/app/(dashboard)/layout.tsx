@@ -1,11 +1,11 @@
 import React from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { ControlLayout } from "@chenrun/feature-control-admin/shared";
+import { ControlLayout } from "@base/feature-control-admin/shared";
 import {
   getControlAuthRuntime,
   assertControlAdmin,
-} from "@chenrun/feature-control-admin/shared/server";
+} from "@base/feature-control-admin/shared/server";
 
 export interface DashboardGroupLayoutProps {
   readonly children: React.ReactNode;
@@ -13,7 +13,7 @@ export interface DashboardGroupLayoutProps {
 
 /**
  * 控制平面总控后台 (dashboard) 路由组统一布局
- * 引入 @chenrun/feature-control-admin 导出的现代数智风自包含布局外壳
+ * 引入 @base/feature-control-admin 导出的现代数智风自包含布局外壳
  */
 export default async function DashboardGroupLayout({
   children,

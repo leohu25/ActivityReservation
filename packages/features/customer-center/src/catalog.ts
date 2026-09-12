@@ -1,4 +1,4 @@
-import { derivePermissionCatalog } from "@chenrun/authorization";
+import { derivePermissionCatalog } from "@base/authorization";
 import { customerManifest } from "./manifest";
 
 /** 客户中心权限目录（契约 → Catalog，供 Ability 与角色树同源） */

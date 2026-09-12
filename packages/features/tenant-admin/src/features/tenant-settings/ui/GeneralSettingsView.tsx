@@ -16,7 +16,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@chenrun/ui";
+} from "@base/ui";
 import { Sliders, Save } from "lucide-react";
 import type { GeneralSettingsData, UpdateGeneralSettingsInput } from "../types";
 import { updateGeneralSettingsAction } from "../actions";

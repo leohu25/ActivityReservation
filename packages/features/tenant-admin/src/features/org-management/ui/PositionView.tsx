@@ -10,7 +10,7 @@ import {
   Button,
   Badge,
   PageShell,
-} from "@chenrun/ui";
+} from "@base/ui";
 import {
   Briefcase,
   Plus,

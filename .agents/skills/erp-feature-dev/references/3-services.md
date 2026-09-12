@@ -1,6 +1,6 @@
 # 模块 3：服务层实现与 RSC 读取查询 (Services & Queries)
 
-在遵循 **Feature-based Vertical Slice Architecture** 的业务切片中，业务服务与查询就近内聚在各 Feature / Sub-Feature 内部，直接消费横向平台模块 `@chenrun/db-tenant` 导出的全局单例 `TenantPrismaClient`。
+在遵循 **Feature-based Vertical Slice Architecture** 的业务切片中，业务服务与查询就近内聚在各 Feature / Sub-Feature 内部，直接消费横向平台模块 `@base/db-tenant` 导出的全局单例 `TenantPrismaClient`。
 
 ---
 
@@ -24,12 +24,12 @@ packages/features/<business-area>/src/
 
 ## 1. 租户上下文解析 (`shared/server/tenant-context.ts`)
 
-业务包基础共享层直接通过 `@chenrun/auth` 与 `@chenrun/db-tenant` 获取安全路由后的 `TenantPrismaClient` 与员工档案快照，严格遵守单向依赖：
+业务包基础共享层直接通过 `@base/auth` 与 `@base/db-tenant` 获取安全路由后的 `TenantPrismaClient` 与员工档案快照，严格遵守单向依赖：
 
 ```ts
 import { headers } from "next/headers";
-import { getCurrentTenantContext, getServerAuthRuntime, assertTenantAccessGate, type TenantContext } from "@chenrun/auth";
-import { getTenantDbManager, type TenantPrismaClient } from "@chenrun/db-tenant";
+import { getCurrentTenantContext, getServerAuthRuntime, assertTenantAccessGate, type TenantContext } from "@base/auth";
+import { getTenantDbManager, type TenantPrismaClient } from "@base/db-tenant";
 
 export interface TenantDbContext {
   readonly organizationId: string;
@@ -94,8 +94,8 @@ export async function getTenantDbContext(): Promise<TenantDbContext> {
 5. **包内私有实现**：`service.ts` 是当前 Feature 内部实现细节，绝不向外部应用（`apps/tenant`）直接暴露，外部只调用 `queries.ts`（读）或 `actions.ts`（写）。
 
 ```ts
-import type { TenantPrismaClient } from "@chenrun/db-tenant";
-import type { PrismaQueryCondition } from "@chenrun/authorization";
+import type { TenantPrismaClient } from "@base/db-tenant";
+import type { PrismaQueryCondition } from "@base/authorization";
 
 export class CustomerService {
   /**
@@ -151,8 +151,8 @@ export class CustomerService {
 
 ```ts
 import "server-only";
-import { toPlainData } from "@chenrun/shared";
-import { getAccessibleWhere, pickReadableFields } from "@chenrun/authorization";
+import { toPlainData } from "@base/shared";
+import { getAccessibleWhere, pickReadableFields } from "@base/authorization";
 import { getTenantCustomerContext, assertCustomerAbility } from "../../assembly/context";
 import { CustomerSubject } from "./contract";
 import { CustomerService } from "./service";

@@ -8,9 +8,9 @@ import {
   toast,
   useListUrlNav,
   type ColumnDef,
-} from "@chenrun/ui";
-import { exportContractCsv } from "@chenrun/shared";
-import { useAbility } from "@chenrun/authorization";
+} from "@base/ui";
+import { exportContractCsv } from "@base/shared";
+import { useAbility } from "@base/authorization";
 import { updateQuoteStatusAction } from "../actions";
 import { CreateQuoteModal } from "./CreateQuoteModal";
 import { CustomerQuoteField, quotePageContract } from "../contract";

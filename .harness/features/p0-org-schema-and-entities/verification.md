@@ -3,8 +3,8 @@
 ## 验证方法
 
 1. Schema 编译与客户端生成验证：
-   - 执行 `pnpm --filter @chenrun/db-tenant prisma:generate` 成功；
-   - 执行 `pnpm --filter @chenrun/db-control prisma:generate` 成功。
+   - 执行 `pnpm --filter @base/db-tenant prisma:generate` 成功；
+   - 执行 `pnpm --filter @base/db-control prisma:generate` 成功。
 2. 自动化迁移与回归单测验证：
    - 运行 `pnpm test`，确保 `department-topology.test.ts`、`sql-executor`、`tenant-provisioner` 与现有采购业务单测全部通过。
    - 验证 `EmployeeProfile` 能够正常以 `memberId` 为空或直接填入的方式入库。

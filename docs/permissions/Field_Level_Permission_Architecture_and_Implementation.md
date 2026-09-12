@@ -26,7 +26,7 @@
 
 ## 二、 核心心智模型：字段访问三态 (`FieldPolicy`)
 
-整个系统的字段权限收敛于 `@chenrun/shared` 定义的字段访问控制三态标准：
+整个系统的字段权限收敛于 `@base/shared` 定义的字段访问控制三态标准：
 
 ```ts
 export enum FieldPolicy {
@@ -113,7 +113,7 @@ export const customerConfigurableFields = [
 
 ### 2. 引擎层：CASL 规则编译与持久化反序列化
 
-在 `@chenrun/authorization` 的 `CaslAbilityFactory` 中：
+在 `@base/authorization` 的 `CaslAbilityFactory` 中：
 
 - 当用户属于 `owner` 角色时，默认全量放行（具备所有动作与全部字段的读写权限）；
 - 普通角色根据数据库存储的 `fieldPolicies` 解析出各实体的字段白名单：
@@ -145,7 +145,7 @@ const visibleColumns = useMemo(() => {
 
 ### 4. 表单与详情层：`<AuthorizedField>` 积木组件
 
-针对表单编辑和弹窗录入，系统在 `@chenrun/ui` 预置了 `<AuthorizedField>` 高阶组件：
+针对表单编辑和弹窗录入，系统在 `@base/ui` 预置了 `<AuthorizedField>` 高阶组件：
 
 ```tsx
 <AuthorizedField field={CustomerField.CREDIT_LIMIT} label="授信额度">
@@ -201,12 +201,12 @@ const csvContent = [
 
 ---
 
-### 6. 服务端防守：双重拦截函数 (`@chenrun/authorization`)
+### 6. 服务端防守：双重拦截函数 (`@base/authorization`)
 
 针对绕过前端 UI 直接调用 Server Action 或 REST API 的场景：
 
 ```ts
-import { pickReadableFields, assertEditableFields } from "@chenrun/authorization";
+import { pickReadableFields, assertEditableFields } from "@base/authorization";
 
 // 场景 1：向客户端响应前，物理剥离 HIDDEN 敏感字段
 const safeCustomer = pickReadableFields(rawCustomer, ability, CustomerSubject);

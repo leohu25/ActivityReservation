@@ -12,7 +12,7 @@
 
 1. **控制平面双核架构与命名统一 (Control Plane Decoupling)**：
    - 将应用独立部署端由 `apps/platform` 正式收敛命名为 `apps/control`（包名：`control`）；
-   - 将 FDD 特性包升级为 `packages/features/control-admin`（包名：`@chenrun/feature-control-admin`）；
+   - 将 FDD 特性包升级为 `packages/features/control-admin`（包名：`@base/feature-control-admin`）；
    - 彻底消灭历史遗留代码与叠词，按领域职责正交命名（`ControlLayout`、`ControlMetrics`、`OverviewPage`、`TenantsView`、`TenantsPage`、`ControlLogin`、`ProvisionTenantDialog`、`TenantLifecycleTable`）。
 2. **总控超管鉴权体系 (Control Plane Super Admin Guard)**：
    - 在 `packages/features/control-admin/src/auth/control-guard.ts` 落地 `checkIsControlAdmin` 与 `assertControlAdmin`；

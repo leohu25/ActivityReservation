@@ -1,10 +1,7 @@
 import { headers } from "next/headers";
-import { getCurrentTenantContext, getServerAuthRuntime } from "@chenrun/auth";
-import {
-  CaslAbilityFactory,
-  type FieldAccessMode,
-} from "@chenrun/authorization";
-import { toPlainData } from "@chenrun/shared";
+import { getCurrentTenantContext, getServerAuthRuntime } from "@base/auth";
+import { CaslAbilityFactory, type FieldAccessMode } from "@base/authorization";
+import { toPlainData } from "@base/shared";
 import { globalTenantCatalog } from "./registry.generated";
 
 export interface TenantSubjectPermissions {

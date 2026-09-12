@@ -1,6 +1,6 @@
 ---
 # ==============================================================================
-# 宸润数智 ERP 生产环境 Docker Compose 编排文件
+# 通用多租户 SaaS 基础设施生产环境 Docker Compose 编排文件
 # 运行方式: docker compose -f compose.prod.yaml up -d
 # ==============================================================================
 
@@ -10,19 +10,19 @@ services:
   # ----------------------------------------------------------------------------
   postgres-control:
     image: postgres:17-alpine
-    container_name: chenrun-prod-postgres-control
+    container_name: base-prod-postgres-control
     restart: unless-stopped
     ports:
       - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_DB: saas_control
-      POSTGRES_USER: chenrun_prod_user
+      POSTGRES_USER: base_prod_user
       POSTGRES_PASSWORD: >-
-        ${POSTGRES_CONTROL_PASSWORD:-chenrun_prod_password_change_me}
+        ${POSTGRES_CONTROL_PASSWORD:-base_prod_password_change_me}
     volumes:
       - saas_control_prod_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U chenrun_prod_user -d saas_control"]
+      test: ["CMD-SHELL", "pg_isready -U base_prod_user -d saas_control"]
       interval: 3s
       timeout: 3s
       retries: 15
@@ -32,8 +32,8 @@ services:
   # 2. 平台管控端应用服务 (Control Admin - 端口 3001)
   # ----------------------------------------------------------------------------
   control-app:
-    image: chenrun-control:latest
-    container_name: chenrun-prod-control
+    image: base-control:latest
+    container_name: base-prod-control
     restart: unless-stopped
     ports:
       - "3001:3001"
@@ -47,7 +47,7 @@ services:
       PORT: 3001
       HOSTNAME: "0.0.0.0"
       CONTROL_DATABASE_URL: >-
-        postgresql://chenrun_prod_user:${POSTGRES_CONTROL_PASSWORD:-chenrun_prod_password_change_me}@postgres-control:5432/saas_control?schema=public
+        postgresql://base_prod_user:${POSTGRES_CONTROL_PASSWORD:-base_prod_password_change_me}@postgres-control:5432/saas_control?schema=public
     # 核心自动化流转：启动前自动完成 Day 0 空库检测、全量 Baseline 建表与超管账号注入
     command:
       - sh
@@ -58,8 +58,8 @@ services:
   # 3. 租户业务端应用服务 (Tenant SaaS - 端口 3000)
   # ----------------------------------------------------------------------------
   tenant-app:
-    image: chenrun-tenant:latest
-    container_name: chenrun-prod-tenant
+    image: base-tenant:latest
+    container_name: base-prod-tenant
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -72,7 +72,7 @@ services:
       PORT: 3000
       HOSTNAME: "0.0.0.0"
       CONTROL_DATABASE_URL: >-
-        postgresql://chenrun_prod_user:${POSTGRES_CONTROL_PASSWORD:-chenrun_prod_password_change_me}@postgres-control:5432/saas_control?schema=public
+        postgresql://base_prod_user:${POSTGRES_CONTROL_PASSWORD:-base_prod_password_change_me}@postgres-control:5432/saas_control?schema=public
     command:
       - node
       - apps/tenant/server.js
@@ -82,4 +82,4 @@ services:
 # ------------------------------------------------------------------------------
 volumes:
   saas_control_prod_data:
-    name: chenrun_saas_control_prod_data
+    name: base_saas_control_prod_data

@@ -1,6 +1,6 @@
-# @chenrun/features
+# @base/features
 
-辰润 ERP 的业务区域与业务模块集合。
+通用 SaaS 的业务区域与业务模块集合。
 
 ## 架构定位
 
@@ -8,10 +8,10 @@
 
 | 子包目录 | 包名 | 业务定位 |
 | --- | --- | --- |
-| `control-admin` | `@chenrun/feature-control-admin` | 平台管控业务区域 |
-| `tenant-admin` | `@chenrun/feature-tenant-admin` | 租户组织与权限管理业务区域 |
-| `customer-center` | `@chenrun/feature-customer-center` | Customer Center Business Area / Feature Group |
-| `procurement-center` | `@chenrun/feature-procurement-center` | 采购中心业务区域 |
+| `control-admin` | `@base/feature-control-admin` | 平台管控业务区域 |
+| `tenant-admin` | `@base/feature-tenant-admin` | 租户组织与权限管理业务区域 |
+| `customer-center` | `@base/feature-customer-center` | Customer Center Business Area / Feature Group |
+| `procurement-center` | `@base/feature-procurement-center` | 采购中心业务区域 |
 
 目录名 `packages/features` 是业务模块集合的工程命名，不表示其下所有层级都叫 Feature。业务分析与代码组织使用以下清晰层级（中英对照）：
 

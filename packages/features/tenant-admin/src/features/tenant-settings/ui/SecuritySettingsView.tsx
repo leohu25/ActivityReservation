@@ -17,7 +17,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@chenrun/ui";
+} from "@base/ui";
 import { ShieldCheck, Save, Lock, Clock } from "lucide-react";
 import type {
   SecuritySettingsData,

@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
-import { assertTenantAccessGate, TenantContextError } from "@chenrun/auth";
+import { assertTenantAccessGate, TenantContextError } from "@base/auth";
 import {
   CaslAbilityFactory,
   getAccessibleWhere,
   type AppPrismaAbility,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 import { procurementCatalog } from "../index";
 import type { ProcurementAction } from "../contracts";
 
@@ -155,7 +155,7 @@ test("员工调换部门后，CASL accessibleBy 数据库下推条件立即由�
 
   const tenantCtx = {
     organizationId: "org_test",
-    user: { id: "usr_buyer_1", email: "buyer@chenrun.com" },
+    user: { id: "usr_buyer_1", email: "buyer@example.com" },
     session: {
       id: "sess_1",
       userId: "usr_buyer_1",

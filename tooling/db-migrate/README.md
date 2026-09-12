@@ -1,4 +1,4 @@
-# `@chenrun/db-migrate` — 统一数据库演进与基线引擎
+# `@base/db-migrate` — 统一数据库演进与基线引擎
 
 本项目数据库演进与多租户基线管理的统一底层工具包。管辖：
 
@@ -29,7 +29,7 @@
 
 ```text
 tooling/db-migrate/
-├── package.json              # 工具包元数据与依赖定义 (@chenrun/db-migrate)
+├── package.json              # 工具包元数据与依赖定义 (@base/db-migrate)
 ├── tsconfig.json             # TypeScript 构建配置 (继承 monorepo 根配置)
 ├── prisma.config.ts          # 仅用于开发阶段调用 Prisma CLI 的数据源配置文件
 ├── README.md                 # 架构设计、目录定位与日常操作指南 (本文件)

@@ -1,5 +1,5 @@
 /**
- * @chenrun/shared - 企业级 SaaS ERP 全局共享能力底座
+ * @base/shared - 企业级 SaaS ERP 全局共享能力底座
  *
  * 领域结构规范:
  * - constants : 真正跨模块共享的稳定常量与契约

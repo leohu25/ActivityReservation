@@ -1,6 +1,6 @@
 import React from "react";
-import { MigrationsView } from "@chenrun/feature-control-admin/migration-management";
-import { getMigrationDashboardQuery } from "@chenrun/feature-control-admin/migration-management/server";
+import { MigrationsView } from "@base/feature-control-admin/migration-management";
+import { getMigrationDashboardQuery } from "@base/feature-control-admin/migration-management/server";
 
 export const dynamic = "force-dynamic";
 

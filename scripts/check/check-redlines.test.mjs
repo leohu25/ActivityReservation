@@ -12,10 +12,13 @@ const scriptSource = await readFile(
 );
 
 async function runFixture(files) {
-  const root = await mkdtemp(path.join(tmpdir(), "chenrun-redlines-"));
+  const root = await mkdtemp(path.join(tmpdir(), "base-redlines-"));
   try {
     await mkdir(path.join(root, "scripts/check"), { recursive: true });
-    await writeFile(path.join(root, "scripts/check/check-redlines.mjs"), scriptSource);
+    await writeFile(
+      path.join(root, "scripts/check/check-redlines.mjs"),
+      scriptSource,
+    );
     for (const [relativePath, content] of Object.entries(files)) {
       const fullPath = path.join(root, relativePath);
       await mkdir(path.dirname(fullPath), { recursive: true });
@@ -33,31 +36,34 @@ async function runFixture(files) {
 test("redline rejects direct Feature-to-Feature dependency", async () => {
   const result = await runFixture({
     "packages/features/a/package.json": JSON.stringify({
-      name: "@chenrun/feature-a",
-      dependencies: { "@chenrun/feature-b": "workspace:*" },
+      name: "@base/feature-a",
+      dependencies: { "@base/feature-b": "workspace:*" },
     }),
     "packages/features/a/src/index.ts":
-      'import { value } from "@chenrun/feature-b";\nexport { value };\n',
+      'import { value } from "@base/feature-b";\nexport { value };\n',
     "packages/features/b/package.json": JSON.stringify({
-      name: "@chenrun/feature-b",
+      name: "@base/feature-b",
     }),
     "packages/features/b/src/index.ts": "export const value = 1;\n",
   });
 
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /业务 Feature Package 禁止直接依赖另一个 Feature/);
+  assert.match(
+    result.stderr,
+    /业务 Feature Package 禁止直接依赖另一个 Feature/,
+  );
 });
 
 test("redline rejects horizontal platform package depending on Feature", async () => {
   const result = await runFixture({
     "packages/shared/package.json": JSON.stringify({
-      name: "@chenrun/shared",
-      dependencies: { "@chenrun/feature-a": "workspace:*" },
+      name: "@base/shared",
+      dependencies: { "@base/feature-a": "workspace:*" },
     }),
     "packages/shared/src/index.ts":
-      'import { helper } from "@chenrun/feature-a";\nexport { helper };\n',
+      'import { helper } from "@base/feature-a";\nexport { helper };\n',
     "packages/features/a/package.json": JSON.stringify({
-      name: "@chenrun/feature-a",
+      name: "@base/feature-a",
     }),
     "packages/features/a/src/index.ts": "export const helper = 1;\n",
   });
@@ -73,11 +79,11 @@ test("redline rejects internal /src/ path penetration", async () => {
   const result = await runFixture({
     "apps/tenant/package.json": JSON.stringify({
       name: "tenant",
-      dependencies: { "@chenrun/shared": "workspace:*" },
+      dependencies: { "@base/shared": "workspace:*" },
     }),
     "apps/tenant/src/index.ts":
-      'import { tool } from "@chenrun/shared/src/tool";\nexport { tool };\n',
-    "packages/shared/package.json": JSON.stringify({ name: "@chenrun/shared" }),
+      'import { tool } from "@base/shared/src/tool";\nexport { tool };\n',
+    "packages/shared/package.json": JSON.stringify({ name: "@base/shared" }),
     "packages/shared/src/tool.ts": "export const tool = 1;\n",
   });
 

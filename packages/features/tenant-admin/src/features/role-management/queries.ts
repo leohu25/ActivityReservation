@@ -1,6 +1,6 @@
 import "server-only";
 
-import { toPlainData } from "@chenrun/shared";
+import { toPlainData } from "@base/shared";
 import {
   getTenantAdminContext,
   assertTenantAdminAbility,
@@ -8,8 +8,8 @@ import {
 import { RoleManagementSubject } from "./contract";
 import { TenantRoleService } from "./service";
 import type { TenantRoleItem } from "./types";
-import type { TenantFeatureManifest } from "@chenrun/authorization";
-import { getServerAuthRuntime } from "@chenrun/auth";
+import type { TenantFeatureManifest } from "@base/authorization";
+import { getServerAuthRuntime } from "@base/auth";
 
 export async function listTenantRolesQuery(
   manifests?: readonly TenantFeatureManifest[],

@@ -1,5 +1,5 @@
 /**
- * @chenrun/shared - 系统统一错误体系
+ * @base/shared - 系统统一错误体系
  */
 
 /**

@@ -161,7 +161,7 @@ for (const filePath of allFiles) {
 }
 
 // 规则 6：严禁引入跨包幽灵依赖 (Ghost Dependency)
-// 源码中引用了 @chenrun/* 内部包，但该包所在模块的 package.json 中未显式声明依赖
+// 源码中引用了 @base/* 内部包，但该包所在模块的 package.json 中未显式声明依赖
 const workspacePackages = [];
 function findPackageJsonDirs(dir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -198,17 +198,17 @@ for (const root of scanRoots) {
 }
 
 const internalImportRegex =
-  /from\s+["'](@chenrun\/[^"'/]+)(?:\/[^"']*)?["']|import\s+["'](@chenrun\/[^"'/]+)(?:\/[^"']*)?["']/g;
-const internalPackagePathRegex = /["']@chenrun\/[^"']+\/src\//g;
-const featurePackagePrefix = "@chenrun/feature-";
+  /from\s+["'](@base\/[^"'/]+)(?:\/[^"']*)?["']|import\s+["'](@base\/[^"'/]+)(?:\/[^"']*)?["']/g;
+const internalPackagePathRegex = /["']@base\/[^"']+\/src\//g;
+const featurePackagePrefix = "@base/feature-";
 const horizontalPlatformPackages = new Set([
-  "@chenrun/auth",
-  "@chenrun/authorization",
-  "@chenrun/db-control",
-  "@chenrun/db-tenant",
-  "@chenrun/ui",
-  "@chenrun/shared",
-  "@chenrun/biz-shared",
+  "@base/auth",
+  "@base/authorization",
+  "@base/db-control",
+  "@base/db-tenant",
+  "@base/ui",
+  "@base/shared",
+  "@base/biz-shared",
 ]);
 
 for (const pkg of workspacePackages) {
@@ -226,7 +226,7 @@ for (const pkg of workspacePackages) {
         file: relPath,
         line: 1,
         rule: "严禁通过 /src/ 穿透工作区包内部实现；必须使用 package.json exports 声明的公共入口",
-        code: "import from @chenrun/*/src/*",
+        code: "import from @base/*/src/*",
       });
     }
     internalPackagePathRegex.lastIndex = 0;

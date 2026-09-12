@@ -1,6 +1,6 @@
-# @chenrun/feature-procurement-center
+# @base/feature-procurement-center
 
-辰润 ERP 的**采购业务中心垂直切片模块（Procurement Order Center Feature）**。
+通用 SaaS 的**采购业务中心垂直切片模块（Procurement Order Center Feature）**。
 
 ## 1. 模块定位与职责
 
@@ -48,7 +48,7 @@ packages/features/procurement-center/
 ### 3.1 消费采购服务
 
 ```ts
-import { getProcurementOrderService } from "@chenrun/feature-procurement-center";
+import { getProcurementOrderService } from "@base/feature-procurement-center";
 
 const service = await getProcurementOrderService();
 const orders = await service.listOrders({
@@ -61,7 +61,7 @@ const orders = await service.listOrders({
 ### 3.2 审核采购订单
 
 ```ts
-import { auditProcurementOrderAction } from "@chenrun/feature-procurement-center";
+import { auditProcurementOrderAction } from "@base/feature-procurement-center";
 
 // 客户端触发 Server Action
 const result = await auditProcurementOrderAction({
@@ -74,15 +74,15 @@ const result = await auditProcurementOrderAction({
 ## 4. 架构原则与红线
 
 1. **严格物理隔离**：所有采购业务数据均保存在租户物理数据库中，通过可信上下文派生的 Prisma 客户端执行操作。
-2. **严禁越权操作**：单据审核、金额查看等敏感动作必须受 `@chenrun/authorization` 的 CASL Ability 严格约束。
-3. **高内聚低耦合**：采购中心所需的前端视图组件完全收敛在切片内部，仅依赖 `@chenrun/ui` 基础组件。
+2. **严禁越权操作**：单据审核、金额查看等敏感动作必须受 `@base/authorization` 的 CASL Ability 严格约束。
+3. **高内聚低耦合**：采购中心所需的前端视图组件完全收敛在切片内部，仅依赖 `@base/ui` 基础组件。
 
 ## 5. 验证命令
 
 ```bash
 # 类型检查
-pnpm --filter @chenrun/feature-procurement-center check
+pnpm --filter @base/feature-procurement-center check
 
 # 运行单元测试
-pnpm --filter @chenrun/feature-procurement-center test
+pnpm --filter @base/feature-procurement-center test
 ```

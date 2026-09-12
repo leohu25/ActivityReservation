@@ -109,9 +109,9 @@
 
 ---
 
-## 四、 核心组件规范与代码契约 (All from `@chenrun/ui`)
+## 四、 核心组件规范与代码契约 (All from `@base/ui`)
 
-所有组件统一从 `@chenrun/ui` 导出，严禁直接手写散乱类名：
+所有组件统一从 `@base/ui` 导出，严禁直接手写散乱类名：
 
 ```tsx
 import { 
@@ -123,7 +123,7 @@ import {
   MetricCard, 
   ProcessStepper, 
   ExceptionList 
-} from "@chenrun/ui";
+} from "@base/ui";
 ```
 
 ### 1. `Button` 按钮规范
@@ -180,7 +180,7 @@ import {
 
 任何 AI 在交付前端页面代码前，必须对照本检查单自查通过：
 
-1. [ ] **必须且仅使用 `shadcn/ui` 体系与 `@chenrun/ui` 导出组件**；
+1. [ ] **必须且仅使用 `shadcn/ui` 体系与 `@base/ui` 导出组件**；
 2. [ ] **严禁使用 Emoji 作为界面图标**，必须使用 `lucide-react` 矢量图标；
 3. [ ] **所有数字必须包含 `tabular-nums`**，防止数据跳动；
 4. [ ] **所有可点击元素必须包含 `cursor-pointer` 与平滑 Hover 动效**；

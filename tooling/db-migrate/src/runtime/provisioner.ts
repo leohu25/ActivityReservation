@@ -1,11 +1,11 @@
-import type { TenantMigrationRepository } from "@chenrun/db-control";
+import type { TenantMigrationRepository } from "@base/db-control";
 import type {
   TenantDatabaseSeeder,
   TenantSeedInput,
   TenantSeedResult,
   TenantSqlExecutor,
   TenantSqlExecutorFactory,
-} from "@chenrun/db-tenant";
+} from "@base/db-tenant";
 import type {
   DatabaseInitializationInspection,
   EnsureDatabaseResult,
@@ -69,7 +69,7 @@ export class TenantDatabaseProvisioner {
     const executor = await this.sqlExecutorFactory(tenantDatabaseUrl);
     try {
       await executor.execute("SELECT pg_advisory_lock(hashtext($1))", [
-        `chenrun-tenant-baseline:${organizationId}`,
+        `base-tenant-baseline:${organizationId}`,
       ]);
       try {
         const inspection = await this.inspectWithExecutor(executor);
@@ -117,7 +117,7 @@ export class TenantDatabaseProvisioner {
         };
       } finally {
         await executor.execute("SELECT pg_advisory_unlock(hashtext($1))", [
-          `chenrun-tenant-baseline:${organizationId}`,
+          `base-tenant-baseline:${organizationId}`,
         ]);
       }
     } finally {

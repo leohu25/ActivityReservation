@@ -5,7 +5,7 @@ import {
   createOrganizationAccessControl,
   createServerAuth,
   createTrustedTenantContextResolver,
-} from "@chenrun/auth";
+} from "@base/auth";
 const testPermission = {
   resource: "authorization.test-order",
   subject: "AuthorizationTestOrder",

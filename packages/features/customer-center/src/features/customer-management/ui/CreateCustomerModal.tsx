@@ -9,7 +9,7 @@ import {
   TagMultiSelect,
   type FormFieldSchema,
   toast,
-} from "@chenrun/ui";
+} from "@base/ui";
 import { createCustomerAction } from "../actions";
 import type { CustomerCategoryItem, CustomerTagItem } from "../types";
 

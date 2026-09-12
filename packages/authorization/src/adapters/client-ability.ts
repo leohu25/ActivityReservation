@@ -3,7 +3,7 @@ import {
   type MongoAbility,
   type RawRuleOf,
 } from "@casl/ability";
-import { FieldPolicy } from "@chenrun/shared";
+import { FieldPolicy } from "@base/shared";
 
 /**
  * RSC 可序列化的能力快照（官方同构范式的「rules 载体」）。

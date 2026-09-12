@@ -7,7 +7,7 @@ import {
   FormFields,
   type FormFieldSchema,
   toast,
-} from "@chenrun/ui";
+} from "@base/ui";
 import { createDepartmentAction, updateDepartmentAction } from "../actions";
 import type { DepartmentTreeNode } from "../types";
 

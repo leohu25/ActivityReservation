@@ -17,9 +17,9 @@
 
 ## 门禁验证证据
 
-- `pnpm --filter @chenrun/authorization test`：27/27 PASS
+- `pnpm --filter @base/authorization test`：27/27 PASS
 - `pnpm test`：39/39 PASS
-- `pnpm --filter @chenrun/authorization test:integration`：1/1 PASS
+- `pnpm --filter @base/authorization test:integration`：1/1 PASS
 - `pnpm check`：8/8 packages PASS
 - `./scripts/verify.sh`：PASS
 - `./init.sh`：PASS

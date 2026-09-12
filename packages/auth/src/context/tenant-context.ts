@@ -2,7 +2,7 @@ import type {
   OrganizationMemberRecord,
   TenantContextRepository,
   TenantDatabaseRecord,
-} from "@chenrun/db-control";
+} from "@base/db-control";
 
 export interface AuthenticatedUser {
   id: string;

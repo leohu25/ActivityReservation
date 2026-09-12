@@ -28,7 +28,7 @@ import {
   Button,
   FormDialog,
   toast,
-} from "@chenrun/ui";
+} from "@base/ui";
 import { resetTenantUserPasswordAction } from "../actions";
 
 export interface TenantDetailDrawerProps {

@@ -3,7 +3,7 @@ import test from "node:test";
 import type {
   TenantContextRepository,
   TenantDatabaseRecord,
-} from "@chenrun/db-control";
+} from "@base/db-control";
 import {
   TenantDbManager,
   TenantDbRoutingError,
@@ -142,7 +142,11 @@ test("ensure hook failure prevents client creation and can be retried", async ()
   let creations = 0;
   const manager = new TenantDbManager<FakeClient>(
     repository({ org1: mapping("org1") }),
-    { async resolveDatabaseUrl() { return "opaque://org1"; } },
+    {
+      async resolveDatabaseUrl() {
+        return "opaque://org1";
+      },
+    },
     async ({ organizationId }) => {
       creations += 1;
       return {

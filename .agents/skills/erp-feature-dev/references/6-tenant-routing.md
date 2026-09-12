@@ -14,14 +14,14 @@
 
 ```tsx
 // apps/tenant/src/app/(dashboard)/customer/layout.tsx
-import { CustomerAbilityBoundary } from "@chenrun/feature-customer-center/shared";
-import { CustomerSubject } from "@chenrun/feature-customer-center/customer-management";
-import { CustomerStoreSubject } from "@chenrun/feature-customer-center/store-management";
-import { CustomerQuoteSubject } from "@chenrun/feature-customer-center/quotation-management";
+import { CustomerAbilityBoundary } from "@base/feature-customer-center/shared";
+import { CustomerSubject } from "@base/feature-customer-center/customer-management";
+import { CustomerStoreSubject } from "@base/feature-customer-center/store-management";
+import { CustomerQuoteSubject } from "@base/feature-customer-center/quotation-management";
 import {
   CustomerCategorySubject,
   CustomerTagSubject,
-} from "@chenrun/feature-customer-center/customer-management/classification";
+} from "@base/feature-customer-center/customer-management/classification";
 import { getTenantSubjectPermissions } from "@/kernel";
 
 export default async function CustomerLayout({
@@ -49,12 +49,12 @@ export default async function CustomerLayout({
 
 ```tsx
 // apps/tenant/src/app/(dashboard)/customer/customers/page.tsx
-import { CustomerView } from "@chenrun/feature-customer-center/customer-management";
+import { CustomerView } from "@base/feature-customer-center/customer-management";
 import {
   listCustomersQuery,
   getCategoryTreeQuery,
   listTagsQuery,
-} from "@chenrun/feature-customer-center/customer-management/server";
+} from "@base/feature-customer-center/customer-management/server";
 
 export default async function CustomersPage({
   searchParams,
@@ -87,7 +87,7 @@ export default async function CustomersPage({
 切片根目录必须暴露 `manifest.ts`，声明导航菜单结构与挂载的页面契约：
 
 ```ts
-import type { FeatureManifest } from "@chenrun/authorization";
+import type { FeatureManifest } from "@base/authorization";
 import { customerPageContract } from "./features/customer-management/contract";
 import { storePageContract } from "./features/store-management/contract";
 
@@ -130,7 +130,7 @@ export const customerCenterManifest: FeatureManifest = {
 用 **AbilityProvider 包裹**注入权限，禁止给 View 塞 `permissions` prop：
 
 ```tsx
-import { TenantAbilityProvider } from "@chenrun/authorization";
+import { TenantAbilityProvider } from "@base/authorization";
 import { CustomerView } from "./CustomerView";
 
 test("CustomerView 与 customerPageContract 契约 100% 对齐", () => {

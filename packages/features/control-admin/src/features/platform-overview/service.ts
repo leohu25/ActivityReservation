@@ -1,4 +1,4 @@
-import type { ControlPrismaClient } from "@chenrun/db-control";
+import type { ControlPrismaClient } from "@base/db-control";
 import { assertControlAdmin } from "../../shared/server/control-guard";
 import type { ControlStats } from "./types";
 

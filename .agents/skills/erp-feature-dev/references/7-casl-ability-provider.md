@@ -39,7 +39,7 @@ Server Action  assert*Ability(...)   ← 安全真相永远在服务端
 | 消费 | `useAbility()` / `Can` / DataTable 积木 | Client View |
 | 写路径 | `assert*Ability(ability, action, subject)` | Feature `actions.ts` |
 
-导出（均可从 `@chenrun/authorization` 或 `@chenrun/ui`）：
+导出（均可从 `@base/authorization` 或 `@base/ui`）：
 
 ```ts
 import {
@@ -49,7 +49,7 @@ import {
   useAbility,
   useOptionalAbility,
   type AbilitySnapshot,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 ```
 
 ---
@@ -65,7 +65,7 @@ import React from "react";
 import {
   TenantAbilityProvider,
   type AbilitySnapshot,
-} from "@chenrun/authorization";
+} from "@base/authorization";
 
 export function buildSliceAbilitySnapshots(permissions: {
   /* 各 Subject 的 { actions, fieldPolicies } */
@@ -101,9 +101,9 @@ export function SliceAbilityBoundary({
 
 ```tsx
 // apps/tenant/src/app/(dashboard)/<slice>/layout.tsx
-import { SliceAbilityBoundary } from "@chenrun/feature-<area>/shared";
-import { CustomerSubject } from "@chenrun/feature-<area>/customer-management";
-import { CustomerStoreSubject } from "@chenrun/feature-<area>/store-management";
+import { SliceAbilityBoundary } from "@base/feature-<area>/shared";
+import { CustomerSubject } from "@base/feature-<area>/customer-management";
+import { CustomerStoreSubject } from "@base/feature-<area>/store-management";
 import { getTenantSubjectPermissions } from "@/kernel";
 
 export default async function SliceLayout({
@@ -136,8 +136,8 @@ return <XxxView initialItems={pageData.items} initialTotal={pageData.total} />;
 
 ```tsx
 "use client";
-import { useAbility } from "@chenrun/authorization";
-import { DataTable } from "@chenrun/ui";
+import { useAbility } from "@base/authorization";
+import { DataTable } from "@base/ui";
 
 export function XxxView({ initialItems }: Props) {
   const ability = useAbility(); // 仅导出等需要命令式 can() 时使用
@@ -199,7 +199,7 @@ Fail-Closed：`actions: []` → 一切拒绝；无 Provider 时 `useOptionalAbil
 用 `TenantAbilityProvider` 包一层，**不要**给 View 塞 `permissions` prop：
 
 ```tsx
-import { TenantAbilityProvider } from "@chenrun/authorization";
+import { TenantAbilityProvider } from "@base/authorization";
 import { CustomerView } from "./CustomerView";
 
 renderToString(

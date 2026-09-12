@@ -1,16 +1,13 @@
 import { headers } from "next/headers";
-import { getCurrentTenantContext, assertTenantAccessGate } from "@chenrun/auth";
+import { getCurrentTenantContext, assertTenantAccessGate } from "@base/auth";
 import {
   CaslAbilityFactory,
   FieldPolicy,
   getAccessibleWhere,
   type AppPrismaAbility,
-} from "@chenrun/authorization";
-import {
-  getTenantDbManager,
-  resolveEmployeeTopology,
-} from "@chenrun/db-tenant";
-import { toPlainData } from "@chenrun/shared";
+} from "@base/authorization";
+import { getTenantDbManager, resolveEmployeeTopology } from "@base/db-tenant";
+import { toPlainData } from "@base/shared";
 import {
   getProcurementFieldVisibility,
   procurementCatalog,
@@ -57,7 +54,7 @@ export async function getProcurementOrdersPageData(): Promise<ProcurementOrdersP
     };
   }
 
-  const { getServerAuthRuntime } = await import("@chenrun/auth");
+  const { getServerAuthRuntime } = await import("@base/auth");
   const authRuntime = getServerAuthRuntime();
   const manager = getTenantDbManager({
     repository: authRuntime.tenantContextRepository,

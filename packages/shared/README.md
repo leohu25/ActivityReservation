@@ -1,6 +1,6 @@
-# @chenrun/shared
+# @base/shared
 
-辰润 ERP 的**全局无状态共享工具底座与通用类型契约（Shared Utilities & Domain Primitives）**。
+通用 SaaS 的**全局无状态共享工具底座与通用类型契约（Shared Utilities & Domain Primitives）**。
 
 ## 1. 模块定位与职责
 
@@ -39,7 +39,7 @@ packages/shared/
 ### 3.1 统一 API 响应构造与处理
 
 ```ts
-import { apiSuccess, apiError, AppError } from "@chenrun/shared";
+import { apiSuccess, apiError, AppError } from "@base/shared";
 
 // 构造成功响应
 const success = apiSuccess({ id: "123", name: "张三" });
@@ -51,7 +51,7 @@ const error = apiError("RECORD_NOT_FOUND", "未找到指定资源", 404);
 ### 3.2 敏感数据脱敏
 
 ```ts
-import { maskPhone, maskIdCard } from "@chenrun/shared";
+import { maskPhone, maskIdCard } from "@base/shared";
 
 const safePhone = maskPhone("13812345678"); // 138****5678
 ```
@@ -59,7 +59,7 @@ const safePhone = maskPhone("13812345678"); // 138****5678
 ### 3.3 RSC 边界 Decimal / 数据安全平铺
 
 ```ts
-import { toPlainData } from "@chenrun/shared";
+import { toPlainData } from "@base/shared";
 
 // 在 Server Action 或 Server Component 传给 Client Component 前序列化
 const clientSafeOrder = toPlainData(orderWithDecimals);
@@ -75,8 +75,8 @@ const clientSafeOrder = toPlainData(orderWithDecimals);
 
 ```bash
 # 类型检查
-pnpm --filter @chenrun/shared check
+pnpm --filter @base/shared check
 
 # 运行单元测试
-pnpm --filter @chenrun/shared test
+pnpm --filter @base/shared test
 ```

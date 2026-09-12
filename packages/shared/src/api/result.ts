@@ -1,5 +1,5 @@
 /**
- * @chenrun/shared - 函数式 Result/Either 单子与错误处理
+ * @base/shared - 函数式 Result/Either 单子与错误处理
  */
 
 export type Ok<T> = {

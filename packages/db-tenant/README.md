@@ -1,4 +1,4 @@
-# @chenrun/db-tenant
+# @base/db-tenant
 
 多租户 SaaS 系统的**数据面连接池中枢与租户物理库架构底座（Data Plane DB Manager & Tenant Kernel）**。
 
@@ -40,7 +40,7 @@ packages/db-tenant/
 ### 3.1 获取租户数据库连接池客户端
 
 ```ts
-import { getTenantDbManager } from "@chenrun/db-tenant";
+import { getTenantDbManager } from "@base/db-tenant";
 
 // 通过单例管理器获取已授权租户的专属 Prisma 客户端
 const manager = getTenantDbManager({ repository: tenantContextRepository });
@@ -55,7 +55,7 @@ const employees = await tenantPrisma.employeeProfile.findMany({
 ### 3.2 部门树拓扑与数据范围判定
 
 ```ts
-import { resolveEmployeeTopology, collectDepartmentTreeIds } from "@chenrun/db-tenant";
+import { resolveEmployeeTopology, collectDepartmentTreeIds } from "@base/db-tenant";
 
 // 依据用户档案自驱装配完整的部门树拓扑
 const topology = await resolveEmployeeTopology(tenantPrisma, employeeProfile.id);
@@ -67,14 +67,14 @@ const topology = await resolveEmployeeTopology(tenantPrisma, employeeProfile.id)
 1. **绝对物理隔离**：各租户数据分布在独立物理库中，严禁混用连接，严禁跨租户直接连表查询。
 2. **连接池单例与防泄漏**：服务端使用 `getTenantDbManager()` 获取单例，严禁在 Server Action 或业务 Service 中随意 `new PrismaClient()`。
 3. **安全的建连前自检钩子**：`TenantDbManager` 支持可选 `ensureDatabase`，在创建/缓存 Prisma Client 前执行。迁移工具可在组合根注入严格空库 Baseline ensure，而 `db-tenant` 本身不反向依赖迁移包，避免依赖环。钩子失败不会缓存半成品客户端，后续请求可重试。
-3. **零明文连接串注入**：只能使用 Control DB 提供的 `secretRef` 解析连接串，客户端无法篡改连接目标。
+4. **零明文连接串注入**：只能使用 Control DB 提供的 `secretRef` 解析连接串，客户端无法篡改连接目标。
 
 ## 5. 验证命令
 
 ```bash
 # 类型检查
-pnpm --filter @chenrun/db-tenant check
+pnpm --filter @base/db-tenant check
 
 # 单元测试 (23 个测试用例全部通过)
-pnpm --filter @chenrun/db-tenant test
+pnpm --filter @base/db-tenant test
 ```

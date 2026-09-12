@@ -1,18 +1,18 @@
-# 辰润 ERP 多租户 SaaS 架构与隔离机制深度解析 (Multi-Tenant SaaS Architecture)
+# 系统 ERP 多租户 SaaS 架构与隔离机制深度解析 (Multi-Tenant SaaS Architecture)
 
-> **文档定位**：本文档为辰润数智 ERP 多租户 SaaS 基础设施的专项深度技术设计与实现原理解析文档，涵盖 Control Plane 与 Data Plane 双平面分工、Database-per-Tenant 物理隔离机制、动态连接池治理 (`TenantDbManager`)、凭据安全解耦与租户全生命周期闭环。
+> **文档定位**：本文档为系统数智 ERP 多租户 SaaS 基础设施的专项深度技术设计与实现原理解析文档，涵盖 Control Plane 与 Data Plane 双平面分工、Database-per-Tenant 物理隔离机制、动态连接池治理 (`TenantDbManager`)、凭据安全解耦与租户全生命周期闭环。
 > **关联架构索引**：[《系统整体架构白皮书》](../ARCHITECTURE.md) | [ADR-002: Database-per-tenant 物理隔离战略](../../.harness/memory/adr/ADR-002-database-per-tenant.md) | [《生产与多环境部署实战指南》](../deployment/DEPLOYMENT.md)
 
 ---
 
 ## 一、 系统拓扑与双平面设计 (Dual-Plane Topology)
 
-在现代化企业级供应链与工业制造 SaaS 场景中，数据安全、商业机密（原料配方、阶梯采购价、供应商授信等）与多租户自治具有最高优先级。辰润 ERP 彻底摒弃了易导致跨租户数据泄露的单库多租户模型，将整个系统划分为**控制平面 (Control Plane)** 与 **数据平面 (Data Plane)** 两个物理隔离的独立运行域：
+在现代化企业级供应链与工业制造 SaaS 场景中，数据安全、商业机密（原料配方、阶梯采购价、供应商授信等）与多租户自治具有最高优先级。系统 ERP 彻底摒弃了易导致跨租户数据泄露的单库多租户模型，将整个系统划分为**控制平面 (Control Plane)** 与 **数据平面 (Data Plane)** 两个物理隔离的独立运行域：
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                            Control Plane (平台管控平面)                     │
-│  应用入口: apps/control (:3001) | ORM 客户端: @chenrun/db-control           │
+│  应用入口: apps/control (:3001) | ORM 客户端: @base/db-control           │
 │  底层数据库: saas_control (集中管理库)                                       │
 │  ─────────────────────────────────────────────────────────────────────────  │
 │  - 平台运维超级管理员统一控制台 (/overview, /tenants, /migrations)          │
@@ -25,7 +25,7 @@
                                        │ 动态路由 / 凭据解析 / 上下文解耦
 ┌──────────────────────────────────────┴──────────────────────────────────────┐
 │                             Data Plane (租户数据平面)                       │
-│  应用入口: apps/tenant (:3000)  | ORM 客户端: @chenrun/db-tenant             │
+│  应用入口: apps/tenant (:3000)  | ORM 客户端: @base/db-tenant             │
 │  底层数据库: tenant_<slug> (各企业专属物理数据库，完全物理隔离)              │
 │  ─────────────────────────────────────────────────────────────────────────  │
 │  - 企业入驻租户日常生产经营平台 (组织架构、员工档案、采购中心、客户门店等)  │
@@ -78,7 +78,7 @@
 1. **Next.js 开发期 HMR 连接句柄泄漏**：在 Turbopack / Webpack 热重载时，模块频繁重新执行，极易造成数据库连接池重复创建，迅速耗尽 PostgreSQL 连接上限。
 2. **并发防击穿 (Thundering Herd Protection)**：高并发场景下，同一个租户的多个并行请求如果在冷启动时同时初始化连接池，会引发竞争与资源浪费。
 
-辰润 ERP 在 `@chenrun/db-tenant` 中设计了企业级动态连接池管理器：
+系统 ERP 在 `@base/db-tenant` 中设计了企业级动态连接池管理器：
 
 ### 1. 核心架构与并发防护实现
 
