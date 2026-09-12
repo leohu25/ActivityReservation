@@ -55,7 +55,7 @@ export function CreateQuoteModal({
     expiryDate: string;
   }>({
     scopeType: "STORE",
-    customerCode: customers[0]?.customerCode || "",
+    customerCode: customers[0]?.customerCode || customers[0]?.id || "",
     storeCode: stores[0]?.storeCode || "",
     regionCode: "REGION_BJ_01",
     displayName: "",
@@ -103,10 +103,13 @@ export function CreateQuoteModal({
               label: "所属客户企业",
               type: "select",
               required: true,
-              options: customers.map((c) => ({
-                value: c.customerCode,
-                label: `${c.customerName} (${c.customerCode})`,
-              })),
+              options: customers.map((c, idx) => {
+                const code = c.customerCode || c.id || `cust-${idx}`;
+                return {
+                  value: code,
+                  label: `${c.customerName || code} (${code})`,
+                };
+              }),
             },
           ] as FormFieldSchema[])
         : []),

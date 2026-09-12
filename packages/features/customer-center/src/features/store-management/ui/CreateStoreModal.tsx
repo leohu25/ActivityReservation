@@ -37,7 +37,7 @@ export function CreateStoreModal({
   onCreated,
 }: CreateStoreModalProps) {
   const [values, setValues] = useState<CreateStoreForm>({
-    customerCode: customers[0]?.customerCode || "",
+    customerCode: customers[0]?.customerCode || customers[0]?.id || "",
     storeName: "",
     address: "",
     contactPerson: "",
@@ -55,10 +55,13 @@ export function CreateStoreModal({
         label: "所属客户企业",
         type: "select",
         required: true,
-        options: customers.map((c) => ({
-          value: c.customerCode,
-          label: `${c.customerName} (${c.customerCode})`,
-        })),
+        options: customers.map((c, idx) => {
+          const code = c.customerCode || c.id || `cust-${idx}`;
+          return {
+            value: code,
+            label: `${c.customerName || code} (${code})`,
+          };
+        }),
       },
       {
         name: "storeName",

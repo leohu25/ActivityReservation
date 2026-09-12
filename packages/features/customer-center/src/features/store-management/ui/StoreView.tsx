@@ -326,11 +326,14 @@ export function StoreView({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">全部</SelectItem>
-                {customers.map((c) => (
-                  <SelectItem key={c.customerCode} value={c.customerCode}>
-                    {c.customerName}
-                  </SelectItem>
-                ))}
+                {customers.map((c, idx) => {
+                  const code = c.customerCode || c.id || `cust-${idx}`;
+                  return (
+                    <SelectItem key={code} value={code}>
+                      {c.customerName || code}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </DataTable.InputGroup>
