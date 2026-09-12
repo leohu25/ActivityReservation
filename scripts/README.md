@@ -1,6 +1,6 @@
 # Scripts 目录职责与组织规范 (Single Responsibility Principle)
 
-本项目 `scripts/` 目录遵循单一职责原则（SRP）进行模块化分类与组织，杜绝所有脚本无序平铺在根目录下。
+本项目 `scripts/` 目录遵循单一职责原则（SRP）进行模块化分类与组织，杜绝所有脚本无序平铺在根目录下，彻底移除空壳与胶水转发文件，全仓调用直接对齐物理路径。
 
 ## 目录拓扑
 
@@ -25,18 +25,18 @@ scripts/
 │   └── save-patch.sh               # 越界改动提取为补丁并归档至 .harness/patches/
 │
 ├── verify.sh                       # 全栈门禁总装入口 (由 .git/hooks/pre-commit 驱动)
-│
-└── [兼容代理层]                    # 保持历史调用链无损兼容的根目录代理入口
-    ├── check-boundary.mjs          # -> ./check/check-boundary.mjs
-    ├── check-redlines.mjs          # -> ./check/check-redlines.mjs
-    ├── check-redlines.test.mjs     # -> ./check/check-redlines.test.mjs
-    ├── check-vertical-slices.mjs   # -> ./check/check-vertical-slices.mjs
-    ├── sync-features.mjs           # -> ./sync/sync-features.mjs
-    ├── sync-tenant-schema.mjs      # -> ./sync/sync-tenant-schema.mjs
-    ├── fail-only-reporter.mjs      # -> ./reporter/fail-only-reporter.mjs
-    ├── status.sh                   # -> ./tools/status.sh
-    └── save-patch.sh               # -> ./tools/save-patch.sh
+└── README.md                       # 目录规范与职责说明说明文档
 ```
+
+## 模块职责分工
+
+| 目录/文件 | 核心职责 | 调用方式 / 场景 |
+| --- | --- | --- |
+| `scripts/check/` | 质量与架构安全静态门禁 | `./scripts/verify.sh` 或 CI/Commit 阶段执行 |
+| `scripts/sync/` | 编译期静态代码与 Schema 自动生成 | `pnpm sync:features` / `pnpm build` 前置执行 |
+| `scripts/reporter/` | 精简测试日志输出，抑制无关噪音 | 各 package `package.json` 中的 `test` 脚本挂载 |
+| `scripts/tools/` | 开发者与智能体日常辅助运维 | `./scripts/tools/status.sh` 等手动按需调用 |
+| `scripts/verify.sh` | 集中汇聚所有门禁自检的统一入口 | `git commit` 时由 `.git/hooks/pre-commit` 自动触发 |
 
 ## 垂直切片架构门禁检查规则 (check-vertical-slices)
 
@@ -65,6 +65,12 @@ scripts/
 ```bash
 # 执行全量质量与架构门禁
 ./scripts/verify.sh
+
+# 查看当前开发者协同状态与激活特性
+./scripts/tools/status.sh
+
+# 手动触发特性注册表与 Schema 自动同步
+pnpm sync:features
 
 # 单独执行垂直切片架构自检
 node scripts/check/check-vertical-slices.mjs
