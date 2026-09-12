@@ -29,22 +29,45 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  const activeOrgId = session.session.activeOrganizationId;
+
+  // 查询当前企业组织信息与当前用户的成员角色
+  let activeOrg: { name: string; slug: string } | null = null;
+  let memberRoleLabel = "企业成员";
+
+  if (activeOrgId) {
+    const [org, member] = await Promise.all([
+      runtime.prisma.organization.findUnique({
+        where: { id: activeOrgId },
+        select: { name: true, slug: true },
+      }),
+      runtime.prisma.member.findUnique({
+        where: {
+          organizationId_userId: {
+            organizationId: activeOrgId,
+            userId: session.user.id,
+          },
+        },
+        select: { role: true },
+      }),
+    ]);
+    activeOrg = org;
+    if (member?.role === "owner") {
+      memberRoleLabel = "拥有者 / Owner";
+    } else if (member?.role === "admin") {
+      memberRoleLabel = "企业管理员";
+    } else if (member?.role === "buyer") {
+      memberRoleLabel = "采购员";
+    } else if (member?.role) {
+      memberRoleLabel = member.role;
+    }
+  }
+
   const user = {
     name: session.user.name,
     email: session.user.email,
+    role: memberRoleLabel,
   };
-
-  const activeOrgId = session.session.activeOrganizationId;
-
-  // 查询当前企业组织信息
-  let activeOrg: { name: string; slug: string } | null = null;
-  if (activeOrgId) {
-    const org = await runtime.prisma.organization.findUnique({
-      where: { id: activeOrgId },
-      select: { name: true, slug: true },
-    });
-    activeOrg = org;
-  }
 
   const orgBadgeSlot = activeOrg ? (
     <div className="flex items-center gap-2 rounded-xl border border-sidebar-border bg-muted/40 px-3 py-1.5 shadow-xs">

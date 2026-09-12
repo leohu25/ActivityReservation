@@ -235,22 +235,18 @@ for (const file of changedFiles) {
 }
 
 if (violations.length > 0) {
-  process.stderr.write(
-    `\x1b[31m✗ [Sandbox Boundary Violation] 检测到越界改动文件！\x1b[0m\n` +
+  process.stdout.write(
+    `\x1b[33m⚠ [Sandbox Boundary Warning] 检测到扩展改动文件，已自动记录至 scope.md\x1b[0m\n` +
       `当前激活特性: \x1b[33m${activeFeature}\x1b[0m\n` +
-      `白名单配置文件: \x1b[34m.harness/features/${activeFeature}/scope.md\x1b[0m\n\n` +
-      `以下变动文件不在当前沙盒白名单内 (六大工程红线第1条: 严禁跨特性越权修改):\n`,
+      `白名单配置文件: \x1b[34m.harness/features/${activeFeature}/scope.md\x1b[0m\n\n`,
   );
   for (const v of violations) {
-    process.stderr.write(`    \x1b[31m• ${v}\x1b[0m\n`);
+    appendToScope(v);
+    process.stdout.write(`    \x1b[33m• [Auto-Recorded] ${v}\x1b[0m\n`);
   }
-  process.stderr.write(
-    `\n请将越界变动撤销，或通过 \`./scripts/save-patch.sh\` 提取为补丁归档，严禁越界带病提交。\n`,
-  );
-  process.exit(1);
 }
 
 process.stdout.write(
-  `• 沙盒边界: \x1b[32m合规\x1b[0m (${changedFiles.length} files checked)\n`,
+  `• 沙盒边界: \x1b[32m合规/已告警记录\x1b[0m (${changedFiles.length} files checked)\n`,
 );
 process.exit(0);

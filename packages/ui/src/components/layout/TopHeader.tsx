@@ -11,7 +11,11 @@ export interface TopHeaderProps {
   readonly user?: {
     name?: string | null;
     email: string;
+    /** 用户角色标识（如 "超级管理员"、"拥有者 / Owner"、"企业管理员"、"采购员" 等） */
+    role?: string | null;
   } | null;
+  /** 平台标识徽标（例如控制平台可显示 "总管理平台" 或 "平台总控端"，租户端可不传） */
+  readonly platformBadge?: ReactNode;
   readonly orgSwitcherSlot?: ReactNode;
   readonly onSignOut?: () => void | Promise<void>;
   readonly onOpenLogin?: () => void;
@@ -25,6 +29,7 @@ export interface TopHeaderProps {
  */
 export function TopHeader({
   user,
+  platformBadge,
   orgSwitcherSlot,
   onSignOut,
   onOpenLogin,
@@ -79,9 +84,13 @@ export function TopHeader({
               <span className="truncate text-base font-bold tracking-tight text-sidebar-foreground">
                 宸润数智 ERP
               </span>
-              <Badge variant="secondary" className="text-[10px] font-bold">
-                SaaS Pro
-              </Badge>
+              {platformBadge ? (
+                platformBadge
+              ) : (
+                <Badge variant="secondary" className="text-[10px] font-bold">
+                  SaaS Pro
+                </Badge>
+              )}
             </div>
             <p className="truncate text-[10px] font-medium text-muted-foreground">
               数字化供应链与制造运营系统
@@ -102,9 +111,16 @@ export function TopHeader({
                 </AvatarFallback>
               </Avatar>
               <div className="hidden flex-col text-left leading-tight sm:flex">
-                <span className="text-xs font-bold text-sidebar-foreground">
-                  {displayName}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-sidebar-foreground">
+                    {displayName}
+                  </span>
+                  {user.role && (
+                    <span className="inline-flex items-center rounded-sm bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                      {user.role}
+                    </span>
+                  )}
+                </div>
                 <span className="text-[10px] text-muted-foreground">
                   {user.email}
                 </span>

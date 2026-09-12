@@ -1,0 +1,632 @@
+import {
+  PrismaControlDbRepository,
+  type ControlPrismaClient,
+  type TenantDatabaseStatus,
+} from "@chenrun/db-control";
+import {
+  TenantDatabaseSeeder,
+  createDefaultPgSqlExecutorFactory,
+} from "@chenrun/db-tenant";
+import {
+  DatabaseMigrationService,
+  TenantDatabaseProvisioner,
+  type ProvisionTenantDatabaseResult,
+} from "@chenrun/db-migrate";
+import { hashPassword } from "better-auth/crypto";
+import {
+  FieldPolicy,
+  serializeRolePermissions,
+  type RolePermissionPayload,
+} from "@chenrun/authorization";
+import { assertControlAdmin } from "../../shared/server/control-guard";
+import type {
+  ControlTenantItem,
+  ProvisionTenantInput,
+  ProvisionTenantResult,
+  ControlTenantDetail,
+  ControlTenantMember,
+  GetTenantMembersQuery,
+  ResetTenantUserPasswordResult,
+} from "./types";
+
+import { getControlAuthRuntime } from "../../shared/server/auth-runtime";
+
+export interface TenantManagementServiceOptions {
+  readonly prisma: ControlPrismaClient;
+  readonly adminDatabaseUrl?: string;
+  readonly provisioner?: TenantDatabaseProvisioner;
+  readonly seeder?: TenantDatabaseSeeder;
+}
+
+let tenantServiceSingleton: TenantManagementService | undefined;
+
+export function getTenantManagementService(): TenantManagementService {
+  if (tenantServiceSingleton) {
+    return tenantServiceSingleton;
+  }
+  const runtime = getControlAuthRuntime();
+  tenantServiceSingleton = TenantManagementService.create({
+    prisma: runtime.prisma,
+  });
+  return tenantServiceSingleton;
+}
+
+/**
+ * 租户全生命周期与物理独立库管理核心服务 (Tenant Management Service)
+ */
+export class TenantManagementService {
+  constructor(
+    private readonly prisma: ControlPrismaClient,
+    private readonly provisioner?: TenantDatabaseProvisioner,
+    readonly seeder?: TenantDatabaseSeeder,
+  ) {}
+
+  static create(
+    options: TenantManagementServiceOptions,
+  ): TenantManagementService {
+    if (options.provisioner) {
+      return new TenantManagementService(
+        options.prisma,
+        options.provisioner,
+        options.seeder,
+      );
+    }
+
+    const adminDbUrl =
+      options.adminDatabaseUrl ?? process.env.CONTROL_DATABASE_URL;
+
+    if (!adminDbUrl) {
+      throw new Error(
+        "缺少 CONTROL_DATABASE_URL 环境变量，数据库未连接！请检查配置文件是否就绪。",
+      );
+    }
+
+    const sqlExecutorFactory = createDefaultPgSqlExecutorFactory();
+    const seeder =
+      options.seeder ?? new TenantDatabaseSeeder(sqlExecutorFactory);
+
+    const secretResolver = {
+      resolveDatabaseUrl: async (secretRef: string): Promise<string> => {
+        if (secretRef.startsWith("env:")) {
+          return process.env[secretRef.slice(4)] ?? "";
+        }
+        if (secretRef.startsWith("url:")) {
+          return secretRef.slice(4);
+        }
+        try {
+          const url = new URL(adminDbUrl);
+          url.pathname = `/${secretRef}`;
+          return url.toString();
+        } catch {
+          return "";
+        }
+      },
+    };
+
+    const repo = new PrismaControlDbRepository(options.prisma);
+    const migrationService = new DatabaseMigrationService({
+      controlDatabaseUrl: adminDbUrl,
+      repository: repo,
+      secretResolver,
+      sqlExecutorFactory,
+      seeder,
+    });
+
+    return new TenantManagementService(
+      options.prisma,
+      migrationService.tenantProvisioner,
+      seeder,
+    );
+  }
+
+  /**
+   * 查询全部租户列表及其物理数据库与迁移信息
+   */
+  async listTenants(operatorUser: {
+    email?: string | null;
+  }): Promise<ControlTenantItem[]> {
+    assertControlAdmin(operatorUser);
+
+    const orgs = await this.prisma.organization.findMany({
+      include: {
+        tenantDatabase: true,
+        members: {
+          select: { id: true },
+        },
+        migrations: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return orgs.map((org) => {
+      const db = org.tenantDatabase;
+      const latestMig = org.migrations[0];
+
+      return {
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        createdAt: org.createdAt,
+        memberCount: org.members.length,
+        database: db
+          ? {
+              databaseName: db.databaseName,
+              clusterCode: db.clusterCode,
+              schemaVersion: db.schemaVersion,
+              status: db.status,
+              updatedAt: db.updatedAt,
+            }
+          : null,
+        latestMigration: latestMig
+          ? {
+              version: latestMig.version,
+              migrationName: latestMig.migrationName,
+              status: latestMig.status,
+              appliedSteps: latestMig.appliedSteps,
+            }
+          : null,
+      };
+    });
+  }
+
+  /**
+   * 查询指定租户的完整详情，包含独立物理数据库拓扑与全体成员列表（支持搜索过滤与分页）
+   */
+  async getTenantDetail(
+    orgId: string,
+    operatorUser: { email?: string | null },
+    query?: GetTenantMembersQuery,
+  ): Promise<ControlTenantDetail | null> {
+    assertControlAdmin(operatorUser);
+
+    const search = query?.search?.trim().toLowerCase();
+    const page = Math.max(1, query?.page ?? 1);
+    const pageSize = Math.max(1, Math.min(100, query?.pageSize ?? 10));
+
+    const org = await this.prisma.organization.findUnique({
+      where: { id: orgId },
+      include: {
+        tenantDatabase: true,
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "asc" },
+        },
+      },
+    });
+
+    if (!org) {
+      return null;
+    }
+
+    let filteredMembers = org.members;
+    if (search) {
+      filteredMembers = filteredMembers.filter((m) => {
+        const name = (m.user.name ?? "").toLowerCase();
+        const email = m.user.email.toLowerCase();
+        const role = m.role.toLowerCase();
+        return (
+          name.includes(search) ||
+          email.includes(search) ||
+          role.includes(search)
+        );
+      });
+    }
+
+    const sortedMembers = [...filteredMembers].sort((a, b) => {
+      const getRoleWeight = (role: string) => {
+        if (role === "owner") return 0;
+        if (role === "admin") return 1;
+        return 2;
+      };
+      return getRoleWeight(a.role) - getRoleWeight(b.role);
+    });
+
+    const total = sortedMembers.length;
+    const totalPages = Math.ceil(total / pageSize) || 1;
+    const startIndex = (page - 1) * pageSize;
+    const paginatedMembers = sortedMembers.slice(
+      startIndex,
+      startIndex + pageSize,
+    );
+
+    const members: ControlTenantMember[] = paginatedMembers.map((m) => ({
+      id: m.id,
+      userId: m.userId,
+      name: m.user.name || "未命名用户",
+      email: m.user.email,
+      image: m.user.image,
+      role: m.role,
+      createdAt: m.createdAt,
+    }));
+
+    const db = org.tenantDatabase;
+
+    return {
+      id: org.id,
+      name: org.name,
+      slug: org.slug,
+      createdAt: org.createdAt,
+      authorizationVersion: org.authorizationVersion,
+      database: db
+        ? {
+            id: db.id,
+            databaseName: db.databaseName,
+            clusterCode: db.clusterCode,
+            secretRef: db.secretRef,
+            schemaVersion: db.schemaVersion,
+            status: db.status,
+            createdAt: db.createdAt,
+            updatedAt: db.updatedAt,
+          }
+        : null,
+      members,
+      memberPagination: {
+        total,
+        page,
+        pageSize,
+        totalPages,
+      },
+    };
+  }
+
+  /**
+   * 控制平面管理员开通新租户并自动化创建物理数据库与初始化迁移
+   */
+  async provisionTenant(
+    input: ProvisionTenantInput,
+    operatorUser: { email?: string | null },
+  ): Promise<ProvisionTenantResult> {
+    assertControlAdmin(operatorUser);
+
+    const cleanName = input.name.trim();
+    const cleanSlug = input.slug.trim().toLowerCase();
+    const cleanEmail = input.adminEmail.trim().toLowerCase();
+
+    if (!cleanName || !cleanSlug || !cleanEmail) {
+      throw new Error("租户名称、Slug 标识与管理员邮箱均为必填项");
+    }
+
+    if (!/^[a-z0-9_-]{2,32}$/.test(cleanSlug)) {
+      throw new Error(
+        "租户 Slug 必须由 2-32 位小写字母、数字、下划线或连字符组成",
+      );
+    }
+
+    const existingOrg = await this.prisma.organization.findUnique({
+      where: { slug: cleanSlug },
+    });
+    if (existingOrg) {
+      throw new Error(`租户 Slug [${cleanSlug}] 已存在，请更换`);
+    }
+
+    let adminUser = await this.prisma.user.findUnique({
+      where: { email: cleanEmail },
+    });
+
+    if (!adminUser) {
+      adminUser = await this.prisma.user.create({
+        data: {
+          id: `usr_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          email: cleanEmail,
+          name: input.adminName?.trim() || cleanEmail.split("@")[0],
+          emailVerified: true,
+        },
+      });
+    }
+
+    const initialPassword = input.initialPassword ?? "Admin123456!";
+    let returnedInitialPassword: string | undefined;
+
+    const existingAccount = await this.prisma.account.findFirst({
+      where: {
+        userId: adminUser.id,
+        providerId: "credential",
+      },
+    });
+
+    if (!existingAccount) {
+      const hashedPassword = await hashPassword(initialPassword);
+      await this.prisma.account.create({
+        data: {
+          id: `acc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          accountId: adminUser.id,
+          providerId: "credential",
+          userId: adminUser.id,
+          password: hashedPassword,
+        },
+      });
+      returnedInitialPassword = initialPassword;
+    } else if (input.initialPassword) {
+      const hashedPassword = await hashPassword(input.initialPassword);
+      await this.prisma.account.update({
+        where: {
+          providerId_accountId: {
+            providerId: "credential",
+            accountId: adminUser.id,
+          },
+        },
+        data: {
+          password: hashedPassword,
+        },
+      });
+      returnedInitialPassword = input.initialPassword;
+    }
+
+    const orgId = `org_${cleanSlug}_${Date.now()}`;
+    const ownerMemberId = `mem_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const organization = await this.prisma.organization.create({
+      data: {
+        id: orgId,
+        name: cleanName,
+        slug: cleanSlug,
+        members: {
+          create: {
+            id: ownerMemberId,
+            userId: adminUser.id,
+            role: "owner",
+          },
+        },
+      },
+    });
+
+    const defaultRoles: Array<{
+      role: string;
+      payload: RolePermissionPayload;
+    }> = [
+      {
+        role: "owner",
+        payload: {
+          statement: {
+            "procurement.order": [
+              "read",
+              "create",
+              "update",
+              "audit",
+              "export",
+            ],
+          },
+          dataScopes: [
+            {
+              resource: "procurement.order",
+              scopeType: "ALL",
+            },
+          ],
+          fieldPolicies: [],
+        },
+      },
+      {
+        role: "admin",
+        payload: {
+          statement: {
+            "procurement.order": [
+              "read",
+              "create",
+              "update",
+              "audit",
+              "export",
+            ],
+          },
+          dataScopes: [
+            {
+              resource: "procurement.order",
+              scopeType: "DEPT_TREE",
+            },
+          ],
+          fieldPolicies: [],
+        },
+      },
+      {
+        role: "buyer",
+        payload: {
+          statement: {
+            "procurement.order": ["read", "create"],
+          },
+          dataScopes: [
+            {
+              resource: "procurement.order",
+              action: "read",
+              scopeType: "DEPT",
+            },
+          ],
+          fieldPolicies: [
+            {
+              subject: "PurchaseOrder",
+              field: "costPrice",
+              access: FieldPolicy.READONLY,
+            },
+          ],
+        },
+      },
+    ];
+
+    for (const r of defaultRoles) {
+      await this.prisma.organizationRole.upsert({
+        where: {
+          organizationId_role: {
+            organizationId: organization.id,
+            role: r.role,
+          },
+        },
+        create: {
+          id: `role_${organization.id}_${r.role}`,
+          organizationId: organization.id,
+          role: r.role,
+          permission: serializeRolePermissions(r.payload),
+        },
+        update: {
+          permission: serializeRolePermissions(r.payload),
+        },
+      });
+    }
+
+    const clusterCode = input.clusterCode ?? "primary";
+    const databaseName = `tenant_${cleanSlug.replace(/-/g, "_")}`;
+    const adminDbUrl =
+      process.env.CONTROL_DATABASE_URL ??
+      "postgresql://postgres:postgres@localhost:5432/saas_control";
+
+    const seedInput = {
+      organizationId: organization.id,
+      organizationName: cleanName,
+      ownerUserId: adminUser.id,
+      ownerMemberId,
+      ownerName: adminUser.name,
+      ownerEmail: cleanEmail,
+    };
+
+    if (this.provisioner) {
+      const provisionResult: ProvisionTenantDatabaseResult =
+        await this.provisioner.provision({
+          organizationId: organization.id,
+          clusterCode,
+          databaseName,
+          adminDatabaseUrl: adminDbUrl,
+          secretRef: databaseName,
+          seedInput,
+        });
+
+      return {
+        organizationId: organization.id,
+        slug: cleanSlug,
+        databaseName: provisionResult.databaseName,
+        status: provisionResult.status,
+        initialPassword: returnedInitialPassword,
+      };
+    }
+
+    const dbRecord = await this.prisma.tenantDatabase.create({
+      data: {
+        organizationId: organization.id,
+        clusterCode,
+        databaseName,
+        secretRef: databaseName,
+        schemaVersion: "baseline",
+        status: "ACTIVE",
+      },
+    });
+
+    return {
+      organizationId: organization.id,
+      slug: cleanSlug,
+      databaseName: dbRecord.databaseName,
+      status: dbRecord.status,
+      initialPassword: returnedInitialPassword,
+    };
+  }
+
+  /**
+   * 切换租户物理数据库生命周期状态 (ACTIVE <-> SUSPENDED)
+   */
+  async toggleTenantStatus(
+    organizationId: string,
+    operatorUser: { email?: string | null },
+  ): Promise<TenantDatabaseStatus> {
+    assertControlAdmin(operatorUser);
+
+    const db = await this.prisma.tenantDatabase.findUnique({
+      where: { organizationId },
+    });
+
+    if (!db) {
+      throw new Error(`找不到租户 [${organizationId}] 的物理数据库拓扑记录`);
+    }
+
+    const nextStatus: TenantDatabaseStatus =
+      db.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
+
+    await this.prisma.tenantDatabase.update({
+      where: { organizationId },
+      data: {
+        status: nextStatus,
+      },
+    });
+
+    return nextStatus;
+  }
+
+  /**
+   * 控制平面超管重置指定租户成员登录密码
+   */
+  async resetTenantUserPassword(
+    orgId: string,
+    userId: string,
+    operatorUser: { email?: string | null },
+    customPassword?: string,
+  ): Promise<ResetTenantUserPasswordResult> {
+    assertControlAdmin(operatorUser);
+
+    const member = await this.prisma.member.findUnique({
+      where: {
+        organizationId_userId: {
+          organizationId: orgId,
+          userId,
+        },
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!member) {
+      throw new Error("该成员不存在或不属于当前租户");
+    }
+
+    const randBytes = crypto.getRandomValues(new Uint8Array(4));
+    const hex = Array.from(randBytes)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("")
+      .toUpperCase();
+    const temporaryPassword = customPassword?.trim() || `Reset@${hex}!`;
+
+    const hashedPassword = await hashPassword(temporaryPassword);
+
+    const account = await this.prisma.account.findFirst({
+      where: {
+        userId,
+        providerId: "credential",
+      },
+    });
+
+    if (account) {
+      await this.prisma.account.update({
+        where: {
+          providerId_accountId: {
+            providerId: "credential",
+            accountId: account.accountId,
+          },
+        },
+        data: {
+          password: hashedPassword,
+        },
+      });
+    } else {
+      await this.prisma.account.create({
+        data: {
+          id: `acc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          accountId: userId,
+          providerId: "credential",
+          userId,
+          password: hashedPassword,
+        },
+      });
+    }
+
+    return {
+      userId,
+      email: member.user.email,
+      temporaryPassword,
+    };
+  }
+}

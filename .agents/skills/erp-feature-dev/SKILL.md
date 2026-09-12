@@ -37,54 +37,15 @@ agent_created: true
 
 ---
 
-## 标准目录拓扑
-
-```bash
-packages/features/<business-area>/
-├── prisma/schema.prisma                # 业务切片专属数据模型
-└── src/
-    ├── features/
-    │   └── <feature>/
-    │       ├── <sub-feature>/          # 仅存在稳定子能力时增加
-    │       ├── contract.ts             # 权限与页面纯数据契约
-    │       ├── types.ts                # 输入、查询参数与 ViewModel
-    │       ├── service.ts              # 数据访问、事务与当前规模业务规则
-    │       ├── queries.ts              # RSC server-only 读取
-    │       ├── actions.ts              # Client mutation Server Actions
-    │       ├── ui/                     # Feature 私有 UI 与 colocated tests
-    │       ├── public.ts               # Client-safe API
-    │       └── public.server.ts        # Server-only API
-    ├── shared/                         # Business Area 内多个 Feature 的真实复用
-    │   ├── server/tenant-context.ts    # 底层租户数据库上下文与员工门禁
-    │   └── ui/*AbilityBoundary.tsx     # 权限快照提供器
-    ├── assembly/context.ts             # 业务区域级拓扑编译、数据范围注入与运行时 Ability 装配
-    ├── catalog.ts                      # 由 manifest 派生的权限目录
-    └── manifest.ts                     # 导航拓扑与受控页面契约注册
-```
-
-### 业务层级规范（中英对照）
-
-- **`Business Area / Feature Group`（业务领域 / 特性集群）**：例如 Customer Center（客户中心），是一个完整的大业务板块，通常作为一个 npm 工作区包。
-- **`Feature`（核心业务特性 / 独立业务功能）**：例如 Customer Management（客户管理）、Store Management（门店管理），具备完整业务闭环。
-- **`Sub-Feature`（子特性 / 附属业务能力）**：例如 Classification（分类与标签管理），依附于主特性。
-- **`Vertical Slice / Use Case`（垂直切片 / 业务用例）**：例如“创建分类”、“停用门店”、“生效报价”，贯穿 UI → Server Query/Action → Service → DB 的最小端到端业务操作。当前规模下不要求一用例一目录，避免过度设计。
-
-### 包暴露规范 (Package Subpath Exports)
-
-严格遵循 Turborepo 与 Next.js 官方最佳实践：
-
-1. **语义化子路径**：通过 `package.json#exports` 暴露 `./customer-management`、`./quotation-management` 等业务入口，彻底消灭根目录大杂烩 Barrel File。
-2. **环境物理隔离**：区分 Client-Safe 入口（`public.ts`）与纯服务端入口（`./<feature>/server` 映射至 `public.server.ts`，首行标注 `import "server-only"`），防止服务端逻辑或 Node 原生模块泄露至浏览器。
-3. **禁止内部穿透**：外部调用方严禁直接穿透访问包内 `/src/` 内部文件。
-4. **DDD 按需引入**：仅在业务规则复杂（如复杂状态机、报价优先级算法、严格一致性边界）时引入战术 DDD 模式，严禁简单 CRUD 机械堆叠抽象。
-
 ---
 
 ## Feature 开发流水线 (Standard Schedule)
 
-开工开发或重构一个业务 Feature 时，严格按以下 **7 个阶段** 循序渐进：
+开工开发或重构一个业务 Feature 时，严格按以下 **8 个阶段** 循序渐进：
 
 ```text
+Phase 0: 架构拓扑与目录骨架
+         ↓
 Phase 1: 数据建模与物理隔离
          ↓
 Phase 2: 纯数据契约 (SSoT)
@@ -104,6 +65,7 @@ Phase 7: 契约对齐单测与全栈验证
 
 | 阶段 | 核心任务 | 交付物与验证指标 | 深入阅读文档 |
 | :--- | :--- | :--- | :--- |
+| **Phase 0<br>架构拓扑** | 建立 `src/features/<feature>/` 垂直切片骨架，配置 `package.json#exports` 语义子路径，杜绝平铺。 | • 标准 7~8 件套目录骨架<br>• Client/Server 双出口 | `references/0-architecture-topology.md` |
 | **Phase 1<br>数据建模** | 切片内定义模型（强制包含审计与软删除基线），统一由 db-tenant 聚合生成 Client，运行基线迁移。 | • `prisma/schema.prisma`<br>• `pnpm run db:migrate:generate` | `references/2-schema-migrate.md` |
 | **Phase 2<br>纯数据契约** | 编写无 JSX、无 DOM 的纯数据契约，定义受控字段枚举与操作权限。 | • Feature/Sub-Feature `contract.ts`<br>• 字段与动作自包含 | `references/1-contracts.md` |
 | **Phase 3<br>服务与 Query** | 封装核心业务、软删除安全校验，并建立 RSC server-only 读取与数据范围物理下推入口。 | • Feature `service.ts` / `queries.ts`<br>• 业务单测通过 | `references/3-services.md` |

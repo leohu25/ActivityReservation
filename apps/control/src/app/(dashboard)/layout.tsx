@@ -1,16 +1,40 @@
 import React from "react";
-import { ControlLayout } from "@chenrun/feature-control-admin";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { ControlLayout } from "@chenrun/feature-control-admin/shared";
+import {
+  getControlAuthRuntime,
+  assertControlAdmin,
+} from "@chenrun/feature-control-admin/shared/server";
 
 export interface DashboardGroupLayoutProps {
- readonly children: React.ReactNode;
+  readonly children: React.ReactNode;
 }
 
 /**
  * 控制平面总控后台 (dashboard) 路由组统一布局
  * 引入 @chenrun/feature-control-admin 导出的现代数智风自包含布局外壳
  */
-export default function DashboardGroupLayout({
- children,
-}: DashboardGroupLayoutProps): React.JSX.Element {
- return <ControlLayout>{children}</ControlLayout>;
+export default async function DashboardGroupLayout({
+  children,
+}: DashboardGroupLayoutProps): Promise<React.JSX.Element> {
+  const reqHeaders = await headers();
+  const runtime = getControlAuthRuntime();
+  const session = await runtime.auth.api.getSession({
+    headers: reqHeaders,
+  });
+
+  if (!session || !session.user) {
+    redirect("/login");
+  }
+
+  assertControlAdmin(session.user);
+
+  const user = {
+    name: session.user.name,
+    email: session.user.email ?? "",
+    role: "平台超管",
+  };
+
+  return <ControlLayout user={user}>{children}</ControlLayout>;
 }

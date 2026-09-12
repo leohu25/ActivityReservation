@@ -40,7 +40,7 @@ const RETIRED_FLAT_ENTRIES = [
   "server",
 ];
 
-/** 平台非租户业务包或尚未开启垂直切片重构的包 */
+/** 平台非租户业务包（控制平面无需 CASL 租户目录与租户上下文，单独适用切片规则） */
 const NON_TENANT_FEATURE_PACKAGES = new Set(["control-admin"]);
 const PENDING_MIGRATION_PACKAGES = new Set(["procurement-center"]);
 
@@ -115,7 +115,6 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
   for (const entry of featureEntries) {
     if (!entry.isDirectory()) continue;
     const pkgName = entry.name;
-    if (NON_TENANT_FEATURE_PACKAGES.has(pkgName)) continue;
 
     const pkgDir = path.join(featuresDir, pkgName);
     const srcDir = path.join(pkgDir, "src");
@@ -155,43 +154,47 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
       continue;
     }
 
-    // 2. 检查基础契约文件
-    const manifestPath = path.join(srcDir, "manifest.ts");
-    if (!fs.existsSync(manifestPath)) {
-      violations.push({
-        file: `${relPkgDir}/src/manifest.ts`,
-        line: 1,
-        rule: "业务特性包必须在 src/manifest.ts 导出自描述特性清单 TenantFeatureManifest (ADR-005/006)",
-        code: "manifest.ts missing",
-      });
-    }
+    const isNonTenantPackage = NON_TENANT_FEATURE_PACKAGES.has(pkgName);
 
-    const catalogPath = path.join(srcDir, "catalog.ts");
-    if (!fs.existsSync(catalogPath)) {
-      violations.push({
-        file: `${relPkgDir}/src/catalog.ts`,
-        line: 1,
-        rule: "业务特性包必须在 src/catalog.ts 导出 CASL 权限目录 PermissionCatalog",
-        code: "catalog.ts missing",
-      });
-    }
+    // 2. 检查基础契约文件 (租户包必须具备 manifest/catalog/租户上下文；控制面平台包免除 CASL 租户清单)
+    if (!isNonTenantPackage) {
+      const manifestPath = path.join(srcDir, "manifest.ts");
+      if (!fs.existsSync(manifestPath)) {
+        violations.push({
+          file: `${relPkgDir}/src/manifest.ts`,
+          line: 1,
+          rule: "业务特性包必须在 src/manifest.ts 导出自描述特性清单 TenantFeatureManifest (ADR-005/006)",
+          code: "manifest.ts missing",
+        });
+      }
 
-    // 检查 shared/server 租户上下文隔离
-    const sharedServerContext = path.join(srcDir, "shared/server/context.ts");
-    const sharedServerTenantContext = path.join(
-      srcDir,
-      "shared/server/tenant-context.ts",
-    );
-    if (
-      !fs.existsSync(sharedServerContext) &&
-      !fs.existsSync(sharedServerTenantContext)
-    ) {
-      violations.push({
-        file: `${relPkgDir}/src/shared/server`,
-        line: 1,
-        rule: "业务特性包必须在 src/shared/server/ 下维护租户物理库与鉴权上下文 (context.ts 或 tenant-context.ts)",
-        code: "shared/server context missing",
-      });
+      const catalogPath = path.join(srcDir, "catalog.ts");
+      if (!fs.existsSync(catalogPath)) {
+        violations.push({
+          file: `${relPkgDir}/src/catalog.ts`,
+          line: 1,
+          rule: "业务特性包必须在 src/catalog.ts 导出 CASL 权限目录 PermissionCatalog",
+          code: "catalog.ts missing",
+        });
+      }
+
+      // 检查 shared/server 租户上下文隔离
+      const sharedServerContext = path.join(srcDir, "shared/server/context.ts");
+      const sharedServerTenantContext = path.join(
+        srcDir,
+        "shared/server/tenant-context.ts",
+      );
+      if (
+        !fs.existsSync(sharedServerContext) &&
+        !fs.existsSync(sharedServerTenantContext)
+      ) {
+        violations.push({
+          file: `${relPkgDir}/src/shared/server`,
+          line: 1,
+          rule: "业务特性包必须在 src/shared/server/ 下维护租户物理库与鉴权上下文 (context.ts 或 tenant-context.ts)",
+          code: "shared/server context missing",
+        });
+      }
     }
 
     // 检查 shared/public.ts
@@ -220,18 +223,18 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
         violations.push({
           file: `${relPkgDir}/package.json`,
           line: 1,
-          rule: "业务特性包严禁导出根路径 \".\" 大杂烩桶；必须按业务切片暴露语义子路径",
+          rule: '业务特性包严禁导出根路径 "." 大杂烩桶；必须按业务切片暴露语义子路径',
           code: `"exports": { ".": "${exportsField["."]}" }`,
         });
       }
 
-      // 必须导出 ./manifest
-      if (!exportsField["./manifest"]) {
+      // 租户包必须导出 ./manifest
+      if (!isNonTenantPackage && !exportsField["./manifest"]) {
         violations.push({
           file: `${relPkgDir}/package.json`,
           line: 1,
-          rule: "业务特性包 exports 必须显式导出 \"./manifest\"",
-          code: "exports[\"./manifest\"] missing",
+          rule: '业务特性包 exports 必须显式导出 "./manifest"',
+          code: 'exports["./manifest"] missing',
         });
       }
 
@@ -240,8 +243,8 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
         violations.push({
           file: `${relPkgDir}/package.json`,
           line: 1,
-          rule: "业务特性包 exports 必须显式导出 \"./shared\"",
-          code: "exports[\"./shared\"] missing",
+          rule: '业务特性包 exports 必须显式导出 "./shared"',
+          code: 'exports["./shared"] missing',
         });
       }
     }
@@ -300,7 +303,9 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
         });
       }
 
-      const hasContract = fs.existsSync(path.join(slice.fullPath, "contract.ts"));
+      const hasContract = fs.existsSync(
+        path.join(slice.fullPath, "contract.ts"),
+      );
       const hasPublicServer = fs.existsSync(
         path.join(slice.fullPath, "public.server.ts"),
       );
@@ -386,7 +391,7 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
               file: relCodePath,
               line: 1,
               rule: `纯服务端文件必须在头部显式声明 import "server-only"; 防止被前端组件误打包`,
-              code: "missing import \"server-only\"",
+              code: 'missing import "server-only"',
             });
           }
         }
@@ -398,7 +403,7 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
               file: relCodePath,
               line: 1,
               rule: `Server Actions 模块必须在头部显式声明 "use server";`,
-              code: "missing \"use server\"",
+              code: 'missing "use server"',
             });
           }
         }
@@ -464,7 +469,7 @@ function main() {
   }
 
   process.stdout.write(
-    `• 业务切片: \x1b[32m规范完整\x1b[0m (customer-center, tenant-admin 均合规)\n`,
+    `• 业务切片: \x1b[32m规范完整\x1b[0m (customer-center, tenant-admin, control-admin 均合规)\n`,
   );
   process.exit(0);
 }

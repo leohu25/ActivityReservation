@@ -88,7 +88,8 @@ export default async function CustomersPage({
 
 ```ts
 import type { FeatureManifest } from "@chenrun/authorization";
-import { customerPageContract, storePageContract } from "./contracts";
+import { customerPageContract } from "./features/customer-management/contract";
+import { storePageContract } from "./features/store-management/contract";
 
 export const customerCenterManifest: FeatureManifest = {
   id: "customer-center",

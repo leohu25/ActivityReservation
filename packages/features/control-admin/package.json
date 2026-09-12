@@ -3,13 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./src/shared/public.ts",
+  "types": "./src/shared/public.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./components": "./src/components/index.ts",
-    "./services": "./src/services/index.ts",
-    "./actions": "./src/actions.ts"
+    "./shared": "./src/shared/public.ts",
+    "./shared/server": "./src/shared/server.ts",
+    "./tenant-management": "./src/features/tenant-management/public.ts",
+    "./tenant-management/server": "./src/features/tenant-management/public.server.ts",
+    "./migration-management": "./src/features/migration-management/public.ts",
+    "./migration-management/server": "./src/features/migration-management/public.server.ts",
+    "./platform-overview": "./src/features/platform-overview/public.ts",
+    "./platform-overview/server": "./src/features/platform-overview/public.server.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",
