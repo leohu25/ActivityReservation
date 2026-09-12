@@ -1,7 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FormDialog, FormSection, FormBanner, FormFields, type FormFieldSchema, toast } from "@chenrun/ui";
+import {
+  FormDialog,
+  FormSection,
+  FormBanner,
+  FormFields,
+  type FormFieldSchema,
+  toast,
+} from "@chenrun/ui";
 import { createStoreAction } from "../../actions";
 import type { CustomerListItem } from "../../types";
 
@@ -167,7 +174,9 @@ export function CreateStoreModal({
         <FormFields
           fields={baseFields}
           values={values}
-          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
+          onChange={(name, val) =>
+            setValues((prev) => ({ ...prev, [name]: val }))
+          }
           columns={2}
         />
       </FormSection>
@@ -175,7 +184,9 @@ export function CreateStoreModal({
         <FormFields
           fields={siteFields}
           values={values}
-          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
+          onChange={(name, val) =>
+            setValues((prev) => ({ ...prev, [name]: val }))
+          }
           columns={2}
         />
       </FormSection>
@@ -183,7 +194,9 @@ export function CreateStoreModal({
         <FormFields
           fields={billingFields}
           values={values}
-          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
+          onChange={(name, val) =>
+            setValues((prev) => ({ ...prev, [name]: val }))
+          }
           columns={2}
         />
       </FormSection>

@@ -1,7 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FormDialog, FormSection, FormFields, type FormFieldSchema, toast } from "@chenrun/ui";
+import {
+  FormDialog,
+  FormSection,
+  FormFields,
+  type FormFieldSchema,
+  toast,
+} from "@chenrun/ui";
 import { createRoleAction } from "../actions";
 
 export interface CreateRoleModalProps {
@@ -75,7 +81,9 @@ export function CreateRoleModal({ onClose, onCreated }: CreateRoleModalProps) {
         <FormFields
           fields={fields}
           values={values}
-          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
+          onChange={(name, val) =>
+            setValues((prev) => ({ ...prev, [name]: val }))
+          }
           columns={2}
         />
       </FormSection>

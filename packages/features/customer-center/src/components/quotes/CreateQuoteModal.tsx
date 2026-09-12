@@ -2,7 +2,16 @@
 
 import { useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { Button, FormDialog, FormSection, FormBanner, FormFields, Input, toast, type FormFieldSchema } from "@chenrun/ui";
+import {
+  Button,
+  FormDialog,
+  FormSection,
+  FormBanner,
+  FormFields,
+  Input,
+  toast,
+  type FormFieldSchema,
+} from "@chenrun/ui";
 import { createQuoteAction } from "../../actions";
 import type {
   CreateQuoteItemInput,
@@ -232,7 +241,9 @@ export function CreateQuoteModal({
         <FormFields
           fields={headerFields}
           values={values}
-          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
+          onChange={(name, val) =>
+            setValues((prev) => ({ ...prev, [name]: val }))
+          }
           columns={2}
         />
       </FormSection>

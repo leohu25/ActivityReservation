@@ -1,7 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FormDialog, FormSection, FormBanner, FormFields, TagMultiSelect, type FormFieldSchema, toast } from "@chenrun/ui";
+import {
+  FormDialog,
+  FormSection,
+  FormBanner,
+  FormFields,
+  TagMultiSelect,
+  type FormFieldSchema,
+  toast,
+} from "@chenrun/ui";
 import { createCustomerAction } from "../../actions";
 import type { CustomerCategoryItem, CustomerTagItem } from "../../types";
 
@@ -191,7 +199,9 @@ export function CreateCustomerModal({
         <FormFields
           fields={basicFields}
           values={values}
-          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
+          onChange={(name, val) =>
+            setValues((prev) => ({ ...prev, [name]: val }))
+          }
           columns={2}
         />
       </FormSection>
@@ -200,7 +210,9 @@ export function CreateCustomerModal({
         <FormFields
           fields={settleFields}
           values={values}
-          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
+          onChange={(name, val) =>
+            setValues((prev) => ({ ...prev, [name]: val }))
+          }
           columns={3}
         />
       </FormSection>
@@ -209,7 +221,9 @@ export function CreateCustomerModal({
         <FormFields
           fields={bizFields}
           values={values}
-          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
+          onChange={(name, val) =>
+            setValues((prev) => ({ ...prev, [name]: val }))
+          }
           columns={2}
         />
       </FormSection>

@@ -42,11 +42,7 @@ export interface FormBannerProps {
 }
 
 /** 表单头部强调提示横幅 */
-export function FormBanner({
-  title,
-  description,
-  className,
-}: FormBannerProps) {
+export function FormBanner({ title, description, className }: FormBannerProps) {
   return (
     <div
       className={cn(

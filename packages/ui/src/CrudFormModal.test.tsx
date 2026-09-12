@@ -160,7 +160,7 @@ test("FormFields: 当传入错误信息时，渲染红字 form-message 且设置
         contactPhone: "手机号码格式不正确",
       }}
       onChange={() => {}}
-    />
+    />,
   );
 
   // 验证渲染了红字提示与 aria-invalid

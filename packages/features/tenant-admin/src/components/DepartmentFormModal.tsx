@@ -1,11 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FormDialog, FormSection, FormFields, type FormFieldSchema, toast } from "@chenrun/ui";
 import {
-  createDepartmentAction,
-  updateDepartmentAction,
-} from "../actions";
+  FormDialog,
+  FormSection,
+  FormFields,
+  type FormFieldSchema,
+  toast,
+} from "@chenrun/ui";
+import { createDepartmentAction, updateDepartmentAction } from "../actions";
 import type { DepartmentTreeNode } from "../types";
 
 export interface DepartmentFormModalProps {
@@ -41,8 +44,7 @@ export function DepartmentFormModal({
   const [values, setValues] = useState<DepartmentForm>({
     name: record?.name || "",
     code: record?.code || "",
-    parentId:
-      (mode === "edit" ? record?.parentId : defaultParentId) || "",
+    parentId: (mode === "edit" ? record?.parentId : defaultParentId) || "",
     sort: record?.sort ?? 0,
   });
 
@@ -117,7 +119,9 @@ export function DepartmentFormModal({
         <FormFields
           fields={fields}
           values={values}
-          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
+          onChange={(name, val) =>
+            setValues((prev) => ({ ...prev, [name]: val }))
+          }
           columns={2}
         />
       </FormSection>

@@ -1,7 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FormDialog, FormSection, FormFields, type FormFieldSchema, toast } from "@chenrun/ui";
+import {
+  FormDialog,
+  FormSection,
+  FormFields,
+  type FormFieldSchema,
+  toast,
+} from "@chenrun/ui";
 import { createCategoryAction } from "../../actions";
 import type { CustomerCategoryItem } from "../../types";
 
@@ -92,7 +98,9 @@ export function CreateCategoryModal({
         <FormFields
           fields={fields}
           values={values}
-          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
+          onChange={(name, val) =>
+            setValues((prev) => ({ ...prev, [name]: val }))
+          }
           columns={2}
         />
       </FormSection>

@@ -150,10 +150,7 @@ export function CrudFormModal<TValues extends Record<string, unknown>>({
       cancelText={mode === "view" ? "关闭" : cancelText}
       headerExtra={
         bannerTitle ? (
-          <FormBanner
-            title={bannerTitle}
-            description={bannerDescription}
-          />
+          <FormBanner title={bannerTitle} description={bannerDescription} />
         ) : undefined
       }
       onSubmit={mode === "view" ? undefined : handleSubmit}

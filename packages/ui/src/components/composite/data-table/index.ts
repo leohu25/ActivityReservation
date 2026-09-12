@@ -31,9 +31,9 @@ export * from "./DataTablePagination";
 export * from "./DataTableActions";
 export * from "./DataTableColumnsSchema";
 export {
-  DataTableWorkspace,
-  type DataTableWorkspaceProps,
-  type WorkspaceStatusOption,
+ DataTableWorkspace,
+ type DataTableWorkspaceProps,
+ type WorkspaceStatusOption,
 } from "../../templates/DataTableWorkspace";
 
 /**
@@ -41,23 +41,23 @@ export {
  * 职责单一：仅聚焦于数据表格、筛选栏、工具栏、分页与行操作，绝不侵入表单系统
  */
 export const DataTable = Object.assign(DataTableRoot, {
-  Root: DataTableRoot,
-  Workspace: DataTableWorkspace,
-  Toolbar: DataTableToolbar,
-  Header: DataTableHeader,
-  FacetedFilter: DataTableFacetedFilter,
-  FilterBar: DataTableFilterBar,
-  FilterDrawer: DataTableFilterDrawer,
-  InputGroup: DataTableInputGroup,
-  ColumnSettings: DataTableColumnSettings,
-  BatchBar: DataTableBatchBar,
-  Content: DataTableContent,
-  RowActions: DataTableRowActions,
-  Pagination: DataTablePagination,
-  createColumnsFromSchema: createColumnsFromSchema,
-  Actions: DataTableActions,
-  ActionButton: DataTableActionButton,
-  AuthField: AuthField,
-  AuthorizedField: AuthField,
-  AuthGuard: AuthGuard,
+ Root: DataTableRoot,
+ Workspace: DataTableWorkspace,
+ Toolbar: DataTableToolbar,
+ Header: DataTableHeader,
+ FacetedFilter: DataTableFacetedFilter,
+ FilterBar: DataTableFilterBar,
+ FilterDrawer: DataTableFilterDrawer,
+ InputGroup: DataTableInputGroup,
+ ColumnSettings: DataTableColumnSettings,
+ BatchBar: DataTableBatchBar,
+ Content: DataTableContent,
+ RowActions: DataTableRowActions,
+ Pagination: DataTablePagination,
+ createColumnsFromSchema: createColumnsFromSchema,
+ Actions: DataTableActions,
+ ActionButton: DataTableActionButton,
+ AuthField: AuthField,
+ AuthorizedField: AuthField,
+ AuthGuard: AuthGuard,
 });

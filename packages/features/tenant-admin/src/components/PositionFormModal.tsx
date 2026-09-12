@@ -1,11 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FormDialog, FormSection, FormFields, type FormFieldSchema, toast } from "@chenrun/ui";
 import {
-  createPositionAction,
-  updatePositionAction,
-} from "../actions";
+  FormDialog,
+  FormSection,
+  FormFields,
+  type FormFieldSchema,
+  toast,
+} from "@chenrun/ui";
+import { createPositionAction, updatePositionAction } from "../actions";
 import type { PositionItem } from "../types";
 
 export interface PositionFormModalProps {
@@ -102,7 +105,9 @@ export function PositionFormModal({
         <FormFields
           fields={fields}
           values={values}
-          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
+          onChange={(name, val) =>
+            setValues((prev) => ({ ...prev, [name]: val }))
+          }
           columns={2}
         />
       </FormSection>
