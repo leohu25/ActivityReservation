@@ -32,7 +32,7 @@ export interface DataTableFormModalProps<TRecord = any> {
   onSubmit?: (record: TRecord | null | undefined) => Promise<void> | void;
   submitText?: string;
   cancelText?: string;
-  /** 底部左侧审计提示，默认 "提交后记录操作人和时间"；传 null 关闭 */
+  /** 底部左侧审计提示，默认 null（不展示无意义冗余文案）；可显式传入自定义文案 */
   auditHint?: string | null;
   /**
    * 额外底部操作按钮（排在 cancel/submit 左侧，同组右对齐）
@@ -72,7 +72,7 @@ export function DataTableFormModal<TRecord = any>({
   onSubmit,
   submitText = "保存",
   cancelText = "取消",
-  auditHint = "提交后记录操作人和时间",
+  auditHint = null,
   extraActions = [],
   footer,
   inline = false,

@@ -5,7 +5,7 @@
 ## 0. 三层 UI 资产模型
 
 | 层 | 目录 | 职责 |
-|----|------|------|
+| ---- | ------ | ------ |
 | **原子层** | `packages/ui/.../primitives/` | Radix/shadcn 封装，业务禁止改 |
 | **组件层** | `composite/`、`layout/`、`feedback/` | 可复用组件单元 |
 | **模板层** | `templates/` | 整页骨架（`DataTable.Workspace`、`DashboardShell`） |
@@ -170,7 +170,7 @@ toast.warning("检测到该客户存在未结款项");
 | `DataTable.Content` | 紧凑表格主体 | `selectable/showIndex` |
 | `DataTable.RowActions` | 行内平铺 + 折叠菜单；默认详情/编辑/删除 | `hideView/hideEdit/hideDelete`、`extraActions`、`menuOnly` |
 | `DataTable.Pagination` | 范围文案 + 数字页码 | `showRange/pageSizeOptions` |
-| `DataTable.FormModal` | 编辑/新建弹窗（品牌徽标+审计底栏） | `badge/headerExtra/auditHint` |
+| `DataTable.FormModal` | 编辑/新建弹窗（品牌徽标+可选底栏提示） | `badge/headerExtra/auditHint` |
 | `DataTable.FormSection/FieldGrid/Banner` | 表单分组/字段网格/信息横幅 | 配合 FormModal 使用 |
 | `DataTable.DetailDrawer` | 详情查看居中弹窗（与编辑弹窗同构） | `record/onClose/children/badge` |
 | `DataTable.AuthField` | 字段三态表单控件（shadcn `Field`+`Badge` 组合） | `field/action` |
@@ -248,6 +248,7 @@ toast.warning("检测到该客户存在未结款项");
 ```
 
 自定义动作（如 `toggle_status`）必须：
+
 1. 在 `contracts/<page>.contract.ts` 的 `actions` 中声明；
 2. 在 RowActions/ActionButton 上挂同一 `action`；
 3. 在 Server Action 里 `assert*Ability(ability, action, subject)`。
@@ -346,7 +347,7 @@ const columns: ColumnDef<Customer>[] = [
 </DataTable.FormModal>
 ```
 
-底部自动展示「提交后记录操作人和时间」审计提示（可用 `auditHint={null}` 关闭）。
+底部默认不展示无意义冗余文本（可传入 `auditHint` 自定义展示提示）。
 
 **底栏按钮分组约定**（对齐参考高保真）：
 

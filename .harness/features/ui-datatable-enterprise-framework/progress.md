@@ -68,6 +68,20 @@
   - 接入官方客户端范式 `useSubjectCan(RoleManagementSubject)`；
   - 无 `update` 权限时自动隐藏新建角色、保存权限、载入模板、删除角色按钮，并将矩阵表单交互设为只读置灰，解决“界面显示但保存拦截报错”的脱节现象。
 
+## 追加：清理页面与组件中的 AI Slop 与冗余技术文案（本会话）
+
+- [x] **通用表单弹窗 (`DataTableFormModal`)**：
+  - 将 `auditHint` 默认值调整为 `null`，移除客户中心等所有弹窗默认强加的机械式“提交后记录操作人和时间”审计提示。
+  - 同步更新单元测试与技能手册说明。
+- [x] **角色与权限管理 (`RolePermissionManager`)**：
+  - 移除 `<Badge>RBAC 矩阵树驱动</Badge>` 冗余徽标。
+  - 简化页头与标签描述，去除非业务的技术口号，还原真实业务语境。
+- [x] **采购订单中心与客户中心 (`ProcurementOrderCenter` / `CustomerView` / `CreateCustomerModal`)**：
+  - 移除采购订单中心工具栏中的技术宣传 Badge 及底部的 Prisma SQL 调试展示；
+  - 清理“操作过程自动留痕”等 AI 生成的机械口吻。
+- [x] **工作台与员工视图 (`WorkbenchView` / `EmployeeView`)**：
+  - 去除“根据 SaaS 最高宪法”、“自驱物理库实时装配”等生硬技术描述，替换为自然严谨的企业产品文案。
+
 ## 验证证据
 
 - `packages/ui`: `tsc --noEmit` PASS，`tsx --test` 34/34 PASS
@@ -76,4 +90,3 @@
 - 全仓 `pnpm -r check`: 13 个包 0 错误
 - 全仓 `pnpm -r test`: 全部 PASS
 - `node scripts/check-boundary.mjs`: 边界 100% 合规
-

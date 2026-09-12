@@ -92,8 +92,7 @@ export function TenantAccessBlockedCard({
               {message}
             </p>
             <p className="text-xs text-rose-600/80 dark:text-rose-400/80">
-              根据 SaaS 最高宪法，当租户内员工档案处于停用或离职状态时，严格执行
-              Fail-Closed 阻断策略。您仍可在其他正常租户中使用平台账号。
+              当租户内员工档案处于停用或离职状态时，系统将暂停当前账号在当前企业的业务访问权限。您仍可在其他正常租户中使用平台账号。
             </p>
           </div>
         </div>
@@ -240,8 +239,8 @@ export function EmployeeProfileMetricsGrid({
             <div className="text-sm font-bold text-slate-800 dark:text-slate-100">
               {profile?.position?.name || profile?.jobTitle || "企业成员"}
             </div>
-            <div className="text-[11px] text-emerald-600 dark:text-emerald-400">
-              Position != Role 解耦
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+              行政岗位
             </div>
           </div>
         </div>
@@ -259,8 +258,8 @@ export function EmployeeProfileMetricsGrid({
             <div className="text-sm font-bold text-slate-800 dark:text-slate-100">
               {treeCount > 0 ? `${treeCount} 个部门节点` : "个人范围 / 无部门"}
             </div>
-            <div className="text-[11px] text-amber-600 dark:text-amber-400">
-              自驱物理库实时装配
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+              实时数据范围
             </div>
           </div>
         </div>
@@ -313,7 +312,7 @@ export function PermissionAnalysisPanels({
                 <Code2 className="size-3" />
                 <span>CASL Prisma Where Clause</span>
               </span>
-              <span>自驱装配结果</span>
+              <span>编译结果</span>
             </div>
             <pre className="leading-relaxed">
               {JSON.stringify(sqlWhere, null, 2)}
@@ -383,8 +382,8 @@ export function PermissionAnalysisPanels({
             </Badge>
           </div>
           <CardDescription>
-            全自动感应 CASL 角色策略，自动推导可编辑 (EDITABLE)、只读 (READONLY)
-            或隐藏 (HIDDEN)：
+            根据当前角色的字段策略，受控字段自动匹配可编辑 (EDITABLE)、只读
+            (READONLY) 或隐藏 (HIDDEN) 模式：
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -401,10 +400,10 @@ export function PermissionAnalysisPanels({
             mode={fieldModes.costPrice}
             subject="PurchaseOrder"
             field="costPrice"
-            label="采购成本价 (costPrice) —— 核心保密资产"
+            label="采购成本价 (costPrice)"
             fallback={
               <div className="rounded-xl border border-dashed border-rose-200 bg-rose-50/60 p-3 text-xs text-rose-600 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-400">
-                🔒 采购成本价属于企业核心机密，当前角色已被字段策略隐藏剥离
+                🔒 采购成本价属于敏感字段，当前角色无查看权限
               </div>
             }
           >
@@ -424,9 +423,8 @@ export function PermissionAnalysisPanels({
           </AuthorizedField>
 
           <div className="text-[11px] text-slate-400 leading-relaxed bg-slate-50/80 p-3 rounded-xl dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
-            💡 字段三态策略直接绑定自 Control DB 的 OrganizationRole 策略定义。
-            管理员在【系统管理 /
-            权限管理】中调整字段四维矩阵后，页面将自动响应隐藏、只读或编辑模式。
+            💡 字段策略与角色直接绑定。管理员在【系统管理 /
+            角色与权限】中调整字段策略后，页面将自动响应隐藏、只读或编辑模式。
           </div>
         </CardContent>
       </Card>

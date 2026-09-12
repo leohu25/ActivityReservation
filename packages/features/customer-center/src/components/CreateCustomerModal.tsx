@@ -158,7 +158,7 @@ export function CreateCustomerModal({
         if (!open) onClose();
       }}
       title="新建客户主数据档案"
-      description="创建后立即进入客户列表，操作过程自动留痕"
+      description="录入客户企业信息、联系人及结算规则"
       submitText="创建客户档案"
       headerExtra={
         <DataTable.FormBanner

@@ -416,14 +416,9 @@ export function RolePermissionManager({
             <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">
               角色与权限配置中心
             </h1>
-            <Badge variant="default" size="sm" className="font-mono">
-              <Shield className="size-3" />
-              <span>RBAC 矩阵树驱动</span>
-            </Badge>
           </div>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            遵循工业级最佳实践：侧边栏大菜单由子页面权限自动推导展示/隐藏，支持页面操作细粒度勾选、Prisma
-            数据范围隔离与敏感字段三态策略。
+            配置企业角色的功能操作权限、数据范围隔离与敏感字段保护策略。
           </p>
         </div>
 
@@ -549,7 +544,7 @@ export function RolePermissionManager({
                     size="sm"
                     className="text-[10px] h-5 border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 font-normal"
                   >
-                    未配置权限 (Fail-Closed 拒绝访问)
+                    未配置权限 (默认拒绝访问)
                   </Badge>
                 )}
                 <span className="text-xs text-slate-400 truncate hidden sm:inline">

@@ -34,8 +34,8 @@ export interface ProcurementOrderCenterProps {
  */
 export function ProcurementOrderCenter({
   orders,
-  sqlWhere = {},
-  activeOrgId = "",
+  sqlWhere: _sqlWhere = {},
+  activeOrgId: _activeOrgId = "",
   departmentName,
   canCreate: explicitCanCreate,
   canExport: explicitCanExport,
@@ -278,26 +278,20 @@ export function ProcurementOrderCenter({
         rowKey={(order: ProcurementOrderItem) => order.id}
         subject={subject}
         title="采购订单中心"
-        description="按钮依权限展示、敏感成本价依字段策略控制、查询结果遵循 PostgreSQL 动态数据范围下推，审核执行【禁止自审】红线。"
+        description="管理企业采购订单、跟踪审批流程与物料采购明细"
         showFilterBar={false}
         showRefresh={false}
         showCreate={false}
         exportText="导出数据"
         onExport={handleExport}
         toolbarExtra={
-          <>
-            <Badge variant="default" size="sm">
-              <PackageCheck className="size-3 mr-1" />
-              <span>CASL 动态守卫 + 物理库直连</span>
-            </Badge>
-            {canCreate && (
-              <CreateOrderDialog
-                ability={ability}
-                fieldModes={createFieldModes}
-                departmentName={departmentName}
-              />
-            )}
-          </>
+          canCreate ? (
+            <CreateOrderDialog
+              ability={ability}
+              fieldModes={createFieldModes}
+              departmentName={departmentName}
+            />
+          ) : undefined
         }
         total={orders.length}
       >
@@ -326,18 +320,6 @@ export function ProcurementOrderCenter({
           />
         )}
       </DataTable.Workspace>
-
-      {/* 底部 Prisma 动态下推查询调试说明 */}
-      {activeOrgId && (
-        <div className="rounded-lg border border-border/70 bg-muted/20 p-3 text-xs">
-          <div className="font-semibold text-foreground mb-1">
-            Prisma accessibleBy 实时下推查询条件 (当前租户: {activeOrgId})
-          </div>
-          <pre className="font-mono text-[11px] text-muted-foreground overflow-x-auto p-2 bg-background rounded border">
-            {JSON.stringify(sqlWhere, null, 2)}
-          </pre>
-        </div>
-      )}
     </div>
   );
 }

@@ -991,13 +991,9 @@ export function EmployeeView({
                 </select>
               </div>
 
-              <div className="rounded-xl bg-blue-50/60 p-3 text-xs text-blue-800 border border-blue-200/70">
-                <div className="font-semibold flex items-center gap-1">
-                  <AlertCircle className="size-3.5" />
-                  <span>数据范围即时下推机制说明</span>
-                </div>
-                <p className="mt-1 text-[11px] text-blue-700 leading-relaxed">
-                  调换部门后，该员工的采购订单等业务数据访问范围将根据新部门及其子部门拓扑自驱动重算，无需重新登录即可刷新。
+              <div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-600 border border-slate-200/70 dark:bg-slate-800/50 dark:border-slate-700/60 dark:text-slate-300">
+                <p className="text-[11px] leading-relaxed">
+                  提示：调换部门后，该员工的业务数据访问范围将同步变更为新部门及其子部门范围。
                 </p>
               </div>
 

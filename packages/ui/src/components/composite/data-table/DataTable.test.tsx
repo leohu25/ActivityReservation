@@ -99,7 +99,10 @@ test("DataTable.Root: 默认一体化白卡容器，可关闭 integratedCard", (
       <DataTable.Content />
     </DataTable.Root>,
   );
-  assert.doesNotMatch(bareHtml, /rounded-xl border border-border\/80 bg-card shadow-xs p-5/);
+  assert.doesNotMatch(
+    bareHtml,
+    /rounded-xl border border-border\/80 bg-card shadow-xs p-5/,
+  );
 });
 
 test("DataTable.Header: 渲染分类小标、品牌竖条标题与说明文案", () => {
@@ -277,7 +280,7 @@ test("DataTable.DetailDrawer: 能够正确渲染详情查看抽屉与自定义�
   assert.match(html, /价格:.*¥.*15\.5/);
 });
 
-test("DataTable.FormModal: 渲染品牌徽标、审计提示与表单插槽", () => {
+test("DataTable.FormModal: 渲染品牌徽标、自定义审计提示与表单插槽", () => {
   const targetRecord = mockData[1];
   const html = renderToString(
     <DataTableFormModal
@@ -287,7 +290,8 @@ test("DataTable.FormModal: 渲染品牌徽标、审计提示与表单插槽", ()
       record={targetRecord}
       onSubmit={() => {}}
       title={(r) => (r ? `编辑物料: ${r.name}` : "新建物料")}
-      description="净配菜 ERP · 操作过程自动留痕"
+      description="净配菜 ERP"
+      auditHint="自定义审计提示文本"
       submitText="保存"
     >
       {({ record }) => (
@@ -303,8 +307,8 @@ test("DataTable.FormModal: 渲染品牌徽标、审计提示与表单插槽", ()
 
   assert.match(html, /CR/);
   assert.match(html, /编辑物料: 冷冻鸡胸肉/);
-  assert.match(html, /操作过程自动留痕/);
-  assert.match(html, /提交后记录操作人和时间/);
+  assert.match(html, /净配菜 ERP/);
+  assert.match(html, /自定义审计提示文本/);
   assert.match(html, /当前名称:.*冷冻鸡胸肉/);
   assert.match(html, /保存/);
 });
@@ -365,8 +369,12 @@ test("DataTable.Actions & ActionButton: 页面直接声明按钮，权限决定�
     >
       <DataTable.Toolbar>
         <DataTableActions>
-          <DataTableActionButton action="create">新建物料</DataTableActionButton>
-          <DataTableActionButton action="export">导出报表</DataTableActionButton>
+          <DataTableActionButton action="create">
+            新建物料
+          </DataTableActionButton>
+          <DataTableActionButton action="export">
+            导出报表
+          </DataTableActionButton>
         </DataTableActions>
       </DataTable.Toolbar>
     </DataTable.Root>,
@@ -601,7 +609,10 @@ test("DataTable.AuthGuard: 依据 CASL 权限自动控制自定义插槽块的�
 test("DataTable.Workspace: 默认全量展示刷新/导出/列设置/新增与关键字筛选", () => {
   const ability = {
     can(action: string, subject: string) {
-      if (subject === "Material" && (action === "export" || action === "create"))
+      if (
+        subject === "Material" &&
+        (action === "export" || action === "create")
+      )
         return true;
       return false;
     },

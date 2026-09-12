@@ -19,7 +19,7 @@
 2. **技能沉淀**：`.agents/skills/erp-feature-dev/references/5-ui-components.md` DataTable 手册
 3. **服务端分页闭环**：Customer 列表 RSC + URL 受控分页
 
-## 3. 本会话追加交付（shadcn 外壳收敛与架构文档治理）
+## 3. 本会话追加交付（shadcn 外壳收敛、架构文档治理与 AI Slop 清理）
 
 1. **官方 sidebar 接入**：`packages/ui/src/components/shadcn/sidebar.tsx` + `hooks/use-mobile.ts`
 2. **业务 Sidebar**（`layout/Sidebar.tsx`）：
@@ -35,6 +35,10 @@
    - 4 篇专项技术解析文档建档（`permissions/permission-architecture-deep-dive.md`、`architecture/saas-multitenant-architecture.md`、`architecture/database-migration-engine.md`、`architecture/fdd-vertical-slice-architecture.md`）
    - `docs/` 分门别类治理（`permissions/`、`architecture/`、`deployment/`、`collaboration/`、`archive/`）并清理过时草案、归档早期 PRD
    - 对齐 `AGENTS.md` 地图索引，Harness 协同 100% 绿色自洽
+8. **UI/页面 AI Slop 清理**：
+   - 表单弹窗 `auditHint` 默认置 `null`，移除无意义的机械审计文案；
+   - 角色权限管理页移除“RBAC 矩阵树驱动”等技术宣传徽标，改写非业务化的架构口号；
+   - 采购订单中心、工作台及员工调动弹窗移除底层下推调试面板及“自驱动重算/最高宪法”等生硬描述。
 
 ## 4. 下一会话启动指引
 
