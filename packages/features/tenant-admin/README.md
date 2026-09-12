@@ -31,7 +31,16 @@ packages/features/tenant-admin/
 │   │   ├── OrgSwitcher.tsx           # 企业组织切换组件
 │   │   ├── WorkbenchView.tsx         # 管理工作台入口
 │   │   └── index.ts
-│   ├── contracts/                    # 数据契约与 DTO
+│   ├── contracts/                    # 页面纯数据契约 (SSoT: 实体、字段与动作定义)
+│   │   ├── department.contract.ts    # 部门架构权限与字段契约
+│   │   ├── position.contract.ts      # 岗位管理权限与字段契约
+│   │   ├── employee.contract.ts      # 员工管理权限与受控字段契约
+│   │   ├── role.contract.ts          # 角色权限管理权限契约
+│   │   ├── company-settings.contract.ts # 企业设置权限与字段契约
+│   │   ├── general-settings.contract.ts # 基础设置权限与字段契约
+│   │   ├── security-settings.contract.ts # 安全设置权限与字段契约
+│   │   ├── audit.contract.ts         # 审计追踪权限契约
+│   │   └── index.ts
 │   ├── server/                       # 租户上下文服务端注入器
 │   ├── services/                     # 领域服务实现及单测
 │   ├── actions.ts                    # Next.js Server Actions (组织、人员、权限操作)

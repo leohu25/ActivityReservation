@@ -21,6 +21,7 @@
     "react-dom": "^19.0.0"
   },
   "dependencies": {
+    "@casl/ability": "7.0.1",
     "@chenrun/auth": "workspace:*",
     "@chenrun/authorization": "workspace:*",
     "@chenrun/db-control": "workspace:*",

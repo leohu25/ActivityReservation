@@ -2,7 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToString } from "react-dom/server";
+import { TenantAbilityProvider } from "@chenrun/authorization";
 import { RolePermissionManager } from "./RolePermissionManager";
+import { RoleManagementSubject } from "../contracts";
 import type { TenantRoleItem } from "../types";
 import type { ModulePermissionDescriptor } from "../permission-registry";
 
@@ -157,11 +159,20 @@ test("RolePermissionManager 彻底剔除 Owner 并正确渲染树状表格权限
     ];
 
     const html = renderToString(
-        React.createElement(RolePermissionManager, {
-            initialRoles: sampleRoles,
-            activeOrgId: "org_test",
-            permissionTree: mockPermissionTree,
-        }),
+        <TenantAbilityProvider
+            snapshots={[
+                {
+                    subject: RoleManagementSubject,
+                    actions: ["read", "update"],
+                },
+            ]}
+        >
+            <RolePermissionManager
+                initialRoles={sampleRoles}
+                activeOrgId="org_test"
+                permissionTree={mockPermissionTree}
+            />
+        </TenantAbilityProvider>,
     );
 
     // 1. 验证彻底屏蔽超级管理员 Owner
@@ -225,4 +236,76 @@ test("RolePermissionManager 支持展开字段策略并正确显示字段三态"
     // 页面正常渲染且包含字段配置入口
     assert.match(html, /采购订单管理/);
     assert.match(html, /字段策略/);
+});
+
+test("RolePermissionManager 在未授权 update 时隐藏新建/保存按钮并禁用表单复选框 (Fail-Closed)", () => {
+    const roles: TenantRoleItem[] = [
+        {
+            id: "role_admin",
+            role: "admin",
+            name: "管理员",
+            description: "管理角色",
+            isSystem: true,
+            permissions: {
+                statement: {
+                    "procurement.order": ["read"],
+                },
+                dataScopes: [],
+                fieldPolicies: [],
+            },
+            updatedAt: null,
+        },
+    ];
+
+    // 仅具有 read 权限，无 update 权限（即李四的场景）
+    const readOnlyHtml = renderToString(
+        <TenantAbilityProvider
+            snapshots={[
+                {
+                    subject: RoleManagementSubject,
+                    actions: ["read"],
+                },
+            ]}
+        >
+            <RolePermissionManager
+                initialRoles={roles}
+                activeOrgId="org_test"
+                permissionTree={mockPermissionTree}
+            />
+        </TenantAbilityProvider>,
+    );
+
+    // 1. 写操作按钮被安全隐藏
+    assert.doesNotMatch(readOnlyHtml, /新建角色/);
+    assert.doesNotMatch(readOnlyHtml, /保存权限/);
+    assert.doesNotMatch(readOnlyHtml, /载入推荐模板/);
+
+    // 2. 表单复选框与全选操作被禁用置灰
+    assert.match(
+        readOnlyHtml,
+        /disabled="" class="size-3 rounded text-blue-600 focus:ring-blue-500 border-slate-300 disabled:cursor-not-allowed"/,
+    );
+    assert.match(readOnlyHtml, /cursor-not-allowed/);
+
+    // 3. 当拥有 update 权限时，按钮正常展现
+    const writableHtml = renderToString(
+        <TenantAbilityProvider
+            snapshots={[
+                {
+                    subject: RoleManagementSubject,
+                    actions: ["read", "update"],
+                },
+            ]}
+        >
+            <RolePermissionManager
+                initialRoles={roles}
+                activeOrgId="org_test"
+                permissionTree={mockPermissionTree}
+            />
+        </TenantAbilityProvider>,
+    );
+
+    assert.match(writableHtml, /新建角色/);
+    assert.match(writableHtml, /保存权限/);
+    assert.match(writableHtml, /载入推荐模板/);
 });

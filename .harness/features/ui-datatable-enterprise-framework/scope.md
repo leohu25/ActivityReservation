@@ -87,6 +87,8 @@
 - `docs/**` # 5 files @ 66db3358，联动修改自动登记
 - `AGENTS.md` # 1 file @ 66db3358，联动修改自动登记
 - `"docs/archive/**` # 4 files @ 66db3358，联动修改自动登记
+- `packages/features/tenant-admin/README.md` # 1 file @ 788ebfb4，联动修改自动登记
+- `packages/features/tenant-admin/src/**` # 2 files @ 788ebfb4，联动修改自动登记
 
 ## 严禁修改的内容 (受保护区域)
 

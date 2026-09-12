@@ -54,10 +54,26 @@
 - [x] 清理过时草案（删除 3 篇临时草案），归档 4 篇早期 PRD 需求规格至 `docs/archive/`
 - [x] 同步更新 `AGENTS.md` 索引地图与全量 Markdown 跳转链接，保持 Harness 协同 100% 确定性
 
+## 追加：Tenant-Admin 数据契约补齐与 CASL 细粒度权限闭环（本会话）
+
+- [x] **数据契约补齐 (`src/contracts/`)**：
+  - 新增 department, position, employee, role, company-settings, general-settings, security-settings, audit 契约文件与 index 聚合；
+  - 彻底对齐 README 目录树，manifest 切换为从 contracts 契约派生，消除手写重复定义与魔法字符串；
+  - 导出契约常量至包主入口。
+- [x] **后端接口细粒度权限校验 (`actions.ts` & `server/session.ts`)**：
+  - session 中通过 CaslAbilityFactory 注入当前租户用户的 CASL `ability`，建立 `assertTenantAdminAbility` 严格守卫；
+  - 全量 Server Actions 接入 `defineServerAction`，所有写操作注入 `(action, subject)` 细粒度授权校验；
+  - `listEmployeesAction` 接入 `pickReadableFields` 服务端敏感字段物理剥离。
+- [x] **前端视图与 CASL 权限联动 (`RolePermissionManager.tsx`)**：
+  - 接入官方客户端范式 `useSubjectCan(RoleManagementSubject)`；
+  - 无 `update` 权限时自动隐藏新建角色、保存权限、载入模板、删除角色按钮，并将矩阵表单交互设为只读置灰，解决“界面显示但保存拦截报错”的脱节现象。
+
 ## 验证证据
 
 - `packages/ui`: `tsc --noEmit` PASS，`tsx --test` 34/34 PASS
 - `packages/features/customer-center`: check PASS
-- `apps/tenant`: check PASS
-- `docs/**`: `lsp_diagnostics` 11 篇活跃文档 0 错误，链接完全自洽
+- `packages/features/tenant-admin`: check PASS，`tsx --test` 16/16 PASS
+- 全仓 `pnpm -r check`: 13 个包 0 错误
+- 全仓 `pnpm -r test`: 全部 PASS
+- `node scripts/check-boundary.mjs`: 边界 100% 合规
 

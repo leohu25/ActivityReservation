@@ -437,6 +437,9 @@ importers:
 
   packages/features/tenant-admin:
     dependencies:
+      '@casl/ability':
+        specifier: 7.0.1
+        version: 7.0.1
       '@chenrun/auth':
         specifier: workspace:*
         version: link:../../auth

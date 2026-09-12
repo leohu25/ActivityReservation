@@ -27,6 +27,7 @@ import {
   Button,
   Badge,
   Input,
+  useSubjectCan,
 } from "@chenrun/ui";
 import {
   DataScope,
@@ -49,6 +50,7 @@ import {
   type ModulePermissionDescriptor,
   type PagePermissionDescriptor,
 } from "../permission-registry";
+import { RoleManagementSubject } from "../contracts";
 
 export interface RolePermissionManagerProps {
   readonly initialRoles: readonly TenantRoleItem[];
@@ -60,6 +62,10 @@ export function RolePermissionManager({
   initialRoles,
   permissionTree = [],
 }: RolePermissionManagerProps) {
+  // 官方 CASL 客户端范式：校验当前用户对 RoleManagement 是否拥有 update 权限
+  const canRole = useSubjectCan(RoleManagementSubject);
+  const canUpdate = canRole("update");
+
   // 过滤掉任何可能混入的 owner 角色（双重保护）
   const sanitizedInitialRoles = initialRoles.filter((r) => r.role !== "owner");
   const [roles, setRoles] = useState<TenantRoleItem[]>([
@@ -316,7 +322,7 @@ export function RolePermissionManager({
         selectedRole.role,
         selectedRole.permissions,
       );
-      if (res.success && res.data) {
+      if (res.success) {
         const savedData = res.data;
         setRoles((prev) =>
           prev.map((r) => (r.role === savedData.role ? savedData : r)),
@@ -340,7 +346,7 @@ export function RolePermissionManager({
     setNotification(null);
     startTransition(async () => {
       const res = await getSystemRoleDefaultsAction(selectedRole.role);
-      if (res.success && res.data) {
+      if (res.success) {
         updateSelectedRolePermissions(res.data);
         setNotification({
           type: "success",
@@ -421,15 +427,17 @@ export function RolePermissionManager({
           </p>
         </div>
 
-        <Button
-          variant="default"
-          size="sm"
-          onClick={() => setShowCreateModal(true)}
-          className="shadow-xs"
-        >
-          <Plus className="size-3.5" />
-          <span>新建角色</span>
-        </Button>
+        {canUpdate && (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setShowCreateModal(true)}
+            className="shadow-xs"
+          >
+            <Plus className="size-3.5" />
+            <span>新建角色</span>
+          </Button>
+        )}
       </div>
 
       {/* 提示通知反馈栏 */}
@@ -501,7 +509,7 @@ export function RolePermissionManager({
                     </div>
                   </div>
 
-                  {!r.isSystem && (
+                  {!r.isSystem && canUpdate && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -550,7 +558,7 @@ export function RolePermissionManager({
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                {isSystemRole && (
+                {isSystemRole && canUpdate && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -565,16 +573,18 @@ export function RolePermissionManager({
                   </Button>
                 )}
 
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleSave}
-                  disabled={isPending}
-                  className="shadow-xs shrink-0"
-                >
-                  <Save className="size-3.5" />
-                  <span>{isPending ? "保存中..." : "保存权限"}</span>
-                </Button>
+                {canUpdate && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleSave}
+                    disabled={isPending}
+                    className="shadow-xs shrink-0"
+                  >
+                    <Save className="size-3.5" />
+                    <span>{isPending ? "保存中..." : "保存权限"}</span>
+                  </Button>
+                )}
               </div>
             </div>
           </CardHeader>
@@ -630,8 +640,13 @@ export function RolePermissionManager({
                                 <span className="font-bold">{mod.label}</span>
                                 <button
                                   type="button"
+                                  disabled={!canUpdate}
                                   onClick={() => handleToggleModuleAll(mod)}
-                                  className="text-[10px] text-slate-400 hover:text-blue-600 font-normal ml-1 underline"
+                                  className={`text-[10px] font-normal ml-1 underline ${
+                                    canUpdate
+                                      ? "text-slate-400 hover:text-blue-600"
+                                      : "text-slate-300 dark:text-slate-600 cursor-not-allowed"
+                                  }`}
                                 >
                                   全模块切换
                                 </button>
@@ -700,10 +715,15 @@ export function RolePermissionManager({
                                       </span>
                                       <button
                                         type="button"
+                                        disabled={!canUpdate}
                                         onClick={() =>
                                           handleTogglePageAll(page)
                                         }
-                                        className="text-[10px] text-slate-400 hover:text-blue-600 underline font-normal ml-1"
+                                        className={`text-[10px] underline font-normal ml-1 ${
+                                          canUpdate
+                                            ? "text-slate-400 hover:text-blue-600"
+                                            : "text-slate-300 dark:text-slate-600 cursor-not-allowed"
+                                        }`}
                                       >
                                         {isAllChecked ? "清空" : "全选"}
                                       </button>
@@ -721,22 +741,25 @@ export function RolePermissionManager({
                                         return (
                                           <label
                                             key={act.action}
-                                            className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-[11px] cursor-pointer transition-colors ${
-                                              checked
-                                                ? "border-blue-300 bg-blue-50/60 text-blue-800 dark:bg-blue-950/40 dark:border-blue-700 dark:text-blue-200 font-medium"
-                                                : "border-slate-200 bg-transparent text-slate-500 dark:border-slate-700 dark:text-slate-400"
+                                            className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-[11px] transition-colors ${
+                                              canUpdate
+                                                ? checked
+                                                  ? "border-blue-300 bg-blue-50/60 text-blue-800 dark:bg-blue-950/40 dark:border-blue-700 dark:text-blue-200 font-medium cursor-pointer"
+                                                  : "border-slate-200 bg-transparent text-slate-500 dark:border-slate-700 dark:text-slate-400 cursor-pointer"
+                                                : "opacity-60 cursor-not-allowed border-slate-200 text-slate-400 dark:border-slate-800"
                                             }`}
                                           >
                                             <input
                                               type="checkbox"
                                               checked={checked}
+                                              disabled={!canUpdate}
                                               onChange={() =>
                                                 handleTogglePageAction(
                                                   page,
                                                   act.action,
                                                 )
                                               }
-                                              className="size-3 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
+                                              className="size-3 rounded text-blue-600 focus:ring-blue-500 border-slate-300 disabled:cursor-not-allowed"
                                             />
                                             <span>{act.label}</span>
                                           </label>
@@ -750,13 +773,14 @@ export function RolePermissionManager({
                                     {supportsScope && hasRead ? (
                                       <select
                                         value={scope}
+                                        disabled={!canUpdate}
                                         onChange={(e) =>
                                           handleDataScopeChange(
                                             page.resource,
                                             e.target.value as DataScopeType,
                                           )
                                         }
-                                        className="h-7 text-xs rounded border border-slate-200 bg-white px-2 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        className="h-7 text-xs rounded border border-slate-200 bg-white px-2 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
                                       >
                                         {DATA_SCOPE_SELECT_OPTIONS.map(
                                           (opt) => (
@@ -873,6 +897,7 @@ export function RolePermissionManager({
                                                       <input
                                                         type="checkbox"
                                                         checked={canRead}
+                                                        disabled={!canUpdate}
                                                         onChange={() =>
                                                           handleToggleFieldAccess(
                                                             page.subject,
@@ -881,14 +906,16 @@ export function RolePermissionManager({
                                                             "read",
                                                           )
                                                         }
-                                                        className="size-3.5 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
+                                                        className="size-3.5 rounded text-blue-600 focus:ring-blue-500 border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed"
                                                       />
                                                     </td>
                                                     <td className="py-1.5 text-center">
                                                       <input
                                                         type="checkbox"
                                                         checked={canWrite}
-                                                        disabled={!canRead}
+                                                        disabled={
+                                                          !canRead || !canUpdate
+                                                        }
                                                         onChange={() =>
                                                           handleToggleFieldAccess(
                                                             page.subject,
@@ -897,7 +924,7 @@ export function RolePermissionManager({
                                                             "write",
                                                           )
                                                         }
-                                                        className="size-3.5 rounded text-blue-600 focus:ring-blue-500 border-slate-300 disabled:opacity-30"
+                                                        className="size-3.5 rounded text-blue-600 focus:ring-blue-500 border-slate-300 disabled:opacity-30 disabled:cursor-not-allowed"
                                                       />
                                                     </td>
                                                     <td className="py-1.5 text-right font-mono text-[10px]">
