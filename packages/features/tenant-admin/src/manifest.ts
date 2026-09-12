@@ -1,26 +1,32 @@
 import type { TenantFeatureManifest } from "@chenrun/authorization";
 import {
+    DepartmentSubject,
+    PositionSubject,
+    EmployeeSubject,
+    departmentPageContract,
+    positionPageContract,
+    employeePageContract,
+} from "./features/org-management/contract";
+import {
+    RoleManagementSubject,
+    rolePageContract,
+} from "./features/role-management/contract";
+import {
+    CompanyProfileSubject,
+    GeneralSettingsSubject,
+    SecuritySettingsSubject,
+    companyProfilePageContract,
+    generalSettingsPageContract,
+    securitySettingsPageContract,
+} from "./features/tenant-settings/contract";
+import {
     AuditLogLoginSubject,
     AuditLogOperationSubject,
     AuditLogPermissionSubject,
-    CompanyProfileSubject,
-    DepartmentSubject,
-    EmployeeSubject,
-    GeneralSettingsSubject,
-    PositionSubject,
-    RoleManagementSubject,
     auditLoginPageContract,
     auditOperationPageContract,
     auditPermissionPageContract,
-    companyProfilePageContract,
-    departmentPageContract,
-    employeePageContract,
-    generalSettingsPageContract,
-    positionPageContract,
-    rolePageContract,
-    securitySettingsPageContract,
-    SecuritySettingsSubject,
-} from "./contracts";
+} from "./features/audit-log/contract";
 
 export const tenantAdminManifest: TenantFeatureManifest = {
     id: "tenant-admin",
@@ -120,22 +126,22 @@ export const tenantAdminManifest: TenantFeatureManifest = {
                     icon: "FileText",
                     items: [
                         {
+                            id: "audit-login",
+                            label: "登录审计",
+                            href: "/audit/login",
+                            requiredAction: "read",
+                            requiredSubject: AuditLogLoginSubject,
+                        },
+                        {
                             id: "audit-operations",
-                            label: "操作日志",
+                            label: "业务操作审计",
                             href: "/audit/operations",
                             requiredAction: "read",
                             requiredSubject: AuditLogOperationSubject,
                         },
                         {
-                            id: "audit-logins",
-                            label: "登录日志",
-                            href: "/audit/logins",
-                            requiredAction: "read",
-                            requiredSubject: AuditLogLoginSubject,
-                        },
-                        {
                             id: "audit-permissions",
-                            label: "权限变更日志",
+                            label: "权限变更审计",
                             href: "/audit/permissions",
                             requiredAction: "read",
                             requiredSubject: AuditLogPermissionSubject,
@@ -147,28 +153,28 @@ export const tenantAdminManifest: TenantFeatureManifest = {
     ],
     permissionModules: [
         {
-            moduleKey: "organization",
-            label: "组织架构",
+            moduleKey: "system-organization",
+            label: "组织架构管理",
             iconName: "Users",
-            order: 30,
+            order: 10,
             pages: [
-                employeePageContract,
                 departmentPageContract,
                 positionPageContract,
+                employeePageContract,
             ],
         },
         {
-            moduleKey: "permissions",
-            label: "权限管理",
+            moduleKey: "system-permissions",
+            label: "权限体系管理",
             iconName: "ShieldCheck",
-            order: 40,
+            order: 20,
             pages: [rolePageContract],
         },
         {
-            moduleKey: "settings",
-            label: "企业设置",
+            moduleKey: "system-settings",
+            label: "企业系统配置",
             iconName: "Settings",
-            order: 50,
+            order: 30,
             pages: [
                 companyProfilePageContract,
                 generalSettingsPageContract,
@@ -176,13 +182,13 @@ export const tenantAdminManifest: TenantFeatureManifest = {
             ],
         },
         {
-            moduleKey: "audit",
-            label: "审计日志",
+            moduleKey: "system-audit",
+            label: "安全与操作审计",
             iconName: "FileText",
-            order: 60,
+            order: 40,
             pages: [
-                auditOperationPageContract,
                 auditLoginPageContract,
+                auditOperationPageContract,
                 auditPermissionPageContract,
             ],
         },

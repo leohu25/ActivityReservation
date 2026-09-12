@@ -50,12 +50,18 @@ if [ -f "${WORKSPACE_ROOT}/member.local.md" ]; then
     echo -e "• 特性沙盒: ${GREEN}${ACTIVE_FEAT}${NC}"
   fi
 fi
-run_quiet "沙盒边界" node "${WORKSPACE_ROOT}/scripts/check-boundary.mjs"
+run_quiet "沙盒边界" node "${WORKSPACE_ROOT}/scripts/check/check-boundary.mjs"
 
 # 3. 架构红线
-run_quiet "红线扫描" node "${WORKSPACE_ROOT}/scripts/check-redlines.mjs"
+run_quiet "红线扫描" node "${WORKSPACE_ROOT}/scripts/check/check-redlines.mjs"
 
-# 4. 类型检查
+# 4. 业务垂直切片架构完整性
+run_quiet "业务切片" node "${WORKSPACE_ROOT}/scripts/check/check-vertical-slices.mjs"
+
+# 5. 门禁与红线自身单测
+run_quiet "门禁单测" node --test "${WORKSPACE_ROOT}/scripts/check/check-redlines.test.mjs" "${WORKSPACE_ROOT}/scripts/check/check-vertical-slices.test.mjs"
+
+# 6. 类型检查
 if [ -f "${WORKSPACE_ROOT}/package.json" ] && [ -d "${WORKSPACE_ROOT}/node_modules" ]; then
   if grep -q "\"check\"" "${WORKSPACE_ROOT}/package.json"; then
     run_quiet "类型扫描" pnpm --silent check

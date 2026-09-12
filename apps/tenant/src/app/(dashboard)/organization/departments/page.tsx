@@ -1,11 +1,11 @@
 import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
 import { getServerAuthRuntime } from "@chenrun/auth";
-import { getTenantDbManager } from "@chenrun/db-tenant";
 import {
-  DepartmentService,
   DepartmentView,
-} from "@chenrun/feature-tenant-admin";
+  type DepartmentTreeNode,
+} from "@chenrun/feature-tenant-admin/org-management";
+import { listDepartmentTreeQuery } from "@chenrun/feature-tenant-admin/org-management/server";
 import { Card } from "@chenrun/ui";
 
 /**
@@ -47,13 +47,8 @@ export default async function OrganizationDepartmentsPage() {
     );
   }
 
-  // 获取租户物理库客户端并检索部门树数据
-  const manager = getTenantDbManager({
-    repository: runtime.tenantContextRepository,
-  });
-  const tenantPrisma = await manager.getClient(activeOrgId);
-  const deptService = new DepartmentService();
-  const tree = await deptService.listDepartmentTree(tenantPrisma);
+  // 通过 Server Query 检索部门树数据 (含 CASL 门禁与租户物理库路由)
+  const tree: readonly DepartmentTreeNode[] = await listDepartmentTreeQuery();
 
   return <DepartmentView initialTree={tree} />;
 }

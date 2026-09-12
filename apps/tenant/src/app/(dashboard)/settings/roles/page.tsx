@@ -1,12 +1,14 @@
 import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
 import { getServerAuthRuntime } from "@chenrun/auth";
-import {
-  TenantRoleService,
-  RolePermissionManager,
-} from "@chenrun/feature-tenant-admin";
+import { RolePermissionManager } from "@chenrun/feature-tenant-admin/role-management";
+import { listTenantRolesQuery } from "@chenrun/feature-tenant-admin/role-management/server";
 import { Card } from "@chenrun/ui";
-import { ALL_TENANT_MANIFESTS, globalTenantPermissionTree, getTenantSubjectPermissions } from "@/kernel";
+import {
+  ALL_TENANT_MANIFESTS,
+  globalTenantPermissionTree,
+  getTenantSubjectPermissions,
+} from "@/kernel";
 
 /**
  * 租户角色与权限管理页面 (Server Component - 极薄装配线)
@@ -58,9 +60,7 @@ export default async function SettingsRolesPage() {
   const canReadRoles = rolePerms.actions.includes("read");
   // 过渡兜底：历史 admin 可能尚未保存 statement，避免锁死配置页
   const isTenantAdmin =
-    canReadRoles ||
-    roleList.includes("owner") ||
-    roleList.includes("admin");
+    canReadRoles || roleList.includes("owner") || roleList.includes("admin");
 
   if (!isTenantAdmin) {
     return (
@@ -76,12 +76,8 @@ export default async function SettingsRolesPage() {
     );
   }
 
-  // 2. 加载当前租户下的全量角色列表 (包含内置与自定义角色)
-  const service = new TenantRoleService(
-    runtime.tenantContextRepository,
-    ALL_TENANT_MANIFESTS,
-  );
-  const roles = await service.listTenantRoles(activeOrgId);
+  // 2. 加载当前租户下的全量角色列表 (通过 Server Query，包含内置与自定义角色)
+  const roles = await listTenantRolesQuery(ALL_TENANT_MANIFESTS);
 
   return (
     <div className="space-y-6">

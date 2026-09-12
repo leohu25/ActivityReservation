@@ -250,6 +250,15 @@
       "status": "completed",
       "owner": "implementer",
       "evidence": "Customer Center 已按 Business Area → Feature/Sub-Feature 垂直内聚，RSC 读取改为 server-only Query、mutation 保留 Server Action；业务语义 exports 与 tenant 调用方原子切换，旧 API 删除；架构门禁、ADR、README、Skill 与现行文档术语完成修正；customer-center check/test、tenant check、redline 与专项门禁测试通过；独立 Reviewer 审计 Merge verdict: OK。"
+    },
+    {
+      "id": "arch-data-scope-and-base-entity-audit",
+      "name": "【架构规范】通用实体审计基础字段规范与客户中心数据权限闭环",
+      "description": "建立 ERP 业务实体基线规范（基础审计字段 createdById, deptId 及软删除字段 isDeleted/deletedAt），通过门禁脚本校验所有业务实体 Schema 符合基线；补齐客户中心 (customer-center) 缺失的数据权限过滤链路，包括 Customer 等业务实体模型扩展、新建时操作人落库、getTenantCustomerContext 拓扑编译解析、以及 CustomerService 查询下推 getAccessibleWhere 物理过滤，实现角色数据范围（仅本人/本部门/部门及下级/全租户）端到端生效。",
+      "dependencies": ["arch-feature-vertical-slice-consolidation"],
+      "status": "pending",
+      "owner": "implementer",
+      "evidence": ""
     }
   ]
 }

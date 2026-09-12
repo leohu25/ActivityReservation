@@ -1,0 +1,474 @@
+#!/usr/bin/env node
+
+/**
+ * 业务垂直切片架构完整性门禁检查脚本 (Vertical Slice Architecture Integrity Checker)
+ *
+ * 严格校验 packages/features/* 下业务特性包的规范结构：
+ * 1. 基础契约：manifest.ts、catalog.ts、shared/server/context.ts (或 tenant-context.ts)、shared/public.ts；
+ * 2. package.json 规范：exports 必须为语义子路径，严禁导出 "." 根大杂烩桶；
+ * 3. 根目录平铺文件清空：严禁存在 index.ts, actions.ts, types.ts, components/, services/, contracts/, server/ 等历史遗留；
+ * 4. Feature / Sub-Feature 切片内聚：contract.ts、public.ts、public.server.ts、queries.ts、actions.ts、service.ts 等；
+ * 5. 运行时边界与物理隔离：public.server.ts 与 queries.ts 必须标注 server-only，actions.ts 必须标注 use server，
+ *    public.ts 与 ui/ 严禁泄露 Node 运行时或数据库客户端。
+ */
+
+import fs from "node:fs";
+import path from "node:path";
+import process from "node:process";
+import { fileURLToPath } from "node:url";
+
+function findWorkspaceRoot(startDir = process.cwd()) {
+  let curr = path.resolve(startDir);
+  while (curr !== path.dirname(curr)) {
+    if (fs.existsSync(path.join(curr, "pnpm-workspace.yaml"))) {
+      return curr;
+    }
+    curr = path.dirname(curr);
+  }
+  return path.resolve(process.cwd());
+}
+
+/** 历史平铺废弃文件清单：垂直切片重构后必须物理彻底清理，严禁死灰复燃 */
+const RETIRED_FLAT_ENTRIES = [
+  "index.ts",
+  "actions.ts",
+  "types.ts",
+  "permission-registry.ts",
+  "components",
+  "services",
+  "contracts",
+  "server",
+];
+
+/** 平台非租户业务包或尚未开启垂直切片重构的包 */
+const NON_TENANT_FEATURE_PACKAGES = new Set(["control-admin"]);
+const PENDING_MIGRATION_PACKAGES = new Set(["procurement-center"]);
+
+/**
+ * 收集目录下的所有切片路径（包含 Feature 与嵌套的 Sub-Feature）
+ * 排除 ui/, node_modules, __tests__ 等非切片目录
+ */
+function discoverSlices(dir, baseDir = dir) {
+  const slices = [];
+  if (!fs.existsSync(dir)) return slices;
+
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  const isSlice =
+    fs.existsSync(path.join(dir, "public.ts")) ||
+    fs.existsSync(path.join(dir, "contract.ts")) ||
+    fs.existsSync(path.join(dir, "types.ts")) ||
+    fs.existsSync(path.join(dir, "actions.ts"));
+
+  if (isSlice && dir !== baseDir) {
+    const relPath = path.relative(baseDir, dir).replace(/\\/g, "/");
+    slices.push({
+      relPath,
+      fullPath: dir,
+    });
+  }
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (
+      entry.name === "ui" ||
+      entry.name === "node_modules" ||
+      entry.name === "__tests__" ||
+      entry.name === "test" ||
+      entry.name.startsWith(".")
+    ) {
+      continue;
+    }
+    const subDir = path.join(dir, entry.name);
+    slices.push(...discoverSlices(subDir, baseDir));
+  }
+
+  return slices;
+}
+
+/**
+ * 扫描目录下的所有代码文件
+ */
+function walkCodeFiles(dir, files = []) {
+  if (!fs.existsSync(dir)) return files;
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+    if (entry.isDirectory()) {
+      walkCodeFiles(full, files);
+    } else if (/\.(ts|tsx)$/.test(entry.name)) {
+      files.push(full);
+    }
+  }
+  return files;
+}
+
+export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
+  const featuresDir = path.join(workspaceRoot, "packages/features");
+  if (!fs.existsSync(featuresDir)) {
+    return { violations: [] };
+  }
+
+  const violations = [];
+  const featureEntries = fs.readdirSync(featuresDir, { withFileTypes: true });
+
+  for (const entry of featureEntries) {
+    if (!entry.isDirectory()) continue;
+    const pkgName = entry.name;
+    if (NON_TENANT_FEATURE_PACKAGES.has(pkgName)) continue;
+
+    const pkgDir = path.join(featuresDir, pkgName);
+    const srcDir = path.join(pkgDir, "src");
+    const pkgJsonPath = path.join(pkgDir, "package.json");
+
+    if (!fs.existsSync(pkgJsonPath)) continue;
+
+    let pkgJson;
+    try {
+      pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, "utf-8"));
+    } catch (err) {
+      violations.push({
+        file: path.relative(workspaceRoot, pkgJsonPath).replace(/\\/g, "/"),
+        line: 1,
+        rule: "package.json 无法解析为有效 JSON",
+        code: String(err.message),
+      });
+      continue;
+    }
+
+    const hasFeaturesDir = fs.existsSync(path.join(srcDir, "features"));
+    // 凡是未标记 pending migration 且非 control 的租户包，或者已经创建了 src/features 的包，均须严格遵守
+    const isTarget = hasFeaturesDir || !PENDING_MIGRATION_PACKAGES.has(pkgName);
+
+    if (!isTarget) continue;
+
+    const relPkgDir = path.relative(workspaceRoot, pkgDir).replace(/\\/g, "/");
+
+    // 1. 检查是否存在 src/features 目录
+    if (!hasFeaturesDir) {
+      violations.push({
+        file: `${relPkgDir}/src`,
+        line: 1,
+        rule: "业务特性包必须采用 Feature-based Vertical Slice 架构，缺少 src/features/ 目录",
+        code: `${relPkgDir}/src/features`,
+      });
+      continue;
+    }
+
+    // 2. 检查基础契约文件
+    const manifestPath = path.join(srcDir, "manifest.ts");
+    if (!fs.existsSync(manifestPath)) {
+      violations.push({
+        file: `${relPkgDir}/src/manifest.ts`,
+        line: 1,
+        rule: "业务特性包必须在 src/manifest.ts 导出自描述特性清单 TenantFeatureManifest (ADR-005/006)",
+        code: "manifest.ts missing",
+      });
+    }
+
+    const catalogPath = path.join(srcDir, "catalog.ts");
+    if (!fs.existsSync(catalogPath)) {
+      violations.push({
+        file: `${relPkgDir}/src/catalog.ts`,
+        line: 1,
+        rule: "业务特性包必须在 src/catalog.ts 导出 CASL 权限目录 PermissionCatalog",
+        code: "catalog.ts missing",
+      });
+    }
+
+    // 检查 shared/server 租户上下文隔离
+    const sharedServerContext = path.join(srcDir, "shared/server/context.ts");
+    const sharedServerTenantContext = path.join(
+      srcDir,
+      "shared/server/tenant-context.ts",
+    );
+    if (
+      !fs.existsSync(sharedServerContext) &&
+      !fs.existsSync(sharedServerTenantContext)
+    ) {
+      violations.push({
+        file: `${relPkgDir}/src/shared/server`,
+        line: 1,
+        rule: "业务特性包必须在 src/shared/server/ 下维护租户物理库与鉴权上下文 (context.ts 或 tenant-context.ts)",
+        code: "shared/server context missing",
+      });
+    }
+
+    // 检查 shared/public.ts
+    const sharedPublic = path.join(srcDir, "shared/public.ts");
+    if (!fs.existsSync(sharedPublic)) {
+      violations.push({
+        file: `${relPkgDir}/src/shared/public.ts`,
+        line: 1,
+        rule: "业务特性包必须在 src/shared/public.ts 暴露 Client-Safe 跨切片共享组件与公共类型",
+        code: "shared/public.ts missing",
+      });
+    }
+
+    // 3. 检查 package.json exports 规范
+    const exportsField = pkgJson.exports;
+    if (!exportsField || typeof exportsField !== "object") {
+      violations.push({
+        file: `${relPkgDir}/package.json`,
+        line: 1,
+        rule: "业务特性包必须在 package.json#exports 中显式暴露语义子路径，禁止无 exports 字段",
+        code: "exports field missing",
+      });
+    } else {
+      // 严禁根导出 "."
+      if (exportsField["."]) {
+        violations.push({
+          file: `${relPkgDir}/package.json`,
+          line: 1,
+          rule: "业务特性包严禁导出根路径 \".\" 大杂烩桶；必须按业务切片暴露语义子路径",
+          code: `"exports": { ".": "${exportsField["."]}" }`,
+        });
+      }
+
+      // 必须导出 ./manifest
+      if (!exportsField["./manifest"]) {
+        violations.push({
+          file: `${relPkgDir}/package.json`,
+          line: 1,
+          rule: "业务特性包 exports 必须显式导出 \"./manifest\"",
+          code: "exports[\"./manifest\"] missing",
+        });
+      }
+
+      // 必须导出 ./shared
+      if (!exportsField["./shared"]) {
+        violations.push({
+          file: `${relPkgDir}/package.json`,
+          line: 1,
+          rule: "业务特性包 exports 必须显式导出 \"./shared\"",
+          code: "exports[\"./shared\"] missing",
+        });
+      }
+    }
+
+    // 4. 检查 src 根目录历史平铺文件清空
+    for (const retired of RETIRED_FLAT_ENTRIES) {
+      const retiredPath = path.join(srcDir, retired);
+      if (fs.existsSync(retiredPath)) {
+        violations.push({
+          file: path.relative(workspaceRoot, retiredPath).replace(/\\/g, "/"),
+          line: 1,
+          rule: `业务特性包已重构为 Vertical Slice，严禁在 src 根目录下保留历史平铺文件/目录 [${retired}]`,
+          code: retired,
+        });
+      }
+    }
+
+    // 5. 检查 src/features 下的各切片规范
+    const featuresRootDir = path.join(srcDir, "features");
+    const slices = discoverSlices(featuresRootDir);
+
+    if (slices.length === 0) {
+      violations.push({
+        file: `${relPkgDir}/src/features`,
+        line: 1,
+        rule: "业务特性包 src/features/ 目录下未发现任何业务切片",
+        code: "no slices found",
+      });
+      continue;
+    }
+
+    for (const slice of slices) {
+      const relSliceDir = path
+        .relative(workspaceRoot, slice.fullPath)
+        .replace(/\\/g, "/");
+      const sliceSubpath = slice.relPath;
+
+      // 必须包含 public.ts (Client-Safe 出口)
+      const publicPath = path.join(slice.fullPath, "public.ts");
+      if (!fs.existsSync(publicPath)) {
+        violations.push({
+          file: `${relSliceDir}/public.ts`,
+          line: 1,
+          rule: `业务切片 [${sliceSubpath}] 必须提供 public.ts 作为 Client-Safe 唯一前端暴露入口`,
+          code: "public.ts missing",
+        });
+      }
+
+      // package.json#exports 必须包含对应的 Client-Safe 子路径
+      if (exportsField && !exportsField[`./${sliceSubpath}`]) {
+        violations.push({
+          file: `${relPkgDir}/package.json`,
+          line: 1,
+          rule: `业务特性包 exports 缺少切片 [${sliceSubpath}] 的公共子路径 "./${sliceSubpath}"`,
+          code: `exports["./${sliceSubpath}"] missing`,
+        });
+      }
+
+      const hasContract = fs.existsSync(path.join(slice.fullPath, "contract.ts"));
+      const hasPublicServer = fs.existsSync(
+        path.join(slice.fullPath, "public.server.ts"),
+      );
+      const hasQueries = fs.existsSync(path.join(slice.fullPath, "queries.ts"));
+      const hasActions = fs.existsSync(path.join(slice.fullPath, "actions.ts"));
+      const hasTypes = fs.existsSync(path.join(slice.fullPath, "types.ts"));
+
+      const sliceEntries = fs.readdirSync(slice.fullPath);
+      const hasService = sliceEntries.some(
+        (f) =>
+          f === "service.ts" ||
+          (f.endsWith("-service.ts") && !f.endsWith(".test.ts")),
+      );
+
+      // 判断切片类型：
+      // A. 纯视图/装配切片 (如 workbench): 有 public.ts 与 types.ts，无专属数据库表
+      const isPureViewSlice =
+        !hasContract && !hasQueries && !hasActions && !hasService && hasTypes;
+
+      // B. 纯契约切片 (如 audit-log): 仅对外定义契约供外部使用
+      const isPureContractSlice =
+        hasContract && !hasQueries && !hasActions && !hasService;
+
+      // C. 规范业务切片 (具有读写与领域逻辑)
+      const isBusinessSlice = !isPureViewSlice && !isPureContractSlice;
+
+      if (isBusinessSlice) {
+        if (!hasContract) {
+          violations.push({
+            file: `${relSliceDir}/contract.ts`,
+            line: 1,
+            rule: `业务切片 [${sliceSubpath}] 必须提供 contract.ts 定义权限契约与 Subject 常量 (SSoT)`,
+            code: "contract.ts missing",
+          });
+        }
+        if (!hasTypes) {
+          violations.push({
+            file: `${relSliceDir}/types.ts`,
+            line: 1,
+            rule: `业务切片 [${sliceSubpath}] 必须提供 types.ts 集中管理切片内领域类型与 DTO`,
+            code: "types.ts missing",
+          });
+        }
+        if (hasQueries || hasActions || hasService) {
+          if (!hasPublicServer) {
+            violations.push({
+              file: `${relSliceDir}/public.server.ts`,
+              line: 1,
+              rule: `包含服务端能力的业务切片 [${sliceSubpath}] 必须提供 public.server.ts 作为纯服务端安全导出入口`,
+              code: "public.server.ts missing",
+            });
+          }
+        }
+      }
+
+      // 如果有 public.server.ts，exports 必须暴露 "./<slice>/server"
+      if (hasPublicServer && exportsField) {
+        if (!exportsField[`./${sliceSubpath}/server`]) {
+          violations.push({
+            file: `${relPkgDir}/package.json`,
+            line: 1,
+            rule: `具有服务端能力的切片 [${sliceSubpath}] 必须在 package.json#exports 暴露 "./${sliceSubpath}/server"`,
+            code: `exports["./${sliceSubpath}/server"] missing`,
+          });
+        }
+      }
+
+      // 6. 校验切片内部代码文件的运行时边界规范
+      const sliceCodeFiles = walkCodeFiles(slice.fullPath);
+      for (const codeFilePath of sliceCodeFiles) {
+        const relCodePath = path
+          .relative(workspaceRoot, codeFilePath)
+          .replace(/\\/g, "/");
+        const content = fs.readFileSync(codeFilePath, "utf-8");
+
+        // 服务端入口与 Query 必须标记 server-only
+        if (
+          codeFilePath.endsWith("public.server.ts") ||
+          codeFilePath.endsWith("queries.ts")
+        ) {
+          if (!/^import\s+["']server-only["'];/m.test(content)) {
+            violations.push({
+              file: relCodePath,
+              line: 1,
+              rule: `纯服务端文件必须在头部显式声明 import "server-only"; 防止被前端组件误打包`,
+              code: "missing import \"server-only\"",
+            });
+          }
+        }
+
+        // mutation actions.ts 必须标记 "use server"
+        if (codeFilePath.endsWith("actions.ts")) {
+          if (!/^\s*["']use server["'];/m.test(content)) {
+            violations.push({
+              file: relCodePath,
+              line: 1,
+              rule: `Server Actions 模块必须在头部显式声明 "use server";`,
+              code: "missing \"use server\"",
+            });
+          }
+        }
+
+        // Client-Safe 出口 (public.ts) 与 UI 组件严禁直接导入服务端敏感库
+        const isClientCode =
+          codeFilePath.endsWith("public.ts") ||
+          codeFilePath.includes("/ui/") ||
+          /^\s*["']use client["'];/m.test(content);
+
+        if (isClientCode) {
+          const dangerousServerPatterns = [
+            /from\s+["']next\/(headers|cache)["']/,
+            /from\s+["']@chenrun\/db-tenant["']/,
+            /from\s+["'][^"']*\.server["']/,
+            /from\s+["'][^"']*\/queries["']/,
+          ];
+          for (const pattern of dangerousServerPatterns) {
+            if (pattern.test(content)) {
+              violations.push({
+                file: relCodePath,
+                line: 1,
+                rule: "Client-Safe API (public.ts) 与 UI 组件严禁导入数据库、Next.js 服务端能力或 queries 入口",
+                code: content.match(pattern)?.[0] || "server import in client",
+              });
+              break;
+            }
+          }
+        }
+
+        // 严禁通过相对路径直接越权调用兄弟 Feature 的私有实现文件 (如 ../other/service, ../other/actions)
+        const siblingPrivateImport =
+          /from\s+["']\.\.\/([a-zA-Z0-9_-]+)\/(queries|actions|service|.*-service)["']/;
+        const matchSibling = content.match(siblingPrivateImport);
+        if (matchSibling) {
+          violations.push({
+            file: relCodePath,
+            line: 1,
+            rule: `严禁通过相对路径直接调用兄弟切片私有实现 [${matchSibling[1]}]: 跨切片集成必须在 apps/* 装配层或通过契约与 shared 完成`,
+            code: matchSibling[0],
+          });
+        }
+      }
+    }
+  }
+
+  return { violations };
+}
+
+function main() {
+  const { violations } = checkVerticalSlices();
+
+  if (violations.length > 0) {
+    process.stderr.write(
+      `\x1b[31m✗ [Vertical Slice Violations] 发现 ${violations.length} 处违背业务垂直切片架构规范:\x1b[0m\n`,
+    );
+    for (const v of violations) {
+      process.stderr.write(
+        `    \x1b[33m• ${v.file}:${v.line}\x1b[0m - ${v.rule}\n      \x1b[90m> ${v.code}\x1b[0m\n`,
+      );
+    }
+    process.exit(1);
+  }
+
+  process.stdout.write(
+    `• 业务切片: \x1b[32m规范完整\x1b[0m (customer-center, tenant-admin 均合规)\n`,
+  );
+  process.exit(0);
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main();
+}

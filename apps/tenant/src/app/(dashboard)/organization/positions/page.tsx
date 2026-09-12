@@ -1,8 +1,11 @@
 import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
 import { getServerAuthRuntime } from "@chenrun/auth";
-import { getTenantDbManager } from "@chenrun/db-tenant";
-import { PositionService, PositionView } from "@chenrun/feature-tenant-admin";
+import {
+  PositionView,
+  type PositionItem,
+} from "@chenrun/feature-tenant-admin/org-management";
+import { listPositionsQuery } from "@chenrun/feature-tenant-admin/org-management/server";
 import { Card } from "@chenrun/ui";
 
 /**
@@ -44,13 +47,8 @@ export default async function OrganizationPositionsPage() {
     );
   }
 
-  // 获取租户物理库客户端并检索岗位数据
-  const manager = getTenantDbManager({
-    repository: runtime.tenantContextRepository,
-  });
-  const tenantPrisma = await manager.getClient(activeOrgId);
-  const positionService = new PositionService();
-  const positions = await positionService.listPositions(tenantPrisma);
+  // 获取租户物理库客户端并检索岗位数据 (含 CASL 门禁与租户物理库路由)
+  const positions: readonly PositionItem[] = await listPositionsQuery();
 
   return <PositionView initialPositions={positions} />;
 }

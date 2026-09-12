@@ -2,6 +2,11 @@
 
 export { StandardAction } from "./core/actions";
 export {
+  BUILT_IN_ROLES,
+  type BuiltInRole,
+  isBuiltInRole,
+} from "./core/roles";
+export {
   createPermissionCatalog,
   PermissionCatalog,
   PermissionCatalogError,

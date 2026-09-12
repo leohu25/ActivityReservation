@@ -1,11 +1,8 @@
 import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
 import { getServerAuthRuntime } from "@chenrun/auth";
-import { getTenantDbManager } from "@chenrun/db-tenant";
-import {
-  TenantSettingsService,
-  CompanySettingsView,
-} from "@chenrun/feature-tenant-admin";
+import { CompanySettingsView } from "@chenrun/feature-tenant-admin/tenant-settings";
+import { getCompanyProfileQuery } from "@chenrun/feature-tenant-admin/tenant-settings/server";
 import { Card } from "@chenrun/ui";
 import { getTenantSubjectPermissions } from "@/kernel";
 
@@ -57,9 +54,7 @@ export default async function SettingsCompanyPage() {
   const canReadCompany = companyPerms.actions.includes("read");
   // 过渡兜底：历史 admin 无 statement 时避免锁死
   const isTenantAdmin =
-    canReadCompany ||
-    roleList.includes("owner") ||
-    roleList.includes("admin");
+    canReadCompany || roleList.includes("owner") || roleList.includes("admin");
 
   if (!isTenantAdmin) {
     return (
@@ -74,16 +69,8 @@ export default async function SettingsCompanyPage() {
     );
   }
 
-  // 服务端读取企业档案数据
-  const manager = getTenantDbManager({
-    repository: runtime.tenantContextRepository,
-  });
-  const service = new TenantSettingsService(
-    runtime.prisma,
-    (orgId) => manager.getClient(orgId),
-  );
-
-  const profile = await service.getCompanyProfile(activeOrgId);
+  // 服务端读取企业档案数据 (通过 Server Query)
+  const profile = await getCompanyProfileQuery();
 
   return <CompanySettingsView initialData={profile} />;
 }

@@ -1,11 +1,8 @@
 import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
 import { getServerAuthRuntime } from "@chenrun/auth";
-import { getTenantDbManager } from "@chenrun/db-tenant";
-import {
-  TenantSettingsService,
-  GeneralSettingsView,
-} from "@chenrun/feature-tenant-admin";
+import { GeneralSettingsView } from "@chenrun/feature-tenant-admin/tenant-settings";
+import { getGeneralSettingsQuery } from "@chenrun/feature-tenant-admin/tenant-settings/server";
 import { Card } from "@chenrun/ui";
 
 /**
@@ -67,16 +64,8 @@ export default async function SettingsGeneralPage() {
     );
   }
 
-  // 服务端读取基础偏好配置
-  const manager = getTenantDbManager({
-    repository: runtime.tenantContextRepository,
-  });
-  const service = new TenantSettingsService(
-    runtime.prisma,
-    (orgId) => manager.getClient(orgId),
-  );
-
-  const generalSettings = await service.getGeneralSettings(activeOrgId);
+  // 服务端读取基础偏好配置 (通过 Server Query)
+  const generalSettings = await getGeneralSettingsQuery();
 
   return <GeneralSettingsView initialData={generalSettings} />;
 }

@@ -11,7 +11,7 @@
   },
   "scripts": {
     "check": "tsc --noEmit",
-    "test": "tsx --test --test-reporter=../../scripts/fail-only-reporter.mjs src/**/*.test.ts src/**/*.test.tsx",
+    "test": "tsx --test --test-reporter=../../scripts/reporter/fail-only-reporter.mjs src/**/*.test.ts src/**/*.test.tsx",
     "test:integration": "tsx --test src/integration/*.integration.ts"
   },
   "dependencies": {

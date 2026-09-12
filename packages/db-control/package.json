@@ -20,7 +20,7 @@
     "db:push": "tsx src/cli.ts push",
     "db:status": "tsx src/cli.ts status",
     "prisma:validate": "prisma validate --config prisma.config.ts",
-    "test": "tsx --test --test-reporter=../../scripts/fail-only-reporter.mjs src/*.test.ts"
+    "test": "tsx --test --test-reporter=../../scripts/reporter/fail-only-reporter.mjs src/*.test.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",

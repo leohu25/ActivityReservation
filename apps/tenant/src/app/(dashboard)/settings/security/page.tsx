@@ -1,11 +1,8 @@
 import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
 import { getServerAuthRuntime } from "@chenrun/auth";
-import { getTenantDbManager } from "@chenrun/db-tenant";
-import {
-  TenantSettingsService,
-  SecuritySettingsView,
-} from "@chenrun/feature-tenant-admin";
+import { SecuritySettingsView } from "@chenrun/feature-tenant-admin/tenant-settings";
+import { getSecuritySettingsQuery } from "@chenrun/feature-tenant-admin/tenant-settings/server";
 import { Card } from "@chenrun/ui";
 
 /**
@@ -67,16 +64,8 @@ export default async function SettingsSecurityPage() {
     );
   }
 
-  // 服务端读取安全策略设置
-  const manager = getTenantDbManager({
-    repository: runtime.tenantContextRepository,
-  });
-  const service = new TenantSettingsService(
-    runtime.prisma,
-    (orgId) => manager.getClient(orgId),
-  );
-
-  const securitySettings = await service.getSecuritySettings(activeOrgId);
+  // 服务端读取安全策略设置 (通过 Server Query)
+  const securitySettings = await getSecuritySettingsQuery();
 
   return <SecuritySettingsView initialData={securitySettings} />;
 }

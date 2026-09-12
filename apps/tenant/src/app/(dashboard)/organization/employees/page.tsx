@@ -1,14 +1,13 @@
 import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
 import { getServerAuthRuntime } from "@chenrun/auth";
-import { getTenantDbManager } from "@chenrun/db-tenant";
+import { EmployeeView } from "@chenrun/feature-tenant-admin/org-management";
 import {
-  DepartmentService,
-  EmployeeManagementService,
-  EmployeeView,
-  PositionService,
-  TenantRoleService,
-} from "@chenrun/feature-tenant-admin";
+  listDepartmentTreeQuery,
+  listEmployeesQuery,
+  listPositionsQuery,
+} from "@chenrun/feature-tenant-admin/org-management/server";
+import { listTenantRolesQuery } from "@chenrun/feature-tenant-admin/role-management/server";
 import { Card } from "@chenrun/ui";
 
 /**
@@ -50,24 +49,13 @@ export default async function OrganizationEmployeesPage() {
     );
   }
 
-  // 获取租户物理库客户端并联合检索员工、部门树、岗位与角色数据
-  const manager = getTenantDbManager({
-    repository: runtime.tenantContextRepository,
-  });
-  const tenantPrisma = await manager.getClient(activeOrgId);
-  const controlPrisma = runtime.prisma;
-
-  const empService = new EmployeeManagementService();
-  const deptService = new DepartmentService();
-  const posService = new PositionService();
-  const roleService = new TenantRoleService(runtime.tenantContextRepository);
-
+  // 获取租户物理库客户端并联合检索员工、部门树、岗位与角色数据 (含 CASL 门禁与租户物理库路由)
   const [employees, departmentTree, positions, tenantRoles] = await Promise.all(
     [
-      empService.listEmployees(tenantPrisma, controlPrisma, activeOrgId),
-      deptService.listDepartmentTree(tenantPrisma),
-      posService.listPositions(tenantPrisma),
-      roleService.listTenantRoles(activeOrgId),
+      listEmployeesQuery(),
+      listDepartmentTreeQuery(),
+      listPositionsQuery(),
+      listTenantRolesQuery(),
     ],
   );
 

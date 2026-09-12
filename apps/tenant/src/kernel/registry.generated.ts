@@ -10,7 +10,7 @@ import {
   deriveNavSections,
   derivePermissionTree,
 } from "@chenrun/authorization";
-import { tenantAdminManifest } from "@chenrun/feature-tenant-admin";
+import { tenantAdminManifest } from "@chenrun/feature-tenant-admin/manifest";
 import { customerManifest } from "@chenrun/feature-customer-center/manifest";
 import { procurementManifest } from "@chenrun/feature-procurement-center";
 

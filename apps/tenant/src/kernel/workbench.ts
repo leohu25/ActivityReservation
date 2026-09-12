@@ -24,7 +24,7 @@ import type {
   EmployeeProfileDTO,
   WorkbenchDataDTO,
   WorkbenchPageData,
-} from "@chenrun/feature-tenant-admin";
+} from "@chenrun/feature-tenant-admin/workbench";
 
 export type { EmployeeProfileDTO, WorkbenchDataDTO, WorkbenchPageData };
 

@@ -1,100 +1,87 @@
 # @chenrun/feature-tenant-admin
 
-辰润 ERP 的**租户级系统管理与组织架构垂直切片模块（Tenant Admin & Organization Management Feature）**。
+辰润 ERP 的 **Tenant Admin Business Area / Feature Group（租户管理中心业务领域 / 特性集群）**。
 
-## 1. 模块定位与职责
+## 架构定位
 
-本模块专注于多租户企业内部的管理中枢与组织权限体系构建：
+本包是 Modular Monorepo 中的业务区域包，全面遵循 Feature-based Vertical Slice Architecture（基于特性的垂直切片架构）：
 
-- **组织架构全层级管理 (`services/`)**：
-  - 部门管理（`department-service`）：支持树形无限级部门层级、部门主管指定与状态启停。
-  - 岗位管理（`position-service`）：支持职级、岗位编码、所属部门关联。
-  - 员工档案（`employee-management-service`）：员工生命周期（在职、试用、离职），支持多部门与多岗位关联映射。
-- **角色与 CASL 动态权限编排 (`RolePermissionManager`)**：
-  - 维护租户自定义角色与内置超级角色。
-  - 动态分配菜单动作权限与敏感字段权限（三态读写规则）。
-- **租户基础信息与安全配置 (`tenant-settings-service`)**：企业全称、统一社会信用代码、时区、登录策略及安全配置。
-- **模块清单元数据 (`manifest.ts`)**：注册租户端系统设置路由与导航菜单节点，导出权限动作字典。
+- `org-management/`：组织架构管理核心特性（包含员工管理、部门拓扑、岗位字典）；
+- `role-management/`：角色与权限管理核心特性（包含四层权限矩阵、自定义角色分配）；
+- `tenant-settings/`：租户企业系统设置核心特性（包含企业资料、基础偏好、安全策略）；
+- `workbench/`：租户主工作台专属切片（包含准入门禁、拓扑自驱装配、数据看板）；
+- `audit-log/`：审计追踪特性（登录审计、操作审计、权限变更审计契约）；
+- `shared/`：仅供租户管理中心内多个 Feature 复用的基础设施、官方 CASL Ability 边界与公共类型。
 
-## 2. 内部架构与目录结构
+各 Feature 内部均自闭环组织为：
 
-```text
-packages/features/tenant-admin/
-├── src/
-│   ├── components/                   # 专属业务交互视图
-│   │   ├── DepartmentView.tsx        # 部门架构树与增删改查
-│   │   ├── PositionView.tsx          # 岗位管理列表
-│   │   ├── EmployeeView.tsx          # 员工花名册与档案编辑
-│   │   ├── RolePermissionManager.tsx # 角色与权限矩阵分配器
-│   │   ├── CompanySettingsView.tsx   # 企业基础信息配置
-│   │   ├── SecuritySettingsView.tsx  # 安全策略设置
-│   │   ├── OrgSwitcher.tsx           # 企业组织切换组件
-│   │   ├── WorkbenchView.tsx         # 管理工作台入口
-│   │   └── index.ts
-│   ├── contracts/                    # 页面纯数据契约 (SSoT: 实体、字段与动作定义)
-│   │   ├── department.contract.ts    # 部门架构权限与字段契约
-│   │   ├── position.contract.ts      # 岗位管理权限与字段契约
-│   │   ├── employee.contract.ts      # 员工管理权限与受控字段契约
-│   │   ├── role.contract.ts          # 角色权限管理权限契约
-│   │   ├── company-settings.contract.ts # 企业设置权限与字段契约
-│   │   ├── general-settings.contract.ts # 基础设置权限与字段契约
-│   │   ├── security-settings.contract.ts # 安全设置权限与字段契约
-│   │   ├── audit.contract.ts         # 审计追踪权限契约
-│   │   └── index.ts
-│   ├── server/                       # 租户上下文服务端注入器
-│   ├── services/                     # 领域服务实现及单测
-│   ├── actions.ts                    # Next.js Server Actions (组织、人员、权限操作)
-│   ├── manifest.ts                   # 特性 Manifest 与导航配置
-│   ├── permission-registry.ts        # 权限元数据字典注册中心
-│   ├── types.ts                      # 领域类型定义
-│   └── index.ts                      # 统一聚合导出入口
-└── package.json
-```
+- `contract.ts`：纯数据权限契约与 Subject/Field 常量 (SSoT)；
+- `types.ts`：领域类型与 DTO 输入输出模型；
+- `service.ts`：领域服务实现与防环/删除安全防护；
+- `service.test.ts`：领域与边界专属单元测试；
+- `queries.ts`：Server Component 专用的 `server-only` 只读查询（含租户物理库路由与 CASL 断言）；
+- `actions.ts`：Client 调用的 `"use server"` 安全变更操作（通过 `defineServerAction` 认证与 CASL 校验）；
+- `ui/`：现代化数智工业风展示与交互组件；
+- `public.ts`：Client-Safe 客户端安全导出入口；
+- `public.server.ts`：纯服务端 `server-only` 导出入口。
 
-## 3. 核心 API 与使用示例
+## 运行时边界与 Server/Client 物理隔离
 
-### 3.1 消费组织管理服务
+严格遵守 Next.js App Router 运行时边界：
+
+- **Server Component 读取**：`public.server.ts` → `queries.ts`（标注 `server-only`）→ Tenant Context / CASL 断言 → `service.ts`；
+- **Client mutation**：UI 组件 → `actions.ts`（标注 `"use server"`）→ `defineServerAction` 认证与 CASL 拦截 → `service.ts`；
+- **客户端安全出口**：`public.ts` 仅导出前端安全的 UI 视图、纯数据 Contract 与类型，绝不泄露 Node 运行时或 DB Client；
+- **内部实现私有化**：Service 仅作为包内领域实现，严禁向外部直接暴露；
+- **物理安全序列化**：原始 Prisma 数据在 Query 或 Action 出口处统一完成敏感字段脱敏裁剪（`pickReadableFields`）与安全序列化（`toPlainData`）。
+
+## 官方规范公共 API (Package Subpath Exports)
+
+本包遵循 Turborepo 与 Next.js 官方最佳实践，彻底废除根目录大杂烩 Barrel File 与内部 `/src/` 穿透，统一使用 `package.json#exports` 暴露强类型业务子路径：
 
 ```ts
-import { getDepartmentService, getEmployeeService } from "@chenrun/feature-tenant-admin";
+// 1. 组织架构管理
+import {
+  DepartmentView,
+  EmployeeView,
+  PositionView,
+} from "@chenrun/feature-tenant-admin/org-management";
+import {
+  listDepartmentTreeQuery,
+  listEmployeesQuery,
+  listPositionsQuery,
+} from "@chenrun/feature-tenant-admin/org-management/server";
 
-// 服务内部自动通过当前请求上下文连接对应租户物理库
-const deptService = await getDepartmentService();
-const tree = await deptService.getDepartmentTree();
+// 2. 角色与权限管理
+import { RolePermissionManager } from "@chenrun/feature-tenant-admin/role-management";
+import { listTenantRolesQuery } from "@chenrun/feature-tenant-admin/role-management/server";
 
-const empService = await getEmployeeService();
-const employees = await empService.listEmployees({ departmentId: "dept_123" });
+// 3. 企业系统设置
+import {
+  CompanySettingsView,
+  GeneralSettingsView,
+  SecuritySettingsView,
+} from "@chenrun/feature-tenant-admin/tenant-settings";
+import {
+  getCompanyProfileQuery,
+  getGeneralSettingsQuery,
+  getSecuritySettingsQuery,
+} from "@chenrun/feature-tenant-admin/tenant-settings/server";
+
+// 4. 工作台与公共能力
+import { WorkbenchView } from "@chenrun/feature-tenant-admin/workbench";
+import { TenantAdminAbilityBoundary } from "@chenrun/feature-tenant-admin/shared";
+import { tenantAdminManifest } from "@chenrun/feature-tenant-admin/manifest";
 ```
 
-### 3.2 角色权限配置组件
+旧根入口和按技术层暴露的 `/types`、`/actions`、`/services`、`/components` 已彻底物理删除，零历史包袱。
 
-```tsx
-import { RolePermissionManager } from "@chenrun/feature-tenant-admin";
-
-export function RoleConfigPage({ roleId }: { roleId: string }) {
-  return (
-    <RolePermissionManager
-      roleId={roleId}
-      onSave={async (permissions) => {
-        await updateRolePermissionsAction(roleId, permissions);
-      }}
-    />
-  );
-}
-```
-
-## 4. 架构原则与红线
-
-1. **绝对遵循租户物理隔离 (ADR-002)**：所有服务只通过 Tenant Context 派生 Prisma 客户端操作该企业专属数据库，严禁跨库查询。
-2. **员工生命周期门禁断言**：离职或停用员工在调用任何管理 Action 时由准入门禁直接拦截。
-3. **字段级权限与敏感数据脱敏**：员工薪酬、身份证等字段受 CASL 策略约束，严格由 `AuthorizedField` 与后端字段裁剪保护。
-
-## 5. 验证命令
+## 验证
 
 ```bash
-# 类型检查
-pnpm --filter @chenrun/feature-tenant-admin check
-
 # 运行单元测试
 pnpm --filter @chenrun/feature-tenant-admin test
+
+# 类型安全检查
+pnpm --filter @chenrun/feature-tenant-admin check
 ```

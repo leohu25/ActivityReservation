@@ -3,18 +3,23 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./components": "./src/components/index.ts",
-    "./services": "./src/services/index.ts",
-    "./server": "./src/server/index.ts",
-    "./actions": "./src/actions.ts"
+    "./manifest": "./src/manifest.ts",
+    "./catalog": "./src/catalog.ts",
+    "./workbench": "./src/features/workbench/public.ts",
+    "./org-management": "./src/features/org-management/public.ts",
+    "./org-management/server": "./src/features/org-management/public.server.ts",
+    "./role-management": "./src/features/role-management/public.ts",
+    "./role-management/server": "./src/features/role-management/public.server.ts",
+    "./tenant-settings": "./src/features/tenant-settings/public.ts",
+    "./tenant-settings/server": "./src/features/tenant-settings/public.server.ts",
+    "./audit-log": "./src/features/audit-log/public.ts",
+    "./shared": "./src/shared/public.ts",
+    "./shared/server": "./src/shared/server/context.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",
-    "test": "tsx --test --test-reporter=../../../scripts/fail-only-reporter.mjs src/**/*.test.ts src/**/*.test.tsx"
+    "test": "tsx --test --test-reporter=../../../scripts/reporter/fail-only-reporter.mjs \"src/**/*.test.ts\" \"src/**/*.test.tsx\""
   },
   "peerDependencies": {
     "react": "^19.0.0",
@@ -22,6 +27,7 @@
   },
   "dependencies": {
     "@casl/ability": "7.0.1",
+    "@casl/prisma": "^2.0.2",
     "@chenrun/auth": "workspace:*",
     "@chenrun/authorization": "workspace:*",
     "@chenrun/db-control": "workspace:*",
@@ -30,7 +36,8 @@
     "@chenrun/ui": "workspace:*",
     "better-auth": "1.7.3",
     "lucide-react": "^1.41.0",
-    "next": "16.3.4"
+    "next": "16.3.4",
+    "server-only": "0.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.17.24",
