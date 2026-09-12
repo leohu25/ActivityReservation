@@ -36,6 +36,12 @@ CREATE TABLE "customer" (
     "service_time" VARCHAR(50),
     "last_order_time" TIMESTAMP(3),
     "status" VARCHAR(10) NOT NULL DEFAULT 'ACTIVE',
+    "created_by_id" VARCHAR(50) NOT NULL,
+    "dept_id" VARCHAR(50),
+    "updated_by_id" VARCHAR(50),
+    "is_deleted" BOOLEAN NOT NULL DEFAULT false,
+    "deleted_at" TIMESTAMP(3),
+    "deleted_by_id" VARCHAR(50),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -70,6 +76,12 @@ CREATE TABLE "customer_quote" (
     "customer_count" INTEGER NOT NULL DEFAULT 0,
     "status" VARCHAR(10) NOT NULL DEFAULT 'DRAFT',
     "created_by" VARCHAR(50) NOT NULL,
+    "created_by_id" VARCHAR(50) NOT NULL,
+    "dept_id" VARCHAR(50),
+    "updated_by_id" VARCHAR(50),
+    "is_deleted" BOOLEAN NOT NULL DEFAULT false,
+    "deleted_at" TIMESTAMP(3),
+    "deleted_by_id" VARCHAR(50),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -109,6 +121,12 @@ CREATE TABLE "customer_store" (
     "billing_contact" VARCHAR(50),
     "billing_phone" VARCHAR(20),
     "status" VARCHAR(10) NOT NULL DEFAULT 'ACTIVE',
+    "created_by_id" VARCHAR(50) NOT NULL,
+    "dept_id" VARCHAR(50),
+    "updated_by_id" VARCHAR(50),
+    "is_deleted" BOOLEAN NOT NULL DEFAULT false,
+    "deleted_at" TIMESTAMP(3),
+    "deleted_by_id" VARCHAR(50),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -197,8 +215,12 @@ CREATE TABLE "purchase_order" (
     "cost_price" DECIMAL(12,2) NOT NULL,
     "dept_id" TEXT NOT NULL,
     "created_by_id" TEXT NOT NULL,
+    "updated_by_id" TEXT,
     "status" TEXT NOT NULL DEFAULT 'PENDING',
     "audit_comment" TEXT,
+    "is_deleted" BOOLEAN NOT NULL DEFAULT false,
+    "deleted_at" TIMESTAMP(3),
+    "deleted_by_id" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -284,6 +306,9 @@ CREATE INDEX "purchase_order_dept_id_idx" ON "purchase_order"("dept_id");
 CREATE INDEX "purchase_order_created_by_id_idx" ON "purchase_order"("created_by_id");
 
 -- CreateIndex
+CREATE INDEX "purchase_order_is_deleted_idx" ON "purchase_order"("is_deleted");
+
+-- CreateIndex
 CREATE INDEX "purchase_order_status_idx" ON "purchase_order"("status");
 
 -- AddForeignKey
@@ -352,6 +377,12 @@ COMMENT ON COLUMN "customer"."payment_cycle" IS '付款周期：WEEKLY(周结) /
 COMMENT ON COLUMN "customer"."service_time" IS '服务收货时间窗口（如：早8:00-10:00）';
 COMMENT ON COLUMN "customer"."last_order_time" IS '最近下单履约时间（系统只读自动更新）';
 COMMENT ON COLUMN "customer"."status" IS '客户状态：ACTIVE(正常) / DISABLED(停用)';
+COMMENT ON COLUMN "customer"."created_by_id" IS '创建人用户ID';
+COMMENT ON COLUMN "customer"."dept_id" IS '归属部门ID (用于数据范围判定)';
+COMMENT ON COLUMN "customer"."updated_by_id" IS '最后更新人用户ID';
+COMMENT ON COLUMN "customer"."is_deleted" IS '软删除标记';
+COMMENT ON COLUMN "customer"."deleted_at" IS '软删除时间';
+COMMENT ON COLUMN "customer"."deleted_by_id" IS '软删除操作人用户ID';
 COMMENT ON COLUMN "customer"."created_at" IS '创建时间';
 COMMENT ON COLUMN "customer"."updated_at" IS '更新时间';
 COMMENT ON TABLE "customer_category" IS '客户分类表：支持多级层级树结构（如餐饮连锁、企事业单位、生鲜超市）';
@@ -376,6 +407,12 @@ COMMENT ON COLUMN "customer_quote"."item_count" IS '包含的商品明细条目�
 COMMENT ON COLUMN "customer_quote"."customer_count" IS '关联客户总数（只读统计）';
 COMMENT ON COLUMN "customer_quote"."status" IS '单据状态：DRAFT(草稿) / ACTIVE(已生效) / EXPIRED(已过期) / VOIDED(已作废)';
 COMMENT ON COLUMN "customer_quote"."created_by" IS '创建人姓名或工号';
+COMMENT ON COLUMN "customer_quote"."created_by_id" IS '创建人用户ID';
+COMMENT ON COLUMN "customer_quote"."dept_id" IS '归属部门ID';
+COMMENT ON COLUMN "customer_quote"."updated_by_id" IS '最后更新人用户ID';
+COMMENT ON COLUMN "customer_quote"."is_deleted" IS '软删除标记';
+COMMENT ON COLUMN "customer_quote"."deleted_at" IS '软删除时间';
+COMMENT ON COLUMN "customer_quote"."deleted_by_id" IS '软删除操作人用户ID';
 COMMENT ON COLUMN "customer_quote"."created_at" IS '创建时间';
 COMMENT ON COLUMN "customer_quote"."updated_at" IS '更新时间';
 COMMENT ON TABLE "customer_quote_item" IS '门店报价单明细表：具体商品的含税与不含税单价及起订限制';
@@ -405,6 +442,12 @@ COMMENT ON COLUMN "customer_store"."region_code" IS '所属区域编码（必填
 COMMENT ON COLUMN "customer_store"."billing_contact" IS '结款财务联系人（门店现场收货人≠结款人时使用）';
 COMMENT ON COLUMN "customer_store"."billing_phone" IS '结款财务联系人电话';
 COMMENT ON COLUMN "customer_store"."status" IS '门店状态：ACTIVE(正常) / DISABLED(停用)';
+COMMENT ON COLUMN "customer_store"."created_by_id" IS '创建人用户ID';
+COMMENT ON COLUMN "customer_store"."dept_id" IS '归属部门ID';
+COMMENT ON COLUMN "customer_store"."updated_by_id" IS '最后更新人用户ID';
+COMMENT ON COLUMN "customer_store"."is_deleted" IS '软删除标记';
+COMMENT ON COLUMN "customer_store"."deleted_at" IS '软删除时间';
+COMMENT ON COLUMN "customer_store"."deleted_by_id" IS '软删除操作人用户ID';
 COMMENT ON COLUMN "customer_store"."created_at" IS '创建时间';
 COMMENT ON COLUMN "customer_store"."updated_at" IS '更新时间';
 COMMENT ON TABLE "customer_tag" IS '客户标签字典表：用于筛选、统计、报价与配送策略';
@@ -453,7 +496,11 @@ COMMENT ON COLUMN "purchase_order"."quantity" IS '采购商品总数量';
 COMMENT ON COLUMN "purchase_order"."cost_price" IS '采购总成本金额';
 COMMENT ON COLUMN "purchase_order"."dept_id" IS '归属采购部门ID';
 COMMENT ON COLUMN "purchase_order"."created_by_id" IS '创建人用户ID';
+COMMENT ON COLUMN "purchase_order"."updated_by_id" IS '最后更新人用户ID';
 COMMENT ON COLUMN "purchase_order"."status" IS '采购订单状态: PENDING(待审核) / APPROVED(已通过) / REJECTED(已驳回)';
 COMMENT ON COLUMN "purchase_order"."audit_comment" IS '审核意见或驳回备注';
+COMMENT ON COLUMN "purchase_order"."is_deleted" IS '软删除标记';
+COMMENT ON COLUMN "purchase_order"."deleted_at" IS '软删除时间';
+COMMENT ON COLUMN "purchase_order"."deleted_by_id" IS '软删除操作人';
 COMMENT ON COLUMN "purchase_order"."created_at" IS '订单创建时间';
 COMMENT ON COLUMN "purchase_order"."updated_at" IS '订单最后更新时间';

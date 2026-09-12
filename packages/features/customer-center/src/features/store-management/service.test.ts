@@ -21,6 +21,9 @@ test("CustomerStoreService 拒绝在停用客户下创建门店", async () => {
         contactPhone: "13800000000",
         regionCode: "REGION-01",
       },
+      {
+        userId: "test-user-001",
+      },
     ),
     /已停用/,
   );

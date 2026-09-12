@@ -256,9 +256,9 @@
       "name": "【架构规范】通用实体审计基础字段规范与客户中心数据权限闭环",
       "description": "建立 ERP 业务实体基线规范（基础审计字段 createdById, deptId 及软删除字段 isDeleted/deletedAt），通过门禁脚本校验所有业务实体 Schema 符合基线；补齐客户中心 (customer-center) 缺失的数据权限过滤链路，包括 Customer 等业务实体模型扩展、新建时操作人落库、getTenantCustomerContext 拓扑编译解析、以及 CustomerService 查询下推 getAccessibleWhere 物理过滤，实现角色数据范围（仅本人/本部门/部门及下级/全租户）端到端生效。",
       "dependencies": ["arch-feature-vertical-slice-consolidation"],
-      "status": "pending",
+      "status": "completed",
       "owner": "implementer",
-      "evidence": ""
+      "evidence": "建立业务实体审计基线门禁 scripts/check-entity-baseline.mjs 并挂载至 verify.sh；扩展 Customer/CustomerStore/CustomerQuote 等实体审计字段（createdById, deptId, updatedById, isDeleted, deletedAt, deletedById）；客户中心 getTenantCustomerContext 接入 resolveEmployeeTopology 与 createPrismaAbilityForTenant 编译完整带数据范围的 Ability；CustomerService 查询下推 getAccessibleWhere 与 isDeleted: false 显式过滤；完成数据权限攻防测试（SELF/DEPT/DEPT_TREE/ALL）与全量类型/门禁测试 100% 通过。"
     }
   ]
 }

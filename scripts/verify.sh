@@ -55,11 +55,14 @@ run_quiet "沙盒边界" node "${WORKSPACE_ROOT}/scripts/check/check-boundary.mj
 # 3. 架构红线
 run_quiet "红线扫描" node "${WORKSPACE_ROOT}/scripts/check/check-redlines.mjs"
 
-# 4. 业务垂直切片架构完整性
+# 4. 业务实体基础审计与软删除规范
+run_quiet "实体基线" node "${WORKSPACE_ROOT}/scripts/check-entity-baseline.mjs"
+
+# 5. 业务垂直切片架构完整性
 run_quiet "业务切片" node "${WORKSPACE_ROOT}/scripts/check/check-vertical-slices.mjs"
 
-# 5. 门禁与红线自身单测
-run_quiet "门禁单测" node --test "${WORKSPACE_ROOT}/scripts/check/check-redlines.test.mjs" "${WORKSPACE_ROOT}/scripts/check/check-vertical-slices.test.mjs"
+# 6. 门禁与红线自身单测
+run_quiet "门禁单测" node --test "${WORKSPACE_ROOT}/scripts/check/check-redlines.test.mjs" "${WORKSPACE_ROOT}/scripts/check/check-vertical-slices.test.mjs" "${WORKSPACE_ROOT}/scripts/check-entity-baseline.test.mjs"
 
 # 6. 类型检查
 if [ -f "${WORKSPACE_ROOT}/package.json" ] && [ -d "${WORKSPACE_ROOT}/node_modules" ]; then

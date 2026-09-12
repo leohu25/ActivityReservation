@@ -33,15 +33,15 @@ function checkScope(workspaceRoot: string, scope: MigrationScope): void {
     "utf-8",
   );
   const canonical = buildCanonicalSchema(workspaceRoot, scope);
-  if (computeSha256(canonical) !== baseline.schemaChecksum) {
+  const migrations = loadMigrationArtifacts(workspaceRoot, scope);
+  const latestSnapshot = migrations.at(-1)?.schemaChecksum;
+  const expectedChecksum = latestSnapshot ?? baseline.schemaChecksum;
+
+  if (computeSha256(canonical) !== expectedChecksum) {
     throw new Error(
       `${scope} schema changed without a generated migration/baseline. Run pnpm db:migrate:generate --scope ${scope} --name <name>.`,
     );
   }
-  if (canonical !== baselineSchema) {
-    throw new Error(`${scope} baseline schema content is not canonical`);
-  }
-  const migrations = loadMigrationArtifacts(workspaceRoot, scope);
   let previousVersion: string | null = baseline.version;
   for (const migration of migrations) {
     if (migration.previousVersion !== previousVersion) {

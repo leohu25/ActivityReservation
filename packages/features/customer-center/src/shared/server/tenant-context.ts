@@ -14,6 +14,14 @@ export interface TenantDbContext {
   readonly role: string;
   readonly client: TenantPrismaClient;
   readonly tenantCtx: TenantContext;
+  readonly employeeProfile: {
+    id: string;
+    memberId: string | null;
+    departmentId: string | null;
+    employeeNo: string | null;
+    jobTitle: string | null;
+    status: string;
+  } | null;
 }
 
 /**
@@ -54,6 +62,7 @@ export async function getTenantDbContext(): Promise<TenantDbContext> {
     role: tenantCtx.member.role,
     client: tenantPrisma,
     tenantCtx,
+    employeeProfile,
   };
 }
 

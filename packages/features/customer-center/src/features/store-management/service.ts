@@ -105,12 +105,13 @@ export class CustomerStoreService {
   static async createStore(
     client: TenantPrismaClient,
     input: CreateStoreInput,
+    auditCtx: { userId: string; deptId?: string | null },
   ) {
     // 必须关联已存在的有效客户档案
     const customer = await client.customer.findUnique({
       where: { customerCode: input.customerCode },
     });
-    if (!customer) {
+    if (!customer || customer.isDeleted) {
       throw new Error(`所属客户 [${input.customerCode}] 不存在`);
     }
     if (customer.status === "DISABLED") {
@@ -141,6 +142,9 @@ export class CustomerStoreService {
         billingContact: input.billingContact || null,
         billingPhone: input.billingPhone || null,
         status: "ACTIVE",
+        createdById: auditCtx.userId,
+        deptId: auditCtx.deptId ?? null,
+        isDeleted: false,
       },
       include: {
         customer: true,
@@ -155,11 +159,12 @@ export class CustomerStoreService {
     client: TenantPrismaClient,
     storeCode: string,
     input: UpdateStoreInput,
+    auditCtx?: { userId: string },
   ) {
     const existing = await client.customerStore.findUnique({
       where: { storeCode },
     });
-    if (!existing) {
+    if (!existing || existing.isDeleted) {
       throw new Error(`门店 [${storeCode}] 不存在`);
     }
 
@@ -185,6 +190,7 @@ export class CustomerStoreService {
         billingContact: input.billingContact,
         billingPhone: input.billingPhone,
         status: input.status,
+        updatedById: auditCtx?.userId ?? null,
       },
       include: {
         customer: true,
@@ -199,12 +205,13 @@ export class CustomerStoreService {
     client: TenantPrismaClient,
     storeCode: string,
     status: "ACTIVE" | "DISABLED",
+    auditCtx?: { userId: string },
   ) {
     const store = await client.customerStore.findUnique({
       where: { storeCode },
       include: { customer: true },
     });
-    if (!store) {
+    if (!store || store.isDeleted) {
       throw new Error(`门店 [${storeCode}] 不存在`);
     }
 
@@ -217,23 +224,35 @@ export class CustomerStoreService {
 
     return client.customerStore.update({
       where: { storeCode },
-      data: { status },
+      data: {
+        status,
+        updatedById: auditCtx?.userId ?? null,
+      },
     });
   }
 
   /**
-   * 删除门店（已有报价单或订单的门店不允许删除）
+   * 软删除门店（已有报价单或订单的门店不允许删除）
    */
-  static async deleteStore(client: TenantPrismaClient, storeCode: string) {
+  static async deleteStore(
+    client: TenantPrismaClient,
+    storeCode: string,
+    auditCtx?: { userId: string },
+  ) {
     const quoteCount = await client.customerQuote.count({
-      where: { storeCode },
+      where: { storeCode, isDeleted: false },
     });
     if (quoteCount > 0) {
       throw new Error(`该门店已存在关联报价单记录，禁止删除，请进行“停用”操作`);
     }
 
-    return client.customerStore.delete({
+    return client.customerStore.update({
       where: { storeCode },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedById: auditCtx?.userId ?? null,
+      },
     });
   }
 }

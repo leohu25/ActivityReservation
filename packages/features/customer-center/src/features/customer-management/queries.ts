@@ -1,7 +1,6 @@
 import "server-only";
 
-import { pickReadableFields } from "@chenrun/authorization";
-import { toPlainData } from "@chenrun/shared";
+import { getAccessibleWhere, pickReadableFields } from "@chenrun/authorization";
 import {
   assertCustomerAbility,
   getTenantCustomerContext,
@@ -9,11 +8,17 @@ import {
 import { CustomerSubject } from "./contract";
 import { CustomerService } from "./service";
 import type { CustomerListItem, ListCustomerFilter } from "./types";
+import { toPlainData } from "@chenrun/shared";
 
 export async function listCustomersQuery(filter: ListCustomerFilter = {}) {
   const { client, ability } = await getTenantCustomerContext();
   assertCustomerAbility(ability, "read", CustomerSubject);
-  const result = await CustomerService.listCustomers(client, filter);
+  const accessibleWhere = getAccessibleWhere(ability, CustomerSubject, "read");
+  const result = await CustomerService.listCustomers(
+    client,
+    filter,
+    accessibleWhere,
+  );
   const items: CustomerListItem[] = result.items.map((item) => {
     const readable = pickReadableFields(
       ability,

@@ -13,6 +13,7 @@
     "db:migrate:catalog": "pnpm --filter @chenrun/db-migrate exec tsx src/cli.ts catalog",
     "db:migrate:generate": "pnpm --filter @chenrun/db-migrate exec tsx src/cli.ts generate",
     "db:migrate:baseline": "pnpm --filter @chenrun/db-migrate exec tsx src/cli.ts baseline",
+    "db:migrate:baseline:reset": "pnpm --filter @chenrun/db-migrate exec tsx src/cli.ts baseline --scope tenant --reset",
     "db:platform:ensure": "pnpm --filter @chenrun/db-migrate exec tsx src/cli.ts ensure-platform",
     "build": "pnpm sync:features && pnpm db:migrate:check && turbo run build",
     "dev": "pnpm sync:features && pnpm db:migrate:check && turbo run dev",

@@ -12,9 +12,13 @@ import type { CreateStoreInput, UpdateStoreInput } from "./types";
 
 export const createStoreAction = defineServerAction(
   async (input: CreateStoreInput) => {
-    const { client, ability } = await getTenantCustomerContext();
+    const { client, ability, userId, employeeProfile } =
+      await getTenantCustomerContext();
     assertCustomerAbility(ability, "create", CustomerStoreSubject);
-    const created = await CustomerStoreService.createStore(client, input);
+    const created = await CustomerStoreService.createStore(client, input, {
+      userId,
+      deptId: employeeProfile?.departmentId ?? null,
+    });
     revalidatePath("/customer/stores");
     revalidatePath("/customer/customers");
     return created;
@@ -24,12 +28,13 @@ export const createStoreAction = defineServerAction(
 
 export const updateStoreAction = defineServerAction(
   async (storeCode: string, input: UpdateStoreInput) => {
-    const { client, ability } = await getTenantCustomerContext();
+    const { client, ability, userId } = await getTenantCustomerContext();
     assertCustomerAbility(ability, "update", CustomerStoreSubject);
     const updated = await CustomerStoreService.updateStore(
       client,
       storeCode,
       input,
+      { userId },
     );
     revalidatePath("/customer/stores");
     return updated;
@@ -39,12 +44,13 @@ export const updateStoreAction = defineServerAction(
 
 export const updateStoreStatusAction = defineServerAction(
   async (storeCode: string, status: "ACTIVE" | "DISABLED") => {
-    const { client, ability } = await getTenantCustomerContext();
+    const { client, ability, userId } = await getTenantCustomerContext();
     assertCustomerAbility(ability, "update", CustomerStoreSubject);
     const updated = await CustomerStoreService.updateStoreStatus(
       client,
       storeCode,
       status,
+      { userId },
     );
     revalidatePath("/customer/stores");
     return updated;
@@ -54,9 +60,11 @@ export const updateStoreStatusAction = defineServerAction(
 
 export const deleteStoreAction = defineServerAction(
   async (storeCode: string) => {
-    const { client, ability } = await getTenantCustomerContext();
+    const { client, ability, userId } = await getTenantCustomerContext();
     assertCustomerAbility(ability, "delete", CustomerStoreSubject);
-    const deleted = await CustomerStoreService.deleteStore(client, storeCode);
+    const deleted = await CustomerStoreService.deleteStore(client, storeCode, {
+      userId,
+    });
     revalidatePath("/customer/stores");
     return deleted;
   },

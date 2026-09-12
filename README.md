@@ -125,6 +125,8 @@ pnpm run db:migrate:generate --scope platform --name add_xxx_field
 # 4. 重新生成或重置最新全量基线快照 (生成可审核的 baseline.sql)
 pnpm run db:migrate:baseline --scope tenant --reset
 pnpm run db:migrate:baseline --scope platform --reset
+# 也可直接使用快捷重置命令将当前所有增量压平进全新基线（上线前/重构开发阶段专用）
+pnpm run db:migrate:baseline:reset
 
 # 5. 重新编译生成运行期只读 Catalog (generated/runtime-catalog.ts)
 pnpm run db:migrate:catalog

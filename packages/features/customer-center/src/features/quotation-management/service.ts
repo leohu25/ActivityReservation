@@ -102,6 +102,7 @@ export class CustomerQuoteService {
   static async createQuote(
     client: TenantPrismaClient,
     input: CreateQuoteInput,
+    auditCtx?: { userId: string; deptId?: string | null },
   ) {
     if (!input.customerCode && !input.storeCode && !input.regionCode) {
       throw new Error("报价单适用范围必须指定客户、门店或区域中的至少一项");
@@ -129,6 +130,9 @@ export class CustomerQuoteService {
           customerCount: input.customerCode ? 1 : 0,
           status: "DRAFT",
           createdBy: input.createdBy,
+          createdById: auditCtx?.userId ?? input.createdBy,
+          deptId: auditCtx?.deptId ?? null,
+          isDeleted: false,
         },
       });
 

@@ -1,4 +1,5 @@
 import type { TenantPrismaClient } from "@chenrun/db-tenant";
+import type { PrismaQueryCondition } from "@chenrun/authorization";
 import type {
   CreateCustomerInput,
   ListCustomerFilter,
@@ -10,6 +11,11 @@ export interface ListCustomersResult {
   total: number;
   page: number;
   pageSize: number;
+}
+
+export interface CustomerAuditContext {
+  userId: string;
+  deptId?: string | null;
 }
 
 export class CustomerService {
@@ -49,38 +55,50 @@ export class CustomerService {
 
   /**
    * 查询客户列表（服务端分页：count + skip/take，禁止全量返回）
+   * 严格注入 accessibleWhere 数据范围过滤与 isDeleted: false 软删除物理过滤 (Fail-Closed)
    */
   static async listCustomers(
     client: TenantPrismaClient,
     filter: ListCustomerFilter = {},
+    accessibleWhere?: PrismaQueryCondition,
   ): Promise<ListCustomersResult> {
     const page = Math.max(1, filter.page ?? 1);
     const pageSize = Math.min(100, Math.max(1, filter.pageSize ?? 20));
     const skip = (page - 1) * pageSize;
 
-    const where: any = {};
+    const andConditions: any[] = [{ isDeleted: false }];
+
+    if (accessibleWhere && Object.keys(accessibleWhere).length > 0) {
+      andConditions.push(accessibleWhere);
+    }
 
     if (filter.categoryCode) {
-      where.categoryCode = filter.categoryCode;
+      andConditions.push({ categoryCode: filter.categoryCode });
     }
     if (filter.status) {
-      where.status = filter.status;
+      andConditions.push({ status: filter.status });
     }
     if (filter.keyword) {
-      where.OR = [
-        { customerName: { contains: filter.keyword } },
-        { customerCode: { contains: filter.keyword } },
-        { contactPerson: { contains: filter.keyword } },
-        { contactPhone: { contains: filter.keyword } },
-      ];
+      andConditions.push({
+        OR: [
+          { customerName: { contains: filter.keyword } },
+          { customerCode: { contains: filter.keyword } },
+          { contactPerson: { contains: filter.keyword } },
+          { contactPhone: { contains: filter.keyword } },
+        ],
+      });
     }
     if (filter.tagCode) {
-      where.tagAssignments = {
-        some: {
-          tagCode: filter.tagCode,
+      andConditions.push({
+        tagAssignments: {
+          some: {
+            tagCode: filter.tagCode,
+          },
         },
-      };
+      });
     }
+
+    const where = andConditions.length > 0 ? { AND: andConditions } : {};
 
     const include = {
       category: true,
@@ -112,10 +130,10 @@ export class CustomerService {
   }
 
   /**
-   * 获取客户详情
+   * 获取客户详情（默认过滤软删除记录）
    */
   static async getCustomer(client: TenantPrismaClient, customerCode: string) {
-    return client.customer.findUnique({
+    const customer = await client.customer.findUnique({
       where: { customerCode },
       include: {
         category: true,
@@ -128,14 +146,19 @@ export class CustomerService {
         quotes: true,
       },
     });
+    if (customer && customer.isDeleted) {
+      return null;
+    }
+    return customer;
   }
 
   /**
-   * 创建客户档案
+   * 创建客户档案（强制记录创建人与归属部门）
    */
   static async createCustomer(
     client: TenantPrismaClient,
     input: CreateCustomerInput,
+    auditCtx: CustomerAuditContext,
   ) {
     const category = await client.customerCategory.findUnique({
       where: { categoryCode: input.categoryCode },
@@ -173,6 +196,9 @@ export class CustomerService {
         paymentCycle: input.paymentCycle || null,
         serviceTime: input.serviceTime || null,
         status: "ACTIVE",
+        createdById: auditCtx.userId,
+        deptId: auditCtx.deptId ?? null,
+        isDeleted: false,
         tagAssignments: input.tagCodes?.length
           ? {
               create: input.tagCodes.map((tagCode) => ({
@@ -195,15 +221,19 @@ export class CustomerService {
   /**
    * 更新客户档案
    */
+  /**
+   * 更新客户档案
+   */
   static async updateCustomer(
     client: TenantPrismaClient,
     customerCode: string,
     input: UpdateCustomerInput,
+    auditCtx?: { userId: string },
   ) {
     const existing = await client.customer.findUnique({
       where: { customerCode },
     });
-    if (!existing) {
+    if (!existing || existing.isDeleted) {
       throw new Error(`客户 [${customerCode}] 不存在`);
     }
 
@@ -251,6 +281,7 @@ export class CustomerService {
         paymentCycle: input.paymentCycle,
         serviceTime: input.serviceTime,
         status: input.status,
+        updatedById: auditCtx?.userId ?? null,
       },
       include: {
         category: true,
@@ -270,18 +301,25 @@ export class CustomerService {
     client: TenantPrismaClient,
     customerCode: string,
     status: "ACTIVE" | "DISABLED",
+    auditCtx?: { userId: string },
   ) {
     return client.$transaction(async (tx) => {
       const updated = await tx.customer.update({
         where: { customerCode },
-        data: { status },
+        data: {
+          status,
+          updatedById: auditCtx?.userId ?? null,
+        },
       });
 
       // 铁律：停用客户，下属所有门店强制同时停用
       if (status === "DISABLED") {
         await tx.customerStore.updateMany({
           where: { customerCode },
-          data: { status: "DISABLED" },
+          data: {
+            status: "DISABLED",
+            updatedById: auditCtx?.userId ?? null,
+          },
         });
       }
 
@@ -290,14 +328,15 @@ export class CustomerService {
   }
 
   /**
-   * 删除客户（核心控制点：已有门店或单据的客户不允许删除，只能停用）
+   * 软删除客户（核心控制点：已有活跃门店或单据的客户不允许删除，只能停用）
    */
   static async deleteCustomer(
     client: TenantPrismaClient,
     customerCode: string,
+    auditCtx?: { userId: string },
   ) {
     const storeCount = await client.customerStore.count({
-      where: { customerCode },
+      where: { customerCode, isDeleted: false },
     });
     if (storeCount > 0) {
       throw new Error(
@@ -306,19 +345,20 @@ export class CustomerService {
     }
 
     const quoteCount = await client.customerQuote.count({
-      where: { customerCode },
+      where: { customerCode, isDeleted: false },
     });
     if (quoteCount > 0) {
       throw new Error(`该客户已存在关联报价单记录，禁止删除，请进行“停用”操作`);
     }
 
-    // 清理标签关联并删除客户
-    await client.customerTagAssignment.deleteMany({
+    // 执行软删除：标记 isDeleted 为 true，记录删除时间与删除人
+    return client.customer.update({
       where: { customerCode },
-    });
-
-    return client.customer.delete({
-      where: { customerCode },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedById: auditCtx?.userId ?? null,
+      },
     });
   }
 }

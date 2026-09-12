@@ -3,11 +3,13 @@
 ## 允许修改的文件与目录 (修改白名单)
 
 - `packages/features/customer-center/**`
+- `packages/features/procurement-center/prisma/schema.prisma`
 - `packages/db-tenant/prisma/**`
 - `scripts/check-entity-baseline.mjs`
+- `scripts/check-entity-baseline.test.mjs`
 - `scripts/verify.sh`
 - `scripts/sync-tenant-schema.mjs`
-- `packages/db-migrate/**`
+- `tooling/db-migrate/**`
 - `apps/tenant/src/app/(dashboard)/customer/**`
 - `.harness/features/arch-data-scope-and-base-entity-audit/**`
 
@@ -21,3 +23,5 @@
 - 严禁破坏 PostgreSQL 物理隔离逻辑；
 - 严禁破坏原有 RBAC 动作权限契约；
 - 严禁擅自修改除当前特性受控切片外的其他已稳定特性核心逻辑。
+
+- `README.md` # 1 file @ 7f5fa7c7，联动修改自动登记
