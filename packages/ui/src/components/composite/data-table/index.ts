@@ -1,7 +1,6 @@
 import { DataTableRoot } from "./DataTableRoot";
 import { DataTableToolbar } from "./DataTableToolbar";
 import { DataTableHeader } from "./DataTableHeader";
-import { DataTableSearch } from "./DataTableSearch";
 import { DataTableFacetedFilter } from "./DataTableFacetedFilter";
 import { DataTableFilterBar } from "./DataTableFilterBar";
 import { DataTableFilterDrawer } from "./DataTableFilterDrawer";
@@ -39,7 +38,6 @@ export * from "./DataTableContext";
 export * from "./DataTableRoot";
 export * from "./DataTableToolbar";
 export * from "./DataTableHeader";
-export * from "./DataTableSearch";
 export * from "./DataTableFacetedFilter";
 export * from "./DataTableFilterBar";
 export * from "./DataTableFilterDrawer";
@@ -83,7 +81,6 @@ export const DataTable = Object.assign(DataTableRoot, {
  Workspace: DataTableWorkspace,
  Toolbar: DataTableToolbar,
  Header: DataTableHeader,
- Search: DataTableSearch,
  FacetedFilter: DataTableFacetedFilter,
  FilterBar: DataTableFilterBar,
  FilterDrawer: DataTableFilterDrawer,

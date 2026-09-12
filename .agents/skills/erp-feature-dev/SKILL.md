@@ -32,6 +32,7 @@ agent_created: true
 12. **表单优先 shadcn Form**：短表单直接 `Form`+`Field`；长表单/AI 批量字段可用 `FormFields` Schema（可选）。
 13. **导出走契约**：CSV 导出用 `exportContractCsv(rows, contract.configurableFields, ...)`，禁止手写 fieldKeys。
 14. **原子层 = shadcn 目录**：`packages/ui/.../shadcn/` 仅允许 `npx shadcn@latest add` 引入；禁止手写；业务不得裸写控件样式。
+15. **单一 Zod 强类型驱动与 Table 列派生**：表单增改查弹窗统一使用 `CrudFormModal`，强制传入 `schema: z.ZodType` 执行 safeParse 运行时红字校验拦截，消灭无校验双分支；列表优先使用 `DataTable.createColumnsFromSchema(schema)` 派生标准表格列定义。
 
 ---
 

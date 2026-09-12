@@ -54,8 +54,10 @@ test("DataTable: 能够像积木一样自由装配并正确渲染表格主体与
       rowKey={(item) => item.id}
       total={mockData.length}
     >
-      <DataTable.Toolbar>
-        <DataTable.Search placeholder="搜索物料..." />
+      <DataTable.FilterBar>
+        <DataTable.InputGroup label="关键字">
+          <input placeholder="搜索物料..." />
+        </DataTable.InputGroup>
         <DataTable.FacetedFilter
           title="状态"
           options={[
@@ -63,7 +65,7 @@ test("DataTable: 能够像积木一样自由装配并正确渲染表格主体与
             { label: "缺货", value: "OUT_OF_STOCK" },
           ]}
         />
-      </DataTable.Toolbar>
+      </DataTable.FilterBar>
       <DataTable.Content />
       <DataTable.Pagination />
     </DataTable.Root>,
