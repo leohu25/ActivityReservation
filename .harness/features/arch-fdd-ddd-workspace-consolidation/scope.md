@@ -28,3 +28,5 @@
 - `packages/ui/src/components/composite/data-table/**` # 4 files @ 90af681d，联动修改自动登记
 - `packages/ui/src/CrudFormModal.test.tsx` # 1 file @ 90af681d，联动修改自动登记
 - `packages/features/procurement-center/src/components/ProcurementOrderCenter.test.tsx` # 1 file @ 90af681d，联动修改自动登记
+- `packages/features/tenant-admin/src/components/**` # 3 files @ 40e5be48，联动修改自动登记
+- `packages/ui/src/components/composite/form/**` # 6 files @ 40e5be48，联动修改自动登记

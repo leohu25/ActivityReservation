@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { DataTable, toast } from "@chenrun/ui";
-import type { DataTableFormFieldSchema } from "@chenrun/ui";
+import { useMemo, useState } from "react";
+import { FormDialog, FormSection, FormFields, type FormFieldSchema, toast } from "@chenrun/ui";
 import { createCategoryAction } from "../../actions";
 import type { CustomerCategoryItem } from "../../types";
 
@@ -12,20 +11,20 @@ export interface CreateCategoryModalProps {
   readonly onCreated?: () => void;
 }
 
-/** 新建客户分类：FormModal + Schema */
+/** 新建客户分类：标准 FormDialog + FormFields 驱动 */
 export function CreateCategoryModal({
   categories,
   onClose,
   onCreated,
 }: CreateCategoryModalProps) {
-  const form = DataTable.useForm({
+  const [values, setValues] = useState({
     categoryCode: "",
     categoryName: "",
     parentCode: "",
     description: "",
   });
 
-  const fields: DataTableFormFieldSchema[] = useMemo(
+  const fields: FormFieldSchema[] = useMemo(
     () => [
       {
         name: "categoryCode",
@@ -66,7 +65,7 @@ export function CreateCategoryModal({
   );
 
   return (
-    <DataTable.FormModal
+    <FormDialog
       open
       onOpenChange={(open) => {
         if (!open) onClose();
@@ -76,10 +75,10 @@ export function CreateCategoryModal({
       submitText="保存分类"
       onSubmit={async () => {
         const res = await createCategoryAction({
-          categoryCode: form.values.categoryCode,
-          categoryName: form.values.categoryName,
-          parentCode: form.values.parentCode || null,
-          description: form.values.description || null,
+          categoryCode: values.categoryCode,
+          categoryName: values.categoryName,
+          parentCode: values.parentCode || null,
+          description: values.description || null,
         });
         if (!res.success) {
           toast.error(res.error || "创建分类失败");
@@ -89,14 +88,14 @@ export function CreateCategoryModal({
         onCreated?.();
       }}
     >
-      <DataTable.FormSection title="分类信息">
-        <DataTable.FormFields
+      <FormSection title="分类信息">
+        <FormFields
           fields={fields}
-          values={form.values}
-          onChange={form.setField}
+          values={values}
+          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
           columns={2}
         />
-      </DataTable.FormSection>
-    </DataTable.FormModal>
+      </FormSection>
+    </FormDialog>
   );
 }

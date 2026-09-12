@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { DataTable, toast } from "@chenrun/ui";
-import type { DataTableFormFieldSchema } from "@chenrun/ui";
+import { useMemo, useState } from "react";
+import { FormDialog, FormSection, FormFields, type FormFieldSchema, toast } from "@chenrun/ui";
 import { createTagAction } from "../../actions";
 
 export interface CreateTagModalProps {
@@ -10,16 +9,16 @@ export interface CreateTagModalProps {
   readonly onCreated?: () => void;
 }
 
-/** 新建业务标签：FormModal + Schema */
+/** 新建业务标签：标准 FormDialog + FormFields 驱动 */
 export function CreateTagModal({ onClose, onCreated }: CreateTagModalProps) {
-  const form = DataTable.useForm({
+  const [values, setValues] = useState({
     tagCode: "",
     tagName: "",
     tagType: "DELIVERY",
     description: "",
   });
 
-  const fields: DataTableFormFieldSchema[] = useMemo(
+  const fields: FormFieldSchema[] = useMemo(
     () => [
       {
         name: "tagCode",
@@ -59,7 +58,7 @@ export function CreateTagModal({ onClose, onCreated }: CreateTagModalProps) {
   );
 
   return (
-    <DataTable.FormModal
+    <FormDialog
       open
       onOpenChange={(open) => {
         if (!open) onClose();
@@ -69,10 +68,10 @@ export function CreateTagModal({ onClose, onCreated }: CreateTagModalProps) {
       submitText="保存标签"
       onSubmit={async () => {
         const res = await createTagAction({
-          tagCode: form.values.tagCode,
-          tagName: form.values.tagName,
-          tagType: form.values.tagType,
-          description: form.values.description || null,
+          tagCode: values.tagCode,
+          tagName: values.tagName,
+          tagType: values.tagType,
+          description: values.description || null,
         });
         if (!res.success) {
           toast.error(res.error || "创建标签失败");
@@ -82,14 +81,14 @@ export function CreateTagModal({ onClose, onCreated }: CreateTagModalProps) {
         onCreated?.();
       }}
     >
-      <DataTable.FormSection title="标签信息">
-        <DataTable.FormFields
+      <FormSection title="标签信息">
+        <FormFields
           fields={fields}
-          values={form.values}
-          onChange={form.setField}
+          values={values}
+          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
           columns={2}
         />
-      </DataTable.FormSection>
-    </DataTable.FormModal>
+      </FormSection>
+    </FormDialog>
   );
 }

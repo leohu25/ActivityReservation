@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { DataTable, toast } from "@chenrun/ui";
-import type { DataTableFormFieldSchema } from "@chenrun/ui";
+import { useMemo, useState } from "react";
+import { FormDialog, FormSection, FormFields, type FormFieldSchema, toast } from "@chenrun/ui";
 import { createRoleAction } from "../actions";
 
 export interface CreateRoleModalProps {
@@ -10,15 +9,15 @@ export interface CreateRoleModalProps {
   readonly onCreated?: () => void;
 }
 
-/** 新建租户业务角色：FormModal + Schema */
+/** 新建租户业务角色：FormDialog + FormFields 驱动 */
 export function CreateRoleModal({ onClose, onCreated }: CreateRoleModalProps) {
-  const form = DataTable.useForm({
+  const [values, setValues] = useState({
     roleCode: "",
     roleName: "",
     description: "",
   });
 
-  const fields: DataTableFormFieldSchema[] = useMemo(
+  const fields: FormFieldSchema[] = useMemo(
     () => [
       {
         name: "roleCode",
@@ -46,7 +45,7 @@ export function CreateRoleModal({ onClose, onCreated }: CreateRoleModalProps) {
   );
 
   return (
-    <DataTable.FormModal
+    <FormDialog
       open
       onOpenChange={(open) => {
         if (!open) onClose();
@@ -55,14 +54,14 @@ export function CreateRoleModal({ onClose, onCreated }: CreateRoleModalProps) {
       description="角色编码创建后不可修改，请遵循小写字母下划线规范"
       submitText="确认创建"
       onSubmit={async () => {
-        if (!form.values.roleCode.trim()) {
+        if (!values.roleCode.trim()) {
           toast.error("角色标识代码不能为空");
           throw new Error("角色标识代码不能为空");
         }
         const res = await createRoleAction(
-          form.values.roleCode.trim(),
-          form.values.roleName.trim() || undefined,
-          form.values.description.trim() || undefined,
+          values.roleCode.trim(),
+          values.roleName.trim() || undefined,
+          values.description.trim() || undefined,
         );
         if (!res.success) {
           toast.error(res.error || "创建角色失败");
@@ -72,14 +71,14 @@ export function CreateRoleModal({ onClose, onCreated }: CreateRoleModalProps) {
         onCreated?.();
       }}
     >
-      <DataTable.FormSection title="角色基础信息">
-        <DataTable.FormFields
+      <FormSection title="角色基础信息">
+        <FormFields
           fields={fields}
-          values={form.values}
-          onChange={form.setField}
+          values={values}
+          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
           columns={2}
         />
-      </DataTable.FormSection>
-    </DataTable.FormModal>
+      </FormSection>
+    </FormDialog>
   );
 }

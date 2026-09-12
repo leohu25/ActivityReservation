@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { Button, DataTable, Input, toast } from "@chenrun/ui";
-import type { DataTableFormFieldSchema } from "@chenrun/ui";
+import { Button, FormDialog, FormSection, FormBanner, FormFields, Input, toast, type FormFieldSchema } from "@chenrun/ui";
 import { createQuoteAction } from "../../actions";
 import type {
   CreateQuoteItemInput,
@@ -32,14 +31,14 @@ const emptyItem = (seq: number): CreateQuoteItemInput => ({
   remark: "",
 });
 
-/** 拟定新报价单：头部 Schema + 明细行 custom 区 */
+/** 拟定新报价单：FormDialog 驱动 */
 export function CreateQuoteModal({
   customers,
   stores,
   onClose,
   onCreated,
 }: CreateQuoteModalProps) {
-  const form = DataTable.useForm<{
+  const [values, setValues] = useState<{
     scopeType: ScopeType;
     customerCode: string;
     storeCode: string;
@@ -71,95 +70,115 @@ export function CreateQuoteModal({
     },
   ]);
 
-  const scopeType = form.values.scopeType;
-
-  const headerFields: DataTableFormFieldSchema[] = useMemo(() => {
-    const fields: DataTableFormFieldSchema[] = [
+  const headerFields: FormFieldSchema[] = useMemo(
+    () => [
       {
         name: "scopeType",
-        label: "适用范围",
+        label: "报价单适用维度",
         type: "select",
         required: true,
         options: [
-          { value: "STORE", label: "门店专属报价 (优先级最高)" },
-          { value: "CUSTOMER", label: "客户全门店通用" },
-          { value: "REGION", label: "区域通用报价 (基准保底)" },
+          { value: "STORE", label: "门店专价单 (优先级最高)" },
+          { value: "CUSTOMER", label: "客户通用价单 (企业所有门店通用)" },
+          { value: "REGION", label: "区域公开指导价 (区域默认保底)" },
         ],
       },
-    ];
-    if (scopeType !== "REGION") {
-      fields.push({
-        name: "customerCode",
-        label: "所属客户",
-        type: "select",
-        required: true,
-        options: customers.map((c) => ({
-          value: c.customerCode,
-          label: c.customerName,
-        })),
-      });
-    }
-    if (scopeType === "STORE") {
-      fields.push({
-        name: "storeCode",
-        label: "所属门店",
-        type: "select",
-        required: true,
-        options: stores.map((s) => ({
-          value: s.storeCode,
-          label: `${s.storeName} (${s.storeCode})`,
-        })),
-      });
-    }
-    if (scopeType === "REGION") {
-      fields.push({
-        name: "regionCode",
-        label: "区域编码",
-        type: "text",
-        required: true,
-        placeholder: "如: REGION_BJ_01",
-      });
-    }
-    fields.push(
       {
         name: "displayName",
-        label: "对外简称",
+        label: "报价单展示名称",
         type: "text",
-        placeholder: "如: 2026秋季净菜直供报价单",
+        placeholder: "如: 2026 Q3 特惠专享价",
       },
+      ...(values.scopeType === "CUSTOMER" || values.scopeType === "STORE"
+        ? ([
+            {
+              name: "customerCode",
+              label: "所属客户企业",
+              type: "select",
+              required: true,
+              options: customers.map((c) => ({
+                value: c.customerCode,
+                label: `${c.customerName} (${c.customerCode})`,
+              })),
+            },
+          ] as FormFieldSchema[])
+        : []),
+      ...(values.scopeType === "STORE"
+        ? ([
+            {
+              name: "storeCode",
+              label: "定向履约门店",
+              type: "select",
+              required: true,
+              options: stores.map((s) => ({
+                value: s.storeCode,
+                label: `${s.storeName} (${s.storeCode})`,
+              })),
+            },
+          ] as FormFieldSchema[])
+        : []),
+      ...(values.scopeType === "REGION"
+        ? ([
+            {
+              name: "regionCode",
+              label: "适用配送区域",
+              type: "select",
+              required: true,
+              options: [
+                { value: "REGION_BJ_01", label: "华北北京核心城区网格" },
+                { value: "REGION_HD_01", label: "华东杭州生鲜直配网格" },
+                { value: "REGION_DEFAULT", label: "通用默认配送网格" },
+              ],
+            },
+          ] as FormFieldSchema[])
+        : []),
       {
         name: "effectiveDate",
-        label: "价格生效日期",
+        label: "生效日期",
         type: "date",
         required: true,
       },
       {
         name: "expiryDate",
-        label: "失效日期",
+        label: "失效截止日期 (选填)",
         type: "date",
-        hint: "为空则长期有效",
+        hint: "留空表示长期有效",
       },
-    );
-    return fields;
-  }, [scopeType, customers, stores]);
+    ],
+    [values.scopeType, customers, stores],
+  );
 
-  const handleAddItem = () => setItems([...items, emptyItem(items.length + 1)]);
+  const handleAddItem = () => {
+    setItems((prev) => [...prev, emptyItem(prev.length + 1)]);
+  };
 
   const handleRemoveItem = (index: number) => {
     if (items.length <= 1) {
-      toast.warning("报价单至少保留一条品项明细");
+      toast.error("报价单必须至少包含 1 行商品明细");
       return;
     }
-    setItems(items.filter((_, i) => i !== index));
+    setItems((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleItemChange = (
     index: number,
     field: keyof CreateQuoteItemInput,
-    val: string | number | null,
+    value: string | number,
   ) => {
     const updated = [...items];
-    const curr = { ...updated[index], [field]: val };
+    const curr = { ...updated[index] } as CreateQuoteItemInput;
+    // SAFETY: field 为 CreateQuoteItemInput 合法属性，在此完成动态类型赋值
+    const target = curr as unknown as Record<string, unknown>;
+    if (
+      field === "unitPriceExclTax" ||
+      field === "taxRate" ||
+      field === "minQty"
+    ) {
+      target[field] = value === "" ? 0 : Number(value);
+    } else {
+      target[field] = value;
+    }
+
     if (field === "unitPriceExclTax" || field === "taxRate") {
       const excl = Number(curr.unitPriceExclTax) || 0;
       const rate = Number(curr.taxRate) || 0;
@@ -170,7 +189,7 @@ export function CreateQuoteModal({
   };
 
   return (
-    <DataTable.FormModal
+    <FormDialog
       open
       onOpenChange={(open) => {
         if (!open) onClose();
@@ -180,13 +199,13 @@ export function CreateQuoteModal({
       submitText="创建报价单 (保存为草稿)"
       className="max-w-4xl"
       headerExtra={
-        <DataTable.FormBanner
+        <FormBanner
           title="阶梯价报价单"
           description="适用范围三选一；明细行含税单价按税率自动推导。"
         />
       }
       onSubmit={async () => {
-        const v = form.values;
+        const v = values;
         const res = await createQuoteAction({
           customerCode:
             v.scopeType === "CUSTOMER" || v.scopeType === "STORE"
@@ -209,16 +228,16 @@ export function CreateQuoteModal({
         onCreated?.();
       }}
     >
-      <DataTable.FormSection title="适用范围与有效期">
-        <DataTable.FormFields
+      <FormSection title="适用范围与有效期">
+        <FormFields
           fields={headerFields}
-          values={form.values}
-          onChange={form.setField}
+          values={values}
+          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
           columns={2}
         />
-      </DataTable.FormSection>
+      </FormSection>
 
-      <DataTable.FormSection
+      <FormSection
         title={`报价明细条目 (${items.length})`}
         description="含税单价 = 不含税单价 × (1 + 税率/100)，自动计算"
       >
@@ -287,42 +306,35 @@ export function CreateQuoteModal({
                         handleItemChange(
                           idx,
                           "unitPriceExclTax",
-                          parseFloat(e.target.value) || 0,
+                          e.target.value,
                         )
                       }
-                      className="h-7 w-20 px-1.5 text-xs text-right"
+                      className="h-7 w-20 px-1.5 text-right text-xs"
                     />
                   </td>
                   <td className="p-2">
                     <Input
                       type="number"
-                      step="0.01"
+                      step="0.1"
                       value={item.taxRate}
                       onChange={(e) =>
-                        handleItemChange(
-                          idx,
-                          "taxRate",
-                          parseFloat(e.target.value) || 0,
-                        )
+                        handleItemChange(idx, "taxRate", e.target.value)
                       }
-                      className="h-7 w-16 px-1.5 text-xs text-right"
+                      className="h-7 w-14 px-1.5 text-right text-xs"
                     />
                   </td>
-                  <td className="p-2 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                    ¥{item.unitPriceInclTax}
+                  <td className="p-2 text-right font-mono font-medium text-primary">
+                    ¥{item.unitPriceInclTax.toFixed(2)}
                   </td>
                   <td className="p-2">
                     <Input
                       type="number"
-                      value={item.minQty || ""}
+                      min="1"
+                      value={item.minQty ?? ""}
                       onChange={(e) =>
-                        handleItemChange(
-                          idx,
-                          "minQty",
-                          parseFloat(e.target.value) || null,
-                        )
+                        handleItemChange(idx, "minQty", e.target.value)
                       }
-                      className="h-7 w-16 px-1.5 text-xs text-right"
+                      className="h-7 w-14 px-1.5 text-right text-xs"
                     />
                   </td>
                   <td className="p-2 text-center">
@@ -331,7 +343,7 @@ export function CreateQuoteModal({
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRemoveItem(idx)}
-                      className="h-6 w-6 p-0 text-destructive"
+                      className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
                     >
                       <Trash2 className="size-3.5" />
                     </Button>
@@ -341,7 +353,7 @@ export function CreateQuoteModal({
             </tbody>
           </table>
         </div>
-      </DataTable.FormSection>
-    </DataTable.FormModal>
+      </FormSection>
+    </FormDialog>
   );
 }

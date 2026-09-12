@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { DataTable, toast } from "@chenrun/ui";
-import type { DataTableFormFieldSchema } from "@chenrun/ui";
+import { useMemo, useState } from "react";
+import { FormDialog, FormSection, FormFields, type FormFieldSchema, toast } from "@chenrun/ui";
 import {
   createDepartmentAction,
   updateDepartmentAction,
@@ -30,7 +29,7 @@ type DepartmentForm = {
   sort: number;
 };
 
-/** 部门新建/编辑：FormModal + Schema */
+/** 部门新建/编辑：FormDialog + FormFields 驱动 */
 export function DepartmentFormModal({
   mode,
   record,
@@ -39,7 +38,7 @@ export function DepartmentFormModal({
   onClose,
   onSaved,
 }: DepartmentFormModalProps) {
-  const form = DataTable.useForm<DepartmentForm>({
+  const [values, setValues] = useState<DepartmentForm>({
     name: record?.name || "",
     code: record?.code || "",
     parentId:
@@ -47,7 +46,7 @@ export function DepartmentFormModal({
     sort: record?.sort ?? 0,
   });
 
-  const fields: DataTableFormFieldSchema[] = useMemo(
+  const fields: FormFieldSchema[] = useMemo(
     () => [
       {
         name: "name",
@@ -85,7 +84,7 @@ export function DepartmentFormModal({
   );
 
   return (
-    <DataTable.FormModal
+    <FormDialog
       open
       onOpenChange={(open) => {
         if (!open) onClose();
@@ -96,11 +95,11 @@ export function DepartmentFormModal({
       submitText="确认保存"
       onSubmit={async () => {
         const payload = {
-          name: form.values.name.trim(),
-          code: form.values.code.trim(),
-          parentId: form.values.parentId || null,
+          name: values.name.trim(),
+          code: values.code.trim(),
+          parentId: values.parentId || null,
           leaderMemberId: null,
-          sort: Number(form.values.sort) || 0,
+          sort: Number(values.sort) || 0,
         };
         const res =
           mode === "create"
@@ -114,14 +113,14 @@ export function DepartmentFormModal({
         onSaved?.();
       }}
     >
-      <DataTable.FormSection title="部门信息">
-        <DataTable.FormFields
+      <FormSection title="部门信息">
+        <FormFields
           fields={fields}
-          values={form.values}
-          onChange={form.setField}
+          values={values}
+          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
           columns={2}
         />
-      </DataTable.FormSection>
-    </DataTable.FormModal>
+      </FormSection>
+    </FormDialog>
   );
 }

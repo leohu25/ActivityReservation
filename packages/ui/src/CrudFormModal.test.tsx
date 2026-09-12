@@ -6,8 +6,8 @@ import { z } from "zod";
 import {
   CrudFormModal,
   createColumnsFromSchema,
-  DataTable,
-  type DataTableFormFieldSchema,
+  FormFields,
+  type FormFieldSchema,
 } from "./index";
 
 // 1. 真实 Zod 校验 Schema
@@ -17,7 +17,7 @@ const customerFormSchema = z.object({
   creditLimit: z.number().min(0, "授信额度不能为负数").describe("授信额度"),
 });
 
-const formFields: DataTableFormFieldSchema[] = [
+const formFields: FormFieldSchema[] = [
   {
     name: "customerName",
     label: "客户全称",
@@ -150,9 +150,9 @@ test("CrudFormModal: view 模式下全部字段置灰只读且隐藏提交按钮
   assert.match(html, /disabled/);
 });
 
-test("DataTableFormFields: 当传入错误信息时，渲染红字 form-message 且设置 aria-invalid", () => {
+test("FormFields: 当传入错误信息时，渲染红字 form-message 且设置 aria-invalid", () => {
   const html = renderToString(
-    <DataTable.FormFields
+    <FormFields
       fields={formFields}
       values={{ customerName: "A", contactPhone: "123", creditLimit: 0 }}
       errors={{
@@ -160,7 +160,7 @@ test("DataTableFormFields: 当传入错误信息时，渲染红字 form-message 
         contactPhone: "手机号码格式不正确",
       }}
       onChange={() => {}}
-    />,
+    />
   );
 
   // 验证渲染了红字提示与 aria-invalid

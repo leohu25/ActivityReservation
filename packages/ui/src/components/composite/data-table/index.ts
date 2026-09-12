@@ -10,27 +10,8 @@ import { DataTableBatchBar } from "./DataTableBatchBar";
 import { DataTableContent } from "./DataTableContent";
 import { DataTableRowActions } from "./DataTableRowActions";
 import { DataTablePagination } from "./DataTablePagination";
-import { DataTableDetailDrawer } from "./DataTableDetailDrawer";
-import {
- DataTableDetailField,
- DataTableDetailPanel,
-} from "./DataTableDetailLayout";
-import { DataTableFormModal } from "./DataTableFormModal";
-import {
- DataTableFormBanner,
- DataTableFormField,
- DataTableFormFieldGrid,
- DataTableFormSection,
-} from "./DataTableFormLayout";
 import { DataTableActions, DataTableActionButton } from "./DataTableActions";
-import {
- DataTableFormFields,
- useDataTableForm,
- type DataTableFormFieldSchema,
- type FormFieldOption,
-} from "./DataTableFormSchema";
 import { createColumnsFromSchema } from "./DataTableColumnsSchema";
-// 模板层：整页 Workspace（目录在 templates/，此处挂到 DataTable 命名空间）
 import { DataTableWorkspace } from "../../templates/DataTableWorkspace";
 import { AuthField, AuthGuard } from "../auth";
 
@@ -47,63 +28,36 @@ export * from "./DataTableBatchBar";
 export * from "./DataTableContent";
 export * from "./DataTableRowActions";
 export * from "./DataTablePagination";
-export * from "./DataTableDetailDrawer";
-export * from "./DataTableDetailLayout";
-export * from "./DataTableFormModal";
-export * from "./DataTableFormLayout";
 export * from "./DataTableActions";
-export * from "./DataTableFormSchema";
 export * from "./DataTableColumnsSchema";
 export {
- DataTableWorkspace,
- type DataTableWorkspaceProps,
- type WorkspaceStatusOption,
+  DataTableWorkspace,
+  type DataTableWorkspaceProps,
+  type WorkspaceStatusOption,
 } from "../../templates/DataTableWorkspace";
 
 /**
  * 复合积木化数据表格体系 (Compound DataTable Pattern)
- *
- * 推荐整页模板（约定大于配置，默认全量控件）：
- *   <DataTable.Workspace title="客户档案" ... />
- *
- * 原子拼装仍可用：
- *   <DataTable.Root>
- *     <DataTable.Header actions={<DataTable.Toolbar>...</DataTable.Toolbar>} />
- *     <DataTable.FilterBar>
- *       <DataTable.InputGroup label="关键字">...</DataTable.InputGroup>
- *     </DataTable.FilterBar>
- *     <DataTable.Content selectable showIndex />
- *     <DataTable.Pagination />
- *   </DataTable.Root>
+ * 职责单一：仅聚焦于数据表格、筛选栏、工具栏、分页与行操作，绝不侵入表单系统
  */
 export const DataTable = Object.assign(DataTableRoot, {
- Root: DataTableRoot,
- Workspace: DataTableWorkspace,
- Toolbar: DataTableToolbar,
- Header: DataTableHeader,
- FacetedFilter: DataTableFacetedFilter,
- FilterBar: DataTableFilterBar,
- FilterDrawer: DataTableFilterDrawer,
- InputGroup: DataTableInputGroup,
- ColumnSettings: DataTableColumnSettings,
- BatchBar: DataTableBatchBar,
- Content: DataTableContent,
- RowActions: DataTableRowActions,
- Pagination: DataTablePagination,
- DetailDrawer: DataTableDetailDrawer,
- DetailPanel: DataTableDetailPanel,
- DetailField: DataTableDetailField,
- FormModal: DataTableFormModal,
- FormSection: DataTableFormSection,
- FormFieldGrid: DataTableFormFieldGrid,
- FormField: DataTableFormField,
- FormFields: DataTableFormFields,
- useForm: useDataTableForm,
- FormBanner: DataTableFormBanner,
- createColumnsFromSchema: createColumnsFromSchema,
- Actions: DataTableActions,
- ActionButton: DataTableActionButton,
- AuthField: AuthField,
- AuthorizedField: AuthField,
- AuthGuard: AuthGuard,
+  Root: DataTableRoot,
+  Workspace: DataTableWorkspace,
+  Toolbar: DataTableToolbar,
+  Header: DataTableHeader,
+  FacetedFilter: DataTableFacetedFilter,
+  FilterBar: DataTableFilterBar,
+  FilterDrawer: DataTableFilterDrawer,
+  InputGroup: DataTableInputGroup,
+  ColumnSettings: DataTableColumnSettings,
+  BatchBar: DataTableBatchBar,
+  Content: DataTableContent,
+  RowActions: DataTableRowActions,
+  Pagination: DataTablePagination,
+  createColumnsFromSchema: createColumnsFromSchema,
+  Actions: DataTableActions,
+  ActionButton: DataTableActionButton,
+  AuthField: AuthField,
+  AuthorizedField: AuthField,
+  AuthGuard: AuthGuard,
 });

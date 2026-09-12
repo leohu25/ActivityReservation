@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { DataTable, toast } from "@chenrun/ui";
-import type { DataTableFormFieldSchema } from "@chenrun/ui";
+import { useMemo, useState } from "react";
+import { FormDialog, FormSection, FormFields, type FormFieldSchema, toast } from "@chenrun/ui";
 import {
   createPositionAction,
   updatePositionAction,
@@ -23,21 +22,21 @@ type PositionForm = {
   sort: number;
 };
 
-/** 岗位新建/编辑：FormModal + Schema */
+/** 岗位新建/编辑：FormDialog + FormFields 驱动 */
 export function PositionFormModal({
   mode,
   record,
   onClose,
   onSaved,
 }: PositionFormModalProps) {
-  const form = DataTable.useForm<PositionForm>({
+  const [values, setValues] = useState<PositionForm>({
     name: record?.name || "",
     code: record?.code || "",
     description: record?.description || "",
     sort: record?.sort ?? 0,
   });
 
-  const fields: DataTableFormFieldSchema[] = useMemo(
+  const fields: FormFieldSchema[] = useMemo(
     () => [
       {
         name: "name",
@@ -71,7 +70,7 @@ export function PositionFormModal({
   );
 
   return (
-    <DataTable.FormModal
+    <FormDialog
       open
       onOpenChange={(open) => {
         if (!open) onClose();
@@ -82,10 +81,10 @@ export function PositionFormModal({
       submitText="确认保存"
       onSubmit={async () => {
         const payload = {
-          name: form.values.name.trim(),
-          code: form.values.code.trim(),
-          description: form.values.description.trim() || null,
-          sort: Number(form.values.sort) || 0,
+          name: values.name.trim(),
+          code: values.code.trim(),
+          description: values.description.trim() || null,
+          sort: Number(values.sort) || 0,
         };
         const res =
           mode === "create"
@@ -99,14 +98,14 @@ export function PositionFormModal({
         onSaved?.();
       }}
     >
-      <DataTable.FormSection title="岗位信息">
-        <DataTable.FormFields
+      <FormSection title="岗位信息">
+        <FormFields
           fields={fields}
-          values={form.values}
-          onChange={form.setField}
+          values={values}
+          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
           columns={2}
         />
-      </DataTable.FormSection>
-    </DataTable.FormModal>
+      </FormSection>
+    </FormDialog>
   );
 }

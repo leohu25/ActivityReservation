@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { DataTable, toast } from "@chenrun/ui";
-import type { DataTableFormFieldSchema } from "@chenrun/ui";
+import { useMemo, useState } from "react";
+import { FormDialog, FormSection, FormBanner, FormFields, type FormFieldSchema, toast } from "@chenrun/ui";
 import { createStoreAction } from "../../actions";
 import type { CustomerListItem } from "../../types";
 
@@ -24,13 +23,13 @@ type CreateStoreForm = {
   billingPhone: string;
 };
 
-/** 新建履约门店：FormModal + 字段 Schema */
+/** 新建履约门店：FormDialog + FormFields 驱动 */
 export function CreateStoreModal({
   customers,
   onClose,
   onCreated,
 }: CreateStoreModalProps) {
-  const form = DataTable.useForm<CreateStoreForm>({
+  const [values, setValues] = useState<CreateStoreForm>({
     customerCode: customers[0]?.customerCode || "",
     storeName: "",
     address: "",
@@ -42,7 +41,7 @@ export function CreateStoreModal({
     billingPhone: "",
   });
 
-  const baseFields: DataTableFormFieldSchema[] = useMemo(
+  const baseFields: FormFieldSchema[] = useMemo(
     () => [
       {
         name: "customerCode",
@@ -73,7 +72,7 @@ export function CreateStoreModal({
     [customers],
   );
 
-  const siteFields: DataTableFormFieldSchema[] = useMemo(
+  const siteFields: FormFieldSchema[] = useMemo(
     () => [
       {
         name: "contactPerson",
@@ -115,7 +114,7 @@ export function CreateStoreModal({
     [],
   );
 
-  const billingFields: DataTableFormFieldSchema[] = useMemo(
+  const billingFields: FormFieldSchema[] = useMemo(
     () => [
       {
         name: "billingContact",
@@ -134,7 +133,7 @@ export function CreateStoreModal({
   );
 
   return (
-    <DataTable.FormModal
+    <FormDialog
       open
       onOpenChange={(open) => {
         if (!open) onClose();
@@ -143,18 +142,18 @@ export function CreateStoreModal({
       description="门店必须归属有效客户并绑定配送区域"
       submitText="创建门店档案"
       headerExtra={
-        <DataTable.FormBanner
+        <FormBanner
           title="履约门店"
           description="现场联系人与收货地址为配送调度必填信息。"
         />
       }
       onSubmit={async () => {
         const res = await createStoreAction({
-          ...form.values,
+          ...values,
           defaultRoute: null,
           defaultDriver: null,
-          billingContact: form.values.billingContact || null,
-          billingPhone: form.values.billingPhone || null,
+          billingContact: values.billingContact || null,
+          billingPhone: values.billingPhone || null,
         });
         if (!res.success) {
           toast.error(res.error || "创建门店失败");
@@ -164,30 +163,30 @@ export function CreateStoreModal({
         onCreated?.();
       }}
     >
-      <DataTable.FormSection title="归属与基础">
-        <DataTable.FormFields
+      <FormSection title="归属与基础">
+        <FormFields
           fields={baseFields}
-          values={form.values}
-          onChange={form.setField}
+          values={values}
+          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
           columns={2}
         />
-      </DataTable.FormSection>
-      <DataTable.FormSection title="现场与配送">
-        <DataTable.FormFields
+      </FormSection>
+      <FormSection title="现场与配送">
+        <FormFields
           fields={siteFields}
-          values={form.values}
-          onChange={form.setField}
+          values={values}
+          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
           columns={2}
         />
-      </DataTable.FormSection>
-      <DataTable.FormSection title="财务对接（选填）">
-        <DataTable.FormFields
+      </FormSection>
+      <FormSection title="财务对接（选填）">
+        <FormFields
           fields={billingFields}
-          values={form.values}
-          onChange={form.setField}
+          values={values}
+          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
           columns={2}
         />
-      </DataTable.FormSection>
-    </DataTable.FormModal>
+      </FormSection>
+    </FormDialog>
   );
 }

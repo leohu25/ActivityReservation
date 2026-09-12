@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { DataTable, TagMultiSelect, toast } from "@chenrun/ui";
-import type { DataTableFormFieldSchema } from "@chenrun/ui";
+import { useMemo, useState } from "react";
+import { FormDialog, FormSection, FormBanner, FormFields, TagMultiSelect, type FormFieldSchema, toast } from "@chenrun/ui";
 import { createCustomerAction } from "../../actions";
 import type { CustomerCategoryItem, CustomerTagItem } from "../../types";
 
@@ -26,8 +25,7 @@ type CreateCustomerForm = {
 };
 
 /**
- * 新建客户：FormModal 壳 + 字段 Schema 循环渲染
- * 业务只声明字段清单，不再手写一长串 label+Input
+ * 新建客户：FormDialog + FormFields 驱动
  */
 export function CreateCustomerModal({
   categories,
@@ -35,7 +33,7 @@ export function CreateCustomerModal({
   onClose,
   onCreated,
 }: CreateCustomerModalProps) {
-  const form = DataTable.useForm<CreateCustomerForm>({
+  const [values, setValues] = useState<CreateCustomerForm>({
     customerName: "",
     categoryCode: categories[0]?.categoryCode || "",
     contactPerson: "",
@@ -46,9 +44,9 @@ export function CreateCustomerModal({
     salesPerson: "",
     serviceTime: "",
   });
-  const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  const basicFields: DataTableFormFieldSchema[] = useMemo(
+  const basicFields: FormFieldSchema[] = useMemo(
     () => [
       {
         name: "customerName",
@@ -85,7 +83,7 @@ export function CreateCustomerModal({
     [categories],
   );
 
-  const settleFields: DataTableFormFieldSchema[] = useMemo(
+  const settleFields: FormFieldSchema[] = useMemo(
     () => [
       {
         name: "settlementMethod",
@@ -116,7 +114,7 @@ export function CreateCustomerModal({
     [],
   );
 
-  const bizFields: DataTableFormFieldSchema[] = useMemo(
+  const bizFields: FormFieldSchema[] = useMemo(
     () => [
       {
         name: "_tags",
@@ -152,7 +150,7 @@ export function CreateCustomerModal({
   );
 
   return (
-    <DataTable.FormModal
+    <FormDialog
       open
       onOpenChange={(open) => {
         if (!open) onClose();
@@ -161,25 +159,25 @@ export function CreateCustomerModal({
       description="录入客户企业信息、联系人及结算规则"
       submitText="创建客户档案"
       headerExtra={
-        <DataTable.FormBanner
+        <FormBanner
           title="客户主数据"
           description="名称与联系人必填；业务标签可多选。"
         />
       }
       onSubmit={async () => {
         const res = await createCustomerAction({
-          customerName: form.values.customerName,
-          categoryCode: form.values.categoryCode,
-          contactPerson: form.values.contactPerson,
-          contactPhone: form.values.contactPhone,
-          settlementMethod: form.values.settlementMethod,
-          defaultTaxRate: form.values.defaultTaxRate,
-          creditLimit: form.values.creditLimit,
+          customerName: values.customerName,
+          categoryCode: values.categoryCode,
+          contactPerson: values.contactPerson,
+          contactPhone: values.contactPhone,
+          settlementMethod: values.settlementMethod,
+          defaultTaxRate: values.defaultTaxRate,
+          creditLimit: values.creditLimit,
           tagCodes: selectedTags,
-          salesPerson: form.values.salesPerson || null,
+          salesPerson: values.salesPerson || null,
           defaultWarehouse: null,
           paymentCycle: null,
-          serviceTime: form.values.serviceTime || null,
+          serviceTime: values.serviceTime || null,
         });
         if (!res.success) {
           toast.error(res.error || "创建客户失败");
@@ -189,32 +187,32 @@ export function CreateCustomerModal({
         onCreated?.();
       }}
     >
-      <DataTable.FormSection title="基础信息">
-        <DataTable.FormFields
+      <FormSection title="基础信息">
+        <FormFields
           fields={basicFields}
-          values={form.values}
-          onChange={form.setField}
+          values={values}
+          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
           columns={2}
         />
-      </DataTable.FormSection>
+      </FormSection>
 
-      <DataTable.FormSection title="结算与授信">
-        <DataTable.FormFields
+      <FormSection title="结算与授信">
+        <FormFields
           fields={settleFields}
-          values={form.values}
-          onChange={form.setField}
+          values={values}
+          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
           columns={3}
         />
-      </DataTable.FormSection>
+      </FormSection>
 
-      <DataTable.FormSection title="业务归属">
-        <DataTable.FormFields
+      <FormSection title="业务归属">
+        <FormFields
           fields={bizFields}
-          values={form.values}
-          onChange={form.setField}
+          values={values}
+          onChange={(name, val) => setValues((prev) => ({ ...prev, [name]: val }))}
           columns={2}
         />
-      </DataTable.FormSection>
-    </DataTable.FormModal>
+      </FormSection>
+    </FormDialog>
   );
 }

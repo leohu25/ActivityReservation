@@ -2,15 +2,9 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
-import { DataTableFormModal } from "../composite/data-table/DataTableFormModal";
-import {
-  DataTableFormFields,
-  type DataTableFormFieldSchema,
-} from "../composite/data-table/DataTableFormSchema";
-import {
-  DataTableFormSection,
-  DataTableFormBanner,
-} from "../composite/data-table/DataTableFormLayout";
+import { FormDialog } from "../composite/form/FormDialog";
+import { FormFields, type FormFieldSchema } from "../composite/form/FormFields";
+import { FormSection, FormBanner } from "../composite/form/FormLayout";
 import { toast } from "../feedback/Toast";
 
 export type CrudFormMode = "create" | "edit" | "view";
@@ -23,7 +17,7 @@ export interface CrudFormModalProps<TValues extends Record<string, unknown>> {
   readonly badge?: string;
   readonly bannerTitle?: string;
   readonly bannerDescription?: string;
-  readonly fields: readonly DataTableFormFieldSchema[];
+  readonly fields: readonly FormFieldSchema[];
   readonly initialValues: TValues;
   /**
    * Zod 运行时校验规则（如 z.object({ ... })）。必填项！
@@ -143,7 +137,7 @@ export function CrudFormModal<TValues extends Record<string, unknown>>({
   };
 
   return (
-    <DataTableFormModal
+    <FormDialog
       open={open}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) onClose();
@@ -156,7 +150,7 @@ export function CrudFormModal<TValues extends Record<string, unknown>>({
       cancelText={mode === "view" ? "关闭" : cancelText}
       headerExtra={
         bannerTitle ? (
-          <DataTableFormBanner
+          <FormBanner
             title={bannerTitle}
             description={bannerDescription}
           />
@@ -164,15 +158,15 @@ export function CrudFormModal<TValues extends Record<string, unknown>>({
       }
       onSubmit={mode === "view" ? undefined : handleSubmit}
     >
-      <DataTableFormSection>
-        <DataTableFormFields
+      <FormSection>
+        <FormFields
           fields={activeFields}
           values={values}
           onChange={handleFieldChange}
           errors={errors}
           columns={columns}
         />
-      </DataTableFormSection>
-    </DataTableFormModal>
+      </FormSection>
+    </FormDialog>
   );
 }

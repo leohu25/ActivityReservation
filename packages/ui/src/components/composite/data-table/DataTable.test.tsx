@@ -6,14 +6,7 @@ import { DataTable } from "./index";
 import type { ColumnDef } from "./DataTableContext";
 import { resolveDefaultVisibleColumnIds } from "./DataTableContext";
 import { DataTableRowActions } from "./DataTableRowActions";
-import { DataTableDetailDrawer } from "./DataTableDetailDrawer";
-import { DataTableFormModal } from "./DataTableFormModal";
 import { DataTableActions, DataTableActionButton } from "./DataTableActions";
-import {
-  DataTableFormBanner,
-  DataTableFormFieldGrid,
-  DataTableFormSection,
-} from "./DataTableFormLayout";
 
 interface TestItem {
   id: string;
@@ -255,101 +248,6 @@ test("DataTable: 当数据为空时，能够优雅展示 EmptyState 空状态", 
   );
 
   assert.match(html, /暂无数据/);
-});
-
-test("DataTable.DetailDrawer: 能够正确渲染详情查看抽屉与自定义内容插槽", () => {
-  const selectedRecord = mockData[0];
-  const html = renderToString(
-    <DataTableDetailDrawer
-      record={selectedRecord}
-      onClose={() => {}}
-      inline={true}
-      title={(r) => `物料详情: ${r.name}`}
-      description="包含规格与采购定价"
-    >
-      {(r) => (
-        <div data-testid="detail-content">
-          <span>编号: {r.id}</span>
-          <span>价格: ¥{r.price}</span>
-        </div>
-      )}
-    </DataTableDetailDrawer>,
-  );
-
-  assert.match(html, /物料详情: 生鲜土豆/);
-  assert.match(html, /包含规格与采购定价/);
-  assert.match(html, /编号:.*1/);
-  assert.match(html, /价格:.*¥.*15\.5/);
-});
-
-test("DataTable.FormModal: 渲染品牌徽标、自定义审计提示与表单插槽", () => {
-  const targetRecord = mockData[1];
-  const html = renderToString(
-    <DataTableFormModal
-      open={true}
-      onOpenChange={() => {}}
-      inline={true}
-      record={targetRecord}
-      onSubmit={() => {}}
-      title={(r) => (r ? `编辑物料: ${r.name}` : "新建物料")}
-      description="净配菜 ERP"
-      auditHint="自定义审计提示文本"
-      submitText="保存"
-    >
-      {({ record }) => (
-        <DataTableFormSection title="基本信息">
-          <DataTableFormFieldGrid columns={2}>
-            <label>当前名称: {record?.name}</label>
-            <label>当前库存: {record?.status}</label>
-          </DataTableFormFieldGrid>
-        </DataTableFormSection>
-      )}
-    </DataTableFormModal>,
-  );
-
-  assert.match(html, /CR/);
-  assert.match(html, /编辑物料: 冷冻鸡胸肉/);
-  assert.match(html, /净配菜 ERP/);
-  assert.match(html, /自定义审计提示文本/);
-  assert.match(html, /当前名称:.*冷冻鸡胸肉/);
-  assert.match(html, /保存/);
-});
-
-test("DataTable.FormModal: 支持 extraActions 底栏扩展按钮组", () => {
-  const html = renderToString(
-    <DataTableFormModal
-      open={true}
-      onOpenChange={() => {}}
-      inline={true}
-      record={mockData[0]}
-      onSubmit={() => {}}
-      title="编辑产品档案"
-      cancelText="返回"
-      submitText="保存"
-      extraActions={[
-        { key: "saveAs", label: "另存为新产品", onClick: () => {} },
-        { key: "saveAndCreate", label: "保存并新增", onClick: () => {} },
-      ]}
-    >
-      <div>表单内容</div>
-    </DataTableFormModal>,
-  );
-
-  assert.match(html, /另存为新产品/);
-  assert.match(html, /保存并新增/);
-  assert.match(html, /返回/);
-  assert.match(html, /保存/);
-});
-
-test("DataTable.FormBanner: 渲染信息横幅", () => {
-  const html = renderToString(
-    <DataTableFormBanner
-      title="采购计划"
-      description="按宸润采购字段维护，保存后立即进入当前业务列表"
-    />,
-  );
-  assert.match(html, /采购计划/);
-  assert.match(html, /按宸润采购字段维护/);
 });
 
 test("DataTable.Actions & ActionButton: 页面直接声明按钮，权限决定显隐", () => {
@@ -668,49 +566,4 @@ test("DataTable.Workspace: show* 开关可关闭默认控件", () => {
   assert.doesNotMatch(html, /新增/);
   assert.doesNotMatch(html, /列设置/);
   assert.doesNotMatch(html, /关键字/);
-});
-
-test("DataTable.FormFields: 按 Schema 循环渲染字段", () => {
-  const html = renderToString(
-    <DataTable.FormFields
-      fields={[
-        {
-          name: "name",
-          label: "名称",
-          type: "text",
-          required: true,
-          placeholder: "请输入名称",
-        },
-        {
-          name: "status",
-          label: "状态",
-          type: "select",
-          options: [
-            { value: "A", label: "启用" },
-            { value: "B", label: "停用" },
-          ],
-        },
-        {
-          name: "enabled",
-          label: "启用开关",
-          type: "switch",
-          hint: "关闭后不可用",
-        },
-        {
-          name: "agree",
-          label: "已阅读协议",
-          type: "checkbox",
-        },
-      ]}
-      values={{ name: "", status: "A", enabled: true, agree: false }}
-      onChange={() => {}}
-    />,
-  );
-
-  assert.match(html, /名称/);
-  assert.match(html, /状态/);
-  assert.match(html, /请输入名称/);
-  assert.match(html, /启用/);
-  assert.match(html, /启用开关/);
-  assert.match(html, /已阅读协议/);
 });
