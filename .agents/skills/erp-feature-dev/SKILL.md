@@ -35,7 +35,7 @@ agent_created: true
 
 ---
 
-## 业务切片标准标准目录拓扑
+## 业务切片标准目录拓扑（宏观 FDD 垂直切片 + 微观 DDD 聚合根）
 
 ```bash
 packages/features/<feature-name>/
@@ -51,10 +51,17 @@ packages/features/<feature-name>/
 │   ├── services/
 │   │   └── <domain>.service.ts        # 领域纯业务服务 (防腐/单调递增/级联校验)
 │   ├── actions.ts                     # defineServerAction + CASL 守卫
-│   ├── components/
-│   │   ├── <Slice>AbilityBoundary.tsx  # 官方 CASL：快照编译 + TenantAbilityProvider
-│   │   ├── <Page>View.tsx             # 工业风页面（只收业务数据 + subject；无 permissions props）
-│   │   └── <Page>View.test.tsx        # TenantAbilityProvider 包裹的契约对齐单测
+│   ├── components/                    # 专属业务交互组件（按微观 DDD 聚合根划分目录）
+│   │   ├── <entity-a>/                # 📂 业务聚合根 A（如 customers/）
+│   │   │   ├── <Page>View.tsx         # 列表工作台页面主视图
+│   │   │   ├── <entity-a>-schema.ts   # 字段 Schema（增/改/查共用定义）
+│   │   │   └── components/            # 仅当前实体专属的子组件/弹框
+│   │   ├── <entity-b>/                # 📂 业务聚合根 B（如 quotes/）
+│   │   │   ├── <Page>View.tsx
+│   │   │   └── ...
+│   │   ├── shared/                    # 📂 切片内部私有共享（仅当前 Feature 内部复用）
+│   │   │   └── <Slice>AbilityBoundary.tsx # 官方 CASL：快照编译 + TenantAbilityProvider
+│   │   └── index.ts                   # 统一导出所有主视图与组件
 │   ├── manifest.ts                    # 切片自描述清单 (导航 + permissionModules 组装契约)
 │   ├── types.ts                       # 领域数据传输对象与展示接口
 │   └── index.ts                       # 切片外部公共导出

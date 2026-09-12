@@ -3,7 +3,7 @@
 import React, { useMemo } from "react";
 import { DataTable, toast } from "@chenrun/ui";
 import type { DataTableFormFieldSchema } from "@chenrun/ui";
-import { createTagAction } from "../actions";
+import { createTagAction } from "../../actions";
 
 export interface CreateTagModalProps {
   readonly onClose: () => void;

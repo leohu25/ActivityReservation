@@ -1,9 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import { exportContractCsv } from "@chenrun/shared";
 import { useAbility, type FieldAccessMode } from "@chenrun/authorization";
-import { Badge, Button, DataTable, type ColumnDef } from "@chenrun/ui";
-import { CheckCheck, PackageCheck } from "lucide-react";
+import {
+  Badge,
+  Button,
+  DataTable,
+  useSafeRouter,
+  type ColumnDef,
+} from "@chenrun/ui";
+import { CheckCheck } from "lucide-react";
 import {
   ProcurementOrderField,
   ProcurementOrderStatus,
@@ -38,21 +45,19 @@ export function ProcurementOrderCenter({
   activeOrgId: _activeOrgId = "",
   departmentName,
   canCreate: explicitCanCreate,
-  canExport: explicitCanExport,
+  canExport: _explicitCanExport,
   fieldVisibility,
   createFieldModes,
 }: ProcurementOrderCenterProps) {
+  const router = useSafeRouter();
   const [selectedAuditOrder, setSelectedAuditOrder] =
     useState<ProcurementOrderItem | null>(null);
 
+  const [keyword, setKeyword] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+
   const ability = useAbility();
   const subject = procurementOrderPageContract.subject;
-
-  // Fail-Closed：未显式传入时，无 ability 一律拒绝
-  const canExport =
-    explicitCanExport === undefined
-      ? ability.can("export", subject)
-      : explicitCanExport;
 
   const canCreate =
     explicitCanCreate === undefined
@@ -60,75 +65,25 @@ export function ProcurementOrderCenter({
       : explicitCanCreate;
 
   const handleExport = () => {
-    const fieldKeys = [
+    exportContractCsv(
+      filteredOrders,
+      procurementOrderPageContract.configurableFields ?? [],
       {
-        key: "orderNo" as const,
-        field: ProcurementOrderField.ORDER_NO,
-        label: "订单编号",
+        subject,
+        ability,
+        filename: `采购订单_${new Date().toISOString().slice(0, 10)}.csv`,
+        format: {
+          [ProcurementOrderField.STATUS]: (o: ProcurementOrderItem) =>
+            o.status === ProcurementOrderStatus.APPROVED
+              ? "已通过"
+              : o.status === ProcurementOrderStatus.REJECTED
+                ? "已驳回"
+                : "待审核",
+          [ProcurementOrderField.COST_PRICE]: (o: ProcurementOrderItem) =>
+            String(o.costPrice ?? "-"),
+        },
       },
-      {
-        key: "supplierName" as const,
-        field: ProcurementOrderField.SUPPLIER_NAME,
-        label: "供应商名称",
-      },
-      {
-        key: "quantity" as const,
-        field: ProcurementOrderField.QUANTITY,
-        label: "采购数量",
-      },
-      {
-        key: "costPrice" as const,
-        field: ProcurementOrderField.COST_PRICE,
-        label: "采购成本单价",
-      },
-      {
-        key: "status" as const,
-        field: ProcurementOrderField.STATUS,
-        label: "状态",
-      },
-      {
-        key: "auditComment" as const,
-        field: ProcurementOrderField.AUDIT_COMMENT,
-        label: "审核意见",
-      },
-    ];
-
-    // 过滤掉当前操作员无权访问 (HIDDEN) 的字段
-    const activeExportFields = fieldKeys.filter((f) => {
-      if (fieldVisibility && fieldVisibility[f.key] === false) return false;
-      if (!f.field) return true;
-      return ability.can("read", subject, f.field);
-    });
-
-    const csvContent = [
-      activeExportFields.map((f) => f.label).join(","),
-      ...orders.map((o) =>
-        activeExportFields
-          .map((f) => {
-            const val = o[f.key];
-            if (val === null || val === undefined) return "";
-            return `"${String(val).replace(/"/g, '""')}"`;
-          })
-          .join(","),
-      ),
-    ].join("\n");
-
-    if (typeof window !== "undefined" && typeof Blob !== "undefined") {
-      const blob = new Blob(["\uFEFF" + csvContent], {
-        type: "text/csv;charset=utf-8;",
-      });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute(
-        "download",
-        `采购订单_${new Date().toISOString().slice(0, 10)}.csv`,
-      );
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }
+    );
   };
 
   // 定义业务列契约（显式挂载 field: ProcurementOrderField.XXX，受控列必带身份证）
@@ -270,18 +225,53 @@ export function ProcurementOrderCenter({
     return true; // 部门、操作等公共列默认展示
   });
 
+  // 前端即时搜索与状态过滤（当页面无需全页重载时，兼顾即时响应）
+  const filteredOrders = useMemo(() => {
+    return orders.filter((o) => {
+      if (selectedStatus && o.status !== selectedStatus) {
+        return false;
+      }
+      if (keyword.trim()) {
+        const q = keyword.trim().toLowerCase();
+        const matchNo = o.orderNo
+          ? String(o.orderNo).toLowerCase().includes(q)
+          : false;
+        const matchSupplier = o.supplierName
+          ? String(o.supplierName).toLowerCase().includes(q)
+          : false;
+        return matchNo || matchSupplier;
+      }
+      return true;
+    });
+  }, [orders, keyword, selectedStatus]);
+
   return (
     <div className="space-y-4">
       <DataTable.Workspace
-        data={orders}
+        data={filteredOrders}
         columns={activeColumns}
         rowKey={(order: ProcurementOrderItem) => order.id}
         subject={subject}
         title="采购订单中心"
         description="管理企业采购订单、跟踪审批流程与物料采购明细"
-        showFilterBar={false}
-        showRefresh={false}
+        showFilterBar={true}
+        showRefresh={true}
         showCreate={false}
+        onRefresh={() => router?.refresh()}
+        keywordValue={keyword}
+        keywordPlaceholder="单号 / 供应商"
+        onKeywordChange={setKeyword}
+        statusOptions={[
+          { value: ProcurementOrderStatus.PENDING, label: "待审核" },
+          { value: ProcurementOrderStatus.APPROVED, label: "已通过" },
+          { value: ProcurementOrderStatus.REJECTED, label: "已驳回" },
+        ]}
+        statusValue={selectedStatus}
+        onStatusChange={setSelectedStatus}
+        onReset={() => {
+          setKeyword("");
+          setSelectedStatus("");
+        }}
         exportText="导出数据"
         onExport={handleExport}
         toolbarExtra={
@@ -293,7 +283,7 @@ export function ProcurementOrderCenter({
             />
           ) : undefined
         }
-        total={orders.length}
+        total={filteredOrders.length}
       >
         {/* 审核弹窗 */}
         {selectedAuditOrder && (
@@ -313,9 +303,7 @@ export function ProcurementOrderCenter({
             onClose={() => setSelectedAuditOrder(null)}
             onAudited={() => {
               setSelectedAuditOrder(null);
-              if (typeof window !== "undefined") {
-                window.location.reload();
-              }
+              router?.refresh();
             }}
           />
         )}

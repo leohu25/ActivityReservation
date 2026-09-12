@@ -33,3 +33,5 @@ export * from "./components/templates";
 export * from "./components/ThemeProvider";
 export * from "./components/ThemeToggle";
 export * from "./components/DictionarySectionCard";
+// 导出 Zod 校验运行时
+export { z } from "zod";

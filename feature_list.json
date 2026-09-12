@@ -232,6 +232,15 @@
       "status": "completed",
       "owner": "implementer",
       "evidence": "Phase 0–7 完成：PermissionCatalog.getDeclaredActions + permissions 契约派生；customer 契约 toggle_status 与停用按钮/Server Action 对齐；buildOwnerActionRules 单点与公开 resolveFieldPoliciesForSubject；tenant-admin 平行类型删除；resolveFieldAccess/isFieldAllowedForAction 字段三态单点；customer-center 全量 assertCustomerAbility；ADR-007；全仓 13/13 check、各包测试全绿（customer 12/12 含服务与守卫）"
+    },
+    {
+      "id": "arch-fdd-ddd-workspace-consolidation",
+      "name": "【架构重构】宏观FDD切片微观DDD聚合收敛与Schema驱动工作台 (FDD Slices, DDD Aggregates & Schema Workspaces)",
+      "description": "治理切片组件平铺与页面模板割裂：1. 修复采购订单中心 DataTable.Workspace 缺省禁用，补齐搜索过滤与预置操作；2. 孵化 packages/biz-shared 业务中台包骨架；3. 升级 @chenrun/ui CrudFormModal 模板并重构 customer-center 内部组件为 micro-DDD 聚合根目录（customers/quotes/stores/categories-tags/shared）；4. 沉淀 ADR-008 与 erp-feature-dev skill 规范指南。",
+      "dependencies": ["arch-authz-consolidation"],
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "完成四大治理任务：1. ProcurementOrderCenter 恢复内置搜索/状态过滤/刷新；2. packages/biz-shared 骨架与 doc-no/approval 契约建立并通过单测；3. customer-center/src/components 消除平铺，按 customers/quotes/stores/categories-tags/shared 聚合收敛；4. packages/ui 导出 CrudFormModal 三态表单模板；5. 沉淀 ADR-008、更新 erp-feature-dev skill、各包 README 与 AGENTS.md 索引；全仓 14 包 check 0 错误、140+ 单测全部 PASS、./scripts/verify.sh 门禁全绿"
     }
   ]
 }

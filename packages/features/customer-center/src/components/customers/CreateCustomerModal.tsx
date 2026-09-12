@@ -3,8 +3,8 @@
 import React, { useMemo } from "react";
 import { DataTable, TagMultiSelect, toast } from "@chenrun/ui";
 import type { DataTableFormFieldSchema } from "@chenrun/ui";
-import { createCustomerAction } from "../actions";
-import type { CustomerCategoryItem, CustomerTagItem } from "../types";
+import { createCustomerAction } from "../../actions";
+import type { CustomerCategoryItem, CustomerTagItem } from "../../types";
 
 export interface CreateCustomerModalProps {
   readonly categories: readonly CustomerCategoryItem[];

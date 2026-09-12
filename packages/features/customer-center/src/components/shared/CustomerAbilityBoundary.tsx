@@ -9,7 +9,7 @@ import {
   CustomerStoreSubject,
   CustomerSubject,
   CustomerTagSubject,
-} from "../contracts";
+} from "../../contracts";
 
 /** 客户中心各 Subject 的 RSC 权限纯数据 */
 export interface CustomerAbilityPermissions {

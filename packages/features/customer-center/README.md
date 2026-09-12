@@ -24,12 +24,12 @@
   - `CategoryTagView`: 标签分类编排视图。
 - **模块清单元数据 (`manifest.ts`)**：注册客户中心导航菜单项及权限动作。
 
-## 2. 内部架构与目录结构
+## 2. 内部架构与目录结构（遵循微观 DDD 聚合根收敛）
 
 ```text
 packages/features/customer-center/
 ├── src/
-│   ├── contracts/                    # 纯 TypeScript 业务契约与 DTO
+│   ├── contracts/                    # 纯 TypeScript 业务契约与 CASL 权限点
 │   │   ├── category-tag.contract.ts  # 分类标签契约
 │   │   ├── customer.contract.ts      # 客户实体契约与校验规则
 │   │   ├── quote.contract.ts         # 报价单契约
@@ -41,12 +41,23 @@ packages/features/customer-center/
 │   │   ├── quote-service.ts
 │   │   ├── store-service.ts
 │   │   └── index.ts
-│   ├── components/                   # 专属 UI 视图
-│   │   ├── CategoryTagView.tsx       # 分类标签视图
-│   │   ├── CustomerView.tsx          # 客户工作台主视图
-│   │   ├── QuoteView.tsx             # 报价单视图
-│   │   ├── StoreView.tsx             # 门店网点视图
-│   │   └── index.ts
+│   ├── components/                   # 专属 UI 视图（按业务聚合根收敛目录）
+│   │   ├── customers/                # 📂 客户档案聚合
+│   │   │   ├── CustomerView.tsx      # 客户工作台主视图
+│   │   │   └── CreateCustomerModal.tsx
+│   │   ├── quotes/                   # 📂 报价单聚合
+│   │   │   ├── QuoteView.tsx
+│   │   │   └── CreateQuoteModal.tsx
+│   │   ├── stores/                   # 📂 门店网点聚合
+│   │   │   ├── StoreView.tsx
+│   │   │   └── CreateStoreModal.tsx
+│   │   ├── categories-tags/          # 📂 分类与标签聚合
+│   │   │   ├── CategoryTagView.tsx
+│   │   │   ├── CreateCategoryModal.tsx
+│   │   │   └── CreateTagModal.tsx
+│   │   ├── shared/                   # 📂 切片内部私有共享
+│   │   │   └── CustomerAbilityBoundary.tsx
+│   │   └── index.ts                  # 组件统一门面导出
 │   ├── server/                       # 租户上下文服务端提取
 │   ├── actions.ts                    # Next.js Server Actions
 │   ├── manifest.ts                   # 导航与功能清单元数据

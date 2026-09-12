@@ -13,23 +13,24 @@ import { DataTableRowActions } from "./DataTableRowActions";
 import { DataTablePagination } from "./DataTablePagination";
 import { DataTableDetailDrawer } from "./DataTableDetailDrawer";
 import {
-  DataTableDetailField,
-  DataTableDetailPanel,
+ DataTableDetailField,
+ DataTableDetailPanel,
 } from "./DataTableDetailLayout";
 import { DataTableFormModal } from "./DataTableFormModal";
 import {
-  DataTableFormBanner,
-  DataTableFormField,
-  DataTableFormFieldGrid,
-  DataTableFormSection,
+ DataTableFormBanner,
+ DataTableFormField,
+ DataTableFormFieldGrid,
+ DataTableFormSection,
 } from "./DataTableFormLayout";
 import { DataTableActions, DataTableActionButton } from "./DataTableActions";
 import {
-  DataTableFormFields,
-  useDataTableForm,
-  type DataTableFormFieldSchema,
-  type FormFieldOption,
+ DataTableFormFields,
+ useDataTableForm,
+ type DataTableFormFieldSchema,
+ type FormFieldOption,
 } from "./DataTableFormSchema";
+import { createColumnsFromSchema } from "./DataTableColumnsSchema";
 // 模板层：整页 Workspace（目录在 templates/，此处挂到 DataTable 命名空间）
 import { DataTableWorkspace } from "../../templates/DataTableWorkspace";
 import { AuthField, AuthGuard } from "../auth";
@@ -54,10 +55,11 @@ export * from "./DataTableFormModal";
 export * from "./DataTableFormLayout";
 export * from "./DataTableActions";
 export * from "./DataTableFormSchema";
+export * from "./DataTableColumnsSchema";
 export {
-  DataTableWorkspace,
-  type DataTableWorkspaceProps,
-  type WorkspaceStatusOption,
+ DataTableWorkspace,
+ type DataTableWorkspaceProps,
+ type WorkspaceStatusOption,
 } from "../../templates/DataTableWorkspace";
 
 /**
@@ -77,33 +79,34 @@ export {
  *   </DataTable.Root>
  */
 export const DataTable = Object.assign(DataTableRoot, {
-  Root: DataTableRoot,
-  Workspace: DataTableWorkspace,
-  Toolbar: DataTableToolbar,
-  Header: DataTableHeader,
-  Search: DataTableSearch,
-  FacetedFilter: DataTableFacetedFilter,
-  FilterBar: DataTableFilterBar,
-  FilterDrawer: DataTableFilterDrawer,
-  InputGroup: DataTableInputGroup,
-  ColumnSettings: DataTableColumnSettings,
-  BatchBar: DataTableBatchBar,
-  Content: DataTableContent,
-  RowActions: DataTableRowActions,
-  Pagination: DataTablePagination,
-  DetailDrawer: DataTableDetailDrawer,
-  DetailPanel: DataTableDetailPanel,
-  DetailField: DataTableDetailField,
-  FormModal: DataTableFormModal,
-  FormSection: DataTableFormSection,
-  FormFieldGrid: DataTableFormFieldGrid,
-  FormField: DataTableFormField,
-  FormFields: DataTableFormFields,
-  useForm: useDataTableForm,
-  FormBanner: DataTableFormBanner,
-  Actions: DataTableActions,
-  ActionButton: DataTableActionButton,
-  AuthField: AuthField,
-  AuthorizedField: AuthField,
-  AuthGuard: AuthGuard,
+ Root: DataTableRoot,
+ Workspace: DataTableWorkspace,
+ Toolbar: DataTableToolbar,
+ Header: DataTableHeader,
+ Search: DataTableSearch,
+ FacetedFilter: DataTableFacetedFilter,
+ FilterBar: DataTableFilterBar,
+ FilterDrawer: DataTableFilterDrawer,
+ InputGroup: DataTableInputGroup,
+ ColumnSettings: DataTableColumnSettings,
+ BatchBar: DataTableBatchBar,
+ Content: DataTableContent,
+ RowActions: DataTableRowActions,
+ Pagination: DataTablePagination,
+ DetailDrawer: DataTableDetailDrawer,
+ DetailPanel: DataTableDetailPanel,
+ DetailField: DataTableDetailField,
+ FormModal: DataTableFormModal,
+ FormSection: DataTableFormSection,
+ FormFieldGrid: DataTableFormFieldGrid,
+ FormField: DataTableFormField,
+ FormFields: DataTableFormFields,
+ useForm: useDataTableForm,
+ FormBanner: DataTableFormBanner,
+ createColumnsFromSchema: createColumnsFromSchema,
+ Actions: DataTableActions,
+ ActionButton: DataTableActionButton,
+ AuthField: AuthField,
+ AuthorizedField: AuthField,
+ AuthGuard: AuthGuard,
 });

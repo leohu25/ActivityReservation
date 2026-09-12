@@ -4,8 +4,8 @@ import React from "react";
 import { renderToString } from "react-dom/server";
 import { TenantAbilityProvider } from "@chenrun/authorization";
 import { CustomerView } from "./CustomerView";
-import { customerPageContract } from "../contracts/customer.contract";
-import type { CustomerListItem } from "../types";
+import { customerPageContract } from "../../contracts/customer.contract";
+import type { CustomerListItem } from "../../types";
 
 const mockCustomers: CustomerListItem[] = [
   {
@@ -43,7 +43,9 @@ function renderCustomerView(
   );
 }
 
-function customerViewProps(overrides: Partial<React.ComponentProps<typeof CustomerView>> = {}) {
+function customerViewProps(
+  overrides: Partial<React.ComponentProps<typeof CustomerView>> = {},
+) {
   return {
     initialCustomers: mockCustomers,
     categories: [],

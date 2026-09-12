@@ -15,10 +15,10 @@ import {
 import {
   updateCategoryStatusAction,
   updateTagStatusAction,
-} from "../actions";
+} from "../../actions";
 import { CreateCategoryModal } from "./CreateCategoryModal";
 import { CreateTagModal } from "./CreateTagModal";
-import type { CustomerCategoryItem, CustomerTagItem } from "../types";
+import type { CustomerCategoryItem, CustomerTagItem } from "../../types";
 
 /**
  * 分类与标签管理页面入参属性契约

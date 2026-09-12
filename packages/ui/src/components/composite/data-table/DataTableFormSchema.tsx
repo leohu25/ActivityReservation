@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, type ReactNode } from "react";
+import { z } from "zod";
 import { Input } from "../../shadcn/input";
 import { Textarea } from "../../shadcn/textarea";
 import { Checkbox } from "../../shadcn/checkbox";
@@ -13,7 +14,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../shadcn/select";
-import { DataTableFormField, DataTableFormFieldGrid } from "./DataTableFormLayout";
+import {
+  DataTableFormField,
+  DataTableFormFieldGrid,
+} from "./DataTableFormLayout";
 import { cn } from "../../../lib/utils";
 
 export interface FormFieldOption {
@@ -78,6 +82,8 @@ export interface DataTableFormFieldsProps<TValues extends object> {
   /** 网格列数，默认 2 */
   readonly columns?: 2 | 3 | 4;
   readonly className?: string;
+  /** 字段校验错误字典（由 Zod 或表单校验下发） */
+  readonly errors?: Partial<Record<keyof TValues & string, string>>;
 }
 
 /** 按 Schema 循环渲染表单字段网格 */
@@ -87,6 +93,7 @@ export function DataTableFormFields<TValues extends object>({
   onChange,
   columns = 2,
   className,
+  errors,
 }: DataTableFormFieldsProps<TValues>) {
   return (
     <DataTableFormFieldGrid columns={columns} className={className}>
@@ -94,6 +101,7 @@ export function DataTableFormFields<TValues extends object>({
         const value = (values as Record<string, unknown>)[field.name];
         const setValue = (v: unknown) =>
           onChange(field.name as keyof TValues & string, v);
+        const fieldError = errors?.[field.name as keyof TValues & string];
         const spanClass =
           field.span === 2
             ? "sm:col-span-2"
@@ -108,37 +116,56 @@ export function DataTableFormFields<TValues extends object>({
           return (
             <div
               key={field.name}
-              className={cn(
-                "flex min-w-0 items-center justify-between gap-3 rounded-lg border border-border/70 bg-background/60 px-3 py-2.5",
-                spanClass,
-              )}
+              className={cn("flex flex-col gap-1", spanClass)}
             >
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <div className="text-xs font-medium text-foreground">
-                  {field.label}
-                  {field.required ? (
-                    <span className="text-destructive ml-0.5">*</span>
+              <div
+                className={cn(
+                  "flex min-w-0 items-center justify-between gap-3 rounded-lg border border-border/70 bg-background/60 px-3 py-2.5",
+                  fieldError && "border-destructive/80 bg-destructive/5",
+                )}
+              >
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <div
+                    className={cn(
+                      "text-xs font-medium text-foreground",
+                      fieldError && "text-destructive",
+                    )}
+                  >
+                    {field.label}
+                    {field.required ? (
+                      <span className="text-destructive ml-0.5">*</span>
+                    ) : null}
+                  </div>
+                  {field.hint ? (
+                    <p className="text-[11px] text-muted-foreground">
+                      {field.hint}
+                    </p>
                   ) : null}
                 </div>
-                {field.hint ? (
-                  <p className="text-[11px] text-muted-foreground">
-                    {field.hint}
-                  </p>
-                ) : null}
+                {field.type === "checkbox" ? (
+                  <Checkbox
+                    checked={Boolean(value)}
+                    disabled={field.disabled}
+                    aria-invalid={Boolean(fieldError)}
+                    onCheckedChange={(checked) => setValue(checked === true)}
+                  />
+                ) : (
+                  <Switch
+                    checked={Boolean(value)}
+                    disabled={field.disabled}
+                    aria-invalid={Boolean(fieldError)}
+                    onCheckedChange={(checked) => setValue(checked === true)}
+                  />
+                )}
               </div>
-              {field.type === "checkbox" ? (
-                <Checkbox
-                  checked={Boolean(value)}
-                  disabled={field.disabled}
-                  onCheckedChange={(checked) => setValue(checked === true)}
-                />
-              ) : (
-                <Switch
-                  checked={Boolean(value)}
-                  disabled={field.disabled}
-                  onCheckedChange={(checked) => setValue(checked === true)}
-                />
-              )}
+              {fieldError ? (
+                <p
+                  data-slot="form-message"
+                  className="px-1 text-xs font-medium text-destructive"
+                >
+                  {fieldError}
+                </p>
+              ) : null}
             </div>
           );
         }
@@ -149,9 +176,10 @@ export function DataTableFormFields<TValues extends object>({
             label={field.label}
             required={field.required}
             hint={"hint" in field ? field.hint : undefined}
+            error={fieldError}
             className={spanClass}
           >
-            {renderFieldControl(field, value, setValue)}
+            {renderFieldControl(field, value, setValue, Boolean(fieldError))}
           </DataTableFormField>
         );
       })}
@@ -163,6 +191,7 @@ function renderFieldControl(
   field: DataTableFormFieldSchema,
   value: unknown,
   setValue: (v: unknown) => void,
+  hasError?: boolean,
 ): ReactNode {
   if (field.type === "custom") {
     return field.render({ value, onChange: setValue });
@@ -175,7 +204,7 @@ function renderFieldControl(
         onValueChange={(v) => setValue(v)}
         disabled={field.disabled}
       >
-        <SelectTrigger className="w-full">
+        <SelectTrigger className="w-full" aria-invalid={hasError}>
           <SelectValue placeholder={field.placeholder ?? "请选择"} />
         </SelectTrigger>
         <SelectContent>
@@ -209,6 +238,7 @@ function renderFieldControl(
               name={field.name}
               checked={String(value ?? "") === opt.value}
               disabled={field.disabled}
+              aria-invalid={hasError}
               onChange={() => setValue(opt.value)}
               className="accent-primary"
             />
@@ -224,6 +254,7 @@ function renderFieldControl(
       <Textarea
         required={field.required}
         disabled={field.disabled}
+        aria-invalid={hasError}
         rows={field.rows ?? 3}
         placeholder={field.placeholder}
         value={value == null ? "" : String(value)}
@@ -237,6 +268,7 @@ function renderFieldControl(
       type={field.type ?? "text"}
       required={field.required}
       disabled={field.disabled}
+      aria-invalid={hasError}
       step={"step" in field ? field.step : undefined}
       placeholder={"placeholder" in field ? field.placeholder : undefined}
       value={value == null ? "" : String(value)}

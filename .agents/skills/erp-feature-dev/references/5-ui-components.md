@@ -312,7 +312,115 @@ const columns: ColumnDef<Customer>[] = [
 </DataTable.DetailDrawer>
 ```
 
-### 2.8 编辑/新建弹窗标准模板
+### 2.8 新建/编辑/查看三态弹窗与 Zod 运行时拦截 (`CrudFormModal`)
+
+对于 80% 的通用 CRUD 业务表单，推荐使用基于 **TypeScript + Zod Schema 真实运行时驱动** 的 `CrudFormModal`，实现新增、编辑、查看三态合一复用：
+
+```tsx
+import { z, CrudFormModal, type DataTableFormFieldSchema } from "@chenrun/ui";
+
+// 1. 真实 Zod Schema 校验（负责格式验证与运行时拦截）
+const customerSchema = z.object({
+  customerCode: z.string().min(3, "编码至少3位").describe("客户编码"),
+  customerName: z.string().min(2, "全称至少2个字符").describe("客户全称"),
+  contactPhone: z.string().regex(/^1\d{10}$/, "手机号格式不正确").describe("联系电话"),
+  settlementType: z.enum(["CASH", "MONTHLY_30"]).describe("结算方式"),
+});
+
+// 2. UI 渲染字段配置（负责控件类型、网格布局与提示）
+const customerFormFields: DataTableFormFieldSchema[] = [
+  {
+    name: "customerCode",
+    label: "客户编码",
+    type: "text",
+    required: true,
+    placeholder: "如: CUST-001",
+    disabled: true, // 编辑或查看时锁定
+  },
+  {
+    name: "customerName",
+    label: "客户全称",
+    type: "text",
+    required: true,
+    placeholder: "工商全称",
+  },
+  {
+    name: "contactPhone",
+    label: "联系电话",
+    type: "text",
+    required: true,
+  },
+  {
+    name: "settlementType",
+    label: "结算方式",
+    type: "select",
+    required: true,
+    options: [
+      { label: "现结", value: "CASH" },
+      { label: "月结30天", value: "MONTHLY_30" },
+    ],
+  },
+];
+
+<CrudFormModal
+  open={modalOpen}
+  mode={formMode} // "create" | "edit" | "view"
+  title={formMode === "create" ? "新增客户" : formMode === "edit" ? "编辑客户" : "客户档案详情"}
+  schema={customerSchema} // 👈 传入真正的 Zod Schema，自动激活 safeParse 运行时校验
+  fields={customerFormFields}
+  initialValues={currentRecord}
+  onClose={() => setModalOpen(false)}
+  onSubmit={async (values) => {
+    if (formMode === "create") {
+      await createCustomerAction(values);
+    } else {
+      await updateCustomerAction(currentRecord.id, values);
+    }
+  }}
+/>
+```
+
+- **运行时校验机制**：点击提交或修改输入时自动调用 `schema.safeParse`。校验不通过时阻止 `onSubmit`，并在对应字段下方显示原生 `<p data-slot="form-message">` 红字提示，输入框标注 `aria-invalid` 触发红框；
+- `mode === "view"`：所有字段自动转为 disabled 只读态，底栏隐藏保存按钮，仅展示“关闭”；
+- `mode === "edit"`：带入已有数据初值，支持唯一标识等字段单独 disabled；
+- 20% 极端复杂业务（如多行配方/动态审批树）通过逃生通道直接使用 shadcn 原生 JSX 对话框。
+
+### 2.9 Table 列契约根据 Zod Schema 自动派生 (`createColumnsFromSchema`)
+
+为了消除每个页面反复手动书写大量同质化 `allColumns = [...]` 的代码，提供根据 Zod Schema 快速生成 `ColumnDef` 的辅助工具：
+
+```tsx
+import { z, createColumnsFromSchema, type ColumnDef } from "@chenrun/ui";
+
+const entitySchema = z.object({
+  customerCode: z.string().describe("客户编码"),
+  customerName: z.string().describe("客户全称"),
+  creditLimit: z.number().describe("授信额度"),
+  status: z.string().describe("状态"),
+});
+
+// 自动生成列定义：自动继承 describe 描述，数值字段自动右对齐 (align: 'right')
+const columns: ColumnDef<CustomerItem>[] = createColumnsFromSchema(entitySchema, {
+  overrides: {
+    creditLimit: {
+      format: (val) => `¥${Number(val).toLocaleString()}`,
+    },
+    status: {
+      cell: (val) => <Badge>{val === "ACTIVE" ? "正常" : "停用"}</Badge>,
+    },
+  },
+  extraColumns: [
+    {
+      id: "actions",
+      header: "操作",
+      align: "right",
+      cell: (row) => <DataTableRowActions record={row} ... />,
+    },
+  ],
+});
+```
+
+### 2.10 编辑/新建弹窗定制模板 (DataTable.FormModal)
 
 ```tsx
 <DataTable.FormModal

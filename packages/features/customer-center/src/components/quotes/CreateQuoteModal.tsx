@@ -4,12 +4,12 @@ import React, { useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button, DataTable, Input, toast } from "@chenrun/ui";
 import type { DataTableFormFieldSchema } from "@chenrun/ui";
-import { createQuoteAction } from "../actions";
+import { createQuoteAction } from "../../actions";
 import type {
   CreateQuoteItemInput,
   CustomerListItem,
   StoreListItem,
-} from "../types";
+} from "../../types";
 
 export interface CreateQuoteModalProps {
   readonly customers: readonly CustomerListItem[];

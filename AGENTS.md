@@ -132,7 +132,7 @@ node .harness/lifecycle/session-end.mjs
 | 维度 | 路径 | 核心内容与适用场景 |
 | --- | --- | --- |
 | **记忆总索引** | `.harness/memory/index.md` | 团队持久化记忆与经验沉淀的统一入口 |
-| **架构决策 (ADR)** | `.harness/memory/adr/` | 核心决策记录（ADR-001 ~ ADR-004 架构背景与选型理由） |
+| **架构决策 (ADR)** | `.harness/memory/adr/` | 核心决策记录（ADR-001 ~ ADR-008 架构背景、选型与分层规约） |
 | **避坑指南** | `.harness/memory/learnings.md` | 踩坑经验、生产事故复盘与最佳实践反模式 |
 | **技术债台账** | `.harness/memory/technical-debt.md` | 历史遗留问题、待重构项与架构漂移追踪 |
 | **生命周期钩子** | `.harness/lifecycle/` | 会话启动自检、会话结束校验 (`session-end.mjs`) |

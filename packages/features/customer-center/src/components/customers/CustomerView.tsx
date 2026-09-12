@@ -28,13 +28,13 @@ import {
   createCustomerAction,
   updateCustomerStatusAction,
   deleteCustomerAction,
-} from "../actions";
-import { CustomerField, customerPageContract } from "../contracts";
+} from "../../actions";
+import { CustomerField, customerPageContract } from "../../contracts";
 import type {
   CustomerListItem,
   CustomerCategoryItem,
   CustomerTagItem,
-} from "../types";
+} from "../../types";
 import { CreateCustomerModal } from "./CreateCustomerModal";
 
 interface Props {
@@ -141,18 +141,22 @@ export function CustomerView({
   };
 
   const handleExport = () => {
-    exportContractCsv(customers, customerPageContract.configurableFields ?? [], {
-      subject: customerPageContract.subject,
-      ability,
-      skip: [CustomerField.CREDIT_LIMIT],
-      filename: `客户主数据_${new Date().toISOString().slice(0, 10)}.csv`,
-      format: {
-        [CustomerField.SETTLEMENT_METHOD]: (c) =>
-          SETTLEMENT_LABELS[c.settlementMethod] || c.settlementMethod,
-        [CustomerField.STATUS]: (c) =>
-          c.status === "ACTIVE" ? "正常" : "已停用",
+    exportContractCsv(
+      customers,
+      customerPageContract.configurableFields ?? [],
+      {
+        subject: customerPageContract.subject,
+        ability,
+        skip: [CustomerField.CREDIT_LIMIT],
+        filename: `客户主数据_${new Date().toISOString().slice(0, 10)}.csv`,
+        format: {
+          [CustomerField.SETTLEMENT_METHOD]: (c) =>
+            SETTLEMENT_LABELS[c.settlementMethod] || c.settlementMethod,
+          [CustomerField.STATUS]: (c) =>
+            c.status === "ACTIVE" ? "正常" : "已停用",
+        },
       },
-    });
+    );
   };
 
   const columns: ColumnDef<CustomerListItem>[] = [
@@ -206,7 +210,9 @@ export function CustomerView({
       cell: (c: CustomerListItem) => (
         <div className="text-xs">
           <div className="font-medium text-foreground">{c.contactPerson}</div>
-          <div className="text-muted-foreground font-mono">{c.contactPhone}</div>
+          <div className="text-muted-foreground font-mono">
+            {c.contactPhone}
+          </div>
         </div>
       ),
     },

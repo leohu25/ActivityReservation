@@ -9,4 +9,4 @@
 export * from "./DataTableWorkspace";
 export * from "./DashboardShell";
 export * from "./PageShell";
-
+export * from "./CrudFormModal";

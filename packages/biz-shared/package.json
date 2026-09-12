@@ -1,0 +1,28 @@
+{
+  "name": "@chenrun/biz-shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "辰润 ERP 跨业务切片通用业务中台资产库 (单据流/审批流/明细行/业务通用契约)",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "tsx --test --test-reporter=../../scripts/fail-only-reporter.mjs src/**/*.test.ts src/**/*.test.tsx"
+  },
+  "dependencies": {
+    "@chenrun/authorization": "workspace:*",
+    "@chenrun/shared": "workspace:*",
+    "@chenrun/ui": "workspace:*",
+    "lucide-react": "^1.16.0",
+    "zod": "^4.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "tsx": "^4.20.6",
+    "typescript": "^5.8.2"
+  }
+}

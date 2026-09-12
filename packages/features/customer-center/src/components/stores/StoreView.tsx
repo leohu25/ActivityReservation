@@ -17,13 +17,10 @@ import {
 } from "@chenrun/ui";
 import { exportContractCsv } from "@chenrun/shared";
 import { useAbility } from "@chenrun/authorization";
-import {
-  updateStoreStatusAction,
-  deleteStoreAction,
-} from "../actions";
+import { updateStoreStatusAction, deleteStoreAction } from "../../actions";
 import { CreateStoreModal } from "./CreateStoreModal";
-import { CustomerStoreField, storePageContract } from "../contracts";
-import type { StoreListItem, CustomerListItem } from "../types";
+import { CustomerStoreField, storePageContract } from "../../contracts";
+import type { StoreListItem, CustomerListItem } from "../../types";
 
 /**
  * 门店档案列表页面入参属性契约
@@ -286,77 +283,76 @@ export function StoreView({
         rowKey={(s: StoreListItem) => s.storeCode}
         subject={storePageContract.subject}
         title="门店档案"
-      description="门店是订单订货、物流配送、现场签收与对账的最小履约单元，必须归属于有效客户并绑定区域。"
-      page={page}
-      pageSize={pageSize}
-      total={total}
-      onPageChange={(nextPage, nextPageSize) => {
-        setPage(nextPage);
-        setPageSize(nextPageSize);
-        navigateList({ page: nextPage, pageSize: nextPageSize });
-      }}
-      onRefresh={() => router?.refresh()}
-      onExport={handleExport}
-      onCreate={() => setShowModal(true)}
-      contentProps={{ selectable: true }}
-      keywordValue={keyword}
-      keywordPlaceholder="名称 / 编码 / 地址"
-      onKeywordChange={setKeyword}
-      statusOptions={[
-        { value: "ACTIVE", label: "正常" },
-        { value: "DISABLED", label: "已停用" },
-      ]}
-      statusValue={selectedStatus}
-      onStatusChange={(v) => {
-        setSelectedStatus(v);
-        setPage(1);
-        navigateList({ page: 1, status: v });
-      }}
-      filterExtra={
-        <DataTable.InputGroup label="所属客户" className="w-52">
-          <Select
-            value={selectedCust || "ALL"}
-            onValueChange={(v) => {
-              const next = v === "ALL" ? "" : v;
-              setSelectedCust(next);
-              setPage(1);
-              navigateList({ page: 1, customer: next });
-            }}
-          >
-            <SelectTrigger className="border-0 shadow-none">
-              <SelectValue placeholder="全部" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">全部</SelectItem>
-              {customers.map((c) => (
-                <SelectItem key={c.customerCode} value={c.customerCode}>
-                  {c.customerName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </DataTable.InputGroup>
-      }
-      onSearch={() => {
-        setPage(1);
-        navigateList({ page: 1 });
-      }}
-      onReset={() => {
-        setKeyword("");
-        setSelectedCust("");
-        setSelectedStatus("");
-        setPage(1);
-        navigateList({ page: 1, keyword: "", customer: "", status: "" });
-      }}
-    >
-
-      {showModal && (
-        <CreateStoreModal
-          customers={customers}
-          onClose={() => setShowModal(false)}
-          onCreated={() => router?.refresh()}
-        />
-      )}
+        description="门店是订单订货、物流配送、现场签收与对账的最小履约单元，必须归属于有效客户并绑定区域。"
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={(nextPage, nextPageSize) => {
+          setPage(nextPage);
+          setPageSize(nextPageSize);
+          navigateList({ page: nextPage, pageSize: nextPageSize });
+        }}
+        onRefresh={() => router?.refresh()}
+        onExport={handleExport}
+        onCreate={() => setShowModal(true)}
+        contentProps={{ selectable: true }}
+        keywordValue={keyword}
+        keywordPlaceholder="名称 / 编码 / 地址"
+        onKeywordChange={setKeyword}
+        statusOptions={[
+          { value: "ACTIVE", label: "正常" },
+          { value: "DISABLED", label: "已停用" },
+        ]}
+        statusValue={selectedStatus}
+        onStatusChange={(v) => {
+          setSelectedStatus(v);
+          setPage(1);
+          navigateList({ page: 1, status: v });
+        }}
+        filterExtra={
+          <DataTable.InputGroup label="所属客户" className="w-52">
+            <Select
+              value={selectedCust || "ALL"}
+              onValueChange={(v) => {
+                const next = v === "ALL" ? "" : v;
+                setSelectedCust(next);
+                setPage(1);
+                navigateList({ page: 1, customer: next });
+              }}
+            >
+              <SelectTrigger className="border-0 shadow-none">
+                <SelectValue placeholder="全部" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">全部</SelectItem>
+                {customers.map((c) => (
+                  <SelectItem key={c.customerCode} value={c.customerCode}>
+                    {c.customerName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </DataTable.InputGroup>
+        }
+        onSearch={() => {
+          setPage(1);
+          navigateList({ page: 1 });
+        }}
+        onReset={() => {
+          setKeyword("");
+          setSelectedCust("");
+          setSelectedStatus("");
+          setPage(1);
+          navigateList({ page: 1, keyword: "", customer: "", status: "" });
+        }}
+      >
+        {showModal && (
+          <CreateStoreModal
+            customers={customers}
+            onClose={() => setShowModal(false)}
+            onCreated={() => router?.refresh()}
+          />
+        )}
       </DataTable.Workspace>
     </>
   );

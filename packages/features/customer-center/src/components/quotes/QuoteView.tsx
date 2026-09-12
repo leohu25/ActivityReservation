@@ -11,14 +11,14 @@ import {
 } from "@chenrun/ui";
 import { exportContractCsv } from "@chenrun/shared";
 import { useAbility } from "@chenrun/authorization";
-import { updateQuoteStatusAction } from "../actions";
+import { updateQuoteStatusAction } from "../../actions";
 import { CreateQuoteModal } from "./CreateQuoteModal";
-import { CustomerQuoteField, quotePageContract } from "../contracts";
+import { CustomerQuoteField, quotePageContract } from "../../contracts";
 import type {
   QuoteListItem,
   CustomerListItem,
   StoreListItem,
-} from "../types";
+} from "../../types";
 
 /**
  * 报价单中心组件入参属性契约
@@ -277,91 +277,90 @@ export function QuoteView({
         columns={columns}
         rowKey={(q: QuoteListItem) => q.quoteId}
         subject={quotePageContract.subject}
-      title="客户阶梯价与报价单"
-      description="按门店、客户、区域维护商品报价明细。报价优先级：门店专属报价 > 客户通用报价 > 区域保底报价。"
-      page={page}
-      pageSize={pageSize}
-      total={total}
-      onPageChange={(nextPage, nextPageSize) => {
-        setPage(nextPage);
-        setPageSize(nextPageSize);
-        navigateList({ page: nextPage, pageSize: nextPageSize });
-      }}
-      onRefresh={() => router?.refresh()}
-      onExport={handleExport}
-      onCreate={() => setShowModal(true)}
-      showKeywordFilter={false}
-      statusOptions={[
-        { value: "DRAFT", label: "草稿" },
-        { value: "ACTIVE", label: "已生效" },
-        { value: "VOIDED", label: "已作废" },
-        { value: "EXPIRED", label: "已过期" },
-      ]}
-      statusValue={statusFilter}
-      statusAllValue="ALL"
-      onStatusChange={(v) => {
-        const next = v === "ALL" ? "" : v;
-        setStatusFilter(next);
-        setPage(1);
-        navigateList({ page: 1, status: next });
-      }}
-      onSearch={() => {
-        setPage(1);
-        navigateList({ page: 1 });
-      }}
-      onReset={() => {
-        setStatusFilter("");
-        setPage(1);
-        navigateList({ page: 1, status: "" });
-      }}
-      contentProps={{
-        selectable: true,
-        renderExpandedRow: (q: QuoteListItem) => (
-          <div className="space-y-2">
-            <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-              <span>商品定价明细清单</span>
-              <span className="font-mono text-muted-foreground font-normal">
-                ({q.items?.length || 0} 个品项)
-              </span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-              {q.items?.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="p-2.5 rounded border border-border/70 bg-card text-xs flex justify-between items-center"
-                >
-                  <div>
-                    <div className="font-medium text-foreground">
-                      {item.itemName}
+        title="客户阶梯价与报价单"
+        description="按门店、客户、区域维护商品报价明细。报价优先级：门店专属报价 > 客户通用报价 > 区域保底报价。"
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        onPageChange={(nextPage, nextPageSize) => {
+          setPage(nextPage);
+          setPageSize(nextPageSize);
+          navigateList({ page: nextPage, pageSize: nextPageSize });
+        }}
+        onRefresh={() => router?.refresh()}
+        onExport={handleExport}
+        onCreate={() => setShowModal(true)}
+        showKeywordFilter={false}
+        statusOptions={[
+          { value: "DRAFT", label: "草稿" },
+          { value: "ACTIVE", label: "已生效" },
+          { value: "VOIDED", label: "已作废" },
+          { value: "EXPIRED", label: "已过期" },
+        ]}
+        statusValue={statusFilter}
+        statusAllValue="ALL"
+        onStatusChange={(v) => {
+          const next = v === "ALL" ? "" : v;
+          setStatusFilter(next);
+          setPage(1);
+          navigateList({ page: 1, status: next });
+        }}
+        onSearch={() => {
+          setPage(1);
+          navigateList({ page: 1 });
+        }}
+        onReset={() => {
+          setStatusFilter("");
+          setPage(1);
+          navigateList({ page: 1, status: "" });
+        }}
+        contentProps={{
+          selectable: true,
+          renderExpandedRow: (q: QuoteListItem) => (
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <span>商品定价明细清单</span>
+                <span className="font-mono text-muted-foreground font-normal">
+                  ({q.items?.length || 0} 个品项)
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                {q.items?.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="p-2.5 rounded border border-border/70 bg-card text-xs flex justify-between items-center"
+                  >
+                    <div>
+                      <div className="font-medium text-foreground">
+                        {item.itemName}
+                      </div>
+                      <div className="font-mono text-[10px] text-muted-foreground">
+                        {item.itemCode}
+                      </div>
                     </div>
-                    <div className="font-mono text-[10px] text-muted-foreground">
-                      {item.itemCode}
+                    <div className="text-right">
+                      <div className="font-mono font-semibold text-primary">
+                        ¥{Number(item.unitPriceInclTax || 0).toFixed(2)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        单位: {item.salesUnit}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-mono font-semibold text-primary">
-                      ¥{Number(item.unitPriceInclTax || 0).toFixed(2)}
-                    </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      单位: {item.salesUnit}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        ),
-      }}
-    >
-
-      {showModal && (
-        <CreateQuoteModal
-          customers={customers}
-          stores={stores}
-          onClose={() => setShowModal(false)}
-          onCreated={() => router?.refresh()}
-        />
-      )}
+          ),
+        }}
+      >
+        {showModal && (
+          <CreateQuoteModal
+            customers={customers}
+            stores={stores}
+            onClose={() => setShowModal(false)}
+            onCreated={() => router?.refresh()}
+          />
+        )}
       </DataTable.Workspace>
     </>
   );

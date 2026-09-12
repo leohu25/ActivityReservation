@@ -3,8 +3,8 @@
 import React, { useMemo } from "react";
 import { DataTable, toast } from "@chenrun/ui";
 import type { DataTableFormFieldSchema } from "@chenrun/ui";
-import { createStoreAction } from "../actions";
-import type { CustomerListItem } from "../types";
+import { createStoreAction } from "../../actions";
+import type { CustomerListItem } from "../../types";
 
 export interface CreateStoreModalProps {
   readonly customers: readonly CustomerListItem[];

@@ -158,3 +158,12 @@ test("ProcurementOrderCenter 契约自包含检验：subject 与 resource 正确
   assert.ok(procurementOrderPageContract.actions.length > 0);
   assert.ok(procurementOrderPageContract.configurableFields?.length);
 });
+
+test("ProcurementOrderCenter 正常渲染搜索栏与状态选项", () => {
+  const html = renderCenter(<ProcurementOrderCenter orders={[order]} />, {
+    actions: ["read"],
+  });
+  assert.match(html, /单号 \/ 供应商/);
+  assert.match(html, /全部状态/);
+  assert.match(html, /刷新/);
+});

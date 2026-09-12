@@ -9,6 +9,7 @@
 - [ADR-003: 成熟框架版四层权限架构 (Better Auth + CASL)](adr/ADR-003-four-tier-permissions.md)
 - [ADR-004: Turborepo 多应用解耦与 FDD 垂直切片规范](adr/ADR-004-fdd-vertical-slices-and-multi-app.md)
 - [ADR-007: Better Auth 与 CASL 职责边界（认证与业务授权分离）](adr/ADR-007-authn-vs-authz-boundary.md)
+- [ADR-008: 宏观 FDD 垂直切片、微观 DDD 聚合根与三级共享体系架构](adr/ADR-008-fdd-slices-with-ddd-aggregates-and-biz-shared.md)
 
 ## 二、 踩坑经验与避雷库 (Learnings)
 
