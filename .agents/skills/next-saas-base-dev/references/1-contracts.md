@@ -15,7 +15,7 @@
 | Action | 小写动词或 `snake_case` 动作 | CRUD/导入导出使用共享 `StandardAction`；领域动作使用 `as const` 对象，如 `QuoteAction.AUDIT`。Contract、Manifest、guard、`ability.can`、`assert*Ability` 禁止魔法字符串。 |
 | Field | `camelCase` | 每个 Subject 有自己的 `XxxField = {...} as const` 字典；实体型字段必须存在于对应 Prisma model；受控列与字段策略调用点只引用字段常量。 |
 
-TypeScript 中使用 `as const` 常量对象和推导 union，不使用 `enum`：
+TypeScript 中使用 `as const` 常量对象和推导 union，禁止使用 TypeScript 原生 `enum`（消除 IIFE 胶水与打包冗余）：
 
 ```ts
 export const ItemSubject = { MASTER: "ItemMaster" } as const;
@@ -23,6 +23,23 @@ export type ItemSubject = (typeof ItemSubject)[keyof typeof ItemSubject];
 export const ItemResource = { MASTER: "material.item_master" } as const;
 export const ItemAction = { ...StandardAction, PUBLISH: "publish" } as const;
 export const ItemMasterField = { ITEM_CODE: "itemCode" } as const;
+```
+
+### 严禁函数入参类型降解（反“假强类型”防线）
+
+在定义服务端鉴权守卫（如 `assert*Ability`）或接收 `as const` 常量对象的任何业务函数时，**严禁将入参声明为宽泛的 `string`**。
+必须在各切片导出的 `contract-types.ts` 中将本领域的 Subject 与 Action 聚合成联合字面量类型（如 `MaterialSubject`、`MaterialAction`），并在函数入参强类型绑定：
+
+```ts
+// ❌ 严禁：宽泛的 string 导致前端/服务端调用时可随意传入拼错的垃圾字符串，击穿类型防线
+export function assertMaterialAbility(ability: AppAbility, action: string, subject: string) { ... }
+
+// ✅ 正确：由 as const 派生出的精确联合类型，手写拼错在编译期即刻标红拦截
+export function assertMaterialAbility(
+  ability: AppAbility,
+  action: MaterialAction,
+  subject: MaterialSubject,
+) { ... }
 ```
 
 Descriptor 必须显式绑定，不允许运行时拼接或约定俗成：

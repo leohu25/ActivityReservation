@@ -354,6 +354,32 @@ for (const file of allTsFiles) {
       "a declared XxxField.X constant",
     );
   }
+
+  // 严禁在 assert*Ability 守卫函数声明中将 action 或 subject 降级为宽泛的 string 类型
+  for (const match of source.matchAll(
+    /export function (assert\w*Ability)\s*\([^)]*?\baction\s*:\s*string[^)]*?\)/gs,
+  )) {
+    fail(
+      file,
+      match.index,
+      "type-safety",
+      "strong action union type required (no string escape)",
+      match[1],
+      "declare a strong union type for action parameter instead of string",
+    );
+  }
+  for (const match of source.matchAll(
+    /export function (assert\w*Ability)\s*\([^)]*?\bsubject\s*:\s*string[^)]*?\)/gs,
+  )) {
+    fail(
+      file,
+      match.index,
+      "type-safety",
+      "strong subject union type required (no string escape)",
+      match[1],
+      "declare a strong union type for subject parameter instead of string",
+    );
+  }
 }
 
 if (violations.length) {

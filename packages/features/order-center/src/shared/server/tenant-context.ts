@@ -62,13 +62,16 @@ export async function getTenantDbContext(): Promise<TenantDbContext> {
   };
 }
 
+import type { OrderSubjectType, OrderActionType } from "../contract-types";
+
 /**
  * 写路径强制 CASL：与页面按钮同一 (action, subject) 判定。
+ * 严格使用契约推导的强类型联合，杜绝宽泛的 string 逃逸。
  */
 export function assertOrderAbility(
   ability: AppAbility<string, string>,
-  action: string,
-  subject: string,
+  action: OrderActionType,
+  subject: OrderSubjectType,
 ): void {
   ForbiddenError.from(ability).throwUnlessCan(action, subject);
 }

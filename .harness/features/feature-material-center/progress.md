@@ -67,6 +67,9 @@
 - [x] 执行 `./scripts/verify.sh`（元数据、沙盒边界、红线扫描、实体基线、权限契约、业务切片、类型扫描全部一次性通过）
 - [x] 权限四维标准化：ItemCategory、ItemVariety、ItemGrade 独立 Subject/Resource，Material AbilityProvider 注入全部关联实体快照
 - [x] 新增 `scripts/check/check-permission-contracts.mjs` 硬门禁，并完成存量 Resource Key 一次性替换与平台角色 JSON 数据迁移
+- [x] 清理全仓仅残留的两处 TypeScript 原生 `enum`（`FieldPolicy` 与 `BizApprovalStatus`），全面重构为标准 `as const` 常量对象
+- [x] 重构各业务切片（`material-center`、`customer-center`、`order-center`、`tenant-admin`）权限守卫 `assert*Ability`：入参消除宽泛 `string` 降解，全面锁死领域 `as const` 强类型联合
+- [x] 在 `scripts/check/check-permission-contracts.mjs` 中追加权限守卫强类型静态拦截门禁
 
 ### Phase 8: BOM 工序流转编排与 DAG 可视化闭环
 

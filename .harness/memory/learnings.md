@@ -128,3 +128,63 @@
      - 每个页面组件配套编写 `<Page>View.test.tsx`，断言契约动作与页面按钮 100% 呼应，断言 `HIDDEN` 字段列物理级剥离。
   4. **专项 Skill 指南**：
      - 详细操作步骤与代码样板已沉淀至项目专属 Skill：`.agents/skills/erp-feature-permissions/SKILL.md`。
+
+## 12. 全仓清除 TypeScript 原生 enum 语法包袱，坚守 as const 现代范式 (No TS Enum Invariant)
+
+- **痛点复盘**：
+  - 传统 TypeScript 原生 `enum` 会被转译为 IIFE 立即执行函数与双向映射对象，不仅污染产物体积，而且对现代 bundler（esbuild, SWC, Turbopack）的隔离编译极不友好；
+  - 字符串枚举在 TypeScript 中属于“封闭类型”，外部传入一个内容相同的普通字符串字面量会被类型检查报错拒绝，逼迫开发者到处写 `as MyEnum` 强转，滋生坏味道；
+  - 甚至在底层基础包中（如 `packages/shared` 与 `packages/biz-shared`）残留了 `enum FieldPolicy` 与 `enum BizApprovalStatus`，违背了现代 SaaS 前端纯粹性。
+- **解法与铁律 (No Enum & as const Standard)**：
+  1. **全仓禁止 `export enum`**：
+     - 所有常量状态、类型、字典必须 100% 使用 `as const` 常量对象声明；
+     - 借助 `typeof + keyof` 语法一行自动推导开放的字面量联合类型：
+       ```ts
+       export const FieldPolicy = {
+         HIDDEN: "HIDDEN",
+         READONLY: "READONLY",
+         EDITABLE: "EDITABLE",
+       } as const;
+       export type FieldPolicy = (typeof FieldPolicy)[keyof typeof FieldPolicy];
+       ```
+  2. **开放联合类型的优势**：
+     - 运行时是纯粹干净的 JavaScript 对象（可直接调用 `Object.values()` 供给下拉框或循环）；
+     - 编译后无多余 IIFE 胶水，零运行时包袱；
+     - 字符串字面量无缝匹配，杜绝一切恶心的 `as ...` 强转。
+
+## 13. 严禁接收端函数将 as const 精确类型降解为 string (反“假强类型”防线)
+
+- **痛点复盘**：
+  - 许多模块在契约端费尽心机构造了 `as const` 精确字面量，但在最终的函数接收端（如 `assertMaterialAbility`、`assertCustomerAbility`）却将参数写成 `action: string, subject: string`；
+  - 这属于典型的“假强类型”：因为入参是宽泛的 `string`，调用者手写拼错单词或传入跨领域的无效字符串时，TypeScript 编译器完全失声，强类型保护在最后一厘米被彻底击穿，导致隐蔽的运行期 `ForbiddenError`。
+- **解法与铁律 (Type-Safe Guards Invariant)**：
+  1. **各切片聚合领域联合类型 (`contract-types.ts`)**：
+     - 在业务切片共享层集中导出由各契约推导出的精准 Subject 与 Action 联合类型（如 `MaterialSubject`、`MaterialAction`）；
+  2. **守卫函数入参强制绑定**：
+     - 鉴权守卫函数入参严禁写 `string`，必须直接使用领域联合类型：
+       ```ts
+       export function assertMaterialAbility(
+         ability: AppAbility<string, string>,
+         action: MaterialAction,
+         subject: MaterialSubject,
+       ): void {
+         ForbiddenError.from(ability).throwUnlessCan(action, subject);
+       }
+       ```
+  3. **静态门禁机械化兜底**：
+     - `scripts/check/check-permission-contracts.mjs` 中内置 AST/正则静态拦截，一旦检测到任何 `assert*Ability` 守卫函数将 `action` 或 `subject` 声明为 `string`，提交门禁直接报错阻断！
+
+## 14. 业务流程与拓扑界面的“交互闭环”原则 (UI/UX Functional Completeness)
+
+- **痛点复盘**：
+  - 在工艺 BOM 开发中，后端数据库表（`bom_process`、`bom_input_item`、`bom_output_item`）、计算引擎（`BomCalculatorEngine`）与 Server Actions 均已支持工序与物料流转；
+  - 但前端页面只做了一个“空壳子”弹窗（只填名称和产出物料），没有给用户提供添加工序、录入投入物料、配置损耗率的交互入口；
+  - 导致用户创建出来的 BOM 永远是空的，上方漂亮的 DAG 流程图永远只能无可奈何地展示“暂未配置工序流程”，形成严重的业务断层和半吊子体验。
+- **解法与铁律 (UI Completeness Invariant)**：
+  1. **拒绝“巧妇难为无米之炊”的假大空 UI**：
+     - 如果页面上设计了状态机、指标卡或拓扑图（如 DAG），必须保证系统有对应的交互编排载体（如 `BomFlowEditorModal`）供用户完整录入与维护底层数据；
+  2. **业务流程图必须是有向无环图 (DAG)**：
+     - 食品加工、中央厨房与离散制造的加工路线具有严格的时序与不可逆性，流转图必须清晰表达：投入物料 $\to$ 加工工序（含出成率/损耗） $\to$ 产出中间品 $\to$ 最终成品；
+  3. **数据幂等与容错自愈**：
+     - 在编排器支持快速选择预设工序模板时，服务端 Action 必须具备防击穿逻辑：若数据库无历史主数据则自动建档补充，防止因外键约束崩溃导致用户无法保存业务数据。
+

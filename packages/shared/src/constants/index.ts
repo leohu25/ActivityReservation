@@ -6,17 +6,19 @@
  * 字段访问控制策略三态 (Field Policy)
  * 决定字段在前后端的展示与修改权限
  */
-export enum FieldPolicy {
+export const FieldPolicy = {
  /** 剥离隐藏，对当前操作员不可见 */
- HIDDEN = "HIDDEN",
+ HIDDEN: "HIDDEN",
  /** 只读锁定，可见但不可编辑/不可修改 */
- READONLY = "READONLY",
+ READONLY: "READONLY",
  /** 正常交互编辑 */
- EDITABLE = "EDITABLE",
-}
+ EDITABLE: "EDITABLE",
+} as const;
+
+export type FieldPolicy = (typeof FieldPolicy)[keyof typeof FieldPolicy];
 
 /** 跨授权引擎与通用 UI 组件共享的字段访问三态类型。 */
-export type FieldAccessMode = `${FieldPolicy}`;
+export type FieldAccessMode = FieldPolicy;
 
 /**
  * 分页默认参数与阈值
