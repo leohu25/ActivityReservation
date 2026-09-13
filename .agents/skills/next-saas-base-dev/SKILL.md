@@ -40,9 +40,19 @@ agent_created: true
 13. **导出走契约**：CSV 导出用 `exportContractCsv(rows, contract.configurableFields, ...)`，禁止手写 fieldKeys；
 14. **原子层与排版 100% 遵循 shadcn 官方原语**：`packages/ui/.../shadcn/` 由官方 CLI 引入并保持纯净。杜绝手写裸 `div` 布局或裸浏览器原生控件，所有布局排版与交互控件必须基于框架已有的原子与复合组件开发（`Table`、`Card`、`Input`、`DatePicker`、`Select`、`Dialog` 等）；
 15. **平台 UI 基建沉淀主动提问准则**：在垂直切片实施过程中，一旦识别到交互模式、子表单、明细表格、看板或展示卡片具备通用性，严禁在业务切片内部闭门造车，必须主动向用户发起提问，评估并沉淀至公共 `@base/ui` 库；
-16. **单一 Zod 强类型驱动与 Table 列派生**：增改查弹窗统一使用 `CrudFormModal`，强制传入 `schema: z.ZodType` 执行 safeParse 运行时校验拦截，消灭无校验双分支；列表优先使用 `DataTable.createColumnsFromSchema(schema)` 派生标准表格列；
-17. **测试同级就近共存 (Colocation)**：遵循 Next.js 官方最佳实践，单元测试文件必须与被测试的目标组件/服务处于同一目录下（如 `CustomerView.tsx` 与 `CustomerView.test.tsx` 同级），严禁在模块根目录平铺孤儿测试文件；
-18. **业务实体必须包含基础审计与软删除字段**：所有业务主数据和单据表必须强制具备 `createdById`、`deptId`、`updatedById`、`isDeleted`、`deletedAt`、`deletedById`、`createdAt`、`updatedAt` 8 个基准字段，静态门禁脚本 `scripts/check-entity-baseline.mjs` 在 `verify.sh` 与 `git commit` 时硬拦截违规模型（详见 `references/2-schema-migrate.md`）。
+16. **单一 Zod 强类型驱动与 Table 列派生**：增改查与单据弹窗统一使用 `FormModal`（或其增强版），强制传入 `schema: z.ZodType` 执行 safeParse 运行时校验拦截，消灭无校验双分支；列表优先使用 `DataTable`（或 `DataTable.Workspace`）渲染；
+17. **UI 组件库基建演进四法则 (UI Infrastructure Evolution)**：
+
+- **(a) 复杂场景统一用模板 (Templates for Complex UX)**：列表统一使用 `DataTable`，单据与增改查弹窗统一使用 `FormModal`，内置可选明细表 `DetailTable`，严禁业务层自行手写弹窗与表格拼装胶水；
+- **(b) 原子组件保持纯粹不变 (Pure Atomic Invariant)**：`shadcn/` 原子组件仅由官方 CLI 维护，严禁在原子层侵入业务状态与胶水代码，能复用就 100% 复用；
+- **(c) 组件组装零冗余 (Zero Glue, Zero Redundancy)**：同一类交互形态在系统内有且仅有一套标准实现与统一导出，彻底废除多余别名与历史胶水包装，保持命名清晰、直观、主流；
+- **(d) 复杂超大表单演进标准 (Complex Form Standard)**：当前轻量表单采用受控 React 状态与 Zod 校验；后续若出现超大、深层嵌套联动或频繁动态字段的复杂单据表单，底层驱动引擎统一切换为业界标准 **React Hook Form (`react-hook-form` + `@hookform/resolvers/zod`)**，保持对外暴露的 `FormModal` 声明式 API 完全不变，以获得非受控高性能与脏检查能力。
+
+ 1. **测试同级就近共存 (Colocation)**：遵循 Next.js 官方最佳实践，单元测试文件必须与被测试的目标组件/服务处于同一目录下（如 `CustomerView.tsx` 与 `CustomerView.test.tsx` 同级），严禁在模块根目录平铺孤儿测试文件；
+ 2. **业务实体必须包含基础审计与软删除字段**：所有业务主数据和单据表必须强制具备 `createdById`、`deptId`、`updatedById`、`isDeleted`、`deletedAt`、`deletedById`、`createdAt`、`updatedAt` 8 个基准字段，静态门禁脚本 `scripts/check-entity-baseline.mjs` 在 `verify.sh` 与 `git commit` 时硬拦截违规模型（详见 `references/2-schema-migrate.md`）；
+ 3. **提交前必须审阅确认 (Human Review Before Commit)**：在执行 `git commit` 前，智能体必须主动向用户呈现本次修改清单与核心变更说明，**获得用户明确确认审阅通过后方可执行提交**，严禁擅自静默提交；
+ 4. **严禁手写裸 DOM 与原生非受控控件**：界面必须 100% 使用 `@base/ui` (shadcn) 原子与复合套件搭建（如 `Table`, `DatePicker`, `Select`, `Dialog`, `Button`, `DataTable.Workspace`, `FormModal` 等），严禁在业务切片内手写原生 `<table>`、原生 `<input type="date">` 或手写零散裸 `div` 布局；
+ 5. **严禁破坏运行时与序列化防线（严禁 RSC 跨端透传函数）**：RSC 通过 server-only Query 读取，禁止内部 HTTP 伪接口绕调；RSC 向 Client 组件仅允许传递经序列化的纯数据，**严禁将未标 `"use server"` 的 query 函数或普通服务端函数作为 prop 直接传递给 Client 组件**；Server Action 必须使用 `defineServerAction` 包装并通过 `toPlainData` 彻底消除 Date/Decimal 跨端序列化异常。
 
 ---
 

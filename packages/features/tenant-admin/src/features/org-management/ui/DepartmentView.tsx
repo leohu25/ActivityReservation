@@ -6,6 +6,7 @@ import {
   PageShell,
   DirectoryTreeFilter,
   DataTable,
+  DataTableRowActions,
   type ColumnDef,
   type DirectoryTreeNode,
 } from "@base/ui";
@@ -290,7 +291,7 @@ export function DepartmentView({ initialTree }: DepartmentViewProps) {
       width: 150,
       align: "right",
       cell: (row) => (
-        <DataTable.RowActions
+        <DataTableRowActions
           record={row}
           hideView={true}
           extraActions={[
@@ -345,9 +346,9 @@ export function DepartmentView({ initialTree }: DepartmentViewProps) {
           />
         </div>
 
-        {/* 右侧：官方统一 DataTable.Workspace 标准工作台 */}
+        {/* 右侧：官方统一 DataTable 标准工作台 */}
         <div className="lg:col-span-3">
-          <DataTable.Workspace
+          <DataTable
             data={filteredRows}
             columns={columns}
             rowKey={(r: FlatDeptRow) => r.id}

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Building2 } from "lucide-react";
 import {
   DataTable,
+  DataTableInputGroup,
   Select,
   SelectContent,
   SelectItem,
@@ -14,7 +15,7 @@ import {
   toast,
   useListUrlNav,
   type ColumnDef,
-  type CrudFormMode,
+  type FormModalMode,
 } from "@base/ui";
 import { exportContractCsv } from "@base/shared";
 import { useAbility } from "@base/authorization";
@@ -71,11 +72,11 @@ export function StoreView({
   const [keyword, setKeyword] = useState(initialKeyword);
   const [selectedCust, setSelectedCust] = useState(initialCustomer);
   const [selectedStatus, setSelectedStatus] = useState(initialStatus);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
 
   const [modalState, setModalState] = useState<{
     open: boolean;
-    mode: CrudFormMode;
+    mode: FormModalMode;
     record?: StoreListItem | null;
   }>({
     open: false,
@@ -289,7 +290,7 @@ export function StoreView({
 
   return (
     <>
-      <DataTable.Workspace
+      <DataTable
         data={stores}
         columns={columns}
         rowKey={(s: StoreListItem) => s.storeCode}
@@ -324,7 +325,7 @@ export function StoreView({
           navigateList({ page: 1, status: v });
         }}
         filterExtra={
-          <DataTable.InputGroup label="所属客户" className="w-52">
+          <DataTableInputGroup label="所属客户" className="w-52">
             <Select
               value={selectedCust || "ALL"}
               onValueChange={(v) => {
@@ -349,7 +350,7 @@ export function StoreView({
                 })}
               </SelectContent>
             </Select>
-          </DataTable.InputGroup>
+          </DataTableInputGroup>
         }
         onSearch={() => {
           setPage(1);
@@ -376,7 +377,7 @@ export function StoreView({
             router?.refresh();
           }}
         />
-      </DataTable.Workspace>
+      </DataTable>
     </>
   );
 }

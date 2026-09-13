@@ -19,6 +19,7 @@ export interface FormDrawerProps {
       children: ReactNode;
       footer?: ReactNode;
       width?: "sm" | "md" | "lg" | "xl";
+      inline?: boolean;
       className?: string;
 }
 
@@ -33,6 +34,7 @@ export function FormDrawer({
       children,
       footer,
       width = "md",
+      inline = false,
       className,
 }: FormDrawerProps) {
       const widthClass =
@@ -43,6 +45,41 @@ export function FormDrawer({
                     : width === "xl"
                       ? "sm:max-w-4xl"
                       : "sm:max-w-xl";
+
+      const headerContent = (
+            <div className="gap-1 text-left border-b border-border/60 pb-3 flex flex-col">
+                  <div className="text-base font-semibold">{title}</div>
+                  {description ? (
+                        <p className="text-xs text-muted-foreground">
+                              {description}
+                        </p>
+                  ) : null}
+            </div>
+      );
+
+      const bodyContent = (
+            <div className="flex-1 overflow-y-auto pr-1">{children}</div>
+      );
+
+      const footerContent = footer ? (
+            <div className="border-t border-border/60 pt-3">{footer}</div>
+      ) : null;
+
+      if (inline) {
+            return (
+                  <div
+                        className={cn(
+                              "flex h-full flex-col gap-4 overflow-hidden p-6 border rounded-xl bg-card shadow-sm",
+                              widthClass,
+                              className,
+                        )}
+                  >
+                        {headerContent}
+                        {bodyContent}
+                        {footerContent}
+                  </div>
+            );
+      }
 
       return (
             <Sheet open={open} onOpenChange={onOpenChange}>
@@ -64,15 +101,8 @@ export function FormDrawer({
                               ) : null}
                         </SheetHeader>
 
-                        <div className="flex-1 overflow-y-auto pr-1">
-                              {children}
-                        </div>
-
-                        {footer ? (
-                              <div className="border-t border-border/60 pt-3">
-                                    {footer}
-                              </div>
-                        ) : null}
+                        {bodyContent}
+                        {footerContent}
                   </SheetContent>
             </Sheet>
       );

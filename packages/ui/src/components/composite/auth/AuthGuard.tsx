@@ -2,7 +2,7 @@
 
 import { type ReactNode, useContext } from "react";
 import { useOptionalAbility } from "@base/authorization";
-import { DataTableContext } from "../data-table/DataTableContext";
+import { DataTableContext } from "../table/DataTableContext";
 
 export interface AuthGuardProps {
   /** 实体名称，若未传则自动从 DataTableContext 继承 */

@@ -17,7 +17,7 @@ export {
 export * from "./components/shadcn";
 // 2 组件层
 export * from "./components/feedback";
-export * from "./components/composite/data-table";
+export * from "./components/composite/table";
 export * from "./components/composite/tree";
 export * from "./components/composite/auth";
 export * from "./components/composite/form";

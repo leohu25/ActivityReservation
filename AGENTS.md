@@ -23,20 +23,23 @@
 ## 核心工作规则 (Working Rules)
 
 - **单任务聚焦 (One feature/task at a time)**：每次仅处理一个明确目标，严禁跨范围随意修改无关文件；
+- **提交前必须审阅确认 (Human Review Before Commit)**：在执行 `git commit` 前，智能体必须主动向用户呈现本次修改清单与核心变更说明，**获得用户明确确认审阅通过后方可执行提交**，严禁擅自静默提交；
 - **门禁由钩子兜底 (No manual gate runs)**：日常开发**不要**手动全量运行 `./scripts/verify.sh`（耗时且由 Git `pre-commit` 自动兜底）；即时反馈仅对改动文件执行同级单测或类型检查；
 - **单源状态收敛**：特性开发进度与真实交付证据严格记录至 `feature_list.json` 与沙盒 `progress.md`；
 - **保持整洁可重启**：结束时工作区随时可重新无损运行 `./init.sh`。
 
 ---
 
-## 六大工程红线 (Zero-Tolerance Rules)
+## 八大工程红线 (Zero-Tolerance Rules)
 
 1. **严禁破坏模块与依赖边界**：严格受限于目标改动范围；引用兄弟包必须在 `package.json` 显式声明 `"workspace:*"`，严禁幽灵依赖；
-2. **严禁带病提交与虚假完成**：代码必须保证 `git commit` 时 pre-commit 门禁一次性通过，**严禁用 `--no-verify` 绕过钩子**；
-3. **严禁硬编码权限与越权**：认证归 Better Auth（管进门），授权统一由 CASL 强类型判定（管屋内），禁止混淆两者边界；
-4. **严禁绕过租户物理隔离**：PostgreSQL Database-per-tenant 隔离，业务数据必须由 `TenantDbManager` 动态路由，严禁拼接直连连接串或跨租户穿透；
-5. **严禁破坏运行时与序列化防线**：RSC 通过 server-only Query 读取，禁止内部 HTTP 伪接口绕调；Server Action 必须使用 `defineServerAction` 包装并通过 `toPlainData` 彻底消除 Date/Decimal 跨端序列化异常；
-6. **业务实体必带审计基线**：除明确白名单豁免外，所有业务数据实体模型必须强制包含 8 大基础审计与软删除字段（ADR-009，门禁静态硬拦截）。
+2. **严禁未经审阅擅自提交与带病提交**：必须经用户显式审阅确认后提交；代码必须保证 `git commit` 时 pre-commit 门禁一次性通过，**严禁用 `--no-verify` 绕过钩子**；
+3. **严禁手写裸 DOM 与原生非受控控件**：界面必须 100% 使用 `@base/ui` (shadcn) 原子与复合套件搭建（如 `Table`, `DatePicker`, `Select`, `Dialog`, `Button`, `DataTable.Workspace` 等），严禁在业务切片内手写原生 `<table>`、原生 `<input type="date">` 或手写零散裸 `div` 布局；
+4. **严禁破坏运行时与序列化防线（严禁 RSC 跨端透传函数）**：RSC 通过 server-only Query 读取，禁止内部 HTTP 伪接口绕调；RSC 向 Client 组件仅允许传递经序列化的纯数据，**严禁将未标 `"use server"` 的 query 函数或普通服务端函数作为 prop 直接传递给 Client 组件**；Server Action 必须使用 `defineServerAction` 包装并通过 `toPlainData` 彻底消除 Date/Decimal 跨端序列化异常；
+5. **严禁硬编码权限与越权**：认证归 Better Auth（管进门），授权统一由 CASL 强类型判定（管屋内），禁止混淆两者边界；
+6. **严禁绕过租户物理隔离**：PostgreSQL Database-per-tenant 隔离，业务数据必须由 `TenantDbManager` 动态路由，严禁拼接直连连接串或跨租户穿透；
+7. **业务实体必带审计基线**：除明确白名单豁免外，所有业务数据实体模型必须强制包含 8 大基础审计与软删除字段（ADR-009，门禁静态硬拦截）；
+8. **交互单次确认与零全页强刷**：破坏性操作统一由 `ConfirmDialog` 提示一次，严禁浏览器原生 `confirm(...)` 与 `window.location.reload()`。
 
 ---
 

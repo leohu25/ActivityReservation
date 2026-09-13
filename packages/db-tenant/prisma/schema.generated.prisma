@@ -439,3 +439,165 @@ model PurchaseOrder {
   @@index([status])
   @@map("purchase_order")
 }
+
+model SalesOrder {
+  /// 销售订单唯一单号（系统自动生成，格式 SO-YYYYMMDD-XXXX）
+  orderId             String    @id @map("order_id") @db.VarChar(30)
+  /// 客户编码（关联 Customer）
+  customerCode        String    @map("customer_code") @db.VarChar(30)
+  /// 门店编码（关联 CustomerStore）
+  storeCode           String    @map("store_code") @db.VarChar(30)
+  /// 下单日期
+  orderDate           DateTime  @map("order_date") @db.Date
+  /// 交货日期
+  deliveryDate        DateTime  @map("delivery_date") @db.Date
+  /// 负责销售员
+  salesPerson         String?   @map("sales_person") @db.VarChar(50)
+  /// 客户标签快照（从客户档案带出）
+  customerTags        String?   @map("customer_tags") @db.VarChar(200)
+  /// 所属部门名称/编码
+  department          String?   @db.VarChar(50)
+  /// 餐次：MORNING(早) / NOON(中) / EVENING(晚)（配送排程依据）
+  mealPeriod          String?   @map("meal_period") @db.VarChar(20)
+  /// 订单来源：MANUAL(手动录单) / API(接口) / APP(小程序) / IMPORT(批量导入)
+  orderSource         String    @default("MANUAL") @map("order_source") @db.VarChar(20)
+  /// 订单类型：NORMAL(普通) / REPLENISHMENT(补货)
+  orderType           String    @default("NORMAL") @map("order_type") @db.VarChar(20)
+  /// 关联原订单号（补货订单填写）
+  originalOrderId     String?   @map("original_order_id") @db.VarChar(30)
+  /// 分拣备注（分拣员专用，区别于普通备注）
+  sortingRemark       String?   @map("sorting_remark") @db.VarChar(200)
+  /// 配送线路编码
+  routeCode           String?   @map("route_code") @db.VarChar(50)
+  /// 配送司机编码/名称
+  driverCode          String?   @map("driver_code") @db.VarChar(50)
+  /// 锁定状态：UNLOCKED(未锁定) / LOCKED(已锁定)（锁定后不可修改）
+  lockStatus          String    @default("UNLOCKED") @map("lock_status") @db.VarChar(20)
+  /// 审批状态：DRAFT(草稿) / PENDING(待审核) / APPROVED(已审核) / CANCELLED(已取消)
+  status              String    @default("DRAFT") @db.VarChar(20)
+  /// 履约状态：PENDING_SUMMARY(待汇总) / PRODUCING(生产中) / PRODUCED(生产完成) / READY_TO_SHIP(可发货) / SORTED(已分拣) / SHIPPED(已出库) / LOADED(已装车) / DELIVERING(配送中) / SIGNED(已签收)
+  fulfillmentStatus   String    @default("PENDING_SUMMARY") @map("fulfillment_status") @db.VarChar(30)
+  /// 结算状态：UNRECONCILED(未对账) / RECONCILING(对账中) / CONFIRMED(已确认) / PARTIALLY_PAID(部分收款) / SETTLED(已结清)
+  settlementStatus    String    @default("UNRECONCILED") @map("settlement_status") @db.VarChar(30)
+  /// 出库状态：PENDING_OUTBOUND(待出库) / OUTBOUNDED(已出库)
+  outboundStatus      String?   @default("PENDING_OUTBOUND") @map("outbound_status") @db.VarChar(20)
+  /// 出库时间（只读）
+  outboundTime        DateTime? @map("outbound_time")
+  /// 出库成本金额（只读，销售毛利计算基础）
+  outboundCost        Decimal?  @map("outbound_cost") @db.Decimal(12, 2)
+  /// 关联出库单号（只读）
+  relatedOutboundId   String?   @map("related_outbound_id") @db.VarChar(30)
+  /// 回单状态：UNRECEIVED(未回单) / RECEIVED(已回单)
+  receiptStatus       String?   @default("UNRECEIVED") @map("receipt_status") @db.VarChar(20)
+  /// 打印状态：UNPRINTED(未打印) / PRINTED(已打印)
+  printStatus         String?   @default("UNPRINTED") @map("print_status") @db.VarChar(20)
+  /// 订单总金额（含税，按明细汇总）
+  totalAmount         Decimal   @default(0.00) @map("total_amount") @db.Decimal(12, 2)
+  /// 备注说明
+  remark              String?   @db.VarChar(200)
+
+  // ===== 框架强制基础审计与数据范围基线字段 (ADR-009) =====
+  /// 创建人用户ID (数据范围 SELF 核心依据)
+  createdById         String    @map("created_by_id") @db.VarChar(50)
+  /// 归属部门ID (数据范围 DEPT / DEPT_TREE 核心依据)
+  deptId              String?   @map("dept_id") @db.VarChar(50)
+  /// 最后更新人用户ID
+  updatedById         String?   @map("updated_by_id") @db.VarChar(50)
+  /// 软删除标记 (默认 false)
+  isDeleted           Boolean   @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt           DateTime? @map("deleted_at")
+  /// 软删除操作人用户ID
+  deletedById         String?   @map("deleted_by_id") @db.VarChar(50)
+  /// 创建时间
+  createdAt           DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  /// 订单明细条目
+  items               SalesOrderItem[]
+  /// 订单费用明细
+  fees                SalesOrderFee[]
+
+  @@index([customerCode])
+  @@index([storeCode])
+  @@index([orderDate])
+  @@index([deliveryDate])
+  @@index([status])
+  @@index([fulfillmentStatus])
+  @@index([settlementStatus])
+  @@index([deptId])
+  @@index([createdById])
+  @@index([isDeleted])
+  @@map("sales_order")
+}
+
+model SalesOrderFee {
+  /// 费用主键（自动生成，格式 SOF-YYYYMMDD-XXXX-XX）
+  feeId                String    @id @map("fee_id") @db.VarChar(50)
+  /// 关联订单号
+  orderId              String    @map("order_id") @db.VarChar(30)
+  /// 费用类型：EXPRESS(快递费) / MATERIAL(材料费) / PACKAGING(包装费) / FREIGHT(运费) / OTHER(其他)
+  feeType              String    @map("fee_type") @db.VarChar(20)
+  /// 费用金额（正数为应收，负数为折让）
+  feeAmount            Decimal   @map("fee_amount") @db.Decimal(10, 2)
+  /// 费用说明/备注
+  remark               String?   @db.VarChar(200)
+  /// 复核状态：DRAFT(草稿) / PENDING(待复核) / APPROVED(已复核) / REJECTED(已驳回)
+  auditStatus          String    @default("DRAFT") @map("audit_status") @db.VarChar(20)
+  /// 录入人用户ID
+  createdById          String    @map("created_by_id") @db.VarChar(50)
+  /// 复核人用户ID
+  auditedById          String?   @map("audited_by_id") @db.VarChar(50)
+  /// 复核时间
+  auditedAt            DateTime? @map("audited_at")
+  /// 创建时间
+  createdAt            DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  /// 关联销售订单主表
+  order                SalesOrder @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([auditStatus])
+  @@map("sales_order_fee")
+}
+
+model SalesOrderItem {
+  /// 订单明细主键（自动生成，格式 SOD-YYYYMMDD-XXXX-XX）
+  orderDetailId        String    @id @map("order_detail_id") @db.VarChar(50)
+  /// 所属销售订单号
+  orderId              String    @map("order_id") @db.VarChar(30)
+  /// 商品档案唯一编码
+  itemCode             String    @map("item_code") @db.VarChar(50)
+  /// 商品名称
+  itemName             String    @map("item_name") @db.VarChar(100)
+  /// 销售单位（如：kg、箱、袋）
+  salesUnit            String    @map("sales_unit") @db.VarChar(20)
+  /// 订单订购数量
+  orderQty             Decimal   @map("order_qty") @db.Decimal(12, 3)
+  /// 已入库数量（成品入库后回写）
+  inboundQty           Decimal   @default(0.000) @map("inbound_qty") @db.Decimal(12, 3)
+  /// 签收数量（门店签收后回写，用于对账结算）
+  signedQty            Decimal?  @map("signed_qty") @db.Decimal(12, 3)
+  /// 明细履约状态：PENDING_PRODUCE(待生产) / PRODUCING(生产中) / PARTIAL_INBOUND(部分入库) / READY_TO_SHIP(可发货)
+  fulfillmentStatus    String    @default("PENDING_PRODUCE") @map("fulfillment_status") @db.VarChar(30)
+  /// 不含税单价（元）
+  unitPriceExclTax     Decimal   @map("unit_price_excl_tax") @db.Decimal(10, 2)
+  /// 含税销售单价（元）
+  unitPriceInclTax     Decimal   @map("unit_price_incl_tax") @db.Decimal(10, 2)
+  /// 适用增值税税率(%)，如 9.00
+  taxRate              Decimal?  @default(0.00) @map("tax_rate") @db.Decimal(5, 2)
+  /// 明细含税小计金额 (orderQty * unitPriceInclTax)
+  subtotalAmount       Decimal   @map("subtotal_amount") @db.Decimal(12, 2)
+  /// 备注说明
+  remark               String?   @db.VarChar(200)
+
+  /// 关联销售订单主表
+  order                SalesOrder @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([itemCode])
+  @@map("sales_order_item")
+}

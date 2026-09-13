@@ -4,6 +4,8 @@ import { Textarea } from "../../shadcn/textarea";
 import { Checkbox } from "../../shadcn/checkbox";
 import { Switch } from "../../shadcn/switch";
 import { DatePicker } from "../../shadcn/date-picker";
+import { RadioGroup, RadioGroupItem } from "../../shadcn/radio-group";
+import { Label } from "../../shadcn/label";
 import {
   Select,
   SelectContent,
@@ -13,6 +15,7 @@ import {
   SelectValue,
 } from "../../shadcn/select";
 import { FormFieldGrid } from "./FormLayout";
+import { Combobox, type ComboboxOption } from "./Combobox";
 import { cn } from "../../../lib/utils";
 
 export interface FormFieldOption {
@@ -39,6 +42,14 @@ export type FormFieldSchema =
       readonly type: "select";
       readonly options: readonly FormFieldOption[];
       readonly placeholder?: string;
+    })
+  | (BaseField & {
+      readonly type: "combobox";
+      readonly options: readonly ComboboxOption[];
+      readonly placeholder?: string;
+      readonly searchPlaceholder?: string;
+      readonly emptyText?: string;
+      readonly clearable?: boolean;
     })
   | (BaseField & {
       readonly type: "textarea";
@@ -214,6 +225,22 @@ function renderFieldControl(
     );
   }
 
+  if (field.type === "combobox") {
+    return (
+      <Combobox
+        value={value ? String(value) : null}
+        onChange={setValue}
+        options={field.options}
+        placeholder={field.placeholder}
+        searchPlaceholder={field.searchPlaceholder}
+        emptyText={field.emptyText}
+        clearable={field.clearable}
+        disabled={field.disabled}
+        className={cn(isInvalid && "border-destructive ring-destructive/20")}
+      />
+    );
+  }
+
   if (field.type === "textarea") {
     return (
       <Textarea
@@ -237,6 +264,35 @@ function renderFieldControl(
         disabled={field.disabled}
         aria-invalid={isInvalid}
       />
+    );
+  }
+
+  if (field.type === "radio") {
+    return (
+      <RadioGroup
+        value={value === null || value === undefined ? "" : String(value)}
+        onValueChange={setValue}
+        disabled={field.disabled}
+        aria-invalid={isInvalid}
+        className={cn(
+          field.direction === "row"
+            ? "flex flex-wrap items-center gap-4 pt-1"
+            : "grid gap-2.5 pt-1",
+        )}
+      >
+        {field.options.map((opt) => (
+          <Label
+            key={opt.value}
+            className={cn(
+              "flex items-center gap-2 text-xs font-normal text-foreground cursor-pointer",
+              field.disabled && "cursor-not-allowed opacity-50",
+            )}
+          >
+            <RadioGroupItem value={opt.value} disabled={field.disabled} />
+            <span>{opt.label}</span>
+          </Label>
+        ))}
+      </RadioGroup>
     );
   }
 

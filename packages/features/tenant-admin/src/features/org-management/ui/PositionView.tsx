@@ -10,6 +10,13 @@ import {
   Button,
   Badge,
   PageShell,
+  ConfirmDialog,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
 } from "@base/ui";
 import {
   Briefcase,
@@ -94,11 +101,9 @@ export function PositionView({ initialPositions }: PositionViewProps) {
     });
   };
 
-  const handleDelete = (pos: PositionItem) => {
-    if (!confirm(`确定要删除岗位 [${pos.name}] 吗？`)) {
-      return;
-    }
+  const [deleteTarget, setDeleteTarget] = useState<PositionItem | null>(null);
 
+  const confirmDelete = (pos: PositionItem) => {
     startTransition(async () => {
       const res = await deletePositionAction(pos.id);
       if (res.success) {
@@ -110,6 +115,7 @@ export function PositionView({ initialPositions }: PositionViewProps) {
           message: res.error || "删除岗位失败",
         });
       }
+      setDeleteTarget(null);
     });
   };
 
@@ -149,65 +155,62 @@ export function PositionView({ initialPositions }: PositionViewProps) {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold text-slate-500 uppercase dark:border-slate-800 dark:bg-slate-800/40">
-                    <th className="px-5 py-3">岗位名称</th>
-                    <th className="px-4 py-3">岗位编码</th>
-                    <th className="px-4 py-3">职责说明</th>
-                    <th className="px-4 py-3 text-center">排序号</th>
-                    <th className="px-4 py-3 text-center">在职员工</th>
-                    <th className="px-4 py-3 text-center">状态</th>
-                    <th className="px-5 py-3 text-right">操作</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <Table className="w-full text-xs">
+                <TableHeader className="bg-muted/50 font-medium">
+                  <TableRow className="border-b border-border">
+                    <TableHead className="px-5 py-3 text-xs font-semibold text-muted-foreground">岗位名称</TableHead>
+                    <TableHead className="px-4 py-3 text-xs font-semibold text-muted-foreground">岗位编码</TableHead>
+                    <TableHead className="px-4 py-3 text-xs font-semibold text-muted-foreground">职责说明</TableHead>
+                    <TableHead className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">排序号</TableHead>
+                    <TableHead className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">在职员工</TableHead>
+                    <TableHead className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">状态</TableHead>
+                    <TableHead className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground">操作</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-border/60">
                   {positions.map((pos) => {
                     const isActive = pos.status === "ACTIVE";
                     return (
-                      <tr
+                      <TableRow
                         key={pos.id}
-                        className="transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/40"
+                        className="hover:bg-muted/40 transition-colors"
                       >
-                        <td className="px-5 py-3.5 font-bold text-slate-900 dark:text-slate-100">
+                        <TableCell className="px-5 py-3.5 font-bold text-foreground">
                           {pos.name}
-                        </td>
-                        <td className="px-4 py-3.5 font-mono text-slate-600 dark:text-slate-300">
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5 font-mono text-muted-foreground">
                           <Badge
                             variant="outline"
                             className="text-[11px] font-mono"
                           >
                             {pos.code}
                           </Badge>
-                        </td>
-                        <td className="px-4 py-3.5 text-slate-500 dark:text-slate-400 max-w-xs truncate">
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5 text-muted-foreground max-w-xs truncate">
                           {pos.description || "—"}
-                        </td>
-                        <td className="px-4 py-3.5 text-center font-mono text-slate-600">
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5 text-center font-mono text-muted-foreground">
                           {pos.sort}
-                        </td>
-                        <td className="px-4 py-3.5 text-center">
-                          <div className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 font-semibold">
-                            <Users className="size-3.5 text-slate-400" />
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5 text-center">
+                          <div className="inline-flex items-center gap-1 text-foreground font-semibold">
+                            <Users className="size-3.5 text-muted-foreground" />
                             <span>{pos.employeeCount}</span>
                           </div>
-                        </td>
-                        <td className="px-4 py-3.5 text-center">
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold border ${
-                              isActive
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800"
-                                : "bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:border-slate-700"
-                            }`}
+                        </TableCell>
+                        <TableCell className="px-4 py-3.5 text-center">
+                          <Badge
+                            variant={isActive ? "success" : "secondary"}
+                            size="sm"
                           >
                             {isActive ? "已启用" : "已停用"}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3.5 text-right space-x-1">
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="px-5 py-3.5 text-right space-x-1">
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-7 text-xs text-blue-600 hover:bg-blue-50"
+                            className="h-7 text-xs text-primary"
                             onClick={() => openEditModal(pos)}
                           >
                             <Edit2 className="mr-1 size-3.5" />
@@ -216,11 +219,7 @@ export function PositionView({ initialPositions }: PositionViewProps) {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className={`h-7 text-xs ${
-                              isActive
-                                ? "text-amber-600 hover:bg-amber-50"
-                                : "text-emerald-600 hover:bg-emerald-50"
-                            }`}
+                            className="h-7 text-xs"
                             onClick={() => handleToggleStatus(pos)}
                           >
                             <Power className="mr-1 size-3.5" />
@@ -229,18 +228,18 @@ export function PositionView({ initialPositions }: PositionViewProps) {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-7 text-xs text-rose-600 hover:bg-rose-50"
-                            onClick={() => handleDelete(pos)}
+                            className="h-7 text-xs text-destructive hover:text-destructive"
+                            onClick={() => setDeleteTarget(pos)}
                           >
                             <Trash2 className="mr-1 size-3.5" />
                             删除
                           </Button>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
@@ -257,6 +256,23 @@ export function PositionView({ initialPositions }: PositionViewProps) {
           }}
         />
       )}
+
+      {/* 删除二次确认弹窗 */}
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        title={`确定要删除岗位 [${deleteTarget?.name || ""}] 吗？`}
+        description="删除后该岗位记录将被移除。如果该岗位下存在在职员工，系统将自动拦截并提示错误。"
+        confirmText="确认删除"
+        variant="destructive"
+        onConfirm={async () => {
+          if (deleteTarget) {
+            confirmDelete(deleteTarget);
+          }
+        }}
+      />
     </PageShell>
   );
 }

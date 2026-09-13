@@ -5,7 +5,7 @@ import { FieldPolicy, type FieldAccessMode } from "@base/shared";
 import { useOptionalAbility } from "@base/authorization";
 import { Field, FieldLabel } from "../../shadcn/field";
 import { Badge } from "../../shadcn/badge";
-import { DataTableContext } from "../data-table/DataTableContext";
+import { DataTableContext } from "../table/DataTableContext";
 
 export type { FieldAccessMode } from "@base/shared";
 

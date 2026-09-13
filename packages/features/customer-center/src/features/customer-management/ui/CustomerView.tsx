@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Store } from "lucide-react";
 import {
   DataTable,
+  DataTableInputGroup,
   Badge,
   DataTableRowActions,
   Select,
@@ -75,7 +76,7 @@ export function CustomerView({
   const [keyword, setKeyword] = useState(initialKeyword);
   const [selectedCat, setSelectedCat] = useState(initialCategory);
   const [selectedStatus, setSelectedStatus] = useState(initialStatus);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
   const [modalState, setModalState] = useState<{
     open: boolean;
     mode: "create" | "edit" | "view";
@@ -295,7 +296,7 @@ export function CustomerView({
 
   return (
     <>
-      <DataTable.Workspace
+      <DataTable
         data={customers}
         columns={columns}
         rowKey={(c: CustomerListItem) => c.id || c.customerCode}
@@ -330,7 +331,7 @@ export function CustomerView({
           navigateList({ page: 1, status: v });
         }}
         filterExtra={
-          <DataTable.InputGroup label="客户分类" className="w-48">
+          <DataTableInputGroup label="客户分类" className="w-48">
             <Select
               value={selectedCat || "ALL"}
               onValueChange={(next) => {
@@ -354,7 +355,7 @@ export function CustomerView({
                 </SelectGroup>
               </SelectContent>
             </Select>
-          </DataTable.InputGroup>
+          </DataTableInputGroup>
         }
         onSearch={() => {
           setPage(1);

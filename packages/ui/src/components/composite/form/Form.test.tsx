@@ -2,57 +2,95 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToString } from "react-dom/server";
-import {
-    FormDialog,
-    FormDrawer,
-    FormSection,
-    FormBanner,
-    FormFieldGrid,
-    FormFields,
-} from "./index";
+import { FormDrawer, FormSection, FormFieldGrid, FormFields } from "./index";
 
-test("FormDialog: 正常渲染标题、徽标与子内容", () => {
-    const html = renderToString(
-        <FormDialog
-            open
-            inline
-            onOpenChange={() => {}}
-            title="新建测试记录"
-            description="用于测试的表单描述"
-            badge="TEST"
-            headerExtra={
-                <FormBanner title="测试横幅" description="这是提示内容" />
-            }
-        >
-            <FormSection title="基础信息">
-                <FormFieldGrid columns={2}>
-                    <div data-testid="field-1">字段1</div>
-                    <div data-testid="field-2">字段2</div>
-                </FormFieldGrid>
-            </FormSection>
-        </FormDialog>,
-    );
+test("FormDrawer: 正常渲染抽屉结构", () => {
+  const html = renderToString(
+    <FormDrawer
+      open={true}
+      inline={true}
+      onOpenChange={() => {}}
+      title="测试侧滑抽屉"
+      description="用于测试的表单描述"
+    >
+      <FormSection title="基础信息">
+        <FormFieldGrid columns={2}>
+          <div data-testid="field-1">字段1</div>
+          <div data-testid="field-2">字段2</div>
+        </FormFieldGrid>
+      </FormSection>
+    </FormDrawer>,
+  );
 
-    assert.match(html, /新建测试记录/);
-    assert.match(html, /用于测试的表单描述/);
-    assert.match(html, /TEST/);
-    assert.match(html, /测试横幅/);
-    assert.match(html, /字段1/);
+  assert.match(html, /测试侧滑抽屉/);
+  assert.match(html, /基础信息/);
+  assert.match(html, /字段1/);
 });
 
-test("FormDrawer: 正常渲染侧滑抽屉结构", () => {
-    const html = renderToString(
-        <FormDrawer
-            open
-            onOpenChange={() => {}}
-            title="物料详情抽屉"
-            description="查看或编辑物料详细属性"
-            footer={<button>保存</button>}
-        >
-            <div>抽屉内容主体</div>
-        </FormDrawer>,
-    );
+test("FormFields: 正确根据 Schema 渲染不同类型的字段", () => {
+  const fields = [
+    {
+      name: "textInput",
+      label: "文本框",
+      type: "text" as const,
+      placeholder: "请输入文本",
+    },
+    {
+      name: "selectInput",
+      label: "下拉框",
+      type: "select" as const,
+      options: [{ value: "opt1", label: "选项1" }],
+    },
+    { name: "switchInput", label: "开关项", type: "switch" as const },
+    { name: "checkboxInput", label: "复选框", type: "checkbox" as const },
+  ];
 
-    // Radix Sheet 在 SSR 下基于 Portal，验证组件函数渲染不抛出异常
-    assert.ok(html !== undefined);
+  const html = renderToString(
+    <FormFields
+      fields={fields}
+      values={{
+        textInput: "测试文本",
+        selectInput: "opt1",
+        switchInput: true,
+        checkboxInput: false,
+      }}
+      onChange={() => {}}
+      columns={2}
+    />,
+  );
+
+  assert.match(html, /文本框/);
+  assert.match(html, /请输入文本/);
+  assert.match(html, /测试文本/);
+  assert.match(html, /下拉框/);
+  assert.match(html, /开关项/);
+  assert.match(html, /复选框/);
+});
+
+test("FormFields: 正确渲染 radio 字段并支持选项遍历", () => {
+  const fields = [
+    {
+      name: "gender",
+      label: "性别选择",
+      type: "radio" as const,
+      options: [
+        { label: "男", value: "M" },
+        { label: "女", value: "F" },
+      ],
+      direction: "row" as const,
+    },
+  ];
+
+  const html = renderToString(
+    <FormFields
+      fields={fields}
+      values={{ gender: "M" }}
+      onChange={() => {}}
+      columns={2}
+    />,
+  );
+
+  assert.match(html, /性别选择/);
+  assert.match(html, /男/);
+  assert.match(html, /女/);
 });

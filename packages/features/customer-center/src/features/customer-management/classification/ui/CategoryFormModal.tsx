@@ -1,13 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  FormDialog,
-  FormSection,
-  FormFields,
-  type FormFieldSchema,
-  toast,
-} from "@base/ui";
+import { useMemo } from "react";
+import { FormModal, type FormFieldSchema, toast, z } from "@base/ui";
 import { createCategoryAction, updateCategoryAction } from "../actions";
 import type { CustomerCategoryItem } from "../types";
 
@@ -19,6 +13,14 @@ export interface CategoryFormModalProps {
   readonly onClose: () => void;
   readonly onSuccess?: () => void;
 }
+
+const categoryFormZodSchema = z.object({
+  categoryName: z.string().min(1, "分类名称不能为空"),
+  parentCode: z.string().optional(),
+  description: z.string().optional(),
+});
+
+type CategoryFormData = z.infer<typeof categoryFormZodSchema>;
 
 /** 递归压平分类树，供选择父级时使用 */
 function flattenCategoryTree(
@@ -43,7 +45,7 @@ function flattenCategoryTree(
   return result;
 }
 
-/** 客户分类表单：支持新建（顶级/子级）与编辑修改 */
+/** 客户分类表单：标准 FormModal 驱动 */
 export function CategoryFormModal({
   mode,
   record,
@@ -54,35 +56,27 @@ export function CategoryFormModal({
 }: CategoryFormModalProps) {
   const isEdit = mode === "edit";
 
-  const [values, setValues] = useState({
-    categoryCode: record?.categoryCode || "",
-    categoryName: record?.categoryName || "",
-    parentCode: isEdit
-      ? record?.parentCode || ""
-      : (defaultParentCode ?? record?.parentCode ?? ""),
-    description: record?.description || "",
-  });
+  const flatOptions = useMemo(
+    () =>
+      flattenCategoryTree(
+        isEdit && record
+          ? categories.filter((c) => c.categoryCode !== record.categoryCode)
+          : categories,
+      ),
+    [categories, isEdit, record],
+  );
 
-  const flatOptions = useMemo(() => {
-    const flattened = flattenCategoryTree(categories);
-    return flattened.filter(
-      (c) => !isEdit || c.categoryCode !== record?.categoryCode,
-    );
-  }, [categories, isEdit, record]);
+  const initialValues: CategoryFormData = useMemo(
+    () => ({
+      categoryName: record?.categoryName || "",
+      parentCode: record?.parentCode || defaultParentCode || "",
+      description: record?.description || "",
+    }),
+    [record, defaultParentCode],
+  );
 
   const fields: FormFieldSchema[] = useMemo(
     () => [
-      ...(isEdit
-        ? ([
-            {
-              name: "categoryCode",
-              label: "分类编码 (唯一标识)",
-              type: "text" as const,
-              disabled: true,
-              hint: "分类编码由系统自动生成，创建后不可修改",
-            },
-          ] as FormFieldSchema[])
-        : []),
       {
         name: "categoryName",
         label: "分类名称",
@@ -111,7 +105,7 @@ export function CategoryFormModal({
         placeholder: "分类适用范围与说明",
       },
     ],
-    [flatOptions, isEdit],
+    [flatOptions],
   );
 
   const title = isEdit
@@ -121,19 +115,21 @@ export function CategoryFormModal({
       : "新增一级根分类";
 
   return (
-    <FormDialog
+    <FormModal<CategoryFormData>
       open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
+      onClose={onClose}
+      mode={mode}
       title={title}
       description={
         isEdit
           ? "更新分类名称、上级归属及业务说明"
           : "分类编码由系统自动生成（格式：CAT_YYYYMMDD_XXXX），无需人工维护"
       }
+      schema={categoryFormZodSchema}
+      fields={fields}
+      initialValues={initialValues}
       submitText={isEdit ? "保存修改" : "立即创建"}
-      onSubmit={async () => {
+      onSubmit={async (values) => {
         if (isEdit && record) {
           const res = await updateCategoryAction(record.categoryCode, {
             categoryName: values.categoryName,
@@ -141,10 +137,10 @@ export function CategoryFormModal({
             description: values.description || null,
           });
           if (!res.success) {
-            toast.error(res.error || "修改分类失败");
-            throw new Error(res.error || "修改分类失败");
+            toast.error(res.error || "更新分类失败");
+            throw new Error(res.error || "更新分类失败");
           }
-          toast.success("客户分类修改成功");
+          toast.success("分类已成功更新");
         } else {
           const res = await createCategoryAction({
             categoryName: values.categoryName,
@@ -155,21 +151,10 @@ export function CategoryFormModal({
             toast.error(res.error || "创建分类失败");
             throw new Error(res.error || "创建分类失败");
           }
-          toast.success("客户分类创建成功");
+          toast.success("新客户分类已创建");
         }
         onSuccess?.();
       }}
-    >
-      <FormSection title="分类信息">
-        <FormFields
-          fields={fields}
-          values={values}
-          onChange={(name, val) =>
-            setValues((prev) => ({ ...prev, [name]: val }))
-          }
-          columns={2}
-        />
-      </FormSection>
-    </FormDialog>
+    />
   );
 }

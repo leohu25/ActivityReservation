@@ -295,7 +295,7 @@ export function QuoteView({
 
   return (
     <>
-      <DataTable.Workspace
+      <DataTable
         data={quotes}
         columns={columns}
         rowKey={(q: QuoteListItem) => q.quoteId}

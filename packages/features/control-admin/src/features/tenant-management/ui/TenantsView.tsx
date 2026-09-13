@@ -15,7 +15,7 @@ import {
   toggleTenantStatusAction,
   getTenantDetailAction,
 } from "../actions";
-import { toast, FormDialog } from "@base/ui";
+import { toast, ConfirmDialog } from "@base/ui";
 
 export interface TenantsViewProps {
   /** 租户列表及其物理库生命周期状态 */
@@ -170,29 +170,23 @@ export function TenantsView({ tenants }: TenantsViewProps): React.JSX.Element {
         onSubmit={handleSubmitProvision}
       />
 
-      {/* 状态启停模态确认弹窗 (FormDialog 替代原生 window.confirm) */}
-      {confirmToggleTarget && (
-        <FormDialog
-          open
-          onOpenChange={(open) => {
-            if (!open) setConfirmToggleTarget(null);
-          }}
-          title={`确认${confirmToggleTarget.actionDesc}租户？`}
-          description={
-            confirmToggleTarget.actionDesc === "挂起管控"
-              ? "挂起后该租户的物理数据库连接池将立即被阻断，租户端用户将被拦截写入，是否确认？"
-              : "恢复正常后将重新允许该租户的业务请求接入与路由，是否确认？"
-          }
-          submitText={`确认${confirmToggleTarget.actionDesc}`}
-          onSubmit={async () => {
-            handleConfirmToggle();
-          }}
-        >
-          <div className="py-2 text-xs text-muted-foreground">
-            控制平面超级管理员操作，状态变更将即刻对租户物理库连接路由生效。
-          </div>
-        </FormDialog>
-      )}
+      {/* 状态启停模态确认弹窗 (ConfirmDialog 替代原生 window.confirm) */}
+      <ConfirmDialog
+        open={Boolean(confirmToggleTarget)}
+        onOpenChange={(open) => {
+          if (!open) setConfirmToggleTarget(null);
+        }}
+        title={`确认${confirmToggleTarget?.actionDesc || ""}租户？`}
+        description={
+          confirmToggleTarget?.actionDesc === "挂起管控"
+            ? "挂起后该租户的物理数据库连接池将立即被阻断，租户端用户将被拦截写入，是否确认？"
+            : "恢复正常后将重新允许该租户的业务请求接入与路由，是否确认？"
+        }
+        confirmText={`确认${confirmToggleTarget?.actionDesc || ""}`}
+        onConfirm={async () => {
+          handleConfirmToggle();
+        }}
+      />
     </div>
   );
 }

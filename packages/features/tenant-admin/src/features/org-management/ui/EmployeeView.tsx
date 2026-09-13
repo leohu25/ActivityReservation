@@ -12,6 +12,13 @@ import {
   Badge,
   DirectoryTreeFilter,
   type DirectoryTreeNode,
+  ConfirmDialog,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
 } from "@base/ui";
 import {
   Users,
@@ -291,21 +298,11 @@ export function EmployeeView({
     });
   };
 
-  const handleToggleSuspend = (emp: EmployeeItem) => {
+  const [suspendTarget, setSuspendTarget] = useState<EmployeeItem | null>(null);
+
+  const confirmToggleSuspend = (emp: EmployeeItem) => {
     const isSuspended = emp.status === "SUSPENDED";
     const actionName = isSuspended ? "恢复" : "停用";
-
-    if (
-      !confirm(
-        `确定要${actionName}员工 [${emp.name}] 的业务访问权限吗？${
-          isSuspended
-            ? "恢复后将重新允许访问当前企业。"
-            : "停用后将立即阻断其访问当前企业，但不会封禁全局用户。"
-        }`,
-      )
-    ) {
-      return;
-    }
 
     startTransition(async () => {
       const res = isSuspended
@@ -324,6 +321,7 @@ export function EmployeeView({
           message: res.error || `${actionName}操作失败`,
         });
       }
+      setSuspendTarget(null);
     });
   };
 
@@ -559,43 +557,43 @@ export function EmployeeView({
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold text-slate-500 uppercase dark:border-slate-800 dark:bg-slate-800/40">
-                        <th className="px-5 py-3">员工姓名与账号</th>
-                        <th className="px-4 py-3">工号</th>
-                        <th className="px-4 py-3">所属部门</th>
-                        <th className="px-4 py-3">承担岗位</th>
-                        <th className="px-4 py-3">系统角色</th>
-                        <th className="px-4 py-3 text-center">状态</th>
-                        <th className="px-5 py-3 text-right">人事与权限操作</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  <Table className="w-full text-xs">
+                    <TableHeader className="bg-muted/50 font-medium">
+                      <TableRow className="border-b border-border">
+                        <TableHead className="px-5 py-3 text-xs font-semibold text-muted-foreground">员工姓名与账号</TableHead>
+                        <TableHead className="px-4 py-3 text-xs font-semibold text-muted-foreground">工号</TableHead>
+                        <TableHead className="px-4 py-3 text-xs font-semibold text-muted-foreground">所属部门</TableHead>
+                        <TableHead className="px-4 py-3 text-xs font-semibold text-muted-foreground">承担岗位</TableHead>
+                        <TableHead className="px-4 py-3 text-xs font-semibold text-muted-foreground">系统角色</TableHead>
+                        <TableHead className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">状态</TableHead>
+                        <TableHead className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground">人事与权限操作</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-border/60">
                       {employees.map((emp) => {
                         const isActive = emp.status === "ACTIVE";
                         const isSuspended = emp.status === "SUSPENDED";
                         return (
-                          <tr
+                          <TableRow
                             key={emp.id}
-                            className="transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/40"
+                            className="hover:bg-muted/40 transition-colors"
                           >
-                            <td className="px-5 py-3.5">
+                            <TableCell className="px-5 py-3.5">
                               <div className="flex items-center gap-2.5">
-                                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                                   {emp.name.slice(0, 1)}
                                 </div>
                                 <div>
-                                  <div className="font-bold text-slate-900 dark:text-slate-100">
+                                  <div className="font-bold text-foreground">
                                     {emp.name}
                                   </div>
-                                  <div className="text-[11px] text-slate-400 font-mono">
+                                  <div className="text-[11px] text-muted-foreground font-mono">
                                     {emp.email}
                                   </div>
                                 </div>
                               </div>
-                            </td>
-                            <td className="px-4 py-3.5 font-mono text-slate-600 dark:text-slate-300">
+                            </TableCell>
+                            <TableCell className="px-4 py-3.5 font-mono text-muted-foreground">
                               {emp.employeeNo ? (
                                 <Badge
                                   variant="outline"
@@ -606,51 +604,52 @@ export function EmployeeView({
                               ) : (
                                 "—"
                               )}
-                            </td>
-                            <td className="px-4 py-3.5 text-slate-700 dark:text-slate-300">
+                            </TableCell>
+                            <TableCell className="px-4 py-3.5 text-foreground">
                               {emp.departmentName || (
-                                <span className="text-slate-400">未分配</span>
+                                <span className="text-muted-foreground">未分配</span>
                               )}
-                            </td>
-                            <td className="px-4 py-3.5 text-slate-700 dark:text-slate-300">
+                            </TableCell>
+                            <TableCell className="px-4 py-3.5 text-foreground">
                               {emp.positionName || (
-                                <span className="text-slate-400">未指定</span>
+                                <span className="text-muted-foreground">未指定</span>
                               )}
-                            </td>
-                            <td className="px-4 py-3.5">
+                            </TableCell>
+                            <TableCell className="px-4 py-3.5">
                               <div className="flex flex-wrap gap-1">
                                 {emp.roles.map((r) => (
                                   <span
                                     key={r}
-                                    className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 border border-slate-200"
+                                    className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground border border-border"
                                   >
                                     {r}
                                   </span>
                                 ))}
                               </div>
-                            </td>
-                            <td className="px-4 py-3.5 text-center">
-                              <span
-                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold border ${
+                            </TableCell>
+                            <TableCell className="px-4 py-3.5 text-center">
+                              <Badge
+                                variant={
                                   isActive
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800"
+                                    ? "success"
                                     : isSuspended
-                                      ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800"
-                                      : "bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:border-slate-700"
-                                }`}
+                                      ? "warning"
+                                      : "secondary"
+                                }
+                                size="sm"
                               >
                                 {isActive
                                   ? "在职"
                                   : isSuspended
                                     ? "已停用"
                                     : "已离职"}
-                              </span>
-                            </td>
-                            <td className="px-5 py-3.5 text-right space-x-1 whitespace-nowrap">
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="px-5 py-3.5 text-right space-x-1 whitespace-nowrap">
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-7 text-xs text-blue-600 hover:bg-blue-50"
+                                className="h-7 text-xs text-primary hover:bg-muted"
                                 onClick={() => {
                                   setTransferDeptEmp(emp);
                                   setTargetDeptId(emp.departmentId || "");
@@ -662,7 +661,7 @@ export function EmployeeView({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-7 text-xs text-indigo-600 hover:bg-indigo-50"
+                                className="h-7 text-xs text-indigo-600 hover:bg-muted"
                                 onClick={() => {
                                   setTransferPosEmp(emp);
                                   setTargetPosId(emp.positionId || "");
@@ -674,7 +673,7 @@ export function EmployeeView({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-7 text-xs text-purple-600 hover:bg-purple-50"
+                                className="h-7 text-xs text-purple-600 hover:bg-muted"
                                 onClick={() => {
                                   setTransferRolesEmp(emp);
                                   setSelectedRoleCodes([...emp.roles]);
@@ -688,10 +687,10 @@ export function EmployeeView({
                                 variant="ghost"
                                 className={`h-7 text-xs ${
                                   isActive
-                                    ? "text-rose-600 hover:bg-rose-50"
-                                    : "text-emerald-600 hover:bg-emerald-50"
+                                    ? "text-destructive hover:text-destructive hover:bg-muted"
+                                    : "text-emerald-600 hover:bg-muted"
                                 }`}
-                                onClick={() => handleToggleSuspend(emp)}
+                                onClick={() => setSuspendTarget(emp)}
                               >
                                 {isActive ? (
                                   <>
@@ -705,12 +704,12 @@ export function EmployeeView({
                                   </>
                                 )}
                               </Button>
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         );
                       })}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </CardContent>
@@ -1141,6 +1140,27 @@ export function EmployeeView({
           </div>
         </div>
       )}
+
+      {/* 停用/启用员工确认弹窗 */}
+      <ConfirmDialog
+        open={Boolean(suspendTarget)}
+        onOpenChange={(open) => {
+          if (!open) setSuspendTarget(null);
+        }}
+        title={`确定要${suspendTarget?.status === "SUSPENDED" ? "恢复" : "停用"}员工 [${suspendTarget?.name || ""}] 吗？`}
+        description={
+          suspendTarget?.status === "SUSPENDED"
+            ? "恢复后将重新允许访问当前企业。"
+            : "停用后将立即阻断其访问当前企业，但不会封禁全局用户。"
+        }
+        confirmText={`确认${suspendTarget?.status === "SUSPENDED" ? "恢复" : "停用"}`}
+        variant={suspendTarget?.status === "SUSPENDED" ? "default" : "destructive"}
+        onConfirm={async () => {
+          if (suspendTarget) {
+            confirmToggleSuspend(suspendTarget);
+          }
+        }}
+      />
     </div>
   );
 }

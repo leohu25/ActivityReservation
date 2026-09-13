@@ -2,13 +2,10 @@
 
 import { useMemo, useState } from "react";
 import {
-  FormDialog,
-  FormSection,
+  FormModal,
   FormBanner,
-  FormFields,
   Input,
   toast,
-  EditableDetailTable,
   type FormFieldSchema,
   type DetailTableColumn,
 } from "@base/ui";
@@ -50,7 +47,7 @@ export function QuoteFormModal({
 }: QuoteFormModalProps) {
   const isEdit = mode === "edit";
 
-  const [values, setValues] = useState<{
+  const [values] = useState<{
     scopeType: ScopeType;
     customerCode: string;
     storeCode: string;
@@ -76,7 +73,7 @@ export function QuoteFormModal({
       : "",
   });
 
-  const [items, setItems] = useState<CreateQuoteItemInput[]>(() => {
+  const [items] = useState<CreateQuoteItemInput[]>(() => {
     if (record?.items && record.items.length > 0) {
       return record.items.map((it) => ({
         itemCode: it.itemCode,
@@ -349,86 +346,75 @@ export function QuoteFormModal({
     [],
   );
 
-  const handleSubmit = async () => {
-    const v = values;
-    const payload = {
-      customerCode:
-        v.scopeType === "CUSTOMER" || v.scopeType === "STORE"
-          ? v.customerCode
-          : null,
-      storeCode: v.scopeType === "STORE" ? v.storeCode : null,
-      regionCode: v.scopeType === "REGION" ? v.regionCode : null,
-      effectiveDate: v.effectiveDate,
-      expiryDate: v.expiryDate || null,
-      displayName: v.displayName || null,
-      items,
-    };
-
-    if (isEdit && record) {
-      const res = await updateQuoteAction(record.quoteId, payload);
-      if (!res.success) {
-        toast.error(res.error || "修改报价单失败");
-        throw new Error(res.error || "修改报价单失败");
-      }
-      toast.success("报价单修改成功");
-    } else {
-      const res = await createQuoteAction({
-        ...payload,
-        quoteDate: new Date().toISOString().split("T")[0],
-        createdBy: "系统管理员",
-      });
-      if (!res.success) {
-        toast.error(res.error || "创建报价单失败");
-        throw new Error(res.error || "创建报价单失败");
-      }
-      toast.success("报价单创建成功（草稿）");
-    }
-    onSuccess?.();
-  };
-
   return (
-    <FormDialog
+    <FormModal
       open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
+      onClose={onClose}
+      mode={isEdit ? "edit" : "create"}
       badge="QU"
       title={isEdit ? `编辑草稿报价单 [${record?.quoteId}]` : "拟定新报价单"}
       description="报价优先级：门店专价 > 客户通用 > 区域保底"
       submitText={isEdit ? "保存修改" : "保存为草稿"}
       className="max-w-5xl sm:max-w-5xl"
-      headerExtra={
-        <FormBanner
-          title="阶梯价报价单"
-          description="适用范围三选一；明细行含税单价将按税率自动联动推导。"
-        />
-      }
-      onSubmit={handleSubmit}
-    >
-      <FormSection title="适用范围与有效期">
-        <FormFields
-          fields={headerFields}
-          values={values}
-          onChange={(name, val) =>
-            setValues((prev) => ({ ...prev, [name]: val }))
-          }
-          columns={2}
-        />
-      </FormSection>
+      banner={{
+        title: "阶梯价报价单",
+        description: "适用范围三选一；明细行含税单价将按税率自动联动推导。",
+      }}
+      sections={[
+        {
+          title: "适用范围与有效期",
+          fields: headerFields,
+          columns: 2,
+        },
+      ]}
+      initialValues={values}
+      detailConfig={{
+        title: "报价明细条目",
+        description: "含税单价 = 不含税单价 × (1 + 税率/100)，自动计算",
+        columns: itemColumns,
+        onAddRow: () => emptyItem(items.length + 1),
+        addText: "添加商品",
+        minRows: 1,
+      }}
+      initialItems={items}
+      onSubmit={async (formValues: any, { items: detailItems }: any) => {
+        const payload = {
+          customerCode:
+            formValues.scopeType === "CUSTOMER" ||
+            formValues.scopeType === "STORE"
+              ? formValues.customerCode
+              : null,
+          storeCode:
+            formValues.scopeType === "STORE" ? formValues.storeCode : null,
+          regionCode:
+            formValues.scopeType === "REGION" ? formValues.regionCode : null,
+          effectiveDate: formValues.effectiveDate,
+          expiryDate: formValues.expiryDate || null,
+          displayName: formValues.displayName || null,
+          items: detailItems,
+        };
 
-      <FormSection
-        title={`报价明细条目 (${items.length})`}
-        description="含税单价 = 不含税单价 × (1 + 税率/100)，自动计算"
-      >
-        <EditableDetailTable<CreateQuoteItemInput>
-          columns={itemColumns}
-          data={items}
-          onChange={setItems}
-          onAddRow={() => emptyItem(items.length + 1)}
-          addText="添加商品"
-          minRows={1}
-        />
-      </FormSection>
-    </FormDialog>
+        if (isEdit && record) {
+          const res = await updateQuoteAction(record.quoteId, payload);
+          if (!res.success) {
+            toast.error(res.error || "修改报价单失败");
+            throw new Error(res.error || "修改报价单失败");
+          }
+          toast.success("报价单修改成功");
+        } else {
+          const res = await createQuoteAction({
+            ...payload,
+            quoteDate: new Date().toISOString().split("T")[0],
+            createdBy: "系统管理员",
+          });
+          if (!res.success) {
+            toast.error(res.error || "创建报价单失败");
+            throw new Error(res.error || "创建报价单失败");
+          }
+          toast.success("报价单创建成功（草稿）");
+        }
+        onSuccess?.();
+      }}
+    />
   );
 }

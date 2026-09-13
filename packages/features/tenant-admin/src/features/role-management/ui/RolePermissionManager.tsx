@@ -22,12 +22,17 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
   Button,
   Badge,
-  Input,
   useSubjectCan,
+  ConfirmDialog,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
 } from "@base/ui";
 import {
   DataScope,
@@ -362,12 +367,9 @@ export function RolePermissionManager({
   };
 
   // 9. 删除自定义角色
-  const handleDeleteRole = (roleToDelete: string) => {
-    if (
-      !window.confirm(`确认删除业务角色 [${roleToDelete}] 吗？此操作无法撤销。`)
-    ) {
-      return;
-    }
+  const [deleteRoleTarget, setDeleteRoleTarget] = useState<string | null>(null);
+
+  const confirmDeleteRole = (roleToDelete: string) => {
     setNotification(null);
     startTransition(async () => {
       const res = await deleteRoleAction(roleToDelete);
@@ -384,6 +386,7 @@ export function RolePermissionManager({
           message: res.error || "删除失败",
         });
       }
+      setDeleteRoleTarget(null);
     });
   };
 
@@ -510,7 +513,7 @@ export function RolePermissionManager({
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeleteRole(r.role);
+                        setDeleteRoleTarget(r.role);
                       }}
                       className="opacity-0 group-hover:opacity-100 size-6 p-0 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 shrink-0"
                     >
@@ -586,22 +589,22 @@ export function RolePermissionManager({
 
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200/80 bg-slate-100/60 dark:border-slate-800 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 font-bold">
-                    <th className="py-2.5 px-3 w-[280px]">功能模块 / 页面</th>
-                    <th className="py-2.5 px-3 text-left">
+              <Table className="w-full text-xs">
+                <TableHeader className="bg-muted/50 font-medium">
+                  <TableRow className="border-b border-border">
+                    <TableHead className="py-2.5 px-3 w-[280px] text-xs font-semibold text-muted-foreground">功能模块 / 页面</TableHead>
+                    <TableHead className="py-2.5 px-3 text-left text-xs font-semibold text-muted-foreground">
                       功能操作权限 (Actions)
-                    </th>
-                    <th className="py-2.5 px-3 text-center w-[140px]">
+                    </TableHead>
+                    <TableHead className="py-2.5 px-3 text-center w-[140px] text-xs font-semibold text-muted-foreground">
                       数据过滤范围
-                    </th>
-                    <th className="py-2.5 px-2 text-center w-[90px]">
+                    </TableHead>
+                    <TableHead className="py-2.5 px-2 text-center w-[90px] text-xs font-semibold text-muted-foreground">
                       字段策略
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-border/60">
                   {permissionTree.map((mod) => {
                     const isExpanded = expandedModules[mod.moduleKey] ?? true;
                     // 只要模块下有任意一个页面拥有 read 权限，侧边栏自动点亮
@@ -839,24 +842,24 @@ export function RolePermissionManager({
                                           </span>
                                         </div>
 
-                                        <table className="w-full text-xs border-collapse">
-                                          <thead>
-                                            <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 text-[11px]">
-                                              <th className="py-1.5 text-left font-medium">
+                                        <Table className="w-full text-xs">
+                                          <TableHeader className="bg-muted/30">
+                                            <TableRow className="border-b border-border text-xs text-muted-foreground">
+                                              <TableHead className="py-1.5 text-left font-medium">
                                                 字段名称
-                                              </th>
-                                              <th className="py-1.5 text-center font-medium w-[80px]">
+                                              </TableHead>
+                                              <TableHead className="py-1.5 text-center font-medium w-[80px]">
                                                 查看权限
-                                              </th>
-                                              <th className="py-1.5 text-center font-medium w-[80px]">
+                                              </TableHead>
+                                              <TableHead className="py-1.5 text-center font-medium w-[80px]">
                                                 编辑权限
-                                              </th>
-                                              <th className="py-1.5 text-right font-medium w-[100px]">
+                                              </TableHead>
+                                              <TableHead className="py-1.5 text-right font-medium w-[100px]">
                                                 生效状态
-                                              </th>
-                                            </tr>
-                                          </thead>
-                                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                              </TableHead>
+                                            </TableRow>
+                                          </TableHeader>
+                                          <TableBody className="divide-y divide-border/60">
                                             {page.configurableFields.map(
                                               (f) => {
                                                 const mode = getFieldAccess(
@@ -870,12 +873,12 @@ export function RolePermissionManager({
                                                   mode === FieldPolicy.EDITABLE;
 
                                                 return (
-                                                  <tr key={f.field}>
-                                                    <td className="py-1.5">
-                                                      <span className="font-medium text-slate-700 dark:text-slate-300">
+                                                  <TableRow key={f.field}>
+                                                    <TableCell className="py-1.5">
+                                                      <span className="font-medium text-foreground">
                                                         {f.label}
                                                       </span>
-                                                      <span className="font-mono text-[10px] text-slate-400 ml-1.5">
+                                                      <span className="font-mono text-[10px] text-muted-foreground ml-1.5">
                                                         ({f.field})
                                                       </span>
                                                       {f.sensitive && (
@@ -887,8 +890,8 @@ export function RolePermissionManager({
                                                           敏感
                                                         </Badge>
                                                       )}
-                                                    </td>
-                                                    <td className="py-1.5 text-center">
+                                                    </TableCell>
+                                                    <TableCell className="py-1.5 text-center">
                                                       <input
                                                         type="checkbox"
                                                         checked={canRead}
@@ -901,10 +904,10 @@ export function RolePermissionManager({
                                                             "read",
                                                           )
                                                         }
-                                                        className="size-3.5 rounded text-blue-600 focus:ring-blue-500 border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                                                        className="size-3.5 rounded text-primary focus:ring-primary border-border disabled:opacity-40 disabled:cursor-not-allowed"
                                                       />
-                                                    </td>
-                                                    <td className="py-1.5 text-center">
+                                                    </TableCell>
+                                                    <TableCell className="py-1.5 text-center">
                                                       <input
                                                         type="checkbox"
                                                         checked={canWrite}
@@ -919,10 +922,10 @@ export function RolePermissionManager({
                                                             "write",
                                                           )
                                                         }
-                                                        className="size-3.5 rounded text-blue-600 focus:ring-blue-500 border-slate-300 disabled:opacity-30 disabled:cursor-not-allowed"
+                                                        className="size-3.5 rounded text-primary focus:ring-primary border-border disabled:opacity-30 disabled:cursor-not-allowed"
                                                       />
-                                                    </td>
-                                                    <td className="py-1.5 text-right font-mono text-[10px]">
+                                                    </TableCell>
+                                                    <TableCell className="py-1.5 text-right font-mono text-[10px]">
                                                       {mode ===
                                                         FieldPolicy.EDITABLE && (
                                                         <span className="text-emerald-600 font-bold">
@@ -941,13 +944,13 @@ export function RolePermissionManager({
                                                           HIDDEN
                                                         </span>
                                                       )}
-                                                    </td>
-                                                  </tr>
+                                                    </TableCell>
+                                                  </TableRow>
                                                 );
                                               },
                                             )}
-                                          </tbody>
-                                        </table>
+                                          </TableBody>
+                                        </Table>
                                       </div>
                                     </td>
                                   </tr>
@@ -958,8 +961,8 @@ export function RolePermissionManager({
                       </React.Fragment>
                     );
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
@@ -974,6 +977,23 @@ export function RolePermissionManager({
           }}
         />
       )}
+
+      {/* 删除角色二次确认弹窗 */}
+      <ConfirmDialog
+        open={Boolean(deleteRoleTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteRoleTarget(null);
+        }}
+        title={`确认删除业务角色 [${deleteRoleTarget || ""}] 吗？`}
+        description="此操作不可逆。删除后该角色关联的用户将失去对应的角色权限授权。"
+        confirmText="确认删除"
+        variant="destructive"
+        onConfirm={async () => {
+          if (deleteRoleTarget) {
+            confirmDeleteRole(deleteRoleTarget);
+          }
+        }}
+      />
     </div>
   );
 }

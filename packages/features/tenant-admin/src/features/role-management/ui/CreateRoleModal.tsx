@@ -1,13 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  FormDialog,
-  FormSection,
-  FormFields,
-  type FormFieldSchema,
-  toast,
-} from "@base/ui";
+import { useMemo } from "react";
+import { FormModal, type FormFieldSchema, toast, z } from "@base/ui";
 import { createRoleAction } from "../actions";
 
 export interface CreateRoleModalProps {
@@ -15,13 +9,24 @@ export interface CreateRoleModalProps {
   readonly onCreated?: () => void;
 }
 
-/** 新建租户业务角色：FormDialog + FormFields 驱动 */
+const createRoleZodSchema = z.object({
+  roleCode: z.string().min(2, "角色标识代码至少2个字符"),
+  roleName: z.string().optional(),
+  description: z.string().optional(),
+});
+
+type CreateRoleForm = z.infer<typeof createRoleZodSchema>;
+
+/** 新建租户业务角色：标准 FormModal 驱动 */
 export function CreateRoleModal({ onClose, onCreated }: CreateRoleModalProps) {
-  const [values, setValues] = useState({
-    roleCode: "",
-    roleName: "",
-    description: "",
-  });
+  const initialValues: CreateRoleForm = useMemo(
+    () => ({
+      roleCode: "",
+      roleName: "",
+      description: "",
+    }),
+    [],
+  );
 
   const fields: FormFieldSchema[] = useMemo(
     () => [
@@ -51,23 +56,21 @@ export function CreateRoleModal({ onClose, onCreated }: CreateRoleModalProps) {
   );
 
   return (
-    <FormDialog
+    <FormModal<CreateRoleForm>
       open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-      title="新建租户业务角色"
-      description="角色编码创建后不可修改，请遵循小写字母下划线规范"
+      onClose={onClose}
+      mode="create"
+      title="新建业务角色"
+      description="为租户配置专属的业务角色代码，后续可针对此角色授权具体菜单、按钮操作及数据访问范围"
+      schema={createRoleZodSchema}
+      fields={fields}
+      initialValues={initialValues}
       submitText="确认创建"
-      onSubmit={async () => {
-        if (!values.roleCode.trim()) {
-          toast.error("角色标识代码不能为空");
-          throw new Error("角色标识代码不能为空");
-        }
+      onSubmit={async (values) => {
         const res = await createRoleAction(
           values.roleCode.trim(),
-          values.roleName.trim() || undefined,
-          values.description.trim() || undefined,
+          values.roleName?.trim() || undefined,
+          values.description?.trim() || undefined,
         );
         if (!res.success) {
           toast.error(res.error || "创建角色失败");
@@ -76,17 +79,6 @@ export function CreateRoleModal({ onClose, onCreated }: CreateRoleModalProps) {
         toast.success("角色创建成功");
         onCreated?.();
       }}
-    >
-      <FormSection title="角色基础信息">
-        <FormFields
-          fields={fields}
-          values={values}
-          onChange={(name, val) =>
-            setValues((prev) => ({ ...prev, [name]: val }))
-          }
-          columns={2}
-        />
-      </FormSection>
-    </FormDialog>
+    />
   );
 }

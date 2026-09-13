@@ -1,13 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  FormDialog,
-  FormSection,
-  FormFields,
-  type FormFieldSchema,
-  toast,
-} from "@base/ui";
+import { useMemo } from "react";
+import { FormModal, type FormFieldSchema, toast, z } from "@base/ui";
 import { createTagAction, updateTagAction } from "../actions";
 import type { CustomerTagItem } from "../types";
 
@@ -18,7 +12,16 @@ export interface TagFormModalProps {
   readonly onSuccess?: () => void;
 }
 
-/** 客户业务标签表单：支持新建与编辑修改，唯一编码全自动生成 */
+const tagFormZodSchema = z.object({
+  tagCode: z.string().optional(),
+  tagName: z.string().min(1, "标签名称不能为空"),
+  tagType: z.string().min(1, "请选择标签类型"),
+  description: z.string().optional(),
+});
+
+type TagFormData = z.infer<typeof tagFormZodSchema>;
+
+/** 客户业务标签表单：标准 FormModal 驱动 */
 export function TagFormModal({
   mode,
   record,
@@ -27,12 +30,15 @@ export function TagFormModal({
 }: TagFormModalProps) {
   const isEdit = mode === "edit";
 
-  const [values, setValues] = useState({
-    tagCode: record?.tagCode || "",
-    tagName: record?.tagName || "",
-    tagType: record?.tagType || "DELIVERY",
-    description: record?.description || "",
-  });
+  const initialValues: TagFormData = useMemo(
+    () => ({
+      tagCode: record?.tagCode || "",
+      tagName: record?.tagName || "",
+      tagType: record?.tagType || "DELIVERY",
+      description: record?.description || "",
+    }),
+    [record],
+  );
 
   const fields: FormFieldSchema[] = useMemo(
     () => [
@@ -78,19 +84,21 @@ export function TagFormModal({
   );
 
   return (
-    <FormDialog
+    <FormModal<TagFormData>
       open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
+      onClose={onClose}
+      mode={mode}
       title={isEdit ? `编辑标签: ${record?.tagName}` : "新建业务标签"}
       description={
         isEdit
           ? "修改业务标签名称、类型及打标业务规则"
           : "标签编码由系统自动生成（格式：TAG_YYYYMMDD_XXXX），无需人工维护"
       }
+      schema={tagFormZodSchema}
+      fields={fields}
+      initialValues={initialValues}
       submitText={isEdit ? "保存修改" : "立即创建"}
-      onSubmit={async () => {
+      onSubmit={async (values) => {
         if (isEdit && record) {
           const res = await updateTagAction(record.tagCode, {
             tagName: values.tagName,
@@ -112,21 +120,10 @@ export function TagFormModal({
             toast.error(res.error || "创建标签失败");
             throw new Error(res.error || "创建标签失败");
           }
-          toast.success("业务标签创建成功");
+          toast.success("新业务标签已创建");
         }
         onSuccess?.();
       }}
-    >
-      <FormSection title="标签配置">
-        <FormFields
-          fields={fields}
-          values={values}
-          onChange={(name, val) =>
-            setValues((prev) => ({ ...prev, [name]: val }))
-          }
-          columns={2}
-        />
-      </FormSection>
-    </FormDialog>
+    />
   );
 }

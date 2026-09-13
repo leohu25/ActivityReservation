@@ -55,6 +55,8 @@ export const EXEMPT_MODELS = new Set([
   "CustomerTag",
   "CustomerCategory",
   "CustomerQuoteItem", // 作为明细从表，归属于主表生命周期
+  "SalesOrderItem", // 销售订单明细从表，归属于主表生命周期
+  "SalesOrderFee", // 销售订单费用从表，具有独立复核流与审计字段
   // Control DB 认证与管控系统表
   "User",
   "Session",

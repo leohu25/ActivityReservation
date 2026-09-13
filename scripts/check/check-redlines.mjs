@@ -96,6 +96,27 @@ for (const filePath of allFiles) {
     });
   }
 
+  // 1.1 检查 RSC 页面严禁将 Query 函数或普通服务端函数作为 prop 传递给 Client Component
+  if (relPath.includes("apps/") && relPath.endsWith("/page.tsx")) {
+    lines.forEach((line, idx) => {
+      const passFunctionPropRegex =
+        /<\w+[^>]*\b\w+(?:Action|Query|Handler|Fn)\s*=\s*\{(?:\s*[a-zA-Z0-9_]+Query|\s*(?:async\s*)?\([^)]*\)\s*=>)/;
+      const directQueryPropRegex =
+        /\b\w+(?:Action|Handler|Fn|Func)?\s*=\s*\{\s*([a-zA-Z0-9_]*Query)\s*\}/;
+      if (
+        (passFunctionPropRegex.test(line) || directQueryPropRegex.test(line)) &&
+        !line.includes("// redline-ignore")
+      ) {
+        violations.push({
+          file: relPath,
+          line: idx + 1,
+          rule: "严禁在 RSC 页面中将 Query 函数作为 prop 直接传递给 Client 组件 (Functions cannot be passed directly to Client Components)",
+          code: line.trim(),
+        });
+      }
+    });
+  }
+
   // 2. 检查裸写权限字符串
   lines.forEach((line, idx) => {
     for (const reg of magicPermissionRegexes) {
@@ -145,6 +166,41 @@ for (const filePath of allFiles) {
       });
     }
   });
+
+  const isTestFile =
+    /\.(test|spec)\.(ts|tsx|js|jsx)$/.test(relPath) ||
+    relPath.includes("/test/") ||
+    relPath.includes("/tests/");
+
+  // 4.1 检查原生 confirm / window.confirm 弹窗调用
+  // 规则红线 8 / 20：交互单次确认，破坏性操作统一由 ConfirmDialog 提示一次，严禁原生 confirm(...)
+  if (!isTestFile && !relPath.startsWith("packages/ui/")) {
+    lines.forEach((line, idx) => {
+      if (/\b(?:window\.)?confirm\s*\(/.test(line)) {
+        violations.push({
+          file: relPath,
+          line: idx + 1,
+          rule: "严禁在业务代码中调用浏览器原生 confirm(...) 弹窗 (必须使用 @base/ui ConfirmDialog 或模态对话框)",
+          code: line.trim(),
+        });
+      }
+    });
+  }
+
+  // 4.2 检查业务切片内手写裸 <table DOM 标签
+  // 规则红线 3：严禁手写裸 DOM 与原生非受控控件，切片界面必须 100% 使用 @base/ui (Table / DataTable / DetailTable)
+  if (!isTestFile && relPath.startsWith("packages/features/")) {
+    lines.forEach((line, idx) => {
+      if (/<table[\s>]/.test(line)) {
+        violations.push({
+          file: relPath,
+          line: idx + 1,
+          rule: "严禁在业务切片内手写原生 <table> DOM (必须基于 @base/ui 的 Table / DataTable / DetailTable 套件开发)",
+          code: line.trim(),
+        });
+      }
+    });
+  }
 
   // 5. 检查 UI 组件单元测试文件是否就近放置 (Colocation)
   // 规则：禁止在 UI 包 src 根目录下平铺 *.test.ts / *.test.tsx，组件测试必须与组件同级放置

@@ -1,0 +1,12 @@
+{
+  "formatVersion": 1,
+  "scope": "tenant",
+  "version": "20260913040420",
+  "name": "add_sales_order",
+  "previousVersion": "20260912104846",
+  "checksum": "8240d173cd7285cf865bd18c83c1f4b7ed07dd72ee69b80e969c92d95bbbc6a5",
+  "schemaChecksum": "18700f287d0766642cdb649004c93fd718ff90a739100a9a5b4421017af26d89",
+  "createdAt": "2026-09-13T04:04:20.238Z",
+  "risks": [],
+  "rollbackSupported": true
+}

@@ -3,9 +3,9 @@
 import React, { useMemo } from "react";
 import {
     z,
-    CrudFormModal,
-    type CrudFormMode,
-    type CrudFormSection,
+    FormModal,
+    type FormModalMode,
+    type FormModalSection,
     toast,
 } from "@base/ui";
 import { createStoreAction, updateStoreAction } from "../actions";
@@ -14,7 +14,7 @@ import type { CustomerListItem } from "../../customer-management/types";
 
 export interface StoreFormModalProps {
     readonly open: boolean;
-    readonly mode: CrudFormMode;
+    readonly mode: FormModalMode;
     readonly record?: StoreListItem | null;
     readonly customers: readonly CustomerListItem[];
     readonly onClose: () => void;
@@ -87,7 +87,7 @@ export const DEFAULT_STORE_VALUES: StoreFormData = {
 
 /**
  * 门店档案通用 CRUD 三态模态框（新增/编辑/居中查看）
- * - 统一基于 CrudFormModal 构建工业风弹窗
+ * - 统一基于 FormModal 构建工业风弹窗
  * - 新增/编辑共用结构，编辑模式锁定 storeCode 与 customerCode
  * - 查看详情全字段只读置灰展示
  */
@@ -124,7 +124,7 @@ export function StoreFormModal({
         };
     }, [record, mode, customers]);
 
-    const sections = useMemo<CrudFormSection[]>(() => {
+    const sections = useMemo<FormModalSection[]>(() => {
         const isCreate = mode === "create";
         const isEdit = mode === "edit";
 
@@ -336,7 +336,7 @@ export function StoreFormModal({
               : "居中查看履约门店主数据与收货配送路线配置";
 
     return (
-        <CrudFormModal<StoreFormData>
+        <FormModal<StoreFormData>
             key={`${mode}-${record?.storeCode || "new"}-${open ? "open" : "closed"}`}
             open={open}
             inline={inline}
@@ -372,3 +372,5 @@ export function StoreFormModal({
         />
     );
 }
+
+export type { FormModalMode as CrudFormMode };

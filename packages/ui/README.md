@@ -1,87 +1,144 @@
-# @base/ui
+# @base/ui — 通用企业级 SaaS UI 组件系统
 
-通用 SaaS 的工业风 UI 体系。分三层：
+现代化多租户 SaaS 基础设施的共享 UI 资产库。本模块保持**设计与技术完全中立**，不与特定业务或单一行业视觉绑定，作为各垂直切片与平台的统一界面基础设施。
 
-| 层 | 目录 | 职责 |
-| ---- | ------ | ------ |
-| **shadcn** | `src/components/shadcn/` | 仅 `npx shadcn@latest add` 引入（含复杂组件）；禁止手写 |
-| **组件层** | `composite/`、`layout/`、`feedback/` | 业务无关组合（DataTable 零件、Auth、TagMultiSelect…） |
-| **模板层** | `templates/` | 可选加速：Workspace / PageShell / DashboardShell |
+代码架构严格遵循清晰、零冗余、高内聚的三层拓扑体系：
 
-## 使用约定（优先简单）
-
-1. **能直接用 shadcn 就直接用**（Form / Table / Dialog / Select / Checkbox / Label / Card…）
-2. 列表需要统一工具栏时，再用 `DataTable.Workspace`
-3. 长表单 / AI 批量字段可用 `FormFields` Schema
-4. 非列表页（设置 / 字典 / 树）页头 + 反馈条统一用 `PageShell`，禁止各 View 手写 h1 与 emerald/rose 横幅
-5. 权限：契约 action + `ActionButton` + Server `assertAbility`（逻辑不变）
-
-## 常用入口
-
-```ts
-import {
-  // shadcn 原子
-  Button, Input, Select, Checkbox, Label, Table, Dialog, Card,
-  // 组件层
-  DataTable, FeedbackBanner, TagMultiSelect, AuthorizedField,
-  // 模板层（可选加速）
-  PageShell, DashboardShell, DataTable.Workspace,
-  // hooks / utils
-  useSafeRouter, useListUrlNav, toast,
-} from "@base/ui";
+```text
+packages/ui/src/
+├── components/
+│   ├── shadcn/                     # Layer 1: 基础原子层 (底层原语，通过 CLI 维护，保持纯粹)
+│   │   └── button, input, dialog, popover, table, command, select, card...
+│   ├── composite/                  # Layer 2: 复合零件层 (通用交互功能封装，无业务页面状态)
+│   │   ├── table/                  # 表格积木 (DetailTable, Pagination, Toolbar, FilterBar...)
+│   │   ├── form/                   # 表单积木 (FormFields, Combobox, TagMultiSelect, Layout...)
+│   │   ├── auth/                   # 权限控件 (AuthorizedField, AuthGuard...)
+│   │   └── tree/                   # 树状导航 (HierarchyTree, DirectoryTreeFilter...)
+│   └── templates/                  # Layer 3: 场景模板层 (业务开箱即用整套组合，驱动全系统交互)
+│       ├── DataTable.tsx           # 全功能数据列表工作台模板 (搜索、高级筛选、分页、列配置)
+│       ├── FormModal.tsx           # 全功能表单弹窗模板 (三态切换、Zod 强校验、内置可选 DetailTable)
+│       ├── PageShell.tsx           # 非列表标准页面容器 (统一页头、描述、快捷操作与反馈横幅)
+│       └── DashboardShell.tsx      # 应用级后台主框架外壳 (侧边栏布局与自适应滚动)
 ```
 
-### 分层选用指引
+---
 
-| 场景 | 推荐 |
-| ------ | ------ |
-| 简单表单 / 设置面板 | `PageShell` + shadcn `Form` 零件（Input/Select/Checkbox/Label/Card） |
-| 字典 / 分类卡片 | `DictionarySectionCard`（已封装搜索过滤）或 `PageShell` + Card |
-| 列表页（工具栏+筛选+分页） | `DataTable.Workspace` |
-| 列表列定义派生 | `createColumnsFromSchema(schema, options)` |
-| 新建/编辑/查看三态弹窗 (Schema) | `CrudFormModal`（传入 `schema={z.object(...)}` 执行 Zod 运行时拦截） |
-| 权限字段三态 | `AuthorizedField` / `DataTable.AuthorizedField`（勿绕过） |
-| 权限按钮 | `DataTable.ActionButton`（勿手写 can 判断散落各处） |
+## 核心设计与使用原则
 
-### Schema 驱动实战 (Zod + CrudFormModal + Table Columns)
+1. **复杂场景优先使用标准模板**：
+   - 数据列表与 CRUD 工作台统一使用 `DataTable`（或 `DataTable.Workspace`）；
+   - 数据录入、信息修改及详情查看弹窗统一使用 `FormModal`；
+   - 避免业务层手写重复的 Dialog 遮罩拼装、原生表格布局或样板表单逻辑。
+2. **底层原子组件保持纯粹中立**：
+   - `shadcn/` 原子组件作为基石零件，不掺杂任何业务假定，能复用尽量复用；
+   - 视觉主题由 CSS 语义变量与 Design System 外部注入，组件库内部不硬编码定制样式。
+3. **零冗余、单一事实源**：
+   - 同一类交互在组件库内有且仅有一套标准实现，杜绝同质化套壳组件；
+   - 外部调用统一从 `@base/ui` 顶级入口扁平导入。
+
+---
+
+## 常用核心组件与模板指南
+
+### 1. 列表场景：`DataTable`
+
+通过 Compound 组件模式提供开箱即用的工作台能力，内置关键字搜索、分面过滤、分页器及列显示配置：
 
 ```tsx
-import { z, CrudFormModal, createColumnsFromSchema } from "@base/ui";
+import { DataTable, type ColumnDef } from "@base/ui";
 
-// 1. 定义实体 Zod Schema（SSoT 唯一事实源：校验 + 字段名推导）
-const customerSchema = z.object({
-  customerName: z.string().min(2, "客户全称至少2个字符").describe("客户全称"),
-  contactPhone: z.string().regex(/^1\d{10}$/, "手机号格式不正确").describe("联系电话"),
-  creditLimit: z.number().min(0).describe("授信额度"),
+const columns: ColumnDef<UserItem>[] = [
+  { accessorKey: "name", header: "姓名" },
+  { accessorKey: "email", header: "邮箱" },
+];
+
+<DataTable.Workspace
+  title="用户管理"
+  description="维护租户成员名单与访问权限"
+  columns={columns}
+  data={userList}
+  total={totalCount}
+  searchField="name"
+  searchPlaceholder="输入姓名搜索..."
+  onCreate={() => setModalOpen(true)}
+/>
+```
+
+---
+
+### 2. 弹窗表单场景：`FormModal`
+
+支持 `mode="create" | "edit" | "view"` 三态合一，直接由 Zod Schema 驱动运行时 safeParse 强校验，并**内置可选的行明细表 (`DetailTable`)**。
+
+#### A. 基础主表单场景
+
+```tsx
+import { z, FormModal, type FormFieldSchema } from "@base/ui";
+
+const schema = z.object({
+  name: z.string().min(2, "名称至少2个字符"),
+  category: z.string().min(1, "请选择分类"),
 });
 
-// 2. 自动派生 Table ColumnDef（数值列自动对齐右侧，自动继承 describe 描述）
-const columns = createColumnsFromSchema(customerSchema, {
-  overrides: {
-    creditLimit: { format: (val) => `¥${Number(val).toLocaleString()}` },
+const fields: FormFieldSchema[] = [
+  { name: "name", label: "名称", type: "text", required: true },
+  {
+    name: "category",
+    label: "分类",
+    type: "select",
+    options: [{ value: "A", label: "分类 A" }],
   },
-  extraColumns: [{ id: "actions", header: "操作", cell: () => <Actions /> }],
-});
+];
 
-// 3. 表单弹窗三态复用（传入 schema 自动启用 safeParse 运行时校验与原生红字拦截）
-<CrudFormModal
+<FormModal
   open={isOpen}
-  mode="create" // "create" | "edit" | "view" (view 模式下自动置灰只读且隐藏提交按钮)
-  schema={customerSchema}
+  mode="create"
+  title="新建项目"
+  schema={schema}
   fields={fields}
-  initialValues={record}
+  initialValues={{ name: "", category: "" }}
   onClose={() => setIsOpen(false)}
   onSubmit={async (values) => {
-    await saveCustomer(values);
+    await saveItem(values);
   }}
 />
 ```
 
-## 新增 shadcn 组件
+#### B. 单据录入与详情场景 (开启内置明细表)
 
-```bash
-cd packages/ui
-npx shadcn@latest add <component> --yes
-# 如生成 @/ 别名 import，改为相对路径 ../../shadcn/xxx
-# 新组件记得在 src/components/shadcn/index.ts 挂导出
+配置 `detailConfig` 即可原地开启明细表格：
+
+- `create` / `edit` 模式：支持添加行、删除行、行内输入与实时汇总；
+- `view` 模式：自动隐藏添加与操作按钮，转换为只读明细展示。
+
+```tsx
+<FormModal<OrderHeader, OrderItem>
+  open={isOpen}
+  mode={isView ? "view" : "create"}
+  title="业务订单"
+  schema={orderHeaderSchema}
+  fields={headerFields}
+  initialValues={headerData}
+  detailConfig={{
+    title: "商品明细",
+    columns: itemColumns,
+    onAddRow: () => ({ itemCode: "", qty: 1 }),
+    minRows: 1,
+  }}
+  initialItems={itemsData}
+  itemsSchema={orderItemSchema.array().min(1, "至少需添加一行商品明细")}
+  onClose={() => setIsOpen(false)}
+  onSubmit={async (data) => {
+    await submitOrder(data);
+  }}
+/>
 ```
+
+---
+
+### 3. 基础复合组件
+
+- **`Combobox`**：通用搜索下拉框（基于 Popover + Command），支持动态过滤、快捷清空与大容量列表；
+- **`DetailTable`**：统一行明细表格组件，支持可编辑模式与纯只读模式；
+- **`FormFields`**：表单字段动态排版引擎，支持 text, number, date, select, combobox, radio, switch, custom 等多种形态；
+- **`ConfirmDialog`**：全局破坏性操作二次确认框，替代浏览器原生 confirm。

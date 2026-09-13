@@ -20,6 +20,8 @@
 | DEBT-009 | 2026-09-08 | @coordinator | packages/auth/src/tenant-context.ts | 租户访问守卫 (Tenant Access Gate) 仅校验 Control DB 的 Member 与 TenantDatabase 状态，未核验 Tenant DB 的 EmployeeProfile.status === 'ACTIVE'，被停用/离职人员仍可凭 Session 穿透访问 | 已在 p0-tenant-workbench-real-topology 中落地 assertTenantAccessGate，对非 ACTIVE/停用/离职人员 Fail-Closed 阻断 | 高 | 已解决 |
 | DEBT-010 | 2026-09-08 | @coordinator | packages/features/control-admin/src/services/control-admin.ts | 平台租户开通逻辑为同步单一函数，缺少 Saga 状态机重试补偿机制；开出的租户物理库为空壳，未 Seed ROOT 根部门与默认岗位字典，未为 Owner 创建 EmployeeProfile，未初始化系统预置四层角色 | 在特性 tenant-provisioning-saga-onboarding 中重构 TenantProvisioningService 为完整 Saga 状态机，补齐租户库种子初始化与 Owner 引导向导 | 高 | 排期中(tenant-provisioning-saga-onboarding) |
 | DEBT-011 | 2026-09-08 | @coordinator | packages/db-control, packages/authorization | 缺少 authorizationVersion 权限版本化控制，员工调部门、调岗、改角色无法低成本驱动分布式缓存与 CASL Ability 立即失效重建 | 在 tenant-org-core-schema 中增加 authorizationVersion 并在相关人事调动操作中自增驱动失效 | 中 | 排期中(tenant-org-core-schema) |
+| DEBT-012 | 2026-09-12 | @implementer | packages/features/tenant-admin | 历史遗留页面（EmployeeView、PositionView、RolePermissionManager）使用原生 confirm()/window.confirm 弹窗二次确认，违反红线 8 与 20 | 已全部重构为 @base/ui ConfirmDialog 模态对话框，红线门禁强校验通过 | 高 | 已解决 |
+| DEBT-013 | 2026-09-12 | @implementer | packages/features/tenant-admin, packages/features/control-admin | 历史遗留视图（EmployeeView、PositionView、RolePermissionManager、MigrationsView）存在手写原生 <table> DOM 标签，违反红线 3 | 已全部重构为 @base/ui Table 原子组件与 DataTable 标准表格，红线门禁强校验通过 | 高 | 已解决 |
 
 ---
 

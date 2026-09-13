@@ -96,6 +96,9 @@ importers:
       '@base/feature-customer-center':
         specifier: workspace:*
         version: link:../../packages/features/customer-center
+      '@base/feature-order-center':
+        specifier: workspace:*
+        version: link:../../packages/features/order-center
       '@base/feature-procurement-center':
         specifier: workspace:*
         version: link:../../packages/features/procurement-center
@@ -379,6 +382,64 @@ importers:
       '@base/authorization':
         specifier: workspace:*
         version: link:../../authorization
+      '@base/db-tenant':
+        specifier: workspace:*
+        version: link:../../db-tenant
+      '@base/shared':
+        specifier: workspace:*
+        version: link:../../shared
+      '@base/ui':
+        specifier: workspace:*
+        version: link:../../ui
+      '@casl/ability':
+        specifier: 7.0.1
+        version: 7.0.1
+      '@casl/prisma':
+        specifier: ^2.0.2
+        version: 2.0.2(@casl/ability@7.0.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))
+      lucide-react:
+        specifier: ^1.41.0
+        version: 1.41.0(react@19.2.8)
+      next:
+        specifier: 16.3.4
+        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      server-only:
+        specifier: 0.0.1
+        version: 0.0.1
+    devDependencies:
+      '@types/node':
+        specifier: ^20.17.24
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19.2.18
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.7
+        version: 19.2.7(@types/react@19.2.18)
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: 19.2.8
+        version: 19.2.8(react@19.2.8)
+      tsx:
+        specifier: ^4.20.6
+        version: 4.23.13
+      typescript:
+        specifier: ^5.8.2
+        version: 5.8.2
+
+  packages/features/order-center:
+    dependencies:
+      '@base/auth':
+        specifier: workspace:*
+        version: link:../../auth
+      '@base/authorization':
+        specifier: workspace:*
+        version: link:../../authorization
+      '@base/biz-shared':
+        specifier: workspace:*
+        version: link:../../biz-shared
       '@base/db-tenant':
         specifier: workspace:*
         version: link:../../db-tenant

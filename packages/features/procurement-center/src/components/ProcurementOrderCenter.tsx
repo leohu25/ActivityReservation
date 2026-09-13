@@ -247,7 +247,7 @@ export function ProcurementOrderCenter({
 
   return (
     <div className="space-y-4">
-      <DataTable.Workspace
+      <DataTable
         data={filteredOrders}
         columns={activeColumns}
         rowKey={(order: ProcurementOrderItem) => order.id}
@@ -307,7 +307,7 @@ export function ProcurementOrderCenter({
             }}
           />
         )}
-      </DataTable.Workspace>
+      </DataTable>
     </div>
   );
 }

@@ -1,13 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  FormDialog,
-  FormSection,
-  FormFields,
-  type FormFieldSchema,
-  toast,
-} from "@base/ui";
+import { useMemo } from "react";
+import { FormModal, type FormFieldSchema, toast, z } from "@base/ui";
 import { createPositionAction, updatePositionAction } from "../actions";
 import type { PositionItem } from "../types";
 
@@ -18,26 +12,31 @@ export interface PositionFormModalProps {
   readonly onSaved?: () => void;
 }
 
-type PositionForm = {
-  name: string;
-  code: string;
-  description: string;
-  sort: number;
-};
+const positionZodSchema = z.object({
+  name: z.string().min(1, "岗位名称不能为空"),
+  code: z.string().min(1, "岗位编码不能为空"),
+  description: z.string().optional(),
+  sort: z.number().default(0),
+});
 
-/** 岗位新建/编辑：FormDialog + FormFields 驱动 */
+type PositionForm = z.infer<typeof positionZodSchema>;
+
+/** 岗位新建/编辑：标准 FormModal 驱动 */
 export function PositionFormModal({
   mode,
   record,
   onClose,
   onSaved,
 }: PositionFormModalProps) {
-  const [values, setValues] = useState<PositionForm>({
-    name: record?.name || "",
-    code: record?.code || "",
-    description: record?.description || "",
-    sort: record?.sort ?? 0,
-  });
+  const initialValues: PositionForm = useMemo(
+    () => ({
+      name: record?.name || "",
+      code: record?.code || "",
+      description: record?.description || "",
+      sort: record?.sort ?? 0,
+    }),
+    [record],
+  );
 
   const fields: FormFieldSchema[] = useMemo(
     () => [
@@ -73,20 +72,21 @@ export function PositionFormModal({
   );
 
   return (
-    <FormDialog
+    <FormModal<PositionForm>
       open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-      record={record}
+      onClose={onClose}
+      mode={mode}
       title={mode === "create" ? "新建岗位字典" : "编辑岗位信息"}
       description="维护行政职务字典，编码用于接口与系统内部唯一标识"
+      schema={positionZodSchema}
+      fields={fields}
+      initialValues={initialValues}
       submitText="确认保存"
-      onSubmit={async () => {
+      onSubmit={async (values) => {
         const payload = {
           name: values.name.trim(),
           code: values.code.trim(),
-          description: values.description.trim() || null,
+          description: values.description?.trim() || null,
           sort: Number(values.sort) || 0,
         };
         const res =
@@ -100,17 +100,6 @@ export function PositionFormModal({
         toast.success(mode === "create" ? "岗位已创建" : "岗位已更新");
         onSaved?.();
       }}
-    >
-      <FormSection title="岗位信息">
-        <FormFields
-          fields={fields}
-          values={values}
-          onChange={(name, val) =>
-            setValues((prev) => ({ ...prev, [name]: val }))
-          }
-          columns={2}
-        />
-      </FormSection>
-    </FormDialog>
+    />
   );
 }

@@ -26,7 +26,7 @@ import {
   CardContent,
   Badge,
   Button,
-  FormDialog,
+  FormModal,
   toast,
 } from "@base/ui";
 import { resetTenantUserPasswordAction } from "../actions";
@@ -486,13 +486,13 @@ export function TenantDetailDrawer({
         </div>
       </div>
 
-      {/* 重置密码弹窗 (FormDialog) */}
+      {/* 重置密码弹窗 (FormModal) */}
       {resetTargetUser && (
-        <FormDialog
+        <FormModal
           open
-          onOpenChange={(open) => {
-            if (!open) setResetTargetUser(null);
-          }}
+          onClose={() => setResetTargetUser(null)}
+          mode="create"
+          initialValues={{}}
           title={
             resetSuccessData ? "重置成功 — 请复制新密码" : "重置成员登录密码"
           }
@@ -569,7 +569,7 @@ export function TenantDetailDrawer({
               </p>
             </div>
           )}
-        </FormDialog>
+        </FormModal>
       )}
     </div>
   );

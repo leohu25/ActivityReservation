@@ -259,6 +259,15 @@
       "status": "completed",
       "owner": "implementer",
       "evidence": "建立业务实体审计基线门禁 scripts/check-entity-baseline.mjs 并挂载至 verify.sh；扩展 Customer/CustomerStore/CustomerQuote 等实体审计字段（createdById, deptId, updatedById, isDeleted, deletedAt, deletedById）；客户中心 getTenantCustomerContext 接入 resolveEmployeeTopology 与 createPrismaAbilityForTenant 编译完整带数据范围的 Ability；CustomerService 查询下推 getAccessibleWhere 与 isDeleted: false 显式过滤；完成数据权限攻防测试（SELF/DEPT/DEPT_TREE/ALL）与全量类型/门禁测试 100% 通过。"
+    },
+    {
+      "id": "feature-order-center-and-ui-refactor",
+      "name": "【业务切片与 UI 基建】订单中心切片开发与 @base/ui 场景模板一体化收敛",
+      "description": "开发销售订单 (SalesOrder) 完整垂直切片，打通纯数据契约、Prisma 多租户迁移、CASL 四层权限下推与 RSC/Action 闭环；对 @base/ui 进行系统性重构与命名规范化：composite/table/ 与 DetailTable（支持可编辑/只读双态），templates/FormModal 统一收敛三态弹窗并内置明细表，FormFields 深度支持 Combobox；业务层（订单中心、采购中心、客户中心、部门管理）全面消除胶水代码与旧命名，实现 100% 声明式 Zod Schema 驱动。",
+      "dependencies": ["arch-data-scope-and-base-entity-audit"],
+      "status": "completed",
+      "owner": "coordinator",
+      "evidence": "1. 订单中心全切片落地，单测 24/24 PASS；2. @base/ui 目录重组为 table/、form/、templates/（DataTable 与 FormModal），单测 55/55 PASS；3. 采购中心、客户中心、部门管理全面平滑升级接入新模板；4. 门禁 scripts/check-redlines.mjs 新增拦截原生 confirm 与裸 table；5. 15 个包 check 与 13 个包 test 100% 全部通过，Code Reviewer 独立审计确认。"
     }
   ]
 }

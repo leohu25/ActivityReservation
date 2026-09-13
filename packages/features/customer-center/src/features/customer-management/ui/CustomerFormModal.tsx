@@ -3,10 +3,10 @@
 import React, { useMemo } from "react";
 import {
   z,
-  CrudFormModal,
+  FormModal,
   TagMultiSelect,
-  type CrudFormMode,
-  type CrudFormSection,
+  type FormModalMode,
+  type FormModalSection,
   toast,
 } from "@base/ui";
 import { createCustomerAction, updateCustomerAction } from "../actions";
@@ -18,7 +18,7 @@ import type {
 
 export interface CustomerFormModalProps {
   readonly open: boolean;
-  readonly mode: CrudFormMode;
+  readonly mode: FormModalMode;
   readonly record?: CustomerListItem | null;
   readonly categories: readonly CustomerCategoryItem[];
   readonly tags: readonly CustomerTagItem[];
@@ -134,7 +134,7 @@ export function CustomerFormModal({
   }, [record, mode, categories]);
 
   // 动态字段结构：按业务分组
-  const sections = useMemo<CrudFormSection[]>(() => {
+  const sections = useMemo<FormModalSection[]>(() => {
     const isCreate = mode === "create";
 
     const baseFields = [
@@ -334,7 +334,7 @@ export function CustomerFormModal({
         : "居中查看客户主数据明细与关联门店概览";
 
   return (
-    <CrudFormModal<CustomerFormData>
+    <FormModal<CustomerFormData>
       key={`${mode}-${record?.customerCode || record?.id || "new"}-${open ? "open" : "closed"}`}
       open={open}
       inline={inline}
@@ -370,4 +370,5 @@ export function CustomerFormModal({
 }
 
 // 兼容既有导入别名
+export type { FormModalMode as CrudFormMode };
 export { CustomerFormModal as CreateCustomerModal };

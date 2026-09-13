@@ -1,18 +1,18 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useMemo, useState } from "react";
 import type { FieldAccessMode } from "@base/authorization";
+import { FieldPolicy } from "@base/shared";
 import {
   Button,
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  Input,
-  AuthorizedField,
+  FormModal,
+  deriveFieldMode,
+  useOptionalAbility,
+  toast,
+  z,
+  type FormFieldSchema,
 } from "@base/ui";
-import { Plus, X, Loader2, Building2 } from "lucide-react";
+import { Plus, Building2 } from "lucide-react";
 import { createOrderAction } from "../actions";
 import type { ProcurementAnyAbility } from "../types";
 
@@ -21,70 +21,133 @@ export interface CreateOrderDialogProps {
   readonly fieldModes?: Record<string, FieldAccessMode>;
   readonly departmentName?: string | null;
   readonly onCreated?: () => void;
+  readonly open?: boolean;
+  readonly onOpenChange?: (open: boolean) => void;
+  readonly inline?: boolean;
 }
 
+export type CreateOrderFormData = {
+  supplierName: string;
+  quantity: number | string;
+  costPrice: number | string;
+};
+
+export const createOrderZodSchema = z.object({
+  supplierName: z.string().trim().min(1, "请输入供应商名称"),
+  quantity: z.coerce
+    .number()
+    .int("采购数量必须为大于 0 的有效整数")
+    .positive("采购数量必须为大于 0 的有效整数"),
+  costPrice: z.coerce
+    .number()
+    .min(0, "采购成本价必须为有效非负数值"),
+});
+
+export const DEFAULT_CREATE_ORDER_VALUES: CreateOrderFormData = {
+  supplierName: "",
+  quantity: 10,
+  costPrice: 1000.0,
+};
+
+/**
+ * 采购单新建弹窗：基于 @base/ui 的 FormModal 驱动，支持 CASL 字段级三态脱敏与 Zod 校验
+ */
 export function CreateOrderDialog({
   ability,
   fieldModes,
   departmentName,
   onCreated,
+  open: controlledOpen,
+  onOpenChange,
+  inline,
 }: CreateOrderDialogProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [supplierName, setSupplierName] = useState("");
-  const [quantity, setQuantity] = useState("10");
-  const [costPrice, setCostPrice] = useState("1000.00");
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = controlledOpen ?? internalOpen;
+  const ambientAbility = useOptionalAbility();
+  const effectiveAbility =
+    ability ?? (ambientAbility as ProcurementAnyAbility | null | undefined);
 
-  const handleOpen = () => {
-    setError(null);
-    setIsOpen(true);
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (controlledOpen === undefined) {
+      setInternalOpen(nextOpen);
+    }
+    onOpenChange?.(nextOpen);
   };
 
-  const handleClose = () => {
-    if (!isPending) {
-      setIsOpen(false);
-    }
-  };
+  const fields: FormFieldSchema[] = useMemo(() => {
+    const list: FormFieldSchema[] = [];
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    const cleanSupplier = supplierName.trim();
-    if (!cleanSupplier) {
-      setError("请输入供应商名称");
-      return;
-    }
-
-    const numQty = parseInt(quantity, 10);
-    if (isNaN(numQty) || numQty <= 0) {
-      setError("采购数量必须为大于 0 的有效整数");
-      return;
-    }
-
-    const numPrice = parseFloat(costPrice);
-    if (isNaN(numPrice) || numPrice < 0) {
-      setError("采购成本价必须为有效非负数值");
-      return;
-    }
-
-    startTransition(async () => {
-      const res = await createOrderAction({
-        supplierName: cleanSupplier,
-        quantity: numQty,
-        costPrice: numPrice,
-      });
-
-      if (!res.success) {
-        setError(res.error ?? "创建订单失败");
-        return;
+    // 若有显式指定字段策略优先使用；若有权限上下文走 deriveFieldMode；否则默认开放 EDITABLE
+    const getMode = (field: string, explicitMode?: FieldAccessMode): FieldAccessMode => {
+      if (explicitMode) {
+        return explicitMode;
       }
+      if (effectiveAbility) {
+        return deriveFieldMode(
+          effectiveAbility,
+          "PurchaseOrder",
+          field,
+          "create",
+        );
+      }
+      return FieldPolicy.EDITABLE;
+    };
 
-      setIsOpen(false);
-      setSupplierName("");
-      onCreated?.();
+    const supplierMode = getMode("supplierName", fieldModes?.supplierName);
+    if (supplierMode !== FieldPolicy.HIDDEN) {
+      list.push({
+        name: "supplierName",
+        label: "供应商名称",
+        type: "text",
+        required: true,
+        disabled: supplierMode === FieldPolicy.READONLY,
+        placeholder: "如：江苏晨润数智精密材料",
+        span: 2,
+      });
+    }
+
+    const qtyMode = getMode("quantity", fieldModes?.quantity);
+    if (qtyMode !== FieldPolicy.HIDDEN) {
+      list.push({
+        name: "quantity",
+        label: "采购数量",
+        type: "number",
+        required: true,
+        disabled: qtyMode === FieldPolicy.READONLY,
+        step: "1",
+      });
+    }
+
+    const costMode = getMode("costPrice", fieldModes?.costPrice);
+    if (costMode !== FieldPolicy.HIDDEN) {
+      list.push({
+        name: "costPrice",
+        label: "采购成本价 (敏感资产)",
+        type: "number",
+        required: true,
+        disabled: costMode === FieldPolicy.READONLY,
+        step: "0.01",
+      });
+    }
+
+    return list;
+  }, [effectiveAbility, fieldModes]);
+
+  const handleSubmit = async (values: CreateOrderFormData) => {
+    const res = await createOrderAction({
+      supplierName: values.supplierName.trim(),
+      quantity: Number(values.quantity),
+      costPrice: Number(values.costPrice),
     });
+
+    if (!res.success) {
+      toast.error(res.error || "创建订单失败");
+      throw new Error(res.error || "创建订单失败");
+    }
+
+    toast.success("采购订单创建成功");
+    handleOpenChange(false);
+    onCreated?.();
   };
 
   return (
@@ -92,142 +155,42 @@ export function CreateOrderDialog({
       <Button
         variant="default"
         size="sm"
-        onClick={handleOpen}
+        onClick={() => handleOpenChange(true)}
         className="shadow-sm shadow-blue-600/25"
       >
         <Plus className="size-3.5 mr-1" />
         <span>新建采购订单</span>
       </Button>
 
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <Card className="w-full max-w-lg border-slate-200/80 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-            <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div>
-                <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  新建采购订单
-                </CardTitle>
-                <CardDescription className="text-xs text-slate-500 mt-0.5">
-                  录入采购单据信息，自动绑定当前操作员所在部门
-                </CardDescription>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClose}
-                disabled={isPending}
-                className="size-8 p-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-              >
-                <X className="size-4" />
-              </Button>
-            </CardHeader>
-
-            <form onSubmit={handleSubmit}>
-              <CardContent className="space-y-4 pt-4">
-                {error && (
-                  <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-3 text-xs text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300">
-                    {error}
-                  </div>
-                )}
-
-                <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-xs text-slate-600 flex items-center justify-between dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-300">
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <Building2 className="size-3.5 text-blue-600" />
-                    <span>归属业务部门:</span>
-                  </span>
-                  <span className="font-bold text-slate-900 dark:text-slate-100">
-                    {departmentName || "尚未分配部门"}
-                  </span>
-                </div>
-
-                <AuthorizedField
-                  ability={ability}
-                  mode={fieldModes?.supplierName}
-                  subject="PurchaseOrder"
-                  field="supplierName"
-                  action="create"
-                  label="供应商名称 *"
-                >
-                  <Input
-                    placeholder="如：江苏晨润数智精密材料"
-                    value={supplierName}
-                    onChange={(e) => setSupplierName(e.target.value)}
-                    disabled={isPending}
-                    required
-                  />
-                </AuthorizedField>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <AuthorizedField
-                    ability={ability}
-                    mode={fieldModes?.quantity}
-                    subject="PurchaseOrder"
-                    field="quantity"
-                    action="create"
-                    label="采购数量 *"
-                  >
-                    <Input
-                      type="number"
-                      min={1}
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
-                      disabled={isPending}
-                      required
-                    />
-                  </AuthorizedField>
-
-                  <AuthorizedField
-                    ability={ability}
-                    mode={fieldModes?.costPrice}
-                    subject="PurchaseOrder"
-                    field="costPrice"
-                    action="create"
-                    label="采购成本价 (敏感资产) *"
-                  >
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      value={costPrice}
-                      onChange={(e) => setCostPrice(e.target.value)}
-                      disabled={isPending}
-                      required
-                    />
-                  </AuthorizedField>
-                </div>
-
-                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleClose}
-                    disabled={isPending}
-                  >
-                    取消
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="default"
-                    size="sm"
-                    disabled={isPending}
-                    className="shadow-sm shadow-blue-600/25"
-                  >
-                    {isPending ? (
-                      <>
-                        <Loader2 className="size-3.5 mr-1 animate-spin" />
-                        <span>提交中...</span>
-                      </>
-                    ) : (
-                      <span>确认提交</span>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </form>
-          </Card>
-        </div>
-      )}
+      <FormModal<CreateOrderFormData>
+        open={isOpen}
+        inline={inline}
+        mode="create"
+        title="新建采购订单"
+        description="录入采购单据信息，自动绑定当前操作员所在部门"
+        submitText="确认提交"
+        cancelText="取消"
+        initialValues={DEFAULT_CREATE_ORDER_VALUES}
+        schema={createOrderZodSchema}
+        fields={fields}
+        columns={2}
+        onClose={() => handleOpenChange(false)}
+        onSubmit={handleSubmit}
+        extraContent={
+          <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-xs text-slate-600 flex items-center justify-between dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-300">
+            <span className="flex items-center gap-1.5 font-medium">
+              <Building2 className="size-3.5 text-blue-600" />
+              <span>归属业务部门:</span>
+            </span>
+            <span className="font-bold text-slate-900 dark:text-slate-100">
+              {departmentName || "尚未分配部门"}
+            </span>
+          </div>
+        }
+      />
     </>
   );
 }
+
+export { CreateOrderDialog as CreateOrderModal };
+

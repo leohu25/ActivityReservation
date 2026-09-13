@@ -4,11 +4,11 @@ import React, { useMemo } from "react";
 import {
   Badge,
   Button,
-  FormDialog,
-  EditableDetailTable,
+  FormModal,
   type DetailTableColumn,
+  type FormModalSection,
 } from "@base/ui";
-import { FileText, Calendar, User, MapPin, Layers } from "lucide-react";
+import { MapPin, Layers } from "lucide-react";
 import { formatDate } from "@base/shared";
 import type { QuoteListItem, QuoteItemDetail } from "../types";
 
@@ -182,12 +182,56 @@ export function QuoteDetailModal({
     [],
   );
 
+  const sections: FormModalSection[] = [
+    {
+      title: "基本属性与适用范围",
+      columns: 4,
+      fields: [
+        {
+          name: "quoteId",
+          label: "报价单号",
+          type: "custom",
+          render: () => (
+            <span className="font-mono font-semibold text-foreground text-xs">
+              {quote.quoteId}
+            </span>
+          ),
+        },
+        {
+          name: "scope",
+          label: "定价适用维度",
+          type: "custom",
+          render: () => renderScopeInfo(),
+        },
+        {
+          name: "dates",
+          label: "价格有效期",
+          type: "custom",
+          render: () => (
+            <span className="font-mono text-foreground text-xs">
+              {renderDate(quote.effectiveDate)} ~ {renderDate(quote.expiryDate)}
+            </span>
+          ),
+        },
+        {
+          name: "createdBy",
+          label: "创建人",
+          type: "custom",
+          render: () => (
+            <span className="text-foreground text-xs">
+              {quote.createdBy || "系统管理员"}
+            </span>
+          ),
+        },
+      ],
+    },
+  ];
+
   return (
-    <FormDialog
+    <FormModal
       open={open}
-      onOpenChange={(v) => {
-        if (!v) onClose();
-      }}
+      onClose={onClose}
+      mode="view"
       badge="QD"
       title={
         <div className="flex items-center gap-3">
@@ -202,7 +246,17 @@ export function QuoteDetailModal({
       }
       description="查看报价单元数据、执行维度、有效期及商品定价明细清单。"
       className="max-w-5xl sm:max-w-5xl"
-      footer={() => (
+      sections={sections}
+      initialValues={{}}
+      detailConfig={{
+        title: "商品定价明细清单",
+        description: "包含增值税率与批量起订约束",
+        columns: columns,
+        readOnly: true,
+        emptyText: "暂无商品定价明细",
+      }}
+      initialItems={quote.items || []}
+      footer={
         <div className="flex items-center justify-between gap-3 pt-3 border-t border-border/60 w-full">
           <div className="text-xs text-muted-foreground">
             共计 {quote.items?.length || 0} 个定价品项
@@ -226,71 +280,7 @@ export function QuoteDetailModal({
             </Button>
           </div>
         </div>
-      )}
-    >
-      <div className="space-y-4 py-1">
-        {/* 单头摘要卡片 */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-lg border border-border/70 bg-muted/20 text-xs">
-          <div>
-            <div className="text-muted-foreground flex items-center gap-1 mb-1">
-              <FileText className="size-3" />
-              报价单号
-            </div>
-            <div className="font-mono font-semibold text-foreground">
-              {quote.quoteId}
-            </div>
-          </div>
-          <div>
-            <div className="text-muted-foreground flex items-center gap-1 mb-1">
-              <Layers className="size-3" />
-              定价适用维度
-            </div>
-            <div className="truncate">{renderScopeInfo()}</div>
-          </div>
-          <div>
-            <div className="text-muted-foreground flex items-center gap-1 mb-1">
-              <Calendar className="size-3" />
-              价格有效期
-            </div>
-            <div className="font-mono text-foreground">
-              {renderDate(quote.effectiveDate)} ~ {renderDate(quote.expiryDate)}
-            </div>
-          </div>
-          <div>
-            <div className="text-muted-foreground flex items-center gap-1 mb-1">
-              <User className="size-3" />
-              创建人
-            </div>
-            <div className="text-foreground">
-              {quote.createdBy || "系统管理员"}
-              {quote.createdAt && (
-                <span className="text-[10px] text-muted-foreground ml-1">
-                  ({formatDate(quote.createdAt)})
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* 定价商品明细表格：沉淀至 EditableDetailTable 只读渲染 */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-foreground tracking-tight">
-              商品定价明细清单
-            </span>
-            <span className="text-[11px] font-mono text-muted-foreground">
-              包含增值税率与批量起订约束
-            </span>
-          </div>
-
-          <EditableDetailTable<QuoteItemDetail>
-            columns={columns}
-            data={quote.items || []}
-            readOnly={true}
-            emptyText="暂无商品定价明细"
-          />
-        </div>
-      </div>
-    </FormDialog>
+      }
+    />
   );
 }

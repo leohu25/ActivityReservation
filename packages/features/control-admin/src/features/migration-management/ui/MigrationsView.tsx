@@ -15,7 +15,13 @@ import {
   Button,
   Badge,
   toast,
-  FormDialog,
+  ConfirmDialog,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
 } from "@base/ui";
 import {
   Database,
@@ -297,61 +303,61 @@ export function MigrationsView({
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b bg-muted/50 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th scope="col" className="px-6 py-3.5">
+            <Table className="w-full text-xs">
+              <TableHeader className="bg-muted/50 font-medium">
+                <TableRow className="border-b border-border">
+                  <TableHead className="px-6 py-3.5 text-xs font-semibold text-muted-foreground">
                     租户信息
-                  </th>
-                  <th scope="col" className="px-6 py-3.5">
+                  </TableHead>
+                  <TableHead className="px-6 py-3.5 text-xs font-semibold text-muted-foreground">
                     物理数据库
-                  </th>
-                  <th scope="col" className="px-6 py-3.5">
+                  </TableHead>
+                  <TableHead className="px-6 py-3.5 text-xs font-semibold text-muted-foreground">
                     当前 SCHEMA 版本
-                  </th>
-                  <th scope="col" className="px-6 py-3.5">
+                  </TableHead>
+                  <TableHead className="px-6 py-3.5 text-xs font-semibold text-muted-foreground">
                     版本对齐状态
-                  </th>
-                  <th scope="col" className="px-6 py-3.5 text-right">
+                  </TableHead>
+                  <TableHead className="px-6 py-3.5 text-right text-xs font-semibold text-muted-foreground">
                     操作
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-border/60">
                 {fleet.items.length === 0 ? (
-                  <tr>
-                    <td
+                  <TableRow>
+                    <TableCell
                       colSpan={5}
                       className="py-12 text-center text-xs text-muted-foreground"
                     >
                       暂无租户物理数据库记录
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   fleet.items.map((item) => (
-                    <tr
+                    <TableRow
                       key={item.organizationId}
                       className="hover:bg-muted/40 transition-colors"
                     >
-                      <td className="px-6 py-4">
+                      <TableCell className="px-6 py-4">
                         <div className="font-bold text-foreground text-sm">
                           {item.organizationName}
                         </div>
                         <div className="text-[11px] font-mono text-muted-foreground mt-0.5">
                           {item.slug}
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
+                      </TableCell>
+                      <TableCell className="px-6 py-4">
                         <span className="rounded-md border bg-muted/40 px-2 py-1 font-mono text-xs font-semibold text-foreground">
                           {item.databaseName}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
+                      </TableCell>
+                      <TableCell className="px-6 py-4">
                         <span className="font-mono font-bold text-foreground">
                           v{item.currentVersion}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
+                      </TableCell>
+                      <TableCell className="px-6 py-4">
                         {item.isUpToDate ? (
                           <Badge
                             variant="outline"
@@ -369,8 +375,8 @@ export function MigrationsView({
                             待升级 ({item.pendingVersionCount})
                           </Badge>
                         )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
+                      </TableCell>
+                      <TableCell className="px-6 py-4 text-right">
                         {item.isUpToDate ? (
                           <Button
                             size="sm"
@@ -394,35 +400,29 @@ export function MigrationsView({
                             <span>升级此库</span>
                           </Button>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
 
-      {/* 舰队升级模态确认弹窗 (FormDialog 替代原生 window.confirm) */}
-      {upgradeTarget && (
-        <FormDialog
-          open
-          onOpenChange={(open) => {
-            if (!open) setUpgradeTarget(null);
-          }}
-          title={`确认触发${upgradeTarget.label}版本升级？`}
-          description="升级操作将下发最新 DDL 变更至对应的 PostgreSQL 独立物理数据库，升级期间将短暂维持写入隔离，是否确认继续？"
-          submitText="确认升级"
-          onSubmit={async () => {
-            handleConfirmUpgradeFleet();
-          }}
-        >
-          <div className="py-2 text-xs text-muted-foreground">
-            控制平面超级管理员操作，已通过自动化基线版本进行预检对齐。
-          </div>
-        </FormDialog>
-      )}
+      {/* 舰队升级模态确认弹窗 (ConfirmDialog 替代原生 window.confirm) */}
+      <ConfirmDialog
+        open={Boolean(upgradeTarget)}
+        onOpenChange={(open) => {
+          if (!open) setUpgradeTarget(null);
+        }}
+        title={`确认触发${upgradeTarget?.label || ""}版本升级？`}
+        description="升级操作将下发最新 DDL 变更至对应的 PostgreSQL 独立物理数据库，升级期间将短暂维持写入隔离，是否确认继续？"
+        confirmText="确认升级"
+        onConfirm={async () => {
+          handleConfirmUpgradeFleet();
+        }}
+      />
     </div>
   );
 }
