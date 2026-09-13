@@ -9,7 +9,7 @@ import {
   useListUrlNav,
   type ColumnDef,
 } from "@base/ui";
-import { exportContractCsv } from "@base/shared";
+import { exportContractCsv, formatDate } from "@base/shared";
 import { useAbility } from "@base/authorization";
 import { updateQuoteStatusAction, deleteQuoteAction } from "../actions";
 import { QuoteDetailModal } from "./QuoteDetailModal";
@@ -210,12 +210,9 @@ export function QuoteView({
       width: 170,
       cell: (q: QuoteListItem) => (
         <div className="text-xs">
-          <div>自: {new Date(q.effectiveDate).toLocaleDateString()}</div>
+          <div>自: {formatDate(q.effectiveDate)}</div>
           <div className="text-muted-foreground">
-            至:{" "}
-            {q.expiryDate
-              ? new Date(q.expiryDate).toLocaleDateString()
-              : "长期有效"}
+            至: {q.expiryDate ? formatDate(q.expiryDate) : "长期有效"}
           </div>
         </div>
       ),

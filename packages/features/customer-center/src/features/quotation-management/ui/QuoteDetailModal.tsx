@@ -9,6 +9,7 @@ import {
   type DetailTableColumn,
 } from "@base/ui";
 import { FileText, Calendar, User, MapPin, Layers } from "lucide-react";
+import { formatDate } from "@base/shared";
 import type { QuoteListItem, QuoteItemDetail } from "../types";
 
 export interface QuoteDetailModalProps {
@@ -92,9 +93,9 @@ export function QuoteDetailModal({
     );
   };
 
-  const formatDate = (dateVal?: string | Date | null) => {
+  const renderDate = (dateVal?: string | Date | null) => {
     if (!dateVal) return "长期有效";
-    return new Date(dateVal).toLocaleDateString("zh-CN");
+    return formatDate(dateVal);
   };
 
   const columns: DetailTableColumn<QuoteItemDetail>[] = useMemo(
@@ -252,7 +253,7 @@ export function QuoteDetailModal({
               价格有效期
             </div>
             <div className="font-mono text-foreground">
-              {formatDate(quote.effectiveDate)} ~ {formatDate(quote.expiryDate)}
+              {renderDate(quote.effectiveDate)} ~ {renderDate(quote.expiryDate)}
             </div>
           </div>
           <div>
@@ -264,7 +265,7 @@ export function QuoteDetailModal({
               {quote.createdBy || "系统管理员"}
               {quote.createdAt && (
                 <span className="text-[10px] text-muted-foreground ml-1">
-                  ({new Date(quote.createdAt).toLocaleDateString("zh-CN")})
+                  ({formatDate(quote.createdAt)})
                 </span>
               )}
             </div>
