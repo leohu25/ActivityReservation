@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useMemo,
   useCallback,
+  useRef,
   type ReactNode,
 } from "react";
 import type { z } from "zod";
@@ -26,6 +27,17 @@ import { toast } from "../feedback/Toast";
 import { cn } from "../../lib/utils";
 
 export type FormModalMode = "create" | "edit" | "view";
+
+const EMPTY_INITIAL_ITEMS: readonly any[] = [];
+const EMPTY_ACTIONS: readonly any[] = [];
+
+function safeSerialize(val: unknown): string {
+  try {
+    return JSON.stringify(val);
+  } catch {
+    return "";
+  }
+}
 
 export interface FormModalSection {
   readonly title?: string;
@@ -155,7 +167,7 @@ export function FormModal<
   headerSchema,
   detailConfig,
   detail,
-  initialItems = [],
+  initialItems = EMPTY_INITIAL_ITEMS,
   items: controlledItems,
   onItemsChange,
   itemsSchema,
@@ -165,7 +177,7 @@ export function FormModal<
   submitText,
   cancelText,
   auditHint,
-  extraActions = [],
+  extraActions = EMPTY_ACTIONS,
   columns = 2,
   inline = false,
   className,
@@ -188,6 +200,8 @@ export function FormModal<
   }, [initialValues]);
 
   const [values, setValues] = useState<TValues>(getFreshValues);
+  const valuesRef = useRef<TValues>(values);
+  valuesRef.current = values;
   const [internalItems, setInternalItems] = useState<TItem[]>(() => [
     ...initialItems,
   ]);
@@ -197,17 +211,45 @@ export function FormModal<
   >({});
   const [submitting, setSubmitting] = useState(false);
 
-  // 模态框打开或初始值变更时重置
+  const prevOpenRef = useRef(open);
+  const prevValuesSerializedRef = useRef<string>(safeSerialize(initialValues));
+  const prevItemsSerializedRef = useRef<string>(safeSerialize(initialItems));
+  const isFirstMountRef = useRef(true);
+
+  // 模态框打开或初始值变更时重置（跳过初次 mount 时的多余重置，并深度校验序列化值防死循环）
   useEffect(() => {
-    if (open) {
-      setValues(getFreshValues());
+    if (isFirstMountRef.current) {
+      isFirstMountRef.current = false;
+      return;
+    }
+
+    const justOpened = !prevOpenRef.current && open;
+    prevOpenRef.current = open;
+
+    if (!open) return;
+
+    const currentValuesSerialized = safeSerialize(initialValues);
+    const currentItemsSerialized = safeSerialize(initialItems);
+    const valuesChanged =
+      currentValuesSerialized !== prevValuesSerializedRef.current;
+    const itemsChanged =
+      currentItemsSerialized !== prevItemsSerializedRef.current;
+
+    if (justOpened || valuesChanged || itemsChanged) {
+      const fresh = getFreshValues();
+      valuesRef.current = fresh;
+      setValues(fresh);
       setInternalItems([...initialItems]);
       setErrors({});
+      prevValuesSerializedRef.current = currentValuesSerialized;
+      prevItemsSerializedRef.current = currentItemsSerialized;
     }
-  }, [open, getFreshValues, initialItems]);
+  }, [open, getFreshValues, initialItems, initialValues]);
 
   const handleClose = useCallback(() => {
-    setValues(getFreshValues());
+    const fresh = getFreshValues();
+    valuesRef.current = fresh;
+    setValues(fresh);
     setInternalItems([...initialItems]);
     setErrors({});
     onOpenChange?.(false);
@@ -235,36 +277,35 @@ export function FormModal<
   }, [sections, isView]);
 
   const handleFieldChange = (name: keyof TValues & string, val: unknown) => {
-    setValues((prev) => {
-      const next = { ...prev, [name]: val };
-      const sideEffects = onValuesChange?.(name, val, prev);
-      const merged = sideEffects ? { ...next, ...sideEffects } : next;
+    const prev = valuesRef.current;
+    const sideEffects = onValuesChange?.(name, val, prev);
+    const merged = sideEffects
+      ? { ...prev, [name]: val, ...sideEffects }
+      : { ...prev, [name]: val };
+    valuesRef.current = merged;
+    setValues(merged);
 
-      // 如果当前字段有报错，输入修改时自动重新执行 Zod safeParse 校验该字段
-      if (effectiveSchema && errors[name]) {
-        const res = effectiveSchema.safeParse(merged);
-        if (res.success) {
-          setErrors({});
+    // 如果当前字段有报错，输入修改时自动重新执行 Zod safeParse 校验该字段
+    if (effectiveSchema && errors[name]) {
+      const res = effectiveSchema.safeParse(merged);
+      if (res.success) {
+        setErrors({});
+      } else {
+        const stillHasIssue = res.error.issues.find((i) => i.path[0] === name);
+        if (stillHasIssue) {
+          setErrors((prevErr) => ({
+            ...prevErr,
+            [name]: stillHasIssue.message,
+          }));
         } else {
-          const stillHasIssue = res.error.issues.find(
-            (i) => i.path[0] === name,
-          );
-          if (stillHasIssue) {
-            setErrors((prevErr) => ({
-              ...prevErr,
-              [name]: stillHasIssue.message,
-            }));
-          } else {
-            setErrors((prevErr) => {
-              const nextErr = { ...prevErr };
-              delete nextErr[name];
-              return nextErr;
-            });
-          }
+          setErrors((prevErr) => {
+            const nextErr = { ...prevErr };
+            delete nextErr[name];
+            return nextErr;
+          });
         }
       }
-      return merged;
-    });
+    }
   };
 
   const handleItemsChange = (nextItems: TItem[]) => {

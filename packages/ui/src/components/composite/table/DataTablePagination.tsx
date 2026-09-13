@@ -113,7 +113,9 @@ export function DataTablePagination({
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span>
           共{" "}
-          <span className="font-semibold text-foreground font-mono">{total}</span>{" "}
+          <span className="font-semibold text-foreground font-mono">
+            {total}
+          </span>{" "}
           条
         </span>
         {showRange && total > 0 ? (
@@ -130,13 +132,17 @@ export function DataTablePagination({
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1.5">
           <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-            <SelectTrigger className="h-7 w-[64px] text-xs">
+            <SelectTrigger className="h-7 min-w-[72px] w-auto px-2.5 gap-1 text-xs [&_svg]:size-3.5">
               <SelectValue placeholder={String(pageSize)} />
             </SelectTrigger>
             <SelectContent side="top">
               <SelectGroup>
                 {pageSizeOptions.map((size) => (
-                  <SelectItem key={size} value={String(size)} className="text-xs">
+                  <SelectItem
+                    key={size}
+                    value={String(size)}
+                    className="text-xs"
+                  >
                     {size}
                   </SelectItem>
                 ))}
@@ -202,4 +208,3 @@ export function DataTablePagination({
 
 export const TablePagination = DataTablePagination;
 export type TablePaginationProps = DataTablePaginationProps;
-

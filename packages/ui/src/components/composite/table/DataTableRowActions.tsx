@@ -68,6 +68,8 @@ export interface DataTableRowActionsProps<TRecord> {
   className?: string;
 }
 
+const EMPTY_EXTRA_ACTIONS: readonly any[] = [];
+
 /**
  * 官方标准行操作栏 (DataTableRowActions)
  * - 规则：操作按钮默认全部在行内直接平铺展示，直观高频，除非显式指定 collapsed 折叠；
@@ -81,7 +83,7 @@ export function DataTableRowActions<TRecord>({
   onDelete,
   deleteConfirm,
   inlineActions,
-  extraActions = [],
+  extraActions = EMPTY_EXTRA_ACTIONS,
   collapseView = false,
   collapseEdit = false,
   collapseDelete = false,

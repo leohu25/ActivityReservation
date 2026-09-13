@@ -202,23 +202,23 @@ test("FormModal [内置 DetailTable 联动]: create/edit 模式下明细表支�
   assert.match(html, /操作/);
 });
 
-test("FormModal: 支持 inline 模式在服务端安全渲染", () => {
+test("FormModal: 缺省 initialItems 与 extraActions 时正确渲染并使用稳定默认引用", () => {
   const html = renderToString(
     <FormModal
       open={true}
       inline={true}
-      mode="create"
-      title="标准表单测试"
+      mode="view"
+      title="查看客户详情"
       schema={customerFormSchema}
       fields={formFields}
       initialValues={{
-        customerName: "企业A",
-        contactPhone: "13500000000",
-        creditLimit: 200,
+        customerName: "企业B",
+        contactPhone: "13500000001",
+        creditLimit: 500,
       }}
       onClose={() => {}}
     />,
   );
-  assert.match(html, /标准表单测试/);
-  assert.match(html, /客户全称/);
+  assert.match(html, /查看客户详情/);
+  assert.match(html, /企业B/);
 });

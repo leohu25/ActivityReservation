@@ -442,7 +442,10 @@ export function SalesOrderView({
         }}
         filterExtra={
           <>
-            <DataTableInputGroup label="履约状态" className="w-40">
+            <DataTableInputGroup
+              label="履约状态"
+              className="min-w-[180px] w-auto"
+            >
               <Select
                 value={fulfillmentStatus || "ALL"}
                 onValueChange={(next) => {
@@ -452,7 +455,7 @@ export function SalesOrderView({
                   navigateList({ page: 1, fulfillmentStatus: val });
                 }}
               >
-                <SelectTrigger className="h-10 border-0 bg-transparent shadow-none focus:ring-0">
+                <SelectTrigger className="h-full border-0 bg-transparent shadow-none focus:ring-0 text-xs px-2.5 gap-1.5 [&_svg]:size-3.5">
                   <SelectValue placeholder="全部" />
                 </SelectTrigger>
                 <SelectContent>
@@ -467,7 +470,10 @@ export function SalesOrderView({
                 </SelectContent>
               </Select>
             </DataTableInputGroup>
-            <DataTableInputGroup label="订单类型" className="w-36">
+            <DataTableInputGroup
+              label="订单类型"
+              className="min-w-[180px] w-auto"
+            >
               <Select
                 value={orderType || "ALL"}
                 onValueChange={(next) => {
@@ -477,7 +483,7 @@ export function SalesOrderView({
                   navigateList({ page: 1, orderType: val });
                 }}
               >
-                <SelectTrigger className="h-10 border-0 bg-transparent shadow-none focus:ring-0">
+                <SelectTrigger className="h-full border-0 bg-transparent shadow-none focus:ring-0 text-xs px-2.5 gap-1.5 [&_svg]:size-3.5">
                   <SelectValue placeholder="全部" />
                 </SelectTrigger>
                 <SelectContent>

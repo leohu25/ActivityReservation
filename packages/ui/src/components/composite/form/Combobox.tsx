@@ -33,6 +33,8 @@ export interface ComboboxProps {
   readonly className?: string;
   readonly popoverClassName?: string;
   readonly popoverWidth?: number | string;
+  /** 是否以模态浮层形式呈现（在 Dialog/Modal 弹窗内使用时必须为 true，以允许鼠标滚轮正常滚动） */
+  readonly modal?: boolean;
 }
 
 /**
@@ -51,6 +53,7 @@ export function Combobox({
   className,
   popoverClassName,
   popoverWidth,
+  modal = true,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -80,7 +83,7 @@ export function Combobox({
   );
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal={modal}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
