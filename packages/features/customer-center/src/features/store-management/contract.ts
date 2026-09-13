@@ -6,7 +6,9 @@ import {
 
 /** 门店档案实体与资源标识 (SSoT) */
 export const CustomerStoreSubject = "CustomerStore";
-export const CustomerStoreResource = "customer_store";
+export type CustomerStoreSubject = typeof CustomerStoreSubject;
+export const CustomerStoreResource = "customer.store";
+export type CustomerStoreResource = typeof CustomerStoreResource;
 
 /** 门店档案受控字段定义 */
 export const CustomerStoreField = {

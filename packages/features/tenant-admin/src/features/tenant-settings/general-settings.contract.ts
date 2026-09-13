@@ -5,7 +5,9 @@ import {
 
 /** 基础设置实体与资源标识 (SSoT) */
 export const GeneralSettingsSubject = "GeneralSettings";
+export type GeneralSettingsSubject = typeof GeneralSettingsSubject;
 export const GeneralSettingsResource = "settings.general";
+export type GeneralSettingsResource = typeof GeneralSettingsResource;
 
 /** 基础设置受控字段字典 */
 export const GeneralSettingsField = {

@@ -1,4 +1,5 @@
 "use server";
+import { StandardAction } from "@base/authorization";
 
 import { revalidatePath } from "next/cache";
 import { defineServerAction } from "@base/shared";
@@ -14,7 +15,7 @@ export const createQuoteAction = defineServerAction(
   async (input: CreateQuoteInput) => {
     const { client, ability, userId, employeeProfile } =
       await getTenantCustomerContext();
-    assertCustomerAbility(ability, "create", CustomerQuoteSubject);
+    assertCustomerAbility(ability, StandardAction.CREATE, CustomerQuoteSubject);
     const created = await CustomerQuoteService.createQuote(client, input, {
       userId,
       deptId: employeeProfile?.departmentId ?? null,
@@ -28,7 +29,7 @@ export const createQuoteAction = defineServerAction(
 export const updateQuoteAction = defineServerAction(
   async (quoteId: string, input: UpdateQuoteInput) => {
     const { client, ability, userId } = await getTenantCustomerContext();
-    assertCustomerAbility(ability, "update", CustomerQuoteSubject);
+    assertCustomerAbility(ability, StandardAction.UPDATE, CustomerQuoteSubject);
     const updated = await CustomerQuoteService.updateQuote(
       client,
       quoteId,
@@ -43,7 +44,7 @@ export const updateQuoteAction = defineServerAction(
 
 export const deleteQuoteAction = defineServerAction(async (quoteId: string) => {
   const { client, ability, userId } = await getTenantCustomerContext();
-  assertCustomerAbility(ability, "delete", CustomerQuoteSubject);
+  assertCustomerAbility(ability, StandardAction.DELETE, CustomerQuoteSubject);
   const deleted = await CustomerQuoteService.deleteQuote(client, quoteId, {
     userId,
   });

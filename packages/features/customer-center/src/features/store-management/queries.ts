@@ -1,4 +1,5 @@
 import "server-only";
+import { StandardAction } from "@base/authorization";
 
 import { getAccessibleWhere, pickReadableFields } from "@base/authorization";
 import { toPlainData } from "@base/shared";
@@ -12,7 +13,7 @@ import type { ListStoreFilter, StoreListItem } from "./types";
 
 export async function listStoresQuery(filter: ListStoreFilter = {}) {
   const { client, ability } = await getTenantCustomerContext();
-  assertCustomerAbility(ability, "read", CustomerStoreSubject);
+  assertCustomerAbility(ability, StandardAction.READ, CustomerStoreSubject);
   const accessibleWhere = getAccessibleWhere(
     ability,
     CustomerStoreSubject,
@@ -41,7 +42,7 @@ export async function listStoresQuery(filter: ListStoreFilter = {}) {
 
 export async function getStoreQuery(storeCode: string) {
   const { client, ability } = await getTenantCustomerContext();
-  assertCustomerAbility(ability, "read", CustomerStoreSubject);
+  assertCustomerAbility(ability, StandardAction.READ, CustomerStoreSubject);
   const accessibleWhere = getAccessibleWhere(
     ability,
     CustomerStoreSubject,

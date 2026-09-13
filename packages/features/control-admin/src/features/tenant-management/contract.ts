@@ -4,8 +4,11 @@ import {
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
 
+/** Non-entity capability spanning Organization and TenantDatabase operations. */
 export const TenantManagementSubject = "ControlTenant";
+export type TenantManagementSubject = typeof TenantManagementSubject;
 export const TenantManagementResource = "control.tenant";
+export type TenantManagementResource = typeof TenantManagementResource;
 
 export const TenantManagementField = {
   NAME: "name",
@@ -16,6 +19,11 @@ export const TenantManagementField = {
   STATUS: "status",
   MEMBER_COUNT: "memberCount",
   CREATED_AT: "createdAt",
+} as const;
+
+export const TenantManagementAction = {
+  ...StandardAction,
+  RESET_PASSWORD: "reset_password",
 } as const;
 
 export const tenantManagementPageContract: FeaturePagePermissionDescriptor = {
@@ -31,7 +39,10 @@ export const tenantManagementPageContract: FeaturePagePermissionDescriptor = {
     },
     { action: StandardAction.CREATE, label: "开通新租户与独立库 (Provision)" },
     { action: StandardAction.UPDATE, label: "启停挂起物理库管控" },
-    { action: "reset_password", label: "重置租户成员与管理员密码" },
+    {
+      action: TenantManagementAction.RESET_PASSWORD,
+      label: "重置租户成员与管理员密码",
+    },
   ],
   configurableFields: [
     { field: TenantManagementField.NAME, label: "租户全称", sensitive: false },

@@ -5,17 +5,18 @@ import {
 } from "@base/authorization";
 
 /** 员工实体与资源标识 (SSoT) */
-export const EmployeeSubject = "Employee";
+export const EmployeeSubject = "EmployeeProfile";
+export type EmployeeSubject = typeof EmployeeSubject;
 export const EmployeeResource = "organization.employee";
+export type EmployeeResource = typeof EmployeeResource;
 
 /** 员工受控字段字典 */
 export const EmployeeField = {
-  NAME: "name",
-  EMAIL: "email",
-  PHONE: "phone",
+  NAME_SNAPSHOT: "nameSnapshot",
+  EMAIL_SNAPSHOT: "emailSnapshot",
   EMPLOYEE_NO: "employeeNo",
-  DEPARTMENT_IDS: "departmentIds",
-  POSITION_IDS: "positionIds",
+  DEPARTMENT_ID: "departmentId",
+  POSITION_ID: "positionId",
   STATUS: "status",
 } as const;
 
@@ -23,16 +24,23 @@ export type EmployeeField = (typeof EmployeeField)[keyof typeof EmployeeField];
 
 /** 员工受控字段元数据定义 */
 export const employeeConfigurableFields = [
-  { field: EmployeeField.NAME, label: "员工姓名", isSensitive: false },
-  { field: EmployeeField.EMAIL, label: "电子邮箱", isSensitive: false },
-  { field: EmployeeField.PHONE, label: "联系电话 (敏感)", isSensitive: true },
+  {
+    field: EmployeeField.NAME_SNAPSHOT,
+    label: "员工姓名",
+    isSensitive: false,
+  },
+  {
+    field: EmployeeField.EMAIL_SNAPSHOT,
+    label: "电子邮箱",
+    isSensitive: true,
+  },
   { field: EmployeeField.EMPLOYEE_NO, label: "员工工号", isSensitive: false },
   {
-    field: EmployeeField.DEPARTMENT_IDS,
+    field: EmployeeField.DEPARTMENT_ID,
     label: "归属部门",
     isSensitive: false,
   },
-  { field: EmployeeField.POSITION_IDS, label: "担任岗位", isSensitive: false },
+  { field: EmployeeField.POSITION_ID, label: "担任岗位", isSensitive: false },
   { field: EmployeeField.STATUS, label: "在职状态", isSensitive: false },
 ] as const;
 

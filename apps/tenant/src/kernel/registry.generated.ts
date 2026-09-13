@@ -5,34 +5,35 @@
  */
 import type { TenantFeatureManifest } from "@base/authorization";
 import {
- deriveCatalogDefinitions,
- derivePermissionCatalog,
- deriveNavSections,
- derivePermissionTree,
+  deriveCatalogDefinitions,
+  derivePermissionCatalog,
+  deriveNavSections,
+  derivePermissionTree,
 } from "@base/authorization";
 import { tenantAdminManifest } from "@base/feature-tenant-admin/manifest";
 import { customerManifest } from "@base/feature-customer-center/manifest";
+import { materialManifest } from "@base/feature-material-center/manifest";
 import { orderManifest } from "@base/feature-order-center/manifest";
 import { procurementManifest } from "@base/feature-procurement-center";
 
 export const ALL_TENANT_MANIFESTS: readonly TenantFeatureManifest[] = [
- tenantAdminManifest,
- customerManifest,
- orderManifest,
- procurementManifest,
+  tenantAdminManifest,
+  customerManifest,
+  materialManifest,
+  orderManifest,
+  procurementManifest,
 ] as const;
 
 /** 全局租户权限清单定义数组 (无伪模块，纯业务实体) */
-export const globalTenantCatalogDefinitions =
- deriveCatalogDefinitions(ALL_TENANT_MANIFESTS);
+export const globalTenantCatalogDefinitions = deriveCatalogDefinitions(
+  ALL_TENANT_MANIFESTS,
+);
 
 /** 全局租户 CASL PermissionCatalog 实例 (供全局 Ability 工厂编译使用) */
-export const globalTenantCatalog =
- derivePermissionCatalog(ALL_TENANT_MANIFESTS);
+export const globalTenantCatalog = derivePermissionCatalog(ALL_TENANT_MANIFESTS);
 
 /** 全局租户侧边栏导航区块定义 (含工作台、客户中心、业务中心、系统管理) */
 export const globalTenantNavSections = deriveNavSections(ALL_TENANT_MANIFESTS);
 
 /** 全局租户角色权限管理树 (供系统管理 / 角色权限配置界面直接消费) */
-export const globalTenantPermissionTree =
- derivePermissionTree(ALL_TENANT_MANIFESTS);
+export const globalTenantPermissionTree = derivePermissionTree(ALL_TENANT_MANIFESTS);

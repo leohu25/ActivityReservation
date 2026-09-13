@@ -1,4 +1,5 @@
 "use server";
+import { StandardAction } from "@base/authorization";
 
 import { revalidatePath } from "next/cache";
 import { defineServerAction } from "@base/shared";
@@ -14,7 +15,7 @@ export const createStoreAction = defineServerAction(
   async (input: CreateStoreInput) => {
     const { client, ability, userId, employeeProfile } =
       await getTenantCustomerContext();
-    assertCustomerAbility(ability, "create", CustomerStoreSubject);
+    assertCustomerAbility(ability, StandardAction.CREATE, CustomerStoreSubject);
     const created = await CustomerStoreService.createStore(client, input, {
       userId,
       deptId: employeeProfile?.departmentId ?? null,
@@ -29,7 +30,7 @@ export const createStoreAction = defineServerAction(
 export const updateStoreAction = defineServerAction(
   async (storeCode: string, input: UpdateStoreInput) => {
     const { client, ability, userId } = await getTenantCustomerContext();
-    assertCustomerAbility(ability, "update", CustomerStoreSubject);
+    assertCustomerAbility(ability, StandardAction.UPDATE, CustomerStoreSubject);
     const updated = await CustomerStoreService.updateStore(
       client,
       storeCode,
@@ -45,7 +46,7 @@ export const updateStoreAction = defineServerAction(
 export const updateStoreStatusAction = defineServerAction(
   async (storeCode: string, status: "ACTIVE" | "DISABLED") => {
     const { client, ability, userId } = await getTenantCustomerContext();
-    assertCustomerAbility(ability, "update", CustomerStoreSubject);
+    assertCustomerAbility(ability, StandardAction.UPDATE, CustomerStoreSubject);
     const updated = await CustomerStoreService.updateStoreStatus(
       client,
       storeCode,
@@ -61,7 +62,7 @@ export const updateStoreStatusAction = defineServerAction(
 export const deleteStoreAction = defineServerAction(
   async (storeCode: string) => {
     const { client, ability, userId } = await getTenantCustomerContext();
-    assertCustomerAbility(ability, "delete", CustomerStoreSubject);
+    assertCustomerAbility(ability, StandardAction.DELETE, CustomerStoreSubject);
     const deleted = await CustomerStoreService.deleteStore(client, storeCode, {
       userId,
     });

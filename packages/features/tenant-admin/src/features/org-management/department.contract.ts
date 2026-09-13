@@ -6,15 +6,17 @@ import {
 
 /** 部门实体与资源标识 (SSoT) */
 export const DepartmentSubject = "Department";
+export type DepartmentSubject = typeof DepartmentSubject;
 export const DepartmentResource = "organization.department";
+export type DepartmentResource = typeof DepartmentResource;
 
 /** 部门受控字段字典 */
 export const DepartmentField = {
   NAME: "name",
   CODE: "code",
   PARENT_ID: "parentId",
-  LEADER_ID: "leaderId",
-  ORDER_NUM: "orderNum",
+  LEADER_MEMBER_ID: "leaderMemberId",
+  SORT: "sort",
   STATUS: "status",
 } as const;
 
@@ -26,8 +28,8 @@ export const departmentConfigurableFields = [
   { field: DepartmentField.NAME, label: "部门名称", isSensitive: false },
   { field: DepartmentField.CODE, label: "部门编码", isSensitive: false },
   { field: DepartmentField.PARENT_ID, label: "上级部门", isSensitive: false },
-  { field: DepartmentField.LEADER_ID, label: "部门负责人", isSensitive: false },
-  { field: DepartmentField.ORDER_NUM, label: "排序序号", isSensitive: false },
+  { field: DepartmentField.LEADER_MEMBER_ID, label: "部门负责人", isSensitive: false },
+  { field: DepartmentField.SORT, label: "排序序号", isSensitive: false },
   { field: DepartmentField.STATUS, label: "部门状态", isSensitive: false },
 ] as const;
 

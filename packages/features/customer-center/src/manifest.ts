@@ -1,3 +1,4 @@
+import { StandardAction } from "@base/authorization";
 import type { TenantFeatureManifest } from "@base/authorization";
 import {
   CustomerSubject,
@@ -5,7 +6,8 @@ import {
 } from "./features/customer-management/contract";
 import {
   CustomerCategorySubject,
-  categoryTagPageContract,
+  customerCategoryPageContract,
+  customerTagPageContract,
 } from "./features/customer-management/classification/contract";
 import {
   CustomerStoreSubject,
@@ -34,28 +36,28 @@ export const customerManifest: TenantFeatureManifest = {
               id: "customer-customers",
               label: "客户档案",
               href: "/customer/customers",
-              requiredAction: "read",
+              requiredAction: StandardAction.READ,
               requiredSubject: CustomerSubject,
             },
             {
               id: "customer-stores",
               label: "门店档案",
               href: "/customer/stores",
-              requiredAction: "read",
+              requiredAction: StandardAction.READ,
               requiredSubject: CustomerStoreSubject,
             },
             {
               id: "customer-categories-tags",
               label: "分类与标签",
               href: "/customer/categories-tags",
-              requiredAction: "read",
+              requiredAction: StandardAction.READ,
               requiredSubject: CustomerCategorySubject,
             },
             {
               id: "customer-quotes",
               label: "门店报价单",
               href: "/customer/quotes",
-              requiredAction: "read",
+              requiredAction: StandardAction.READ,
               requiredSubject: CustomerQuoteSubject,
             },
           ],
@@ -72,7 +74,8 @@ export const customerManifest: TenantFeatureManifest = {
       pages: [
         customerPageContract,
         storePageContract,
-        categoryTagPageContract,
+        customerCategoryPageContract,
+        customerTagPageContract,
         quotePageContract,
       ],
     },

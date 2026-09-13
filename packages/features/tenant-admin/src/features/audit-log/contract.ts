@@ -5,13 +5,19 @@ import {
 
 /** 审计日志实体与资源标识 (SSoT) */
 export const AuditLogOperationSubject = "AuditLogOperation";
-export const AuditLogOperationResource = "audit.operations";
+export type AuditLogOperationSubject = typeof AuditLogOperationSubject;
+export const AuditLogOperationResource = "audit.operation";
+export type AuditLogOperationResource = typeof AuditLogOperationResource;
 
 export const AuditLogLoginSubject = "AuditLogLogin";
-export const AuditLogLoginResource = "audit.logins";
+export type AuditLogLoginSubject = typeof AuditLogLoginSubject;
+export const AuditLogLoginResource = "audit.login";
+export type AuditLogLoginResource = typeof AuditLogLoginResource;
 
 export const AuditLogPermissionSubject = "AuditLogPermission";
-export const AuditLogPermissionResource = "audit.permissions";
+export type AuditLogPermissionSubject = typeof AuditLogPermissionSubject;
+export const AuditLogPermissionResource = "audit.permission";
+export type AuditLogPermissionResource = typeof AuditLogPermissionResource;
 
 /** 操作日志页面纯数据权限契约 */
 export const auditOperationPageContract: FeaturePagePermissionDescriptor = {

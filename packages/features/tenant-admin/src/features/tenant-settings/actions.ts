@@ -1,4 +1,5 @@
 "use server";
+import { StandardAction } from "@base/authorization";
 
 import { revalidatePath } from "next/cache";
 import { defineServerAction } from "@base/shared";
@@ -26,7 +27,7 @@ import type {
 export const getCompanyProfileAction = defineServerAction(
   async (): Promise<CompanyProfileData> => {
     const { organizationId, client, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "read", CompanyProfileSubject);
+    assertTenantAdminAbility(ability, StandardAction.READ, CompanyProfileSubject);
 
     const controlPrisma = await getControlDbClient();
     const service = new TenantSettingsService(
@@ -42,7 +43,7 @@ export const getCompanyProfileAction = defineServerAction(
 export const updateCompanyProfileAction = defineServerAction(
   async (input: UpdateCompanyProfileInput): Promise<CompanyProfileData> => {
     const { organizationId, client, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "update", CompanyProfileSubject);
+    assertTenantAdminAbility(ability, StandardAction.UPDATE, CompanyProfileSubject);
 
     const controlPrisma = await getControlDbClient();
     const service = new TenantSettingsService(
@@ -61,7 +62,7 @@ export const updateCompanyProfileAction = defineServerAction(
 export const getGeneralSettingsAction = defineServerAction(
   async (): Promise<GeneralSettingsData> => {
     const { organizationId, client, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "read", GeneralSettingsSubject);
+    assertTenantAdminAbility(ability, StandardAction.READ, GeneralSettingsSubject);
 
     const controlPrisma = await getControlDbClient();
     const service = new TenantSettingsService(
@@ -77,7 +78,7 @@ export const getGeneralSettingsAction = defineServerAction(
 export const updateGeneralSettingsAction = defineServerAction(
   async (input: UpdateGeneralSettingsInput): Promise<GeneralSettingsData> => {
     const { organizationId, client, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "update", GeneralSettingsSubject);
+    assertTenantAdminAbility(ability, StandardAction.UPDATE, GeneralSettingsSubject);
 
     const controlPrisma = await getControlDbClient();
     const service = new TenantSettingsService(
@@ -96,7 +97,7 @@ export const updateGeneralSettingsAction = defineServerAction(
 export const getSecuritySettingsAction = defineServerAction(
   async (): Promise<SecuritySettingsData> => {
     const { organizationId, client, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "read", SecuritySettingsSubject);
+    assertTenantAdminAbility(ability, StandardAction.READ, SecuritySettingsSubject);
 
     const controlPrisma = await getControlDbClient();
     const service = new TenantSettingsService(
@@ -112,7 +113,7 @@ export const getSecuritySettingsAction = defineServerAction(
 export const updateSecuritySettingsAction = defineServerAction(
   async (input: UpdateSecuritySettingsInput): Promise<SecuritySettingsData> => {
     const { organizationId, client, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "update", SecuritySettingsSubject);
+    assertTenantAdminAbility(ability, StandardAction.UPDATE, SecuritySettingsSubject);
 
     const controlPrisma = await getControlDbClient();
     const service = new TenantSettingsService(

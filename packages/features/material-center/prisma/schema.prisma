@@ -1,0 +1,657 @@
+datasource db {
+  provider = "postgresql"
+}
+
+// ----------------------------------------------------
+// 1. 分类、品种与等级
+// ----------------------------------------------------
+
+/// 商品分类树（支持一级品类、二级品类及多级扩展）
+model ItemCategory {
+  /// 分类主键ID
+  id             String    @id @default(cuid())
+  /// 分类业务编码（全局唯一）
+  categoryCode   String    @unique @map("category_code") @db.VarChar(30)
+  /// 分类名称
+  categoryName   String    @map("category_name") @db.VarChar(100)
+  /// 父级分类ID（为空代表一级根品类）
+  parentId       String?   @map("parent_id") @db.VarChar(30)
+  /// 分类层级（1: 一级, 2: 二级, 3: 三级）
+  level          Int       @default(1)
+  /// 排序权重
+  sortOrder      Int       @default(0) @map("sort_order")
+  /// 状态: ACTIVE(启用) / DISABLED(停用)
+  status         String    @default("ACTIVE") @db.VarChar(20)
+
+  // ===== 框架强制基础审计基线 (ADR-009) =====
+  /// 创建人用户ID
+  createdById    String    @map("created_by_id") @db.VarChar(50)
+  /// 归属部门ID
+  deptId         String?   @map("dept_id") @db.VarChar(50)
+  /// 最后更新人用户ID
+  updatedById    String?   @map("updated_by_id") @db.VarChar(50)
+  /// 软删除标记
+  isDeleted      Boolean   @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt      DateTime? @map("deleted_at")
+  /// 软删除操作人用户ID
+  deletedById    String?   @map("deleted_by_id") @db.VarChar(50)
+  /// 创建时间
+  createdAt      DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  parent         ItemCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children       ItemCategory[] @relation("CategoryTree")
+  items          ItemMaster[]
+
+  @@index([parentId])
+  @@index([createdById])
+  @@index([isDeleted])
+  @@map("item_category")
+}
+
+/// 独立品种档案（农产品原始生物品种属性，如土豆、青椒、精选五花肉）
+model ItemVariety {
+  /// 品种主键ID
+  id             String    @id @default(cuid())
+  /// 品种编码
+  varietyCode    String    @unique @map("variety_code") @db.VarChar(30)
+  /// 品种名称
+  varietyName    String    @map("variety_name") @db.VarChar(100)
+  /// 品种描述
+  description    String?   @db.VarChar(200)
+  /// 状态: ACTIVE(启用) / DISABLED(停用)
+  status         String    @default("ACTIVE") @db.VarChar(20)
+
+  // ===== 框架强制基础审计基线 (ADR-009) =====
+  /// 创建人用户ID
+  createdById    String    @map("created_by_id") @db.VarChar(50)
+  /// 归属部门ID
+  deptId         String?   @map("dept_id") @db.VarChar(50)
+  /// 最后更新人用户ID
+  updatedById    String?   @map("updated_by_id") @db.VarChar(50)
+  /// 软删除标记
+  isDeleted      Boolean   @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt      DateTime? @map("deleted_at")
+  /// 软删除操作人用户ID
+  deletedById    String?   @map("deleted_by_id") @db.VarChar(50)
+  /// 创建时间
+  createdAt      DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  items          ItemMaster[]
+
+  @@index([createdById])
+  @@index([isDeleted])
+  @@map("item_variety")
+}
+
+/// 品种等级字典（如一级品、精选级、特选级）
+model ItemGrade {
+  /// 等级主键ID
+  id             String    @id @default(cuid())
+  /// 等级编码
+  gradeCode      String    @unique @map("grade_code") @db.VarChar(30)
+  /// 等级名称
+  gradeName      String    @map("grade_name") @db.VarChar(100)
+  /// 等级描述
+  description    String?   @db.VarChar(200)
+  /// 状态: ACTIVE(启用) / DISABLED(停用)
+  status         String    @default("ACTIVE") @db.VarChar(20)
+
+  // ===== 框架强制基础审计基线 (ADR-009) =====
+  /// 创建人用户ID
+  createdById    String    @map("created_by_id") @db.VarChar(50)
+  /// 归属部门ID
+  deptId         String?   @map("dept_id") @db.VarChar(50)
+  /// 最后更新人用户ID
+  updatedById    String?   @map("updated_by_id") @db.VarChar(50)
+  /// 软删除标记
+  isDeleted      Boolean   @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt      DateTime? @map("deleted_at")
+  /// 软删除操作人用户ID
+  deletedById    String?   @map("deleted_by_id") @db.VarChar(50)
+  /// 创建时间
+  createdAt      DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  items          ItemMaster[]
+
+  @@index([createdById])
+  @@index([isDeleted])
+  @@map("item_grade")
+}
+
+// ----------------------------------------------------
+// 2. 计量单位与多单位换算
+// ----------------------------------------------------
+
+/// 计量单位字典
+model UnitOfMeasure {
+  /// 计量单位主键ID
+  id             String    @id @default(cuid())
+  /// 单位编码（如 kg, g, jin, bag, box）
+  unitCode       String    @unique @map("unit_code") @db.VarChar(30)
+  /// 单位名称（如 千克、克、斤、包、盒）
+  unitName       String    @map("unit_name") @db.VarChar(50)
+  /// 度量类别: WEIGHT(重量) / COUNT(计件) / VOLUME(体积)
+  unitType       String    @map("unit_type") @db.VarChar(20)
+  /// 相对于度量基准折算率 (克为基准: 1斤=500, 1kg=1000)
+  baseRatio      Decimal   @map("base_ratio") @db.Decimal(12, 4)
+  /// 是否该类别系统基准单位
+  isBaseUnit     Boolean   @default(false) @map("is_base_unit")
+  /// 状态: ACTIVE(启用) / DISABLED(停用)
+  status         String    @default("ACTIVE") @db.VarChar(20)
+
+  // ===== 框架强制基础审计基线 (ADR-009) =====
+  /// 创建人用户ID
+  createdById    String    @map("created_by_id") @db.VarChar(50)
+  /// 归属部门ID
+  deptId         String?   @map("dept_id") @db.VarChar(50)
+  /// 最后更新人用户ID
+  updatedById    String?   @map("updated_by_id") @db.VarChar(50)
+  /// 软删除标记
+  isDeleted      Boolean   @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt      DateTime? @map("deleted_at")
+  /// 软删除操作人用户ID
+  deletedById    String?   @map("deleted_by_id") @db.VarChar(50)
+  /// 创建时间
+  createdAt      DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  conversionsAsFrom UnitConversion[] @relation("FromUnit")
+  conversionsAsTo   UnitConversion[] @relation("ToUnit")
+
+  @@index([createdById])
+  @@index([isDeleted])
+  @@map("unit_of_measure")
+}
+
+/// 多单位换算规则（支持物料专有换算与全局规则）
+model UnitConversion {
+  /// 换算规则主键ID
+  id             String    @id @default(cuid())
+  /// 绑定特定物料编码（为空代表全局通用规则）
+  itemCode       String?   @map("item_code") @db.VarChar(50)
+  /// 源单位ID
+  fromUnitId     String    @map("from_unit_id") @db.VarChar(50)
+  /// 目标单位ID
+  toUnitId       String    @map("to_unit_id") @db.VarChar(50)
+  /// 换算率: toQty = fromQty * conversionRate
+  conversionRate Decimal   @map("conversion_rate") @db.Decimal(12, 4)
+
+  // ===== 框架强制基础审计基线 (ADR-009) =====
+  /// 创建人用户ID
+  createdById    String    @map("created_by_id") @db.VarChar(50)
+  /// 归属部门ID
+  deptId         String?   @map("dept_id") @db.VarChar(50)
+  /// 最后更新人用户ID
+  updatedById    String?   @map("updated_by_id") @db.VarChar(50)
+  /// 软删除标记
+  isDeleted      Boolean   @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt      DateTime? @map("deleted_at")
+  /// 软删除操作人用户ID
+  deletedById    String?   @map("deleted_by_id") @db.VarChar(50)
+  /// 创建时间
+  createdAt      DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  fromUnit       UnitOfMeasure @relation("FromUnit", fields: [fromUnitId], references: [id])
+  toUnit         UnitOfMeasure @relation("ToUnit", fields: [toUnitId], references: [id])
+  item           ItemMaster?   @relation(fields: [itemCode], references: [itemCode])
+
+  @@unique([itemCode, fromUnitId, toUnitId])
+  @@index([createdById])
+  @@index([isDeleted])
+  @@map("unit_conversion")
+}
+
+// ----------------------------------------------------
+// 3. 商品档案主数据
+// ----------------------------------------------------
+
+/// 商品档案主数据（物料主数据）
+model ItemMaster {
+  /// 物料主键ID
+  id                 String    @id @default(cuid())
+  /// 物料编码（全局唯一）
+  itemCode           String    @unique @map("item_code") @db.VarChar(50)
+  /// 物料名称
+  itemName           String    @map("item_name") @db.VarChar(100)
+  /// 商品别名（搜索匹配助记词）
+  itemAlias          String?   @map("item_alias") @db.VarChar(100)
+  /// 商品主图URL
+  pictureUrl         String?   @map("picture_url") @db.VarChar(500)
+  
+  /// 大类: RAW(原料) / SEMI_FINISHED(半成品) / FINISHED(成品) / PACKAGING(包材)
+  itemCategory       String    @map("item_category") @db.VarChar(20)
+  /// 所属商品分类ID
+  categoryId         String    @map("category_id") @db.VarChar(50)
+  /// 关联独立品种ID
+  varietyId          String?   @map("variety_id") @db.VarChar(50)
+  /// 关联品种等级ID
+  gradeId            String?   @map("grade_id") @db.VarChar(50)
+  /// 供应方式: PURCHASE(外购) / MANUFACTURE(自制) / HYBRID(自制为主可外购)
+  supplyMode         String    @map("supply_mode") @db.VarChar(20)
+  /// 商品类型: STANDARD(普通) / COMPOSITE(组合) / PACKAGE(套包)
+  itemType           String    @default("STANDARD") @map("item_type") @db.VarChar(20)
+  /// 商品标签（逗号分隔）
+  itemTags           String?   @map("item_tags") @db.VarChar(200)
+  
+  /// 基本单位（库存核算基准单位）
+  baseUnit           String    @map("base_unit") @db.VarChar(20)
+  /// 默认采购单位
+  purchaseUnit       String    @map("purchase_unit") @db.VarChar(20)
+  /// 默认库存单位
+  stockUnit          String    @map("stock_unit") @db.VarChar(20)
+  /// 默认生产单位
+  productionUnit     String?   @map("production_unit") @db.VarChar(20)
+  /// 默认销售单位
+  salesUnit          String?   @map("sales_unit") @db.VarChar(20)
+  
+  /// 最小采购数量
+  minPurchaseQty     Decimal?  @map("min_purchase_qty") @db.Decimal(12, 3)
+  /// 最小销售数量
+  minSalesQty        Decimal?  @map("min_sales_qty") @db.Decimal(12, 3)
+  /// 单次最大销售数量
+  maxSalesQty        Decimal   @default(99999) @map("max_sales_qty") @db.Decimal(12, 3)
+  /// 销售与报工数量小数精度
+  qtyPrecision       Int       @default(2) @map("qty_precision")
+  
+  /// 默认供应商ID
+  defaultSupplierId  String?   @map("default_supplier_id") @db.VarChar(50)
+  /// 默认仓库ID
+  defaultWarehouseId String?   @map("default_warehouse_id") @db.VarChar(50)
+  /// 默认工艺路线编码
+  defaultRouteCode   String?   @map("default_route_code") @db.VarChar(50)
+  
+  /// 保质期(小时)
+  shelfLifeHours     Int?      @map("shelf_life_hours")
+  /// 是否批次管理
+  batchManaged       Boolean   @default(true) @map("batch_managed")
+  /// 储运温度带: NORMAL(常温) / COLD(冷藏) / FROZEN(冷冻)
+  temperatureZone    String?   @map("temperature_zone") @db.VarChar(20)
+  /// 加工形态（整棵/丁/丝/片/段）
+  processingForm     String?   @map("processing_form") @db.VarChar(50)
+  /// 是否净菜加工品
+  freshCutFlag       Boolean   @default(false) @map("fresh_cut_flag")
+  /// 验收与质检标准说明
+  acceptanceStandard String?   @map("acceptance_standard") @db.Text
+  /// 参考行情价
+  referencePrice     Decimal?  @map("reference_price") @db.Decimal(10, 2)
+  /// 状态: ACTIVE(启用) / DISCONTINUED(停售) / OBSOLETE(淘汰)
+  status             String    @default("ACTIVE") @db.VarChar(20)
+
+  // ===== 框架强制基础审计基线 (ADR-009) =====
+  /// 创建人用户ID
+  createdById        String    @map("created_by_id") @db.VarChar(50)
+  /// 归属部门ID
+  deptId             String?   @map("dept_id") @db.VarChar(50)
+  /// 最后更新人用户ID
+  updatedById        String?   @map("updated_by_id") @db.VarChar(50)
+  /// 软删除标记
+  isDeleted          Boolean   @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt          DateTime? @map("deleted_at")
+  /// 软删除操作人用户ID
+  deletedById        String?   @map("deleted_by_id") @db.VarChar(50)
+  /// 创建时间
+  createdAt          DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  category           ItemCategory     @relation(fields: [categoryId], references: [id])
+  variety            ItemVariety?     @relation(fields: [varietyId], references: [id])
+  grade              ItemGrade?       @relation(fields: [gradeId], references: [id])
+  conversions        UnitConversion[]
+  bomsAsOutput       BomHeader[]      @relation("BomOutputItem")
+
+  @@index([itemCategory, status])
+  @@index([createdById])
+  @@index([isDeleted])
+  @@map("item_master")
+}
+
+// ----------------------------------------------------
+// 4. 车间产线、工序与加工规格
+// ----------------------------------------------------
+
+/// 生产产线档案
+model ProductionLine {
+  /// 产线主键ID
+  id             String    @id @default(cuid())
+  /// 产线业务编码
+  lineCode       String    @unique @map("line_code") @db.VarChar(30)
+  /// 产线名称（如 蔬菜清洗切割线、荤菜加工线、包装分拣线）
+  lineName       String    @map("line_name") @db.VarChar(100)
+  /// 产线说明
+  description    String?   @db.VarChar(200)
+  /// 状态: ACTIVE(启用) / DISABLED(停用)
+  status         String    @default("ACTIVE") @db.VarChar(20)
+
+  // ===== 框架强制基础审计基线 (ADR-009) =====
+  /// 创建人用户ID
+  createdById    String    @map("created_by_id") @db.VarChar(50)
+  /// 归属部门ID
+  deptId         String?   @map("dept_id") @db.VarChar(50)
+  /// 最后更新人用户ID
+  updatedById    String?   @map("updated_by_id") @db.VarChar(50)
+  /// 软删除标记
+  isDeleted      Boolean   @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt      DateTime? @map("deleted_at")
+  /// 软删除操作人用户ID
+  deletedById    String?   @map("deleted_by_id") @db.VarChar(50)
+  /// 创建时间
+  createdAt      DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  boms           BomHeader[]
+
+  @@index([createdById])
+  @@index([isDeleted])
+  @@map("production_line")
+}
+
+/// 工序档案
+model ProcessMaster {
+  /// 工序主键ID
+  id              String    @id @default(cuid())
+  /// 工序编码（如 PROC-001）
+  processCode     String    @unique @map("process_code") @db.VarChar(30)
+  /// 工序名称（如 分拣、清洗、去皮、切丝、包装）
+  processName     String    @map("process_name") @db.VarChar(100)
+  /// 工序分类: PRE_TREAT(预处理) / CLEAN(清洗) / CUT(切割) / SEASON(调理) / COOK(熟化) / PACK(包装)
+  category        String    @db.VarChar(20)
+  /// 默认损耗率(%)
+  defaultLossRate Decimal   @default(0) @map("default_loss_rate") @db.Decimal(5, 2)
+  /// 最小批量
+  minBatchQty     Decimal?  @map("min_batch_qty") @db.Decimal(12, 3)
+  /// 标准工时(小时)
+  stdLaborHours   Decimal?  @map("std_labor_hours") @db.Decimal(8, 3)
+  /// 工序描述
+  description     String?   @db.VarChar(200)
+  /// 状态: ACTIVE(启用) / DISABLED(停用)
+  status          String    @default("ACTIVE") @db.VarChar(20)
+
+  // ===== 框架强制基础审计基线 (ADR-009) =====
+  /// 创建人用户ID
+  createdById     String    @map("created_by_id") @db.VarChar(50)
+  /// 归属部门ID
+  deptId          String?   @map("dept_id") @db.VarChar(50)
+  /// 最后更新人用户ID
+  updatedById     String?   @map("updated_by_id") @db.VarChar(50)
+  /// 软删除标记
+  isDeleted       Boolean   @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt       DateTime? @map("deleted_at")
+  /// 软删除操作人用户ID
+  deletedById     String?   @map("deleted_by_id") @db.VarChar(50)
+  /// 创建时间
+  createdAt       DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  specs           ProcessSpec[]
+  bomProcesses    BomProcess[]
+
+  @@index([createdById])
+  @@index([isDeleted])
+  @@map("process_master")
+}
+
+/// 工序加工规格与指导参数
+model ProcessSpec {
+  /// 规格主键ID
+  id              String    @id @default(cuid())
+  /// 所属工序ID
+  processId       String    @map("process_id") @db.VarChar(50)
+  /// 规格编码（如 SPEC-001）
+  specCode        String    @map("spec_code") @db.VarChar(30)
+  /// 规格名称（如 切丝5MM）
+  specName        String    @map("spec_name") @db.VarChar(100)
+  /// 规格指导参数JSON
+  specParams      Json      @map("spec_params")
+  /// 规格专属默认损耗率(%)
+  defaultLossRate Decimal?  @map("default_loss_rate") @db.Decimal(5, 2)
+  /// 状态: ACTIVE(启用) / DISABLED(停用)
+  status          String    @default("ACTIVE") @db.VarChar(20)
+
+  // ===== 框架强制基础审计基线 (ADR-009) =====
+  /// 创建人用户ID
+  createdById     String    @map("created_by_id") @db.VarChar(50)
+  /// 归属部门ID
+  deptId          String?   @map("dept_id") @db.VarChar(50)
+  /// 最后更新人用户ID
+  updatedById     String?   @map("updated_by_id") @db.VarChar(50)
+  /// 软删除标记
+  isDeleted       Boolean   @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt       DateTime? @map("deleted_at")
+  /// 软删除操作人用户ID
+  deletedById     String?   @map("deleted_by_id") @db.VarChar(50)
+  /// 创建时间
+  createdAt       DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  process         ProcessMaster @relation(fields: [processId], references: [id])
+  bomProcesses    BomProcess[]
+
+  @@unique([processId, specCode])
+  @@index([createdById])
+  @@index([isDeleted])
+  @@map("process_spec")
+}
+
+// ----------------------------------------------------
+// 5. 工艺 BOM（单品 / 组合 / 包装）
+// ----------------------------------------------------
+
+/// 工艺 BOM 表头
+model BomHeader {
+  /// BOM主键ID
+  id                 String    @id @default(cuid())
+  /// BOM唯一编号
+  bomCode            String    @unique @map("bom_code") @db.VarChar(50)
+  /// BOM名称
+  bomName            String    @map("bom_name") @db.VarChar(100)
+  /// BOM类型: SINGLE(单品) / COMPOSITE(组合) / PACKAGING(包装)
+  bomType            String    @map("bom_type") @db.VarChar(20)
+  /// 版本号（如 V1.0, V1.1）
+  version            String    @default("V1.0") @db.VarChar(20)
+  /// 是否研发BOM
+  isResearch         Boolean   @default(false) @map("is_research")
+  /// 是否产出商品的默认生效BOM
+  isDefault          Boolean   @default(true) @map("is_default")
+  
+  /// 产出目标物料编码
+  outputItemCode     String    @map("output_item_code") @db.VarChar(50)
+  /// 基准批量数量
+  batchQty           Decimal   @default(1) @map("batch_qty") @db.Decimal(12, 3)
+  /// 基准批量单位
+  batchUnit          String    @map("batch_unit") @db.VarChar(20)
+  
+  /// 绑定的车间产线ID
+  productionLineId   String?   @map("production_line_id") @db.VarChar(50)
+  /// 关联默认工艺路线编码
+  routeCode          String?   @map("route_code") @db.VarChar(50)
+  /// 是否强行覆盖为总出成率
+  overrideTotalYield Boolean   @default(false) @map("override_total_yield")
+  /// 设定的总出成率(%)
+  totalYieldRate     Decimal?  @map("total_yield_rate") @db.Decimal(5, 2)
+  
+  /// 状态: DRAFT(草稿) / UNDER_REVIEW(评审中) / ACTIVE(已发布生效) / ARCHIVED(已归档)
+  status             String    @default("DRAFT") @db.VarChar(20)
+  /// 生效日期
+  effectiveDate      DateTime  @default(now()) @map("effective_date")
+  /// 备注信息
+  remark             String?   @db.VarChar(200)
+
+  // ===== 框架强制基础审计基线 (ADR-009) =====
+  /// 创建人用户ID
+  createdById        String    @map("created_by_id") @db.VarChar(50)
+  /// 归属部门ID
+  deptId             String?   @map("dept_id") @db.VarChar(50)
+  /// 最后更新人用户ID
+  updatedById        String?   @map("updated_by_id") @db.VarChar(50)
+  /// 软删除标记
+  isDeleted          Boolean   @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt          DateTime? @map("deleted_at")
+  /// 软删除操作人用户ID
+  deletedById        String?   @map("deleted_by_id") @db.VarChar(50)
+  /// 创建时间
+  createdAt          DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  outputItem         ItemMaster      @relation("BomOutputItem", fields: [outputItemCode], references: [itemCode])
+  productionLine     ProductionLine? @relation(fields: [productionLineId], references: [id])
+  processes          BomProcess[]
+
+  @@index([outputItemCode, bomType, status])
+  @@index([createdById])
+  @@index([isDeleted])
+  @@map("bom_header")
+}
+
+/// BOM 工序节点明细（主表级联）
+model BomProcess {
+  /// 工序明细ID
+  id                    String    @id @default(cuid())
+  /// 所属BOM ID
+  bomId                 String    @map("bom_id") @db.VarChar(50)
+  /// 工序顺序号 (10, 20, 30...)
+  seqNo                 Int       @map("seq_no")
+  /// 关联工序ID
+  processId             String    @map("process_id") @db.VarChar(50)
+  /// 关联加工规格ID
+  specId                String?   @map("spec_id") @db.VarChar(50)
+  
+  /// 本工序损耗率(%)
+  lossRate              Decimal   @map("loss_rate") @db.Decimal(5, 2)
+  /// 本工序出成率(%) = 100 - lossRate
+  yieldRate             Decimal   @map("yield_rate") @db.Decimal(5, 2)
+  /// 标准工时(小时)
+  stdLaborHours         Decimal?  @map("std_labor_hours") @db.Decimal(8, 3)
+  /// 是否质检节点
+  qcCheckpoint          Boolean   @default(false) @map("qc_checkpoint")
+  
+  /// 工序运行指导参数快照JSON
+  instructionParams     Json?     @map("instruction_params")
+  /// 工序操作图文说明
+  operatingInstructions String?   @map("operating_instructions") @db.Text
+
+  bom                   BomHeader      @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  process               ProcessMaster  @relation(fields: [processId], references: [id])
+  spec                  ProcessSpec?   @relation(fields: [specId], references: [id])
+  inputs                BomInputItem[]
+  outputs               BomOutputItem[]
+
+  @@index([bomId, seqNo])
+  @@map("bom_process")
+}
+
+/// BOM 投入物料明细（工序级联）
+model BomInputItem {
+  /// 投入明细ID
+  id             String     @id @default(cuid())
+  /// 所属工序明细ID
+  bomProcessId   String     @map("bom_process_id") @db.VarChar(50)
+  /// 投入物料编码
+  itemCode       String     @map("item_code") @db.VarChar(50)
+  /// 投入基准数量
+  quantity       Decimal    @db.Decimal(12, 3)
+  /// 投入单位
+  uom            String     @db.VarChar(20)
+  /// 物料角色: FLOW(流转品) / SUB_BOM(外部子件-递归展开) / PURCHASE(外购件-直接采购)
+  materialRole   String     @map("material_role") @db.VarChar(20)
+  /// 投入占比(%)，组合BOM专用
+  proportion     Decimal?   @db.Decimal(5, 2)
+  /// 来源前序工序seq_no（流转品专用）
+  prevProcessSeq Int?       @map("prev_process_seq")
+  /// 外部子件挂载的子BOM编号
+  childBomId     String?    @map("child_bom_id") @db.VarChar(50)
+
+  bomProcess     BomProcess @relation(fields: [bomProcessId], references: [id], onDelete: Cascade)
+
+  @@index([bomProcessId])
+  @@map("bom_input_item")
+}
+
+/// BOM 产出物料明细（工序级联）
+model BomOutputItem {
+  /// 产出明细ID
+  id             String     @id @default(cuid())
+  /// 所属工序明细ID
+  bomProcessId   String     @map("bom_process_id") @db.VarChar(50)
+  /// 产出物料编码
+  itemCode       String     @map("item_code") @db.VarChar(50)
+  /// 产出数量
+  quantity       Decimal    @db.Decimal(12, 3)
+  /// 产出单位
+  uom            String     @db.VarChar(20)
+  /// 产出类型: MAIN(主产出) / BYPRODUCT(副产出/边角料) / SCRAP(废料)
+  outputType     String     @map("output_type") @db.VarChar(20)
+  /// 物料角色: FLOW(流转品) / FINAL(最终交付品)
+  materialRole   String     @map("material_role") @db.VarChar(20)
+  /// 下游流转工序seq_no（留空代表最终品）
+  nextProcessSeq Int?       @map("next_process_seq")
+
+  bomProcess     BomProcess @relation(fields: [bomProcessId], references: [id], onDelete: Cascade)
+
+  @@index([bomProcessId])
+  @@map("bom_output_item")
+}
+
+/// MRP 运行时排产策略临时覆盖
+model BomMrpOverride {
+  /// 覆盖记录主键ID
+  id             String    @id @default(cuid())
+  /// MRP排产计划编号
+  planId         String    @map("plan_id") @db.VarChar(50)
+  /// 原BOM编号
+  bomId          String    @map("bom_id") @db.VarChar(50)
+  /// 覆盖的投入行ID
+  inputItemId    String    @map("input_item_id") @db.VarChar(50)
+  /// 原策略（如 SUB_BOM）
+  originalRole   String    @map("original_role") @db.VarChar(20)
+  /// 临时新策略（如 PURCHASE）
+  newRole        String    @map("new_role") @db.VarChar(20)
+  /// 修改原因说明
+  reason         String?   @db.VarChar(200)
+
+  // ===== 框架强制基础审计基线 (ADR-009) =====
+  /// 创建人用户ID
+  createdById    String    @map("created_by_id") @db.VarChar(50)
+  /// 归属部门ID
+  deptId         String?   @map("dept_id") @db.VarChar(50)
+  /// 最后更新人用户ID
+  updatedById    String?   @map("updated_by_id") @db.VarChar(50)
+  /// 软删除标记
+  isDeleted      Boolean   @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt      DateTime? @map("deleted_at")
+  /// 软删除操作人用户ID
+  deletedById    String?   @map("deleted_by_id") @db.VarChar(50)
+  /// 创建时间
+  createdAt      DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([planId, bomId])
+  @@index([createdById])
+  @@index([isDeleted])
+  @@map("bom_mrp_override")
+}

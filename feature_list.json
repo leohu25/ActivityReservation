@@ -268,6 +268,15 @@
       "status": "completed",
       "owner": "coordinator",
       "evidence": "1. 订单中心全切片落地，单测 24/24 PASS；2. @base/ui 目录重组为 table/、form/、templates/（DataTable 与 FormModal），单测 55/55 PASS；3. 采购中心、客户中心、部门管理全面平滑升级接入新模板；4. 门禁 scripts/check-redlines.mjs 新增拦截原生 confirm 与裸 table；5. 15 个包 check 与 13 个包 test 100% 全部通过，Code Reviewer 独立审计确认。"
+    },
+    {
+      "id": "feature-material-center",
+      "name": "【核心业务切片】物料管理与工艺BOM中心 (Material & Process BOM Center)",
+      "description": "建设生鲜净菜加工与配送的核心主数据底座：包含商品分类树、独立品种档案、品种等级、计量单位与多单位换算引擎、四类物料（原料/半成品/成品/包材）商品档案主数据、工序档案与指导参数模板、车间生产产线模型，以及覆盖单品BOM、组合BOM、包装BOM的三态工艺BOM管理系统（支持研发打样到生产发布生命周期流转、综合出成率连乘与强覆盖、投入产出DAG拓扑反推、DFS循环引用阻断与MRP运行时策略覆盖）。",
+      "dependencies": ["feature-order-center-and-ui-refactor"],
+      "status": "completed",
+      "owner": "coordinator",
+      "evidence": "1. 落地packages/features/material-center独立切片包与四大受控Feature(classification/unit-management/item-master/bom-management)；2. Prisma模型全量落地并通过8大审计字段门禁；3. 生成tenant增量迁移20260913105634_add_material_and_bom_models并编译catalog；4. 多单位换算引擎与BOM出成率/DFS循环检测单测8/8通过；5. 租户端装配/materials下5张业务视图与BomVisualDag流程图；6. ./scripts/verify.sh门禁全绿通过。"
     }
   ]
 }

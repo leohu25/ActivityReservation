@@ -16,6 +16,7 @@
     "@base/db-tenant": "workspace:*",
     "@base/feature-customer-center": "workspace:*",
     "@base/feature-order-center": "workspace:*",
+    "@base/feature-material-center": "workspace:*",
     "@base/feature-procurement-center": "workspace:*",
     "@base/feature-tenant-admin": "workspace:*",
     "@base/shared": "workspace:*",

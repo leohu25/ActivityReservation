@@ -139,13 +139,23 @@ export function generateMigration(input: {
     workspaceRoot,
     input.scope,
   );
+  const previousMigrations = loadMigrationArtifacts(workspaceRoot, input.scope);
+  const fromSchemaPath =
+    previousMigrations.length > 0
+      ? path.join(
+          getMigrationsDir(workspaceRoot, input.scope),
+          `${previousMigrations.at(-1)!.version}_${previousMigrations.at(-1)!.name}`,
+          "schema.snapshot.prisma",
+        )
+      : baselineSchemaPath;
+
   const rawSql = runPrismaDiff({
     workspaceRoot,
-    fromSchema: baselineSchemaPath,
+    fromSchema: fromSchemaPath,
     toSchema: schemaPath,
   });
-  const baselineSchema = fs.readFileSync(baselineSchemaPath, "utf-8");
-  const commentsDiffSql = diffCommentsSql(baselineSchema, schema);
+  const fromSchema = fs.readFileSync(fromSchemaPath, "utf-8");
+  const commentsDiffSql = diffCommentsSql(fromSchema, schema);
 
   const hasStructuralChange =
     rawSql.trim() && !rawSql.includes("This is an empty migration");
@@ -175,9 +185,9 @@ export function generateMigration(input: {
   const rawDownSql = runPrismaDiff({
     workspaceRoot,
     fromSchema: schemaPath,
-    toSchema: baselineSchemaPath,
+    toSchema: fromSchemaPath,
   });
-  const downCommentsDiffSql = diffCommentsSql(schema, baselineSchema);
+  const downCommentsDiffSql = diffCommentsSql(schema, fromSchema);
   let downSql = "";
   if (rawDownSql.trim() && !rawDownSql.includes("This is an empty migration")) {
     downSql += rawDownSql.trim();
@@ -195,7 +205,6 @@ export function generateMigration(input: {
   assertRiskApproval(risks, input.approval);
   const version = timestampVersion();
   const name = sanitizeName(input.name);
-  const previousMigrations = loadMigrationArtifacts(workspaceRoot, input.scope);
   const previousVersion =
     previousMigrations.at(-1)?.version ?? baseline.version;
   const manifest: MigrationManifest = {

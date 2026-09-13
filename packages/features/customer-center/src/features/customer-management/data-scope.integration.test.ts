@@ -6,7 +6,10 @@ import {
   getAccessibleWhere,
 } from "@base/authorization";
 import { customerCatalog } from "../../catalog";
-import { CustomerSubject } from "../../features/customer-management/contract";
+import {
+  CustomerResource,
+  CustomerSubject,
+} from "../../features/customer-management/contract";
 import { CustomerService } from "../../features/customer-management/service";
 
 describe("客户中心行级数据权限端到端下推验证 (Data Scope Integration)", () => {
@@ -48,12 +51,12 @@ describe("客户中心行级数据权限端到端下推验证 (Data Scope Integr
 
   const mockRepo = createMockRepo({
     statement: {
-      customer: ["read", "create", "update"],
+      [CustomerResource]: ["read", "create", "update"],
     },
     dataScopes: [
       {
         role: "sales_rep",
-        resource: "customer",
+        resource: CustomerResource,
         action: "read",
         scopeType: DataScope.SELF,
       },
@@ -107,12 +110,12 @@ describe("客户中心行级数据权限端到端下推验证 (Data Scope Integr
   test("2. '本部门 (DEPT)' 数据范围：下推 deptId = 当前部门ID", async () => {
     const deptRepo = createMockRepo({
       statement: {
-        customer: ["read"],
+        [CustomerResource]: ["read"],
       },
       dataScopes: [
         {
           role: "sales_rep",
-          resource: "customer",
+          resource: CustomerResource,
           action: "read",
           scopeType: DataScope.DEPT,
         },
@@ -145,12 +148,12 @@ describe("客户中心行级数据权限端到端下推验证 (Data Scope Integr
   test("3. '部门及下级 (DEPT_TREE)' 数据范围：下推 deptId in (当前部门及所有子孙部门)", async () => {
     const treeRepo = createMockRepo({
       statement: {
-        customer: ["read"],
+        [CustomerResource]: ["read"],
       },
       dataScopes: [
         {
           role: "sales_rep",
-          resource: "customer",
+          resource: CustomerResource,
           action: "read",
           scopeType: DataScope.DEPT_TREE,
         },

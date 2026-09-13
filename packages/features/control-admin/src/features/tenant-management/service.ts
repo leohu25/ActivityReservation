@@ -15,6 +15,7 @@ import {
 import { hashPassword } from "better-auth/crypto";
 import {
   FieldPolicy,
+  StandardAction,
   serializeRolePermissions,
   type RolePermissionPayload,
 } from "@base/authorization";
@@ -390,11 +391,11 @@ export class TenantManagementService {
         payload: {
           statement: {
             "procurement.order": [
-              "read",
-              "create",
-              "update",
+              StandardAction.READ,
+              StandardAction.CREATE,
+              StandardAction.UPDATE,
               "audit",
-              "export",
+              StandardAction.EXPORT,
             ],
           },
           dataScopes: [
@@ -411,11 +412,11 @@ export class TenantManagementService {
         payload: {
           statement: {
             "procurement.order": [
-              "read",
-              "create",
-              "update",
+              StandardAction.READ,
+              StandardAction.CREATE,
+              StandardAction.UPDATE,
               "audit",
-              "export",
+              StandardAction.EXPORT,
             ],
           },
           dataScopes: [
@@ -431,12 +432,15 @@ export class TenantManagementService {
         role: "buyer",
         payload: {
           statement: {
-            "procurement.order": ["read", "create"],
+            "procurement.order": [
+              StandardAction.READ,
+              StandardAction.CREATE,
+            ],
           },
           dataScopes: [
             {
               resource: "procurement.order",
-              action: "read",
+              action: StandardAction.READ,
               scopeType: "DEPT",
             },
           ],

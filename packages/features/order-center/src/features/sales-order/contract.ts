@@ -6,7 +6,9 @@ import {
 
 // 1. 实体与资源标识 (CASL Subject & Resource)
 export const SalesOrderSubject = "SalesOrder";
+export type SalesOrderSubject = typeof SalesOrderSubject;
 export const SalesOrderResource = "order.sales_order";
+export type SalesOrderResource = typeof SalesOrderResource;
 
 // 2. 字段字典枚举 (消除魔法字符串)
 export const SalesOrderField = {

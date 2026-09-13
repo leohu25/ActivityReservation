@@ -5,7 +5,9 @@ import {
 
 /** 安全设置实体与资源标识 (SSoT) */
 export const SecuritySettingsSubject = "SecuritySettings";
+export type SecuritySettingsSubject = typeof SecuritySettingsSubject;
 export const SecuritySettingsResource = "settings.security";
+export type SecuritySettingsResource = typeof SecuritySettingsResource;
 
 /** 安全设置受控字段字典 */
 export const SecuritySettingsField = {

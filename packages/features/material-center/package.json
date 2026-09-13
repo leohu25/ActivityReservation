@@ -1,0 +1,51 @@
+{
+  "name": "@base/feature-material-center",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./manifest": "./src/manifest.ts",
+    "./classification": "./src/features/classification/public.ts",
+    "./classification/server": "./src/features/classification/public.server.ts",
+    "./unit-management": "./src/features/unit-management/public.ts",
+    "./unit-management/server": "./src/features/unit-management/public.server.ts",
+    "./item-master": "./src/features/item-master/public.ts",
+    "./item-master/server": "./src/features/item-master/public.server.ts",
+    "./bom-management": "./src/features/bom-management/public.ts",
+    "./bom-management/server": "./src/features/bom-management/public.server.ts",
+    "./shared": "./src/shared/public.ts"
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "tsx --test --test-reporter=../../../scripts/reporter/fail-only-reporter.mjs \"src/**/*.test.ts\" \"src/**/*.test.tsx\""
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "dependencies": {
+    "@casl/ability": "7.0.1",
+    "@casl/prisma": "^2.0.2",
+    "@base/auth": "workspace:*",
+    "@base/authorization": "workspace:*",
+    "@base/biz-shared": "workspace:*",
+    "@base/db-tenant": "workspace:*",
+    "@base/shared": "workspace:*",
+    "@base/ui": "workspace:*",
+    "decimal.js": "^10.5.0",
+    "lucide-react": "^1.41.0",
+    "next": "16.3.4",
+    "server-only": "0.0.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.24",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "prisma": "7.10.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tsx": "^4.20.6",
+    "typescript": "^5.8.2"
+  }
+}

@@ -5,7 +5,9 @@ import {
 
 /** 角色权限管理实体与资源标识 (SSoT) */
 export const RoleManagementSubject = "RoleManagement";
-export const RoleManagementResource = "system.roles";
+export type RoleManagementSubject = typeof RoleManagementSubject;
+export const RoleManagementResource = "system.role_management";
+export type RoleManagementResource = typeof RoleManagementResource;
 
 /** 角色管理受控字段字典 */
 export const RoleField = {

@@ -1,3 +1,4 @@
+import { StandardAction } from "@base/authorization";
 import "server-only";
 
 import { getAccessibleWhere } from "@base/authorization";
@@ -25,7 +26,7 @@ export async function listSalesOrdersQuery(
   params: ListSalesOrdersParams,
 ): Promise<PaginatedSalesOrders> {
   const { client, ability } = await getTenantOrderContext();
-  assertOrderAbility(ability, "read", SalesOrderSubject);
+  assertOrderAbility(ability, StandardAction.READ, SalesOrderSubject);
 
   const accessibleWhere = getAccessibleWhere(
     ability,
@@ -43,7 +44,7 @@ export async function getSalesOrderDetailQuery(
   orderId: string,
 ): Promise<SalesOrderDetail> {
   const { client, ability } = await getTenantOrderContext();
-  assertOrderAbility(ability, "read", SalesOrderSubject);
+  assertOrderAbility(ability, StandardAction.READ, SalesOrderSubject);
 
   const detail = await getSalesOrderDetail(client, orderId);
   return toPlainData(detail);

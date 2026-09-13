@@ -6,7 +6,9 @@ import {
 
 /** 客户主数据实体与资源标识 (SSoT) */
 export const CustomerSubject = "Customer";
-export const CustomerResource = "customer";
+export type CustomerSubject = typeof CustomerSubject;
+export const CustomerResource = "customer.customer";
+export type CustomerResource = typeof CustomerResource;
 
 /** 客户主数据受控字段字典 */
 export const CustomerField = {
@@ -19,6 +21,11 @@ export const CustomerField = {
   DEFAULT_TAX_RATE: "defaultTaxRate",
   CREDIT_LIMIT: "creditLimit",
   STATUS: "status",
+} as const;
+
+export const CustomerAction = {
+  ...StandardAction,
+  TOGGLE_STATUS: "toggle_status",
 } as const;
 
 /** 客户主数据受控字段元数据定义 */
@@ -80,7 +87,7 @@ export const customerPageContract: FeaturePagePermissionDescriptor = {
     { action: StandardAction.DELETE, label: "删除客户" },
     { action: StandardAction.EXPORT, label: "导出数据" },
     /** 页面自定义扩展动作：启用/停用客户（非通用 CRUD，由契约显式声明） */
-    { action: "toggle_status", label: "启用/停用客户" },
+    { action: CustomerAction.TOGGLE_STATUS, label: "启用/停用客户" },
   ],
   configurableFields: customerConfigurableFields.map((f) => ({
     field: f.field,

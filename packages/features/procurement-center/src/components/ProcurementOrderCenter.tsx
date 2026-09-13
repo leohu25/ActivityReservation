@@ -1,4 +1,5 @@
 "use client";
+import { StandardAction } from "@base/authorization";
 
 import React, { useMemo, useState } from "react";
 import { exportContractCsv } from "@base/shared";
@@ -61,7 +62,7 @@ export function ProcurementOrderCenter({
 
   const canCreate =
     explicitCanCreate === undefined
-      ? ability.can("create", subject)
+      ? ability.can(StandardAction.CREATE, subject)
       : explicitCanCreate;
 
   const handleExport = () => {
@@ -220,7 +221,7 @@ export function ProcurementOrderCenter({
     }
     // 2. 否则按官方 AbilityProvider 判定
     if (col.field) {
-      return ability.can("read", subject, col.field);
+      return ability.can(StandardAction.READ, subject, col.field);
     }
     return true; // 部门、操作等公共列默认展示
   });

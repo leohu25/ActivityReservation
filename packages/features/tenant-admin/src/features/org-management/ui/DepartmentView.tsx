@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useMemo } from "react";
+import { StandardAction } from "@base/authorization";
 import {
   Badge,
   PageShell,
@@ -297,7 +298,7 @@ export function DepartmentView({ initialTree }: DepartmentViewProps) {
           extraActions={[
             {
               label: "添加子部门",
-              action: "create",
+              action: StandardAction.CREATE,
               onClick: () => openCreateModal(row.id),
             },
           ]}

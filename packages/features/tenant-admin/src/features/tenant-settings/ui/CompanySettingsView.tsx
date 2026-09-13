@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
-import { FieldPolicy } from "@base/authorization";
+import { FieldPolicy, StandardAction } from "@base/authorization";
 import {
   Card,
   CardHeader,
@@ -131,7 +131,7 @@ export function CompanySettingsView({
             <AuthorizedField
               subject="CompanyProfile"
               field="companyName"
-              action="update"
+              action={StandardAction.UPDATE}
               mode={isReadOnly ? FieldPolicy.READONLY : undefined}
               label="企业法定全称 *"
             >
@@ -147,7 +147,7 @@ export function CompanySettingsView({
             <AuthorizedField
               subject="CompanyProfile"
               field="shortName"
-              action="update"
+              action={StandardAction.UPDATE}
               mode={isReadOnly ? FieldPolicy.READONLY : undefined}
               label="企业品牌简称"
             >
@@ -162,7 +162,7 @@ export function CompanySettingsView({
             <AuthorizedField
               subject="CompanyProfile"
               field="creditCode"
-              action="update"
+              action={StandardAction.UPDATE}
               mode={isReadOnly ? FieldPolicy.READONLY : undefined}
               label="统一社会信用代码"
             >
@@ -177,7 +177,7 @@ export function CompanySettingsView({
             <AuthorizedField
               subject="CompanyProfile"
               field="legalPerson"
-              action="update"
+              action={StandardAction.UPDATE}
               mode={isReadOnly ? FieldPolicy.READONLY : undefined}
               label="法定代表人 / 负责人"
             >
@@ -205,7 +205,7 @@ export function CompanySettingsView({
             <AuthorizedField
               subject="CompanyProfile"
               field="contactPhone"
-              action="update"
+              action={StandardAction.UPDATE}
               mode={isReadOnly ? FieldPolicy.READONLY : undefined}
               label="业务联系电话"
             >
@@ -220,7 +220,7 @@ export function CompanySettingsView({
             <AuthorizedField
               subject="CompanyProfile"
               field="contactEmail"
-              action="update"
+              action={StandardAction.UPDATE}
               mode={isReadOnly ? FieldPolicy.READONLY : undefined}
               label="官方联系邮箱"
             >
@@ -237,7 +237,7 @@ export function CompanySettingsView({
               <AuthorizedField
                 subject="CompanyProfile"
                 field="address"
-                action="update"
+                action={StandardAction.UPDATE}
                 mode={isReadOnly ? FieldPolicy.READONLY : undefined}
                 label="经营注册地址"
               >

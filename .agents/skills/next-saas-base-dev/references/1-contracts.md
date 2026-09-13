@@ -4,6 +4,52 @@
 
 ---
 
+## 权限四维命名与 SSoT 铁律
+
+权限契约由 **Resource + Subject + Action + Field** 四维显式绑定组成，禁止根据名称推测映射关系：
+
+| 维度 | 强制命名 | SSoT 规则 |
+| --- | --- | --- |
+| Resource | `<domain>.<singular_resource>`；全小写，段内 `snake_case`，默认恰好两段 | 在 `contract.ts` 导出 `XxxResource` 常量；Descriptor 与 Manifest 只引用常量。例：`material.item_master`、`customer.store`。禁止裸 key、大小写、复数漂移。确需更深层级必须先在本规范登记。 |
+| Subject | `PascalCase` | 实体型 Subject 必须与真实 Prisma model 同名；非实体能力只能使用门禁内有界白名单，并在定义处写明 capability 例外原因。 |
+| Action | 小写动词或 `snake_case` 动作 | CRUD/导入导出使用共享 `StandardAction`；领域动作使用 `as const` 对象，如 `QuoteAction.AUDIT`。Contract、Manifest、guard、`ability.can`、`assert*Ability` 禁止魔法字符串。 |
+| Field | `camelCase` | 每个 Subject 有自己的 `XxxField = {...} as const` 字典；实体型字段必须存在于对应 Prisma model；受控列与字段策略调用点只引用字段常量。 |
+
+TypeScript 中使用 `as const` 常量对象和推导 union，不使用 `enum`：
+
+```ts
+export const ItemSubject = { MASTER: "ItemMaster" } as const;
+export type ItemSubject = (typeof ItemSubject)[keyof typeof ItemSubject];
+export const ItemResource = { MASTER: "material.item_master" } as const;
+export const ItemAction = { ...StandardAction, PUBLISH: "publish" } as const;
+export const ItemMasterField = { ITEM_CODE: "itemCode" } as const;
+```
+
+Descriptor 必须显式绑定，不允许运行时拼接或约定俗成：
+
+```ts
+export const itemMasterPageContract: FeaturePagePermissionDescriptor = {
+  resource: ItemResource.MASTER,
+  subject: ItemSubject.MASTER,
+  actions: [{ action: StandardAction.READ, label: "查看" }],
+  configurableFields: [
+    { field: ItemMasterField.ITEM_CODE, label: "商品编码" },
+  ],
+};
+```
+
+### 聚合页面与独立实体
+
+“同一页面/同一 Tab 组”不代表共享 Subject。只要是独立实体且未来可能独立授权（例如 `ItemCategory`、`ItemVariety`、`ItemGrade`，或 `CustomerCategory`、`CustomerTag`），就必须分别声明 Subject、Resource、Field 和 Descriptor；Manifest 的 `permissionModules.pages` 必须消费全部 Descriptor。页面可以组合查询，但每个 Query/Action 必须校验自己实体对应的 Subject。只有生命周期不可分割、无独立授权语义的值对象/级联明细才允许受聚合根权限代理，并需在契约注释中说明。
+
+### 硬门禁
+
+```bash
+node scripts/check/check-permission-contracts.mjs
+```
+
+该门禁在 `./scripts/verify.sh` 中硬阻断，检查命名格式、Prisma Subject/Field 对齐、Resource 唯一性、Descriptor 常量引用、Manifest Descriptor 消费，以及 `assert*Ability`/`ability.can`/guard 的 Action 与 Subject 魔法字符串。静态检查无法证明任意动态路由到 Query 的完整调用图，因此代码评审仍需确认页面调用的所有 Query Descriptor 已在 Manifest 注册。
+
 ## 核心工程红线
 
 1. **严禁手写两套平行世界**：切片内**彻底废除**平铺的 `permissions.ts`，每个页面必须在 Feature/Sub-Feature 的 `contract.ts` 中自包含维护自己的实体符号、受控字段枚举与页面契约；
@@ -138,21 +184,24 @@ export function CustomerView({ initialCustomers }: Props) {
 
 ### 自定义扩展动作
 
-标准 CRUD/导出由契约勾选；页面特有操作在契约 `actions` 中声明独立标识，
-并与按钮 `action`、Server Action `assertAbility` 使用同一名称：
+标准 CRUD/导出由共享 `StandardAction` 提供；页面特有操作由领域 `as const` 动作对象声明，并由契约、按钮与 Server Action 共同引用：
 
 ```ts
-// contracts/customer.contract.ts
+export const CustomerAction = {
+  ...StandardAction,
+  TOGGLE_STATUS: "toggle_status",
+} as const;
+
 actions: [
-  ...,
-  { action: "toggle_status", label: "启用/停用客户" },
+  { action: CustomerAction.TOGGLE_STATUS, label: "启用/停用客户" },
 ]
 
-// View extraActions
-{ label: "停用客户", action: "toggle_status", onClick: ... }
-
-// Server Action
-assertCustomerAbility(ability, "toggle_status", CustomerSubject);
+{ label: "停用客户", action: CustomerAction.TOGGLE_STATUS, onClick: ... }
+assertCustomerAbility(
+  ability,
+  CustomerAction.TOGGLE_STATUS,
+  CustomerSubject,
+);
 ```
 
-两页都要「盘点」但权限互不通用 → 各自契约、**不同 Subject**，同名 action 也不共用。
+两页都要「盘点」但权限互不通用 → 各自契约、**不同 Subject**；动作值可同名，但必须由所属领域动作对象引用。

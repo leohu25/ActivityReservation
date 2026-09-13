@@ -3,24 +3,64 @@ import {
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
 
-/** 客户分类与标签实体与资源标识 (SSoT) */
+/** 分类与标签同页展示，但分别对应真实 Prisma 实体与独立权限。 */
 export const CustomerCategorySubject = "CustomerCategory";
-/** 标签与分类在契约中作为同一聚合受控主体协同管理 */
-export const CustomerTagSubject = CustomerCategorySubject;
-export const CustomerCategoryTagResource = "customer_category_tag";
+export type CustomerCategorySubject = typeof CustomerCategorySubject;
+export const CustomerCategoryResource = "customer.category";
+export type CustomerCategoryResource = typeof CustomerCategoryResource;
+export const CustomerTagSubject = "CustomerTag";
+export type CustomerTagSubject = typeof CustomerTagSubject;
+export const CustomerTagResource = "customer.tag";
+export type CustomerTagResource = typeof CustomerTagResource;
 
-/**
- * 客户中心 - 分类与标签页面纯数据权限契约 (SSoT)
- */
-export const categoryTagPageContract: FeaturePagePermissionDescriptor = {
-  resource: CustomerCategoryTagResource,
-  subject: CustomerCategorySubject,
-  label: "分类与标签",
-  path: "/customer/categories-tags",
-  actions: [
-    { action: StandardAction.READ, label: "查看分类/标签" },
-    { action: StandardAction.CREATE, label: "新建分类/标签" },
-    { action: StandardAction.UPDATE, label: "修改分类/标签" },
-    { action: StandardAction.DELETE, label: "删除分类/标签" },
-  ],
+export const CustomerCategoryField = {
+  CATEGORY_CODE: "categoryCode",
+  CATEGORY_NAME: "categoryName",
+  PARENT_CODE: "parentCode",
+  DESCRIPTION: "description",
+  STATUS: "status",
 } as const;
+
+export const CustomerTagField = {
+  TAG_CODE: "tagCode",
+  TAG_NAME: "tagName",
+  TAG_TYPE: "tagType",
+  DESCRIPTION: "description",
+  STATUS: "status",
+} as const;
+
+const classificationActions = [
+  { action: StandardAction.READ, label: "查看" },
+  { action: StandardAction.CREATE, label: "新建" },
+  { action: StandardAction.UPDATE, label: "修改" },
+  { action: StandardAction.DELETE, label: "删除" },
+] as const;
+
+export const customerCategoryPageContract: FeaturePagePermissionDescriptor = {
+  resource: CustomerCategoryResource,
+  subject: CustomerCategorySubject,
+  label: "客户分类",
+  path: "/customer/categories-tags",
+  actions: classificationActions,
+  configurableFields: Object.values(CustomerCategoryField).map((field) => ({
+    field,
+    label: field,
+    sensitive: false,
+  })),
+} as const;
+
+export const customerTagPageContract: FeaturePagePermissionDescriptor = {
+  resource: CustomerTagResource,
+  subject: CustomerTagSubject,
+  label: "客户标签",
+  path: "/customer/categories-tags",
+  actions: classificationActions,
+  configurableFields: Object.values(CustomerTagField).map((field) => ({
+    field,
+    label: field,
+    sensitive: false,
+  })),
+} as const;
+
+/** @deprecated Use independent category/tag descriptors. */
+export const categoryTagPageContract = customerCategoryPageContract;

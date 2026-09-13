@@ -6,13 +6,20 @@ import {
 
 /** 门店报价单实体与资源标识 (SSoT) */
 export const CustomerQuoteSubject = "CustomerQuote";
-export const CustomerQuoteResource = "customer_quote";
+export type CustomerQuoteSubject = typeof CustomerQuoteSubject;
+export const CustomerQuoteResource = "customer.quote";
+export type CustomerQuoteResource = typeof CustomerQuoteResource;
+
+export const CustomerQuoteAction = {
+  ...StandardAction,
+  AUDIT: "audit",
+} as const;
 
 /** 报价单受控字段定义 */
 export const CustomerQuoteField = {
   QUOTE_ID: "quoteId",
   DISPLAY_NAME: "displayName",
-  SCOPE_TYPE: "scopeType",
+  QUOTE_TYPE: "quoteType",
   EFFECTIVE_DATE: "effectiveDate",
   EXPIRY_DATE: "expiryDate",
   STATUS: "status",
@@ -27,8 +34,8 @@ export const customerQuoteConfigurableFields = [
     isSensitive: false,
   },
   {
-    field: CustomerQuoteField.SCOPE_TYPE,
-    label: "定价适用维度",
+    field: CustomerQuoteField.QUOTE_TYPE,
+    label: "报价单类型",
     isSensitive: false,
   },
   {
@@ -70,7 +77,7 @@ export const quotePageContract: FeaturePagePermissionDescriptor = {
       supportedScopes: STANDARD_DATA_SCOPES,
     },
     {
-      action: "audit",
+      action: CustomerQuoteAction.AUDIT,
       label: "审核报价单",
       supportedScopes: STANDARD_DATA_SCOPES,
     },

@@ -1,4 +1,5 @@
 "use server";
+import { StandardAction } from "@base/authorization";
 
 import { revalidatePath } from "next/cache";
 import { defineServerAction } from "@base/shared";
@@ -18,7 +19,7 @@ import type {
 export const createCategoryAction = defineServerAction(
   async (input: CreateCategoryInput) => {
     const { client, ability } = await getTenantCustomerContext();
-    assertCustomerAbility(ability, "create", CustomerCategorySubject);
+    assertCustomerAbility(ability, StandardAction.CREATE, CustomerCategorySubject);
     const created = await CustomerCategoryTagService.createCategory(
       client,
       input,
@@ -33,7 +34,7 @@ export const createCategoryAction = defineServerAction(
 export const updateCategoryAction = defineServerAction(
   async (categoryCode: string, input: UpdateCategoryInput) => {
     const { client, ability } = await getTenantCustomerContext();
-    assertCustomerAbility(ability, "update", CustomerCategorySubject);
+    assertCustomerAbility(ability, StandardAction.UPDATE, CustomerCategorySubject);
     const updated = await CustomerCategoryTagService.updateCategory(
       client,
       categoryCode,
@@ -49,7 +50,7 @@ export const updateCategoryAction = defineServerAction(
 export const deleteCategoryAction = defineServerAction(
   async (categoryCode: string) => {
     const { client, ability } = await getTenantCustomerContext();
-    assertCustomerAbility(ability, "delete", CustomerCategorySubject);
+    assertCustomerAbility(ability, StandardAction.DELETE, CustomerCategorySubject);
     const deleted = await CustomerCategoryTagService.deleteCategory(
       client,
       categoryCode,
@@ -64,7 +65,7 @@ export const deleteCategoryAction = defineServerAction(
 export const updateCategoryStatusAction = defineServerAction(
   async (categoryCode: string, status: "ACTIVE" | "DISABLED") => {
     const { client, ability } = await getTenantCustomerContext();
-    assertCustomerAbility(ability, "update", CustomerCategorySubject);
+    assertCustomerAbility(ability, StandardAction.UPDATE, CustomerCategorySubject);
     const updated = await CustomerCategoryTagService.updateCategoryStatus(
       client,
       categoryCode,
@@ -79,7 +80,7 @@ export const updateCategoryStatusAction = defineServerAction(
 export const createTagAction = defineServerAction(
   async (input: CreateTagInput) => {
     const { client, ability } = await getTenantCustomerContext();
-    assertCustomerAbility(ability, "create", CustomerTagSubject);
+    assertCustomerAbility(ability, StandardAction.CREATE, CustomerTagSubject);
     const created = await CustomerCategoryTagService.createTag(client, input);
     revalidatePath("/customer/categories-tags");
     revalidatePath("/customer/customers");
@@ -91,7 +92,7 @@ export const createTagAction = defineServerAction(
 export const updateTagAction = defineServerAction(
   async (tagCode: string, input: UpdateTagInput) => {
     const { client, ability } = await getTenantCustomerContext();
-    assertCustomerAbility(ability, "update", CustomerTagSubject);
+    assertCustomerAbility(ability, StandardAction.UPDATE, CustomerTagSubject);
     const updated = await CustomerCategoryTagService.updateTag(
       client,
       tagCode,
@@ -106,7 +107,7 @@ export const updateTagAction = defineServerAction(
 
 export const deleteTagAction = defineServerAction(async (tagCode: string) => {
   const { client, ability } = await getTenantCustomerContext();
-  assertCustomerAbility(ability, "delete", CustomerTagSubject);
+  assertCustomerAbility(ability, StandardAction.DELETE, CustomerTagSubject);
   const deleted = await CustomerCategoryTagService.deleteTag(client, tagCode);
   revalidatePath("/customer/categories-tags");
   revalidatePath("/customer/customers");
@@ -116,7 +117,7 @@ export const deleteTagAction = defineServerAction(async (tagCode: string) => {
 export const updateTagStatusAction = defineServerAction(
   async (tagCode: string, status: "ACTIVE" | "DISABLED") => {
     const { client, ability } = await getTenantCustomerContext();
-    assertCustomerAbility(ability, "update", CustomerTagSubject);
+    assertCustomerAbility(ability, StandardAction.UPDATE, CustomerTagSubject);
     const updated = await CustomerCategoryTagService.updateTagStatus(
       client,
       tagCode,

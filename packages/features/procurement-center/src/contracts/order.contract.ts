@@ -8,11 +8,14 @@ import {
 
 // 1. 实体与资源标识 (CASL Subject & Resource) (SSoT)
 export const ProcurementOrderSubject = "PurchaseOrder";
+export type ProcurementOrderSubject = typeof ProcurementOrderSubject;
 export const ProcurementOrderResource = "procurement.order";
+export type ProcurementOrderResource = typeof ProcurementOrderResource;
 
-// 兼容别名导出
+// @deprecated Compatibility aliases; new authorization code uses canonical names.
 export const OrderSubject = ProcurementOrderSubject;
 export const OrderResource = ProcurementOrderResource;
+// @deprecated Compatibility alias.
 export const ProcurementSubject = ProcurementOrderSubject;
 
 // 单据业务状态枚举

@@ -1,3 +1,4 @@
+import { StandardAction } from "@base/authorization";
 import "server-only";
 
 import { toPlainData } from "@base/shared";
@@ -20,7 +21,7 @@ import type {
 
 export async function getCompanyProfileQuery(): Promise<CompanyProfileData> {
   const { organizationId, client, ability } = await getTenantAdminContext();
-  assertTenantAdminAbility(ability, "read", CompanyProfileSubject);
+  assertTenantAdminAbility(ability, StandardAction.READ, CompanyProfileSubject);
 
   const controlPrisma = await getControlDbClient();
   const service = new TenantSettingsService(controlPrisma, async () => client);
@@ -31,7 +32,7 @@ export async function getCompanyProfileQuery(): Promise<CompanyProfileData> {
 
 export async function getGeneralSettingsQuery(): Promise<GeneralSettingsData> {
   const { organizationId, client, ability } = await getTenantAdminContext();
-  assertTenantAdminAbility(ability, "read", GeneralSettingsSubject);
+  assertTenantAdminAbility(ability, StandardAction.READ, GeneralSettingsSubject);
 
   const controlPrisma = await getControlDbClient();
   const service = new TenantSettingsService(controlPrisma, async () => client);
@@ -42,7 +43,7 @@ export async function getGeneralSettingsQuery(): Promise<GeneralSettingsData> {
 
 export async function getSecuritySettingsQuery(): Promise<SecuritySettingsData> {
   const { organizationId, client, ability } = await getTenantAdminContext();
-  assertTenantAdminAbility(ability, "read", SecuritySettingsSubject);
+  assertTenantAdminAbility(ability, StandardAction.READ, SecuritySettingsSubject);
 
   const controlPrisma = await getControlDbClient();
   const service = new TenantSettingsService(controlPrisma, async () => client);

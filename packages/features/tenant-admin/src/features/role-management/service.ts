@@ -8,6 +8,7 @@ import {
   isBuiltInRole,
   DataScope,
   FieldPolicy,
+  StandardAction,
   parsePersistedPermissions,
   serializeRolePermissions,
   type RolePermissionPayload,
@@ -78,9 +79,11 @@ export function deriveBuiltInRoleDefaults(
         }
 
         // Member 配置
-        const readAct = page.actions.find((a) => a.action === "read");
+        const readAct = page.actions.find(
+          (a) => a.action === StandardAction.READ,
+        );
         if (readAct) {
-          memberStatement[page.resource] = ["read"];
+          memberStatement[page.resource] = [StandardAction.READ];
 
           if (readAct.supportedScopes && readAct.supportedScopes.length > 0) {
             let memberScope: (typeof readAct.supportedScopes)[number] =
@@ -93,7 +96,7 @@ export function deriveBuiltInRoleDefaults(
 
             memberDataScopes.push({
               resource: page.resource,
-              action: "read",
+              action: StandardAction.READ,
               scopeType: memberScope,
             });
           }

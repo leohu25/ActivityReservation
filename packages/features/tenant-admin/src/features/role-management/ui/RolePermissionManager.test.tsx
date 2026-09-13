@@ -109,10 +109,11 @@ test("RolePermissionManager 彻底剔除 Owner 并正确渲染树状表格权限
             isSystem: true,
             permissions: {
                 statement: {
-                    customer: ["read", "create", "update"],
-                    customer_store: ["read"],
-                    customer_category_tag: ["read"],
-                    customer_quote: ["read"],
+                    "customer.customer": ["read", "create", "update"],
+                    "customer.store": ["read"],
+                    "customer.category": ["read"],
+                    "customer.tag": ["read"],
+                    "customer.quote": ["read"],
                     "procurement.order": [
                         "read",
                         "create",

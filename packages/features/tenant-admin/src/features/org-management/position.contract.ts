@@ -6,14 +6,16 @@ import {
 
 /** 岗位实体与资源标识 (SSoT) */
 export const PositionSubject = "Position";
+export type PositionSubject = typeof PositionSubject;
 export const PositionResource = "organization.position";
+export type PositionResource = typeof PositionResource;
 
 /** 岗位受控字段字典 */
 export const PositionField = {
   NAME: "name",
   CODE: "code",
-  LEVEL: "level",
-  DEPARTMENT_ID: "departmentId",
+  DESCRIPTION: "description",
+  SORT: "sort",
   STATUS: "status",
 } as const;
 
@@ -23,8 +25,8 @@ export type PositionField = (typeof PositionField)[keyof typeof PositionField];
 export const positionConfigurableFields = [
   { field: PositionField.NAME, label: "岗位名称", isSensitive: false },
   { field: PositionField.CODE, label: "岗位编码", isSensitive: false },
-  { field: PositionField.LEVEL, label: "职级等级", isSensitive: false },
-  { field: PositionField.DEPARTMENT_ID, label: "所属部门", isSensitive: false },
+  { field: PositionField.DESCRIPTION, label: "岗位描述", isSensitive: false },
+  { field: PositionField.SORT, label: "排序权重", isSensitive: false },
   { field: PositionField.STATUS, label: "岗位状态", isSensitive: false },
 ] as const;
 

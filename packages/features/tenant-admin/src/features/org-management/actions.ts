@@ -1,4 +1,5 @@
 "use server";
+import { StandardAction } from "@base/authorization";
 
 import { revalidatePath } from "next/cache";
 import { defineServerAction } from "@base/shared";
@@ -40,7 +41,7 @@ const empService = new EmployeeManagementService();
 export const listDepartmentTreeAction = defineServerAction(
   async (): Promise<readonly DepartmentTreeNode[]> => {
     const { client, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "read", DepartmentSubject);
+    assertTenantAdminAbility(ability, StandardAction.READ, DepartmentSubject);
 
     return deptService.listDepartmentTree(client);
   },
@@ -50,7 +51,7 @@ export const listDepartmentTreeAction = defineServerAction(
 export const createDepartmentAction = defineServerAction(
   async (input: CreateDepartmentInput): Promise<DepartmentTreeNode> => {
     const { client, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "create", DepartmentSubject);
+    assertTenantAdminAbility(ability, StandardAction.CREATE, DepartmentSubject);
 
     const data = await deptService.createDepartment(client, input);
     revalidatePath("/organization/departments");
@@ -66,7 +67,7 @@ export const updateDepartmentAction = defineServerAction(
     input: UpdateDepartmentInput,
   ): Promise<DepartmentTreeNode> => {
     const { client, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "update", DepartmentSubject);
+    assertTenantAdminAbility(ability, StandardAction.UPDATE, DepartmentSubject);
 
     const data = await deptService.updateDepartment(client, id, input);
     revalidatePath("/organization/departments");
@@ -79,7 +80,7 @@ export const updateDepartmentAction = defineServerAction(
 export const deleteDepartmentAction = defineServerAction(
   async (id: string): Promise<void> => {
     const { client, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "delete", DepartmentSubject);
+    assertTenantAdminAbility(ability, StandardAction.DELETE, DepartmentSubject);
 
     await deptService.deleteDepartment(client, id);
     revalidatePath("/organization/departments");
@@ -95,7 +96,7 @@ export const deleteDepartmentAction = defineServerAction(
 export const listPositionsAction = defineServerAction(
   async (): Promise<readonly PositionItem[]> => {
     const { client, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "read", PositionSubject);
+    assertTenantAdminAbility(ability, StandardAction.READ, PositionSubject);
 
     return posService.listPositions(client);
   },
@@ -105,7 +106,7 @@ export const listPositionsAction = defineServerAction(
 export const createPositionAction = defineServerAction(
   async (input: CreatePositionInput): Promise<PositionItem> => {
     const { client, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "create", PositionSubject);
+    assertTenantAdminAbility(ability, StandardAction.CREATE, PositionSubject);
 
     const data = await posService.createPosition(client, input);
     revalidatePath("/organization/positions");
@@ -118,7 +119,7 @@ export const createPositionAction = defineServerAction(
 export const updatePositionAction = defineServerAction(
   async (id: string, input: UpdatePositionInput): Promise<PositionItem> => {
     const { client, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "update", PositionSubject);
+    assertTenantAdminAbility(ability, StandardAction.UPDATE, PositionSubject);
 
     const data = await posService.updatePosition(client, id, input);
     revalidatePath("/organization/positions");
@@ -131,7 +132,7 @@ export const updatePositionAction = defineServerAction(
 export const togglePositionStatusAction = defineServerAction(
   async (id: string): Promise<PositionItem> => {
     const { client, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "update", PositionSubject);
+    assertTenantAdminAbility(ability, StandardAction.UPDATE, PositionSubject);
 
     const data = await posService.togglePositionStatus(client, id);
     revalidatePath("/organization/positions");
@@ -143,7 +144,7 @@ export const togglePositionStatusAction = defineServerAction(
 export const deletePositionAction = defineServerAction(
   async (id: string): Promise<void> => {
     const { client, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "delete", PositionSubject);
+    assertTenantAdminAbility(ability, StandardAction.DELETE, PositionSubject);
 
     await posService.deletePosition(client, id);
     revalidatePath("/organization/positions");
@@ -159,7 +160,7 @@ export const deletePositionAction = defineServerAction(
 export const listEmployeesAction = defineServerAction(
   async (filter?: EmployeeListFilter): Promise<readonly EmployeeItem[]> => {
     const { client, organizationId, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "read", EmployeeSubject);
+    assertTenantAdminAbility(ability, StandardAction.READ, EmployeeSubject);
 
     const controlPrisma = await getControlDbClient();
     const data = await empService.listEmployees(
@@ -186,7 +187,7 @@ export const listEmployeesAction = defineServerAction(
 export const directCreateEmployeeAction = defineServerAction(
   async (input: DirectCreateEmployeeInput): Promise<EmployeeItem> => {
     const { client, organizationId, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "create", EmployeeSubject);
+    assertTenantAdminAbility(ability, StandardAction.CREATE, EmployeeSubject);
 
     const controlPrisma = await getControlDbClient();
     const data = await empService.directCreateEmployee(
@@ -207,7 +208,7 @@ export const directCreateEmployeeAction = defineServerAction(
 export const transferDepartmentAction = defineServerAction(
   async (input: TransferDepartmentInput): Promise<void> => {
     const { client, organizationId, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "update", EmployeeSubject);
+    assertTenantAdminAbility(ability, StandardAction.UPDATE, EmployeeSubject);
 
     const controlPrisma = await getControlDbClient();
     await empService.transferDepartment(
@@ -226,7 +227,7 @@ export const transferDepartmentAction = defineServerAction(
 export const transferPositionAction = defineServerAction(
   async (input: TransferPositionInput): Promise<void> => {
     const { client, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "update", EmployeeSubject);
+    assertTenantAdminAbility(ability, StandardAction.UPDATE, EmployeeSubject);
 
     await empService.transferPosition(client, input);
 
@@ -239,7 +240,7 @@ export const transferPositionAction = defineServerAction(
 export const transferRolesAction = defineServerAction(
   async (input: TransferRolesInput): Promise<void> => {
     const { organizationId, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "update", EmployeeSubject);
+    assertTenantAdminAbility(ability, StandardAction.UPDATE, EmployeeSubject);
 
     const controlPrisma = await getControlDbClient();
     await empService.transferRoles(controlPrisma, organizationId, input);
@@ -253,7 +254,7 @@ export const transferRolesAction = defineServerAction(
 export const suspendEmployeeAction = defineServerAction(
   async (employeeId: string): Promise<void> => {
     const { client, organizationId, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "delete", EmployeeSubject);
+    assertTenantAdminAbility(ability, StandardAction.DELETE, EmployeeSubject);
 
     const controlPrisma = await getControlDbClient();
     await empService.suspendEmployee(
@@ -271,7 +272,7 @@ export const suspendEmployeeAction = defineServerAction(
 export const resumeEmployeeAction = defineServerAction(
   async (employeeId: string): Promise<void> => {
     const { client, organizationId, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "update", EmployeeSubject);
+    assertTenantAdminAbility(ability, StandardAction.UPDATE, EmployeeSubject);
 
     const controlPrisma = await getControlDbClient();
     await empService.resumeEmployee(

@@ -5,7 +5,9 @@ import {
 
 /** 企业信息实体与资源标识 (SSoT) */
 export const CompanyProfileSubject = "CompanyProfile";
+export type CompanyProfileSubject = typeof CompanyProfileSubject;
 export const CompanyProfileResource = "settings.company";
+export type CompanyProfileResource = typeof CompanyProfileResource;
 
 /** 企业信息受控字段字典 */
 export const CompanyProfileField = {

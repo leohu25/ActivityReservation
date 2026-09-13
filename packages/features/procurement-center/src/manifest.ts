@@ -1,3 +1,4 @@
+import { StandardAction } from "@base/authorization";
 import type { TenantFeatureManifest } from "@base/authorization";
 import { procurementOrderPageContract } from "./contracts";
 
@@ -16,7 +17,7 @@ export const procurementManifest: TenantFeatureManifest = {
                                         label: "采购订单中心",
                                         href: "/procurement/orders",
                                         icon: "PackageCheck",
-                                        requiredAction: "read",
+                                        requiredAction: StandardAction.READ,
                                         requiredSubject:
                                                 procurementOrderPageContract.subject,
                                 },

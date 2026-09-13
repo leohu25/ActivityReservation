@@ -1,3 +1,4 @@
+import { StandardAction } from "@base/authorization";
 import type { TenantFeatureManifest } from "@base/authorization";
 import {
         DepartmentSubject,
@@ -59,7 +60,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
                                                         id: "org-employees",
                                                         label: "员工管理",
                                                         href: "/organization/employees",
-                                                        requiredAction: "read",
+                                                        requiredAction: StandardAction.READ,
                                                         requiredSubject:
                                                                 EmployeeSubject,
                                                 },
@@ -67,7 +68,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
                                                         id: "org-departments",
                                                         label: "部门管理",
                                                         href: "/organization/departments",
-                                                        requiredAction: "read",
+                                                        requiredAction: StandardAction.READ,
                                                         requiredSubject:
                                                                 DepartmentSubject,
                                                 },
@@ -75,7 +76,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
                                                         id: "org-positions",
                                                         label: "岗位管理",
                                                         href: "/organization/positions",
-                                                        requiredAction: "read",
+                                                        requiredAction: StandardAction.READ,
                                                         requiredSubject:
                                                                 PositionSubject,
                                                 },
@@ -90,7 +91,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
                                                         id: "settings-roles",
                                                         label: "角色权限管理",
                                                         href: "/settings/roles",
-                                                        requiredAction: "read",
+                                                        requiredAction: StandardAction.READ,
                                                         requiredSubject:
                                                                 RoleManagementSubject,
                                                 },
@@ -105,7 +106,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
                                                         id: "settings-company",
                                                         label: "企业信息",
                                                         href: "/settings/company",
-                                                        requiredAction: "read",
+                                                        requiredAction: StandardAction.READ,
                                                         requiredSubject:
                                                                 CompanyProfileSubject,
                                                 },
@@ -113,7 +114,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
                                                         id: "settings-general",
                                                         label: "基础设置",
                                                         href: "/settings/general",
-                                                        requiredAction: "read",
+                                                        requiredAction: StandardAction.READ,
                                                         requiredSubject:
                                                                 GeneralSettingsSubject,
                                                 },
@@ -121,7 +122,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
                                                         id: "settings-security",
                                                         label: "安全设置",
                                                         href: "/settings/security",
-                                                        requiredAction: "read",
+                                                        requiredAction: StandardAction.READ,
                                                         requiredSubject:
                                                                 SecuritySettingsSubject,
                                                 },
@@ -136,7 +137,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
                                                         id: "audit-login",
                                                         label: "登录审计",
                                                         href: "/audit/login",
-                                                        requiredAction: "read",
+                                                        requiredAction: StandardAction.READ,
                                                         requiredSubject:
                                                                 AuditLogLoginSubject,
                                                 },
@@ -144,7 +145,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
                                                         id: "audit-operations",
                                                         label: "业务操作审计",
                                                         href: "/audit/operations",
-                                                        requiredAction: "read",
+                                                        requiredAction: StandardAction.READ,
                                                         requiredSubject:
                                                                 AuditLogOperationSubject,
                                                 },
@@ -152,7 +153,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
                                                         id: "audit-permissions",
                                                         label: "权限变更审计",
                                                         href: "/audit/permissions",
-                                                        requiredAction: "read",
+                                                        requiredAction: StandardAction.READ,
                                                         requiredSubject:
                                                                 AuditLogPermissionSubject,
                                                 },

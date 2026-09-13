@@ -1,4 +1,5 @@
 import "server-only";
+import { StandardAction } from "@base/authorization";
 
 import { toPlainData } from "@base/shared";
 import {
@@ -15,7 +16,7 @@ export async function listTenantRolesQuery(
   manifests?: readonly TenantFeatureManifest[],
 ): Promise<readonly TenantRoleItem[]> {
   const { organizationId, ability } = await getTenantAdminContext();
-  assertTenantAdminAbility(ability, "read", RoleManagementSubject);
+  assertTenantAdminAbility(ability, StandardAction.READ, RoleManagementSubject);
 
   const runtime = getServerAuthRuntime();
   const service = new TenantRoleService(

@@ -24,6 +24,7 @@
 
 - **单任务聚焦 (One feature/task at a time)**：每次仅处理一个明确目标，严禁跨范围随意修改无关文件；
 - **提交前必须审阅确认 (Human Review Before Commit)**：在执行 `git commit` 前，智能体必须主动向用户呈现本次修改清单与核心变更说明，**获得用户明确确认审阅通过后方可执行提交**，严禁擅自静默提交；
+- **提交信息必须使用中文 (Chinese Commit Message)**：Git 提交信息必须严格遵循 Conventional Commits 规范，且 Header 说明与 Body 详细要点**必须使用中文书写**（例如 `feat(material): 实现物料与工艺BOM中心及全仓权限四维契约标准化`），严禁使用全英文提交信息；
 - **门禁由钩子兜底 (No manual gate runs)**：日常开发**不要**手动全量运行 `./scripts/verify.sh`（耗时且由 Git `pre-commit` 自动兜底）；即时反馈仅对改动文件执行同级单测或类型检查；
 - **单源状态收敛**：特性开发进度与真实交付证据严格记录至 `feature_list.json` 与沙盒 `progress.md`；
 - **保持整洁可重启**：结束时工作区随时可重新无损运行 `./init.sh`。

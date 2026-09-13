@@ -1,4 +1,5 @@
 "use server";
+import { StandardAction } from "@base/authorization";
 
 import { revalidatePath } from "next/cache";
 import { defineServerAction } from "@base/shared";
@@ -23,7 +24,7 @@ export const createSalesOrderAction = defineServerAction(
   async (input: CreateSalesOrderInput) => {
     const { client, ability, userId, employeeProfile } =
       await getTenantOrderContext();
-    assertOrderAbility(ability, "create", SalesOrderSubject);
+    assertOrderAbility(ability, StandardAction.CREATE, SalesOrderSubject);
 
     const created = await createSalesOrder(client, input, {
       userId,
@@ -128,7 +129,7 @@ export const deleteSalesOrderAction = defineServerAction(
   async (orderId: string) => {
     const { client, ability, userId, employeeProfile } =
       await getTenantOrderContext();
-    assertOrderAbility(ability, "delete", SalesOrderSubject);
+    assertOrderAbility(ability, StandardAction.DELETE, SalesOrderSubject);
 
     await deleteSalesOrder(client, orderId, {
       userId,
@@ -143,7 +144,7 @@ export const deleteSalesOrderAction = defineServerAction(
 export const getSalesOrderDetailAction = defineServerAction(
   async (orderId: string) => {
     const { client, ability } = await getTenantOrderContext();
-    assertOrderAbility(ability, "read", SalesOrderSubject);
+    assertOrderAbility(ability, StandardAction.READ, SalesOrderSubject);
     return getSalesOrderDetail(client, orderId);
   },
   "获取销售订单详情失败",
@@ -152,7 +153,7 @@ export const getSalesOrderDetailAction = defineServerAction(
 export const getCustomerStoresAction = defineServerAction(
   async (customerCode: string) => {
     const { client, ability } = await getTenantOrderContext();
-    assertOrderAbility(ability, "read", SalesOrderSubject);
+    assertOrderAbility(ability, StandardAction.READ, SalesOrderSubject);
     const stores = await client.customerStore.findMany({
       where: {
         customerCode,

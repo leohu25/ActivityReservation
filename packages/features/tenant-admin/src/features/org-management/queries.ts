@@ -1,3 +1,4 @@
+import { StandardAction } from "@base/authorization";
 import "server-only";
 
 import { pickReadableFields } from "@base/authorization";
@@ -28,7 +29,7 @@ export async function listDepartmentTreeQuery(): Promise<
   readonly DepartmentTreeNode[]
 > {
   const { client, ability } = await getTenantAdminContext();
-  assertTenantAdminAbility(ability, "read", DepartmentSubject);
+  assertTenantAdminAbility(ability, StandardAction.READ, DepartmentSubject);
 
   const tree = await deptService.listDepartmentTree(client);
   return toPlainData(tree);
@@ -36,7 +37,7 @@ export async function listDepartmentTreeQuery(): Promise<
 
 export async function listPositionsQuery(): Promise<readonly PositionItem[]> {
   const { client, ability } = await getTenantAdminContext();
-  assertTenantAdminAbility(ability, "read", PositionSubject);
+  assertTenantAdminAbility(ability, StandardAction.READ, PositionSubject);
 
   const positions = await posService.listPositions(client);
   const items: PositionItem[] = positions.map((p) => {
@@ -57,7 +58,7 @@ export async function listEmployeesQuery(
   filter?: EmployeeListFilter,
 ): Promise<readonly EmployeeItem[]> {
   const { client, organizationId, ability } = await getTenantAdminContext();
-  assertTenantAdminAbility(ability, "read", EmployeeSubject);
+  assertTenantAdminAbility(ability, StandardAction.READ, EmployeeSubject);
 
   const controlPrisma = await getControlDbClient();
   const employees = await empService.listEmployees(

@@ -1,4 +1,5 @@
 import "server-only";
+import { StandardAction } from "@base/authorization";
 
 import { getAccessibleWhere, pickReadableFields } from "@base/authorization";
 import { toPlainData } from "@base/shared";
@@ -12,7 +13,7 @@ import type { ListQuoteFilter, QuoteListItem } from "./types";
 
 export async function listQuotesQuery(filter: ListQuoteFilter = {}) {
   const { client, ability } = await getTenantCustomerContext();
-  assertCustomerAbility(ability, "read", CustomerQuoteSubject);
+  assertCustomerAbility(ability, StandardAction.READ, CustomerQuoteSubject);
   const accessibleWhere = getAccessibleWhere(
     ability,
     CustomerQuoteSubject,

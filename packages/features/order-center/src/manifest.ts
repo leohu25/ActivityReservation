@@ -1,3 +1,4 @@
+import { StandardAction } from "@base/authorization";
 import { salesOrderPageContract } from "./features/sales-order/contract";
 import type { TenantFeatureManifest } from "@base/authorization";
 
@@ -19,7 +20,7 @@ export const orderManifest: TenantFeatureManifest = {
                             id: "order-sales-orders",
                             label: "销售订单",
                             href: "/order/sales-orders",
-                            requiredAction: "read",
+                            requiredAction: StandardAction.READ,
                             requiredSubject: salesOrderPageContract.subject,
                         },
                     ],

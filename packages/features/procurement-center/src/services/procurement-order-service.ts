@@ -1,3 +1,4 @@
+import { StandardAction } from "@base/authorization";
 import type { AnyMongoAbility } from "@casl/ability";
 import type { PrismaAbility } from "@casl/prisma";
 import {
@@ -13,6 +14,8 @@ import {
 } from "@base/shared";
 import type { TenantPrismaClient, TenantPrisma } from "@base/db-tenant";
 import {
+  ProcurementAction,
+  ProcurementOrderField,
   type ProcurementField,
   ProcurementOrderStatus,
   ProcurementSubject,
@@ -48,7 +51,7 @@ export class ProcurementOrderService {
     const accessibleWhere = getAccessibleWhere(
       ability as unknown as PrismaAbility<[string, string]>,
       ProcurementSubject,
-      "read",
+      StandardAction.READ,
     );
 
     // SAFETY: accessibleWhere 经 getAccessibleWhere 归一化为标准的 Prisma 查询条件对象
@@ -64,7 +67,10 @@ export class ProcurementOrderService {
       orderBy: { createdAt: "desc" },
     });
 
-    const canAuditGlobal = ability.can("audit", ProcurementSubject);
+    const canAuditGlobal = ability.can(
+      ProcurementAction.AUDIT,
+      ProcurementSubject,
+    );
 
     return rawOrders.map((order) => {
       const isCreator = currentUserId
@@ -111,7 +117,7 @@ export class ProcurementOrderService {
     operator: CreateOrderOperator,
     input: CreateOrderInput,
   ): Promise<ProcurementOrderItem> {
-    if (!ability.can("create", ProcurementSubject)) {
+    if (!ability.can(StandardAction.CREATE, ProcurementSubject)) {
       throw new ForbiddenError("权限拒绝：您不具备新建采购订单的权限");
     }
 
@@ -202,7 +208,7 @@ export class ProcurementOrderService {
     operator: AuditOrderOperator,
     input: AuditOrderInput,
   ): Promise<ProcurementOrderItem> {
-    if (!ability.can("audit", ProcurementSubject)) {
+    if (!ability.can(ProcurementAction.AUDIT, ProcurementSubject)) {
       throw new ForbiddenError("权限拒绝：您不具备采购订单的审核权限");
     }
 
@@ -288,7 +294,7 @@ export class ProcurementOrderService {
     prisma: TenantPrismaClient,
     ability: ProcurementAnyAbility,
   ): Promise<readonly ExportOrderItem[]> {
-    if (!ability.can("export", ProcurementSubject)) {
+    if (!ability.can(StandardAction.EXPORT, ProcurementSubject)) {
       throw new ForbiddenError("权限拒绝：您不具备导出采购订单的权限");
     }
 
@@ -296,7 +302,7 @@ export class ProcurementOrderService {
     const accessibleWhere = getAccessibleWhere(
       ability as unknown as PrismaAbility<[string, string]>,
       ProcurementSubject,
-      "read",
+      StandardAction.READ,
     );
 
     // SAFETY: accessibleWhere 经 getAccessibleWhere 归一化为标准的 Prisma 查询条件对象
@@ -306,8 +312,16 @@ export class ProcurementOrderService {
     });
 
     const canExportCostPrice =
-      ability.can("export", ProcurementSubject, "costPrice") ||
-      ability.can("read", ProcurementSubject, "costPrice");
+      ability.can(
+        StandardAction.EXPORT,
+        ProcurementSubject,
+        ProcurementOrderField.COST_PRICE,
+      ) ||
+      ability.can(
+        StandardAction.READ,
+        ProcurementSubject,
+        ProcurementOrderField.COST_PRICE,
+      );
 
     return orders.map((order) => ({
       orderNo: order.orderNo,

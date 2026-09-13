@@ -240,7 +240,7 @@ export function RolePermissionManager({
         ...existing,
         {
           resource,
-          action: "read",
+          action: StandardAction.READ,
           scopeType: nextScope,
         },
       ],

@@ -1,4 +1,5 @@
 import "server-only";
+import { StandardAction } from "@base/authorization";
 
 import { toPlainData } from "@base/shared";
 import {
@@ -10,13 +11,13 @@ import { CustomerCategoryTagService } from "./service";
 
 export async function getCategoryTreeQuery() {
   const { client, ability } = await getTenantCustomerContext();
-  assertCustomerAbility(ability, "read", CustomerCategorySubject);
+  assertCustomerAbility(ability, StandardAction.READ, CustomerCategorySubject);
   return toPlainData(await CustomerCategoryTagService.getCategoryTree(client));
 }
 
 export async function listTagsQuery(tagType?: string) {
   const { client, ability } = await getTenantCustomerContext();
-  assertCustomerAbility(ability, "read", CustomerTagSubject);
+  assertCustomerAbility(ability, StandardAction.READ, CustomerTagSubject);
   return toPlainData(
     await CustomerCategoryTagService.listTags(client, tagType),
   );

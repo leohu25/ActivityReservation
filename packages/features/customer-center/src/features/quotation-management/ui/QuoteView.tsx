@@ -10,11 +10,15 @@ import {
   type ColumnDef,
 } from "@base/ui";
 import { exportContractCsv, formatDate } from "@base/shared";
-import { useAbility } from "@base/authorization";
+import { StandardAction, useAbility } from "@base/authorization";
 import { updateQuoteStatusAction, deleteQuoteAction } from "../actions";
 import { QuoteDetailModal } from "./QuoteDetailModal";
 import { QuoteFormModal } from "./QuoteFormModal";
-import { CustomerQuoteField, quotePageContract } from "../contract";
+import {
+  CustomerQuoteAction,
+  CustomerQuoteField,
+  quotePageContract,
+} from "../contract";
 import type { QuoteListItem } from "../types";
 import type { CustomerListItem } from "../../customer-management/types";
 import type { StoreListItem } from "../../store-management/types";
@@ -175,7 +179,7 @@ export function QuoteView({
     },
     {
       id: "scope",
-      field: CustomerQuoteField.SCOPE_TYPE,
+      field: CustomerQuoteField.QUOTE_TYPE,
       header: "定价适用维度",
       width: 200,
       cell: (q: QuoteListItem) => {
@@ -260,7 +264,7 @@ export function QuoteView({
               ? [
                   {
                     label: "审核生效",
-                    action: "audit",
+                    action: CustomerQuoteAction.AUDIT,
                     onClick: () => handleUpdateStatus(q.quoteId, "ACTIVE"),
                     confirm: {
                       title: `确认审核并生效报价单 "${q.displayName || q.quoteId}"？`,
@@ -275,7 +279,7 @@ export function QuoteView({
               ? [
                   {
                     label: "作废报价单",
-                    action: "update",
+                    action: StandardAction.UPDATE,
                     variant: "destructive" as const,
                     onClick: () => handleUpdateStatus(q.quoteId, "VOIDED"),
                     confirm: {

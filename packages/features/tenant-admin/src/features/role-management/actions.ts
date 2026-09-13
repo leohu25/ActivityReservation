@@ -1,4 +1,5 @@
 "use server";
+import { StandardAction } from "@base/authorization";
 
 import { revalidatePath } from "next/cache";
 import { defineServerAction } from "@base/shared";
@@ -24,7 +25,7 @@ export const saveRolePermissionsAction = defineServerAction(
     payload: RolePermissionPayload,
   ): Promise<TenantRoleItem> => {
     const { organizationId, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "update", RoleManagementSubject);
+    assertTenantAdminAbility(ability, StandardAction.UPDATE, RoleManagementSubject);
     const service = getRoleService();
 
     const data = await service.saveRolePermissions({
@@ -47,7 +48,7 @@ export const createRoleAction = defineServerAction(
     description?: string,
   ): Promise<TenantRoleItem> => {
     const { organizationId, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "update", RoleManagementSubject);
+    assertTenantAdminAbility(ability, StandardAction.UPDATE, RoleManagementSubject);
     const service = getRoleService();
 
     const data = await service.createRole({
@@ -67,7 +68,7 @@ export const createRoleAction = defineServerAction(
 export const deleteRoleAction = defineServerAction(
   async (role: string): Promise<void> => {
     const { organizationId, ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "update", RoleManagementSubject);
+    assertTenantAdminAbility(ability, StandardAction.UPDATE, RoleManagementSubject);
     const service = getRoleService();
 
     await service.deleteRole(organizationId, role);
@@ -81,7 +82,7 @@ export const deleteRoleAction = defineServerAction(
 export const getSystemRoleDefaultsAction = defineServerAction(
   async (role: string): Promise<RolePermissionPayload> => {
     const { ability } = await getTenantAdminContext();
-    assertTenantAdminAbility(ability, "read", RoleManagementSubject);
+    assertTenantAdminAbility(ability, StandardAction.READ, RoleManagementSubject);
     const defaults = deriveBuiltInRoleDefaults();
     if (role === "admin") {
       return defaults.admin;

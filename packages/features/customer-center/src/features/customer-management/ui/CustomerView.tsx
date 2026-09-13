@@ -20,7 +20,11 @@ import {
 import { exportContractCsv } from "@base/shared";
 import { useAbility } from "@base/authorization";
 import { updateCustomerStatusAction, deleteCustomerAction } from "../actions";
-import { CustomerField, customerPageContract } from "../contract";
+import {
+  CustomerAction,
+  CustomerField,
+  customerPageContract,
+} from "../contract";
 import type {
   CustomerListItem,
   CustomerCategoryItem,
@@ -267,7 +271,7 @@ export function CustomerView({
           extraActions={[
             {
               label: c.status === "ACTIVE" ? "停用客户" : "启用客户",
-              action: "toggle_status",
+              action: CustomerAction.TOGGLE_STATUS,
               collapsed: true,
               variant: c.status === "ACTIVE" ? "destructive" : "default",
               onClick: () =>

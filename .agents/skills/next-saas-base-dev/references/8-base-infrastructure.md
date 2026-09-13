@@ -31,7 +31,7 @@ graph TD
     subgraph Tooling["工程与数据演进引擎 (Tooling Layer)"]
         DBMigrate["tooling/db-migrate<br>(12-Factor 无状态预编译数据库迁移引擎)"]
         SyncFeatures["scripts/sync/sync-features.mjs<br>(特性清单 AST 提取与静态生成)"]
-        CheckBaseline["scripts/check-entity-baseline.mjs<br>(8 大审计软删除字段静态门禁)"]
+        CheckBaseline["scripts/check/check-entity-baseline.mjs<br>(8 大审计软删除字段静态门禁)"]
     end
 
     subgraph Storage["数据持久化层 (Storage Layer)"]
