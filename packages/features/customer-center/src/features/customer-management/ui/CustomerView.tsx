@@ -6,12 +6,6 @@ import {
   DataTable,
   Badge,
   DataTableRowActions,
-  FormDrawer,
-  FormDialog,
-  Field,
-  FieldGroup,
-  FieldLabel,
-  Input,
   Select,
   SelectContent,
   SelectGroup,
@@ -24,19 +18,14 @@ import {
 } from "@base/ui";
 import { exportContractCsv } from "@base/shared";
 import { useAbility } from "@base/authorization";
-import {
-  createCustomerAction,
-  updateCustomerAction,
-  updateCustomerStatusAction,
-  deleteCustomerAction,
-} from "../actions";
+import { updateCustomerStatusAction, deleteCustomerAction } from "../actions";
 import { CustomerField, customerPageContract } from "../contract";
 import type {
   CustomerListItem,
   CustomerCategoryItem,
   CustomerTagItem,
 } from "../types";
-import { CreateCustomerModal } from "./CreateCustomerModal";
+import { CustomerFormModal } from "./CustomerFormModal";
 
 interface Props {
   initialCustomers: CustomerListItem[];
@@ -87,11 +76,15 @@ export function CustomerView({
   const [selectedCat, setSelectedCat] = useState(initialCategory);
   const [selectedStatus, setSelectedStatus] = useState(initialStatus);
   const [loading, setLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [viewingCustomer, setViewingCustomer] =
-    useState<CustomerListItem | null>(null);
-  const [editingCustomer, setEditingCustomer] =
-    useState<CustomerListItem | null>(null);
+  const [modalState, setModalState] = useState<{
+    open: boolean;
+    mode: "create" | "edit" | "view";
+    record?: CustomerListItem | null;
+  }>({
+    open: false,
+    mode: "create",
+    record: null,
+  });
 
   const handleToggleStatus = async (
     customerCode: string,
@@ -268,8 +261,8 @@ export function CustomerView({
       cell: (c: CustomerListItem) => (
         <DataTableRowActions
           record={c}
-          onView={() => setViewingCustomer(c)}
-          onEdit={() => setEditingCustomer(c)}
+          onView={() => setModalState({ open: true, mode: "view", record: c })}
+          onEdit={() => setModalState({ open: true, mode: "edit", record: c })}
           extraActions={[
             {
               label: c.status === "ACTIVE" ? "停用客户" : "启用客户",
@@ -318,7 +311,9 @@ export function CustomerView({
         }}
         onRefresh={() => router?.refresh()}
         onExport={handleExport}
-        onCreate={() => setShowModal(true)}
+        onCreate={() =>
+          setModalState({ open: true, mode: "create", record: null })
+        }
         contentProps={{ selectable: true }}
         keywordValue={keyword}
         keywordPlaceholder="单号 / 名称 / 联系人"
@@ -374,191 +369,22 @@ export function CustomerView({
         onAdvancedFilter={() => {
           toast.info("高级筛选面板可按业务扩展");
         }}
-      >
-        <FormDrawer
-          open={Boolean(viewingCustomer)}
-          onOpenChange={(open) => !open && setViewingCustomer(null)}
-          title={
-            viewingCustomer
-              ? `客户档案详情: ${viewingCustomer.customerName}`
-              : "客户详情"
-          }
-          description={
-            viewingCustomer
-              ? `分类: ${viewingCustomer.category?.categoryName || viewingCustomer.categoryCode} | 结算: ${
-                  SETTLEMENT_LABELS[viewingCustomer.settlementMethod] ||
-                  viewingCustomer.settlementMethod
-                }`
-              : undefined
-          }
-        >
-          {viewingCustomer ? (
-            <div className="flex flex-col gap-4 text-sm">
-              <div className="flex flex-col gap-2 rounded-lg border p-3 bg-muted/20">
-                <div className="text-xs font-semibold text-muted-foreground uppercase">
-                  基础信息
-                </div>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                  <div>
-                    <span className="text-xs text-muted-foreground">
-                      联系人：
-                    </span>
-                    <span className="font-medium">
-                      {viewingCustomer.contactPerson}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-xs text-muted-foreground">
-                      联系电话：
-                    </span>
-                    <span className="font-mono">
-                      {viewingCustomer.contactPhone}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-xs text-muted-foreground">
-                      结算方式：
-                    </span>
-                    <span>
-                      {SETTLEMENT_LABELS[viewingCustomer.settlementMethod] ||
-                        viewingCustomer.settlementMethod}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-xs text-muted-foreground">
-                      默认税率：
-                    </span>
-                    <span className="font-mono">
-                      {viewingCustomer.defaultTaxRate
-                        ? `${viewingCustomer.defaultTaxRate}%`
-                        : "未设"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col gap-2 rounded-lg border p-3 bg-muted/20">
-                <div className="text-xs font-semibold text-muted-foreground uppercase">
-                  下属履约门店
-                </div>
-                <div className="text-sm font-medium text-foreground">
-                  共挂载 {viewingCustomer._count?.stores || 0} 个履约门店
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </FormDrawer>
+      />
 
-        <FormDialog
-          open={Boolean(editingCustomer)}
-          onOpenChange={(open) => !open && setEditingCustomer(null)}
-          record={editingCustomer}
-          title={
-            editingCustomer
-              ? `快捷编辑客户: ${editingCustomer.customerName}`
-              : "编辑客户"
-          }
-          description="更新客户结算方式与联系人基础信息"
-          submitText="保存更新"
-          onSubmit={async (record) => {
-            if (!record) return;
-            const targetCode = record.customerCode || record.id;
-            if (!targetCode) return;
-            setLoading(true);
-            try {
-              const res = await updateCustomerAction(targetCode, {
-                customerName: record.customerName,
-                contactPerson: record.contactPerson,
-                contactPhone: record.contactPhone,
-              });
-              if (res.success) {
-                setCustomers((prev) =>
-                  prev.map((item) =>
-                    (item.customerCode || item.id) === targetCode
-                      ? {
-                          ...item,
-                          customerName:
-                            record.customerName || item.customerName,
-                          contactPerson:
-                            record.contactPerson || item.contactPerson,
-                          contactPhone:
-                            record.contactPhone || item.contactPhone,
-                        }
-                      : item,
-                  ),
-                );
-                toast.success("客户资料已更新");
-                setEditingCustomer(null);
-                router?.refresh();
-              } else {
-                toast.error(res.error || "更新客户失败");
-              }
-            } catch (err: unknown) {
-              toast.error(err instanceof Error ? err.message : "更新客户异常");
-            } finally {
-              setLoading(false);
-            }
-          }}
-        >
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="customer-name">客户企业名称</FieldLabel>
-              <Input
-                id="customer-name"
-                defaultValue={editingCustomer?.customerName}
-                onChange={(e) => {
-                  if (editingCustomer) {
-                    setEditingCustomer({
-                      ...editingCustomer,
-                      customerName: e.target.value,
-                    });
-                  }
-                }}
-              />
-            </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field>
-                <FieldLabel htmlFor="contact-person">联系人</FieldLabel>
-                <Input
-                  id="contact-person"
-                  defaultValue={editingCustomer?.contactPerson}
-                  onChange={(e) => {
-                    if (editingCustomer) {
-                      setEditingCustomer({
-                        ...editingCustomer,
-                        contactPerson: e.target.value,
-                      });
-                    }
-                  }}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="contact-phone">联系电话</FieldLabel>
-                <Input
-                  id="contact-phone"
-                  defaultValue={editingCustomer?.contactPhone}
-                  onChange={(e) => {
-                    if (editingCustomer) {
-                      setEditingCustomer({
-                        ...editingCustomer,
-                        contactPhone: e.target.value,
-                      });
-                    }
-                  }}
-                />
-              </Field>
-            </div>
-          </FieldGroup>
-        </FormDialog>
-      </DataTable.Workspace>
-
-      {showModal && (
-        <CreateCustomerModal
-          categories={categories}
-          tags={tags}
-          onClose={() => setShowModal(false)}
-          onCreated={() => router?.refresh()}
-        />
-      )}
+      <CustomerFormModal
+        open={modalState.open}
+        mode={modalState.mode}
+        record={modalState.record}
+        categories={categories}
+        tags={tags}
+        onClose={() =>
+          setModalState({ open: false, mode: "create", record: null })
+        }
+        onSuccess={() => {
+          setModalState({ open: false, mode: "create", record: null });
+          router?.refresh();
+        }}
+      />
     </>
   );
 }

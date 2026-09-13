@@ -9,6 +9,13 @@ import { toast } from "../feedback/Toast";
 
 export type CrudFormMode = "create" | "edit" | "view";
 
+export interface CrudFormSection {
+  readonly title?: string;
+  readonly description?: string;
+  readonly fields: readonly FormFieldSchema[];
+  readonly columns?: 2 | 3 | 4;
+}
+
 export interface CrudFormModalProps<TValues extends Record<string, unknown>> {
   readonly open: boolean;
   readonly mode: CrudFormMode;
@@ -17,7 +24,8 @@ export interface CrudFormModalProps<TValues extends Record<string, unknown>> {
   readonly badge?: string;
   readonly bannerTitle?: string;
   readonly bannerDescription?: string;
-  readonly fields: readonly FormFieldSchema[];
+  readonly fields?: readonly FormFieldSchema[];
+  readonly sections?: readonly CrudFormSection[];
   readonly initialValues: TValues;
   /**
    * Zod 运行时校验规则（如 z.object({ ... })）。必填项！
@@ -31,6 +39,9 @@ export interface CrudFormModalProps<TValues extends Record<string, unknown>> {
   readonly cancelText?: string;
   readonly columns?: 2 | 3 | 4;
   readonly inline?: boolean;
+  readonly extraContent?:
+    | React.ReactNode
+    | ((values: TValues) => React.ReactNode);
 }
 
 /**
@@ -50,6 +61,7 @@ export function CrudFormModal<TValues extends Record<string, unknown>>({
   bannerTitle,
   bannerDescription,
   fields,
+  sections,
   initialValues,
   schema,
   onClose,
@@ -58,25 +70,48 @@ export function CrudFormModal<TValues extends Record<string, unknown>>({
   cancelText = "取消",
   columns = 2,
   inline,
+  extraContent,
 }: CrudFormModalProps<TValues>) {
-  const [values, setValues] = useState<TValues>(initialValues);
+  const getFreshValues = React.useCallback((): TValues => {
+    try {
+      return structuredClone(initialValues);
+    } catch {
+      return JSON.parse(JSON.stringify(initialValues));
+    }
+  }, [initialValues]);
+
+  const [values, setValues] = useState<TValues>(getFreshValues);
   const [errors, setErrors] = useState<
     Partial<Record<keyof TValues & string, string>>
   >({});
 
-  // 弹窗打开或初始数据变更时，重置表单与错误状态
+  // 每次打开弹窗或初始数据变更时，强制重置表单为纯净深拷贝初始值，并清空错误提示
   useEffect(() => {
-    setValues(initialValues);
-    setErrors({});
-  }, [initialValues, open]);
+    if (open) {
+      setValues(getFreshValues());
+      setErrors({});
+    }
+  }, [open, getFreshValues]);
 
   // 模式感知：只读态将所有字段设为 disabled
   const activeFields = useMemo(() => {
+    if (!fields) return [];
     if (mode === "view") {
       return fields.map((f) => ({ ...f, disabled: true }));
     }
     return fields;
   }, [fields, mode]);
+
+  const activeSections = useMemo(() => {
+    if (!sections) return [];
+    if (mode === "view") {
+      return sections.map((s) => ({
+        ...s,
+        fields: s.fields.map((f) => ({ ...f, disabled: true })),
+      }));
+    }
+    return sections;
+  }, [sections, mode]);
 
   const defaultTitle =
     mode === "create" ? "新增记录" : mode === "edit" ? "编辑记录" : "查看详情";
@@ -140,7 +175,11 @@ export function CrudFormModal<TValues extends Record<string, unknown>>({
     <FormDialog
       open={open}
       onOpenChange={(nextOpen) => {
-        if (!nextOpen) onClose();
+        if (!nextOpen) {
+          setValues(getFreshValues());
+          setErrors({});
+          onClose();
+        }
       }}
       inline={inline}
       title={title || defaultTitle}
@@ -155,15 +194,34 @@ export function CrudFormModal<TValues extends Record<string, unknown>>({
       }
       onSubmit={mode === "view" ? undefined : handleSubmit}
     >
-      <FormSection>
-        <FormFields
-          fields={activeFields}
-          values={values}
-          onChange={handleFieldChange}
-          errors={errors}
-          columns={columns}
-        />
-      </FormSection>
+      {activeSections.length > 0 ? (
+        activeSections.map((sec, idx) => (
+          <FormSection
+            key={sec.title || idx}
+            title={sec.title}
+            description={sec.description}
+          >
+            <FormFields
+              fields={sec.fields}
+              values={values}
+              onChange={handleFieldChange}
+              errors={errors}
+              columns={sec.columns || columns}
+            />
+          </FormSection>
+        ))
+      ) : (
+        <FormSection>
+          <FormFields
+            fields={activeFields}
+            values={values}
+            onChange={handleFieldChange}
+            errors={errors}
+            columns={columns}
+          />
+        </FormSection>
+      )}
+      {typeof extraContent === "function" ? extraContent(values) : extraContent}
     </FormDialog>
   );
 }

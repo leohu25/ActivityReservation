@@ -170,6 +170,41 @@ test("FormFields: 当传入错误信息时，渲染红字 form-message 且设置
   assert.match(html, /aria-invalid="true"/);
 });
 
+test("CrudFormModal: 支持 sections 多区块布局与 extraContent 渲染", () => {
+  const html = renderToString(
+    <CrudFormModal
+      open={true}
+      inline={true}
+      mode="create"
+      title="多区块客户档案"
+      schema={customerFormSchema}
+      sections={[
+        {
+          title: "基础信息",
+          fields: [formFields[0]],
+        },
+        {
+          title: "联系方式与额度",
+          fields: [formFields[1], formFields[2]],
+        },
+      ]}
+      initialValues={{
+        customerName: "新公司",
+        contactPhone: "13800138000",
+        creditLimit: 50000,
+      }}
+      extraContent={<div data-slot="extra-card">下属履约门店：0</div>}
+      onClose={() => {}}
+      onSubmit={async () => {}}
+    />,
+  );
+
+  assert.match(html, /基础信息/);
+  assert.match(html, /联系方式与额度/);
+  assert.match(html, /data-slot="extra-card"/);
+  assert.match(html, /下属履约门店：0/);
+});
+
 test("createColumnsFromSchema: 根据 Zod Schema 自动派生 Table 列契约", () => {
   interface CustomerRow {
     customerName: string;
