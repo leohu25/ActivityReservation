@@ -1,0 +1,83 @@
+/**
+ * 工业ERP风 (Industrial ERP Theme Preset)
+ * 对应设计系统事实源: design-system/chenrun-digital-erp/MASTER.md 与 .harness/context/design-system.md
+ * 特征: 信任蓝 + 橙色CTA微强调, 高密度(8/10), 冷灰底色(#F8FAFC), 细腻边框(#E2E8F0)
+ */
+
+:root {
+ /* 基础画布与正文 */
+ --background: #f8fafc;
+ --foreground: #1e293b;
+
+ /* 卡片与浮层表面 */
+ --card: #ffffff;
+ --card-foreground: #1e293b;
+ --popover: #ffffff;
+ --popover-foreground: #1e293b;
+
+ /* 品牌主色 (Trust Blue) */
+ --primary: #2563eb;
+ --primary-foreground: #ffffff;
+
+ /* 次级底色与静音灰 */
+ --secondary: #f1f5f9;
+ --secondary-foreground: #0f172a;
+ --muted: #e9eff8;
+ --muted-foreground: #475569;
+
+ /* CTA / 强调交互 (Accent Orange) */
+ --accent: #ea580c;
+ --accent-foreground: #ffffff;
+
+ /* 危险与告警 */
+ --destructive: #dc2626;
+ --destructive-foreground: #ffffff;
+
+ /* 边框与输入框 */
+ --border: #e2e8f0;
+ --input: #e2e8f0;
+ --ring: #2563eb;
+
+ /* 工业高密度圆角 (8px) */
+ --radius: 0.5rem;
+
+ /* 侧边栏规范 */
+ --sidebar: #ffffff;
+ --sidebar-foreground: #1e293b;
+ --sidebar-primary: #2563eb;
+ --sidebar-primary-foreground: #ffffff;
+ --sidebar-accent: #eff6ff;
+ --sidebar-accent-foreground: #2563eb;
+ --sidebar-border: #e2e8f0;
+ --sidebar-ring: #2563eb;
+}
+
+.dark {
+ --background: #0b0f19;
+ --foreground: #f8fafc;
+ --card: #111827;
+ --card-foreground: #f8fafc;
+ --popover: #111827;
+ --popover-foreground: #f8fafc;
+ --primary: #3b82f6;
+ --primary-foreground: #ffffff;
+ --secondary: #1f2937;
+ --secondary-foreground: #f8fafc;
+ --muted: #1f2937;
+ --muted-foreground: #94a3b8;
+ --accent: #ea580c;
+ --accent-foreground: #ffffff;
+ --destructive: #dc2626;
+ --destructive-foreground: #ffffff;
+ --border: #1f2937;
+ --input: #374151;
+ --ring: #3b82f6;
+ --sidebar: #111827;
+ --sidebar-foreground: #f8fafc;
+ --sidebar-primary: #3b82f6;
+ --sidebar-primary-foreground: #ffffff;
+ --sidebar-accent: #1e293b;
+ --sidebar-accent-foreground: #60a5fa;
+ --sidebar-border: #1f2937;
+ --sidebar-ring: #3b82f6;
+}

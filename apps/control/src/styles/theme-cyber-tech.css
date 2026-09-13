@@ -1,0 +1,100 @@
+/**
+ * 平台总控控制台炫酷科技风 (Control Console Cyber-Tech Theme Preset)
+ * 定位: 平台管控平面、多租户全景大盘、基础设施遥测
+ * 视觉特征:
+ * - 浅色模式 (Light): 冰川灰蓝底色 (#F1F5F9) + 纯白半透悬浮卡片 + 极光深青蓝主强调 (#0284C7) + 赛博紫辅助 (#6366F1)
+ * - 深色模式 (Dark): 深邃极客黑灰 (#090D16) + 磨砂质感卡片 (#0F172A) + 电光极光蓝 (#38BDF8) + 霓虹紫微发光 (#818CF8)
+ */
+
+:root {
+ /* 基础画布与正文 (浅色科技冰川) */
+ --background: #f1f5f9;
+ --foreground: #0f172a;
+
+ /* 卡片表面与浮层 */
+ --card: #ffffff;
+ --card-foreground: #0f172a;
+ --popover: #ffffff;
+ --popover-foreground: #0f172a;
+
+ /* 核心主品牌 (极光青蓝 / 科技操作) */
+ --primary: #0284c7;
+ --primary-foreground: #ffffff;
+
+ /* 次级背景与静音灰 */
+ --secondary: #e2e8f0;
+ --secondary-foreground: #0f172a;
+ --muted: #e2e8f0;
+ --muted-foreground: #64748b;
+
+ /* 科技高亮强调色 (赛博紫) */
+ --accent: #6366f1;
+ --accent-foreground: #ffffff;
+
+ /* 破坏/告警 */
+ --destructive: #f43f5e;
+ --destructive-foreground: #ffffff;
+
+ /* 边框与科技聚焦环 */
+ --border: #cbd5e1;
+ --input: #cbd5e1;
+ --ring: #0284c7;
+
+ /* 科技圆角 (10px) */
+ --radius: 0.625rem;
+
+ /* 侧边栏 */
+ --sidebar: #ffffff;
+ --sidebar-foreground: #0f172a;
+ --sidebar-primary: #0284c7;
+ --sidebar-primary-foreground: #ffffff;
+ --sidebar-accent: #f0f9ff;
+ --sidebar-accent-foreground: #0284c7;
+ --sidebar-border: #e2e8f0;
+ --sidebar-ring: #0284c7;
+}
+
+.dark {
+ /* 基础画布与正文 (深邃极客暗黑) */
+ --background: #090d16;
+ --foreground: #f1f5f9;
+
+ /* 卡片表面 (半透明磨砂黑) */
+ --card: #0f172a;
+ --card-foreground: #f8fafc;
+ --popover: #0f172a;
+ --popover-foreground: #f8fafc;
+
+ /* 核心主品牌 (电光极光蓝) */
+ --primary: #38bdf8;
+ --primary-foreground: #090d16;
+
+ /* 次级背景与静音灰 */
+ --secondary: #1e293b;
+ --secondary-foreground: #f8fafc;
+ --muted: #1e293b;
+ --muted-foreground: #94a3b8;
+
+ /* 赛博高亮强调色 (霓虹紫) */
+ --accent: #818cf8;
+ --accent-foreground: #ffffff;
+
+ /* 破坏/告警 */
+ --destructive: #fb7185;
+ --destructive-foreground: #ffffff;
+
+ /* 细光边框与科技聚焦环 */
+ --border: #1e293b;
+ --input: #1e293b;
+ --ring: #38bdf8;
+
+ /* 侧边栏 */
+ --sidebar: #0b0f19;
+ --sidebar-foreground: #f8fafc;
+ --sidebar-primary: #38bdf8;
+ --sidebar-primary-foreground: #090d16;
+ --sidebar-accent: #1e293b;
+ --sidebar-accent-foreground: #38bdf8;
+ --sidebar-border: #1e293b;
+ --sidebar-ring: #38bdf8;
+}

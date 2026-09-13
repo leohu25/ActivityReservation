@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 };
 
 /**
- * 控制平面独立应用全局根布局
- * 遵循现代数智工业风规范：极浅冷灰蓝背景 (#F4F7FB) 与纯净抗锯齿文字排版
+ * 控制平面全局根布局
+ * 纯粹由 CSS 语义变量 (--background, --foreground) 与 ThemeProvider 驱动主题
  */
 export default function RootLayout({
  children,
@@ -21,7 +21,7 @@ export default function RootLayout({
  return (
   <html lang="zh-CN" suppressHydrationWarning>
    <body
-    className="min-h-screen bg-[#F4F7FB] text-slate-900 font-sans antialiased"
+    className="min-h-screen bg-background text-foreground font-sans antialiased"
     suppressHydrationWarning
    >
     <ThemeProvider>
