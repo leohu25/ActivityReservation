@@ -66,4 +66,13 @@
 - [x] 编写页面与契约 100% 对齐单测（8/8 PASS）
 - [x] 执行 `./scripts/verify.sh`（元数据、沙盒边界、红线扫描、实体基线、权限契约、业务切片、类型扫描全部一次性通过）
 - [x] 权限四维标准化：ItemCategory、ItemVariety、ItemGrade 独立 Subject/Resource，Material AbilityProvider 注入全部关联实体快照
-- [x] 新增 `scripts/check-permission-contracts.mjs` 硬门禁，并完成存量 Resource Key 一次性替换与平台角色 JSON 数据迁移
+- [x] 新增 `scripts/check/check-permission-contracts.mjs` 硬门禁，并完成存量 Resource Key 一次性替换与平台角色 JSON 数据迁移
+
+### Phase 8: BOM 工序流转编排与 DAG 可视化闭环
+
+- [x] 实现 `BomFlowEditorModal.tsx`（多工序时序编排、工序模板与规格参数、原料投入与角色标签、工序产出与副产品、理论综合出成率实时累乘核算、人工覆盖支持）
+- [x] 升级 `BomVisualDag.tsx`（步骤流转卡片、投入物料与角色徽章、产出物料与副产物、最终成品交付卡、综合出成率大字号高亮）
+- [x] 优化 `BomManagementView.tsx`（集成流程编排抽屉、点击表格行或 BOM 编码即时切换上方 DAG 看板预览、操作栏增设【预览】与【详情】）
+- [x] 升级 `queries.ts` 与 `boms/page.tsx`（获取并下发 `processTemplates` 工序库与规格，`getBomsQuery` 预加载 `processes` 供看板无延迟点亮）
+- [x] 完善 `boms/[bomId]/page.tsx`（返回清单导航、BOM概览、完整 DAG 拓扑图、工序分步投入产出结构清单详表）
+- [x] 编写同级单元测试 `BomFlowEditorModal.test.tsx`（测试总数增至 10/10 全部 PASS）

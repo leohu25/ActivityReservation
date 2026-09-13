@@ -1,26 +1,36 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { DataTable, Button, Badge, toast, type ColumnDef } from "@base/ui";
-import { Layers, Plus, CheckCircle2 } from "lucide-react";
-import type { BomListItem } from "../types";
 import {
-  createBomAction,
+  Layers,
+  Plus,
+  CheckCircle2,
+  Eye,
+  ExternalLink,
+  Copy,
+} from "lucide-react";
+import type { BomListItem, ProcessTemplateItem } from "../types";
+import {
   publishBomAction,
   createNewBomVersionAction,
 } from "../actions";
 import { BomVisualDag } from "./BomVisualDag";
+import { BomFlowEditorModal } from "./BomFlowEditorModal";
 
 interface BomManagementViewProps {
   initialBoms: BomListItem[];
   productionLines: Array<{ id: string; lineName: string }>;
-  items: Array<{ itemCode: string; itemName: string }>;
+  items: Array<{ itemCode: string; itemName: string; baseUnit?: string }>;
+  processTemplates?: ProcessTemplateItem[];
 }
 
 export function BomManagementView({
   initialBoms,
   productionLines,
   items,
+  processTemplates = [],
 }: BomManagementViewProps) {
   const [boms, setBoms] = useState<BomListItem[]>(initialBoms);
   const [activeType, setActiveType] = useState<string>("ALL");
@@ -28,88 +38,17 @@ export function BomManagementView({
   const [selectedBomForDag, setSelectedBomForDag] =
     useState<BomListItem | null>(initialBoms[0] || null);
 
-  // 表单状态
-  const [bomCode, setBomCode] = useState("");
-  const [bomName, setBomName] = useState("");
-  const [bomType, setBomType] = useState<"SINGLE" | "COMPOSITE" | "PACKAGING">(
-    "SINGLE",
-  );
-  const [outputItemCode, setOutputItemCode] = useState(
-    items[0]?.itemCode || "",
-  );
-  const [batchQty, setBatchQty] = useState(1);
-  const [batchUnit, setBatchUnit] = useState("kg");
-  const [productionLineId, setProductionLineId] = useState(
-    productionLines[0]?.id || "",
-  );
-  const [overrideTotalYield, setOverrideTotalYield] = useState(false);
-  const [totalYieldRate, setTotalYieldRate] = useState<number | undefined>(
-    undefined,
-  );
-  const [loading, setLoading] = useState(false);
-
-  const handleCreateBom = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const res = await createBomAction({
-        bomCode,
-        bomName,
-        bomType,
-        outputItemCode,
-        batchQty,
-        batchUnit,
-        productionLineId: productionLineId || null,
-        overrideTotalYield,
-        totalYieldRate: totalYieldRate ?? null,
-      });
-
-      if (res.success && res.data) {
-        const item = items.find((i) => i.itemCode === outputItemCode);
-        const line = productionLines.find((l) => l.id === productionLineId);
-        const newBom: BomListItem = {
-          id: res.data.id,
-          bomCode: res.data.bomCode,
-          bomName: res.data.bomName,
-          bomType: res.data.bomType,
-          version: res.data.version,
-          isResearch: res.data.isResearch,
-          isDefault: res.data.isDefault,
-          outputItemCode: res.data.outputItemCode,
-          outputItemName: item?.itemName || res.data.outputItemCode,
-          batchQty: Number(res.data.batchQty),
-          batchUnit: res.data.batchUnit,
-          productionLineId: res.data.productionLineId,
-          productionLineName: line?.lineName || null,
-          totalYieldRate: res.data.totalYieldRate
-            ? Number(res.data.totalYieldRate)
-            : null,
-          overrideTotalYield: res.data.overrideTotalYield,
-          processCount: 0,
-          inputItemSummary: "-",
-          status: res.data.status,
-          effectiveDate: res.data.effectiveDate,
-          updatedAt: res.data.updatedAt,
-        };
-        setBoms((prev) => [newBom, ...prev]);
-        setShowModal(false);
-        setBomCode("");
-        setBomName("");
-        toast.success("工艺BOM创建成功 (草稿)");
-      } else if (!res.success) {
-        toast.error(res.error || "创建失败");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handlePublish = async (bomId: string) => {
     const res = await publishBomAction({ bomId });
     if (res.success && res.data) {
       setBoms((prev) =>
         prev.map((b) => (b.id === bomId ? { ...b, status: "ACTIVE" } : b)),
       );
+      if (selectedBomForDag?.id === bomId) {
+        setSelectedBomForDag((prev) =>
+          prev ? { ...prev, status: "ACTIVE" } : null,
+        );
+      }
       toast.success("BOM已发布，版本正式锁定生效");
     } else if (!res.success) {
       toast.error(res.error || "发布失败");
@@ -143,6 +82,7 @@ export function BomManagementView({
         <span
           className="font-mono text-xs font-semibold text-primary cursor-pointer hover:underline"
           onClick={() => setSelectedBomForDag(row)}
+          title="点击在上方预览工艺流转图"
         >
           {row.bomCode}
         </span>
@@ -153,10 +93,15 @@ export function BomManagementView({
       header: "BOM名称",
       cell: (row) => (
         <div className="flex items-center gap-1.5">
-          <span className="font-medium">{row.bomName}</span>
-          <Badge variant="outline" className="text-[10px]">
+          <span className="font-medium text-foreground">{row.bomName}</span>
+          <Badge variant="outline" className="text-[10px] font-mono">
             {row.version}
           </Badge>
+          {row.isResearch && (
+            <Badge variant="secondary" className="text-[10px] bg-purple-50 text-purple-700 border-purple-200">
+              研发
+            </Badge>
+          )}
         </div>
       ),
     },
@@ -168,8 +113,8 @@ export function BomManagementView({
           string,
           { label: string; variant: "default" | "secondary" | "outline" }
         > = {
-          SINGLE: { label: "单品加工", variant: "secondary" },
-          COMPOSITE: { label: "组合调理", variant: "default" },
+          SINGLE: { label: "单品初加工", variant: "secondary" },
+          COMPOSITE: { label: "配方组合", variant: "default" },
           PACKAGING: { label: "定量包装", variant: "outline" },
         };
         const conf = typeMap[row.bomType] || {
@@ -184,7 +129,7 @@ export function BomManagementView({
       header: "产出成品/半成品",
       cell: (row) => (
         <div className="flex flex-col">
-          <span className="font-medium">{row.outputItemName}</span>
+          <span className="font-medium text-foreground">{row.outputItemName}</span>
           <span className="text-[10px] text-muted-foreground font-mono">
             {row.outputItemCode}
           </span>
@@ -192,15 +137,28 @@ export function BomManagementView({
       ),
     },
     {
+      id: "processCount",
+      header: "工序数量",
+      cell: (row) => (
+        <span className="font-mono text-xs font-semibold text-slate-700 tabular-nums">
+          {row.processCount || row.processes?.length || 0} 道工序
+        </span>
+      ),
+    },
+    {
       id: "productionLineName",
       header: "生产产线",
-      cell: (row) => <span>{row.productionLineName || "-"}</span>,
+      cell: (row) => (
+        <span className="text-xs text-muted-foreground">
+          {row.productionLineName || "-"}
+        </span>
+      ),
     },
     {
       id: "totalYieldRate",
       header: "综合出成率",
       cell: (row) => (
-        <span className="font-bold text-primary">
+        <span className="font-bold text-primary tabular-nums">
           {row.totalYieldRate ? `${row.totalYieldRate}%` : "100%"}
         </span>
       ),
@@ -229,23 +187,50 @@ export function BomManagementView({
       id: "actions",
       header: "操作",
       cell: (row) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* 预览拓扑图 */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs cursor-pointer text-slate-600 hover:text-primary"
+            onClick={() => setSelectedBomForDag(row)}
+            title="在上方看板预览 DAG 拓扑图"
+          >
+            <Eye className="mr-1 h-3.5 w-3.5 text-primary" /> 预览
+          </Button>
+
+          {/* 详情页 */}
+          <Link href={`/materials/boms/${row.id}`}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs cursor-pointer text-slate-600 hover:text-primary"
+            >
+              <ExternalLink className="mr-1 h-3.5 w-3.5" /> 详情
+            </Button>
+          </Link>
+
+          {/* 发布 */}
           {row.status === "DRAFT" && (
             <Button
               variant="outline"
               size="sm"
+              className="h-7 px-2 text-xs cursor-pointer"
               onClick={() => handlePublish(row.id)}
             >
               <CheckCircle2 className="mr-1 h-3 w-3 text-emerald-600" /> 发布
             </Button>
           )}
+
+          {/* 另存新版 */}
           {row.status === "ACTIVE" && (
             <Button
               variant="ghost"
               size="sm"
+              className="h-7 px-2 text-xs cursor-pointer text-slate-600 hover:text-primary"
               onClick={() => handleCloneVersion(row.id, row.version)}
             >
-              另存新版
+              <Copy className="mr-1 h-3 w-3" /> 另存
             </Button>
           )}
         </div>
@@ -255,17 +240,21 @@ export function BomManagementView({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b pb-4">
+      {/* 顶部标题栏 */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Layers className="h-5 w-5" /> 工艺BOM管理
+            <Layers className="h-5 w-5 text-primary" /> 工艺BOM与工序流转中心
           </h1>
-          <p className="text-sm text-muted-foreground">
-            覆盖单品初加工、配方组合调理与定量包装三类BOM，支持综合出成率计算与发布版本控制
+          <p className="text-sm text-muted-foreground mt-0.5">
+            覆盖单品初加工、配方组合调理与定量包装三类工艺，支持工序节点有向图 (DAG)、投入原料递归与综合出成率核算
           </p>
         </div>
-        <Button onClick={() => setShowModal(true)}>
-          <Plus className="mr-1 h-4 w-4" /> 新建工艺BOM
+        <Button
+          onClick={() => setShowModal(true)}
+          className="cursor-pointer font-medium"
+        >
+          <Plus className="mr-1.5 h-4 w-4" /> 编排工艺 BOM
         </Button>
       </div>
 
@@ -281,6 +270,7 @@ export function BomManagementView({
             key={tab.key}
             variant={activeType === tab.key ? "default" : "outline"}
             size="sm"
+            className="cursor-pointer"
             onClick={() => setActiveType(tab.key)}
           >
             {tab.label}
@@ -291,19 +281,31 @@ export function BomManagementView({
       {/* 选中 BOM 的可视化 DAG 流程图预览 */}
       {selectedBomForDag && (
         <div className="space-y-2">
-          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            当前选中 BOM 工艺流程预览
+          <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <span>当前选中 BOM 工艺流程预览看板</span>
+            <span className="text-[11px] text-primary/80 font-normal">
+              点击下方表格任一行 BOM 编码即可切换当前看板预览
+            </span>
           </div>
           <BomVisualDag
+            bomId={selectedBomForDag.id}
             bomName={selectedBomForDag.bomName}
             bomCode={selectedBomForDag.bomCode}
+            bomType={selectedBomForDag.bomType}
+            version={selectedBomForDag.version}
             outputItemCode={selectedBomForDag.outputItemCode}
+            outputItemName={selectedBomForDag.outputItemName}
+            batchQty={selectedBomForDag.batchQty}
+            batchUnit={selectedBomForDag.batchUnit}
             totalYieldRate={selectedBomForDag.totalYieldRate}
-            processes={[]}
+            overrideTotalYield={selectedBomForDag.overrideTotalYield}
+            processes={selectedBomForDag.processes || []}
+            onConfigureFlow={() => setShowModal(true)}
           />
         </div>
       )}
 
+      {/* BOM 基础清单表格 */}
       <DataTable
         data={filteredBoms}
         columns={columns}
@@ -311,169 +313,18 @@ export function BomManagementView({
         title="BOM 基础清单"
       />
 
-      {/* 新建 BOM 弹窗 */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-background border rounded-lg max-w-lg w-full p-6 shadow-xl space-y-4">
-            <div className="flex justify-between items-center border-b pb-3">
-              <h2 className="text-lg font-bold">新建工艺 BOM</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowModal(false)}
-              >
-                ✕
-              </Button>
-            </div>
-            <form onSubmit={handleCreateBom} className="space-y-3">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">
-                  BOM 编号
-                </label>
-                <input
-                  type="text"
-                  placeholder="如 BOM-TDS-001"
-                  value={bomCode}
-                  onChange={(e) => setBomCode(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border rounded bg-background"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">
-                  BOM 名称
-                </label>
-                <input
-                  type="text"
-                  placeholder="如 土豆丝500g加工BOM"
-                  value={bomName}
-                  onChange={(e) => setBomName(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border rounded bg-background"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">
-                    BOM 类型
-                  </label>
-                  <select
-                    value={bomType}
-                    onChange={(e) => setBomType(e.target.value as any)}
-                    className="w-full px-3 py-1.5 text-sm border rounded bg-background"
-                  >
-                    <option value="SINGLE">单品 BOM</option>
-                    <option value="COMPOSITE">组合 BOM</option>
-                    <option value="PACKAGING">包装 BOM</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">
-                    生产产线
-                  </label>
-                  <select
-                    value={productionLineId}
-                    onChange={(e) => setProductionLineId(e.target.value)}
-                    className="w-full px-3 py-1.5 text-sm border rounded bg-background"
-                  >
-                    <option value="">未指定</option>
-                    {productionLines.map((l) => (
-                      <option key={l.id} value={l.id}>
-                        {l.lineName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">
-                  产出目标商品
-                </label>
-                <select
-                  value={outputItemCode}
-                  onChange={(e) => setOutputItemCode(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border rounded bg-background"
-                  required
-                >
-                  {items.map((i) => (
-                    <option key={i.itemCode} value={i.itemCode}>
-                      {i.itemName} ({i.itemCode})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">
-                    基准批量数量
-                  </label>
-                  <input
-                    type="number"
-                    step="0.001"
-                    value={batchQty}
-                    onChange={(e) => setBatchQty(Number(e.target.value))}
-                    className="w-full px-3 py-1.5 text-sm border rounded bg-background"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">
-                    批量单位
-                  </label>
-                  <input
-                    type="text"
-                    value={batchUnit}
-                    onChange={(e) => setBatchUnit(e.target.value)}
-                    className="w-full px-3 py-1.5 text-sm border rounded bg-background"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="flex items-center gap-2 pt-2">
-                <input
-                  type="checkbox"
-                  id="overrideYield"
-                  checked={overrideTotalYield}
-                  onChange={(e) => setOverrideTotalYield(e.target.checked)}
-                />
-                <label
-                  htmlFor="overrideYield"
-                  className="text-xs font-medium cursor-pointer"
-                >
-                  强行设定综合出成率 (忽略工序连乘)
-                </label>
-              </div>
-              {overrideTotalYield && (
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">
-                    设定总出成率 (%)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="如 85.5"
-                    value={totalYieldRate ?? ""}
-                    onChange={(e) => setTotalYieldRate(Number(e.target.value))}
-                    className="w-full px-3 py-1.5 text-sm border rounded bg-background"
-                  />
-                </div>
-              )}
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                >
-                  取消
-                </Button>
-                <Button type="submit" disabled={loading}>
-                  确认创建
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* 完整的工艺 BOM 与工序流转编排抽屉/模态窗 */}
+      <BomFlowEditorModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        productionLines={productionLines}
+        items={items}
+        processTemplates={processTemplates}
+        onSuccess={(createdBom) => {
+          setBoms((prev) => [createdBom, ...prev]);
+          setSelectedBomForDag(createdBom);
+        }}
+      />
     </div>
   );
 }

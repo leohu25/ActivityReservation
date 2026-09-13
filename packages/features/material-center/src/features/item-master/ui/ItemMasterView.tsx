@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { DataTable, Button, Badge, toast, type ColumnDef } from "@base/ui";
-import { Plus, Package } from "lucide-react";
+import { Plus, Package, X } from "lucide-react";
 import type { ItemMasterListItem } from "../types";
 import { createItemMasterAction, toggleItemStatusAction } from "../actions";
 
@@ -272,7 +272,7 @@ export function ItemMasterView({
                 size="sm"
                 onClick={() => setShowModal(false)}
               >
-                ✕
+                <X className="w-4 h-4" />
               </Button>
             </div>
             <form onSubmit={handleCreate} className="space-y-3">

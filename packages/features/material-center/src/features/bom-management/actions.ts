@@ -73,7 +73,216 @@ export const createBomAction = defineServerAction(
                                 processes: calcProcesses,
                         });
 
-                // 2. 事务内完整落库
+                // 2. 预先解析或自动创建工序主数据，确保外键 processId 100% 存在且有效
+                const resolvedProcessMap = new Map<string, string>();
+                const resolvedProcesses = [];
+
+                for (const p of input.processes || []) {
+                        const rawProcessId = p.processId?.trim() || "";
+                        let validProcessId: string = "";
+
+                        if (resolvedProcessMap.has(rawProcessId)) {
+                                validProcessId =
+                                        resolvedProcessMap.get(rawProcessId)!;
+                        } else {
+                                // 2.1 优先通过主键 id 查找未删除记录
+                                const byId = rawProcessId
+                                        ? await (
+                                                  client as any
+                                          ).processMaster.findFirst({
+                                                  where: {
+                                                          id: rawProcessId,
+                                                          isDeleted: false,
+                                                  },
+                                          })
+                                        : null;
+
+                                if (byId) {
+                                        validProcessId = byId.id;
+                                } else {
+                                        // 2.2 若按 id 未查到，尝试按 processCode 查找
+                                        const candidateCode = rawProcessId
+                                                .toUpperCase()
+                                                .startsWith("PROC-")
+                                                ? rawProcessId.toUpperCase()
+                                                : `PROC-${rawProcessId.toUpperCase() || "GEN"}`;
+                                        const normalizedCode =
+                                                candidateCode.slice(0, 30);
+
+                                        const byCode = await (
+                                                client as any
+                                        ).processMaster.findFirst({
+                                                where: {
+                                                        OR: [
+                                                                {
+                                                                        processCode:
+                                                                                rawProcessId,
+                                                                },
+                                                                {
+                                                                        processCode:
+                                                                                normalizedCode,
+                                                                },
+                                                        ],
+                                                        isDeleted: false,
+                                                },
+                                        });
+
+                                        if (byCode) {
+                                                validProcessId = byCode.id;
+                                        } else {
+                                                // 2.3 检查是否存在历史记录（包括被软删除的），若存在则恢复启用
+                                                const existingAny = await (
+                                                        client as any
+                                                ).processMaster.findFirst({
+                                                        where: {
+                                                                OR: [
+                                                                        {
+                                                                                processCode:
+                                                                                        rawProcessId,
+                                                                        },
+                                                                        {
+                                                                                processCode:
+                                                                                        normalizedCode,
+                                                                        },
+                                                                ],
+                                                        },
+                                                });
+
+                                                if (existingAny) {
+                                                        if (
+                                                                existingAny.isDeleted ||
+                                                                existingAny.status !==
+                                                                        "ACTIVE"
+                                                        ) {
+                                                                await (
+                                                                        client as any
+                                                                ).processMaster.update(
+                                                                        {
+                                                                                where: {
+                                                                                        id: existingAny.id,
+                                                                                },
+                                                                                data: {
+                                                                                        isDeleted: false,
+                                                                                        deletedAt: null,
+                                                                                        deletedById:
+                                                                                                null,
+                                                                                        status: "ACTIVE",
+                                                                                        updatedById:
+                                                                                                userId,
+                                                                                },
+                                                                        },
+                                                                );
+                                                        }
+                                                        validProcessId =
+                                                                existingAny.id;
+                                                } else {
+                                                        // 2.4 数据库中完全不存在，自动 upsert/create 默认工序主数据
+                                                        const defaultNameMap: Record<
+                                                                string,
+                                                                {
+                                                                        name: string;
+                                                                        category: string;
+                                                                }
+                                                        > = {
+                                                                "PROC-CLEAN": {
+                                                                        name: "分拣清洗",
+                                                                        category: "CLEAN",
+                                                                },
+                                                                "PROC-PEEL": {
+                                                                        name: "去皮精修",
+                                                                        category: "PRE_TREAT",
+                                                                },
+                                                                "PROC-CUT": {
+                                                                        name: "切割切丝",
+                                                                        category: "CUT",
+                                                                },
+                                                                "PROC-SEASON": {
+                                                                        name: "配方调理",
+                                                                        category: "SEASON",
+                                                                },
+                                                                "PROC-COOK": {
+                                                                        name: "熟化加工",
+                                                                        category: "COOK",
+                                                                },
+                                                                "PROC-PACK": {
+                                                                        name: "定量分装",
+                                                                        category: "PACK",
+                                                                },
+                                                        };
+                                                        const preset =
+                                                                defaultNameMap[
+                                                                        normalizedCode
+                                                                ] || {
+                                                                        name:
+                                                                                rawProcessId.slice(
+                                                                                        0,
+                                                                                        50,
+                                                                                ) ||
+                                                                                "通用加工",
+                                                                        category: "CUT",
+                                                                };
+
+                                                        const createdProcess =
+                                                                await (
+                                                                        client as any
+                                                                ).processMaster.create(
+                                                                        {
+                                                                                data: {
+                                                                                        processCode:
+                                                                                                normalizedCode,
+                                                                                        processName:
+                                                                                                preset.name,
+                                                                                        category: preset.category,
+                                                                                        defaultLossRate:
+                                                                                                p.lossRate ??
+                                                                                                0,
+                                                                                        stdLaborHours:
+                                                                                                p.stdLaborHours ??
+                                                                                                0.5,
+                                                                                        status: "ACTIVE",
+                                                                                        createdById:
+                                                                                                userId,
+                                                                                        deptId:
+                                                                                                employeeProfile?.departmentId ||
+                                                                                                null,
+                                                                                },
+                                                                        },
+                                                                );
+                                                        validProcessId =
+                                                                createdProcess.id;
+                                                }
+                                        }
+                                }
+                                resolvedProcessMap.set(
+                                        rawProcessId,
+                                        validProcessId,
+                                );
+                        }
+
+                        // 2.5 校验规格 specId 是否有效（若无效则置空，避免规格外键失效报错）
+                        let validSpecId: string | null = null;
+                        if (p.specId) {
+                                const spec = await (
+                                        client as any
+                                ).processSpec.findFirst({
+                                        where: {
+                                                id: p.specId,
+                                                isDeleted: false,
+                                        },
+                                });
+                                if (spec) {
+                                        validSpecId = spec.id;
+                                }
+                        }
+
+                        resolvedProcesses.push({
+                                ...p,
+                                processId: validProcessId,
+                                specId: validSpecId,
+                        });
+                }
+
+                // 3. 事务内完整落库
                 const created = await (client as any).bomHeader.create({
                         data: {
                                 bomCode: input.bomCode.trim(),
@@ -95,74 +304,58 @@ export const createBomAction = defineServerAction(
                                 createdById: userId,
                                 deptId: employeeProfile?.departmentId || null,
                                 processes: {
-                                        create: (input.processes || []).map(
-                                                (p) => ({
-                                                        seqNo: p.seqNo,
-                                                        processId: p.processId,
-                                                        specId:
-                                                                p.specId ||
-                                                                null,
-                                                        lossRate: p.lossRate,
-                                                        yieldRate: p.yieldRate,
-                                                        stdLaborHours:
-                                                                p.stdLaborHours ??
-                                                                null,
-                                                        qcCheckpoint:
-                                                                p.qcCheckpoint ??
-                                                                false,
-                                                        instructionParams:
-                                                                p.instructionParams ||
-                                                                undefined,
-                                                        operatingInstructions:
-                                                                p.operatingInstructions ||
-                                                                null,
-                                                        inputs: {
-                                                                create: (
-                                                                        p.inputs ||
-                                                                        []
-                                                                ).map(
-                                                                        (
-                                                                                inp,
-                                                                        ) => ({
-                                                                                itemCode: inp.itemCode,
-                                                                                quantity: inp.quantity,
-                                                                                uom: inp.uom,
-                                                                                materialRole:
-                                                                                        inp.materialRole,
-                                                                                proportion:
-                                                                                        inp.proportion ??
-                                                                                        null,
-                                                                                prevProcessSeq:
-                                                                                        inp.prevProcessSeq ??
-                                                                                        null,
-                                                                                childBomId:
-                                                                                        inp.childBomId ||
-                                                                                        null,
-                                                                        }),
-                                                                ),
-                                                        },
-                                                        outputs: {
-                                                                create: (
-                                                                        p.outputs ||
-                                                                        []
-                                                                ).map(
-                                                                        (
-                                                                                out,
-                                                                        ) => ({
-                                                                                itemCode: out.itemCode,
-                                                                                quantity: out.quantity,
-                                                                                uom: out.uom,
-                                                                                outputType: out.outputType,
-                                                                                materialRole:
-                                                                                        out.materialRole,
-                                                                                nextProcessSeq:
-                                                                                        out.nextProcessSeq ??
-                                                                                        null,
-                                                                        }),
-                                                                ),
-                                                        },
-                                                }),
-                                        ),
+                                        create: resolvedProcesses.map((p) => ({
+                                                seqNo: p.seqNo,
+                                                processId: p.processId,
+                                                specId: p.specId || null,
+                                                lossRate: p.lossRate,
+                                                yieldRate: p.yieldRate,
+                                                stdLaborHours:
+                                                        p.stdLaborHours ?? null,
+                                                qcCheckpoint:
+                                                        p.qcCheckpoint ?? false,
+                                                instructionParams:
+                                                        p.instructionParams ||
+                                                        undefined,
+                                                operatingInstructions:
+                                                        p.operatingInstructions ||
+                                                        null,
+                                                inputs: {
+                                                        create: (
+                                                                p.inputs || []
+                                                        ).map((inp) => ({
+                                                                itemCode: inp.itemCode,
+                                                                quantity: inp.quantity,
+                                                                uom: inp.uom,
+                                                                materialRole:
+                                                                        inp.materialRole,
+                                                                proportion:
+                                                                        inp.proportion ??
+                                                                        null,
+                                                                prevProcessSeq:
+                                                                        inp.prevProcessSeq ??
+                                                                        null,
+                                                                childBomId:
+                                                                        inp.childBomId ||
+                                                                        null,
+                                                        })),
+                                                },
+                                                outputs: {
+                                                        create: (
+                                                                p.outputs || []
+                                                        ).map((out) => ({
+                                                                itemCode: out.itemCode,
+                                                                quantity: out.quantity,
+                                                                uom: out.uom,
+                                                                outputType: out.outputType,
+                                                                materialRole:
+                                                                        out.materialRole,
+                                                                nextProcessSeq:
+                                                                        out.nextProcessSeq ??
+                                                                        null,
+                                                        })),
+                                                },
+                                        })),
                                 },
                         },
                 });
