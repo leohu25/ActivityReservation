@@ -3,6 +3,7 @@ import { Input } from "../../shadcn/input";
 import { Textarea } from "../../shadcn/textarea";
 import { Checkbox } from "../../shadcn/checkbox";
 import { Switch } from "../../shadcn/switch";
+import { DatePicker } from "../../shadcn/date-picker";
 import {
     Select,
     SelectContent,
@@ -237,6 +238,18 @@ function renderFieldControl(
                 className={cn(
                     isInvalid && "border-destructive ring-destructive/20",
                 )}
+            />
+        );
+    }
+
+    if (field.type === "date") {
+        return (
+            <DatePicker
+                value={value as string | Date | null | undefined}
+                onChange={(dateStr) => setValue(dateStr)}
+                placeholder={field.placeholder || "请选择日期"}
+                disabled={field.disabled}
+                aria-invalid={isInvalid}
             />
         );
     }

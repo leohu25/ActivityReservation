@@ -267,8 +267,7 @@ export function QuoteView({
                     onClick: () => handleUpdateStatus(q.quoteId, "ACTIVE"),
                     confirm: {
                       title: `确认审核并生效报价单 "${q.displayName || q.quoteId}"？`,
-                      description:
-                        "生效后对应维度的商品下单将立即执行此价格。",
+                      description: "生效后对应维度的商品下单将立即执行此价格。",
                       confirmText: "审核生效",
                       cancelText: "取消",
                     },

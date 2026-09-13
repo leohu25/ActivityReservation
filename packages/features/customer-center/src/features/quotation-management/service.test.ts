@@ -91,11 +91,9 @@ test("CustomerQuoteService 拦截非草稿状态的删除操作，执行草稿�
     },
   };
 
-  await CustomerQuoteService.deleteQuote(
-    mockClient as never,
-    "QUOTE-DRAFT-1",
-    { userId: "user-operator-1" },
-  );
+  await CustomerQuoteService.deleteQuote(mockClient as never, "QUOTE-DRAFT-1", {
+    userId: "user-operator-1",
+  });
 
   assert.equal(updatedPayload.isDeleted, true);
   assert.equal(updatedPayload.deletedById, "user-operator-1");

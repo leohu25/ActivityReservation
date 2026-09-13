@@ -202,12 +202,8 @@ export function QuoteFormModal({
           ? Number(value) || 0
           : Number(row.unitPriceExclTax) || 0;
       const rate =
-        field === "taxRate"
-          ? Number(value) || 0
-          : Number(row.taxRate) || 0;
-      patch.unitPriceInclTax = parseFloat(
-        (excl * (1 + rate / 100)).toFixed(2),
-      );
+        field === "taxRate" ? Number(value) || 0 : Number(row.taxRate) || 0;
+      patch.unitPriceInclTax = parseFloat((excl * (1 + rate / 100)).toFixed(2));
     }
 
     onChange(patch);

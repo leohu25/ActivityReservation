@@ -104,20 +104,14 @@ export const updateTagAction = defineServerAction(
   "修改标签失败",
 );
 
-export const deleteTagAction = defineServerAction(
-  async (tagCode: string) => {
-    const { client, ability } = await getTenantCustomerContext();
-    assertCustomerAbility(ability, "delete", CustomerTagSubject);
-    const deleted = await CustomerCategoryTagService.deleteTag(
-      client,
-      tagCode,
-    );
-    revalidatePath("/customer/categories-tags");
-    revalidatePath("/customer/customers");
-    return deleted;
-  },
-  "删除标签失败",
-);
+export const deleteTagAction = defineServerAction(async (tagCode: string) => {
+  const { client, ability } = await getTenantCustomerContext();
+  assertCustomerAbility(ability, "delete", CustomerTagSubject);
+  const deleted = await CustomerCategoryTagService.deleteTag(client, tagCode);
+  revalidatePath("/customer/categories-tags");
+  revalidatePath("/customer/customers");
+  return deleted;
+}, "删除标签失败");
 
 export const updateTagStatusAction = defineServerAction(
   async (tagCode: string, status: "ACTIVE" | "DISABLED") => {

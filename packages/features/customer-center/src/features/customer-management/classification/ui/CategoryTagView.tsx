@@ -433,7 +433,11 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
             setCategoryModalState({ open: false, mode: "create", record: null })
           }
           onSuccess={() => {
-            setCategoryModalState({ open: false, mode: "create", record: null });
+            setCategoryModalState({
+              open: false,
+              mode: "create",
+              record: null,
+            });
             router?.refresh();
           }}
         />

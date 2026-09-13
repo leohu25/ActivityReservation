@@ -213,7 +213,9 @@ export class CustomerCategoryTagService {
       where: { tagCode },
     });
     if (assignmentCount > 0) {
-      throw new Error(`该标签当前已被 ${assignmentCount} 个客户关联使用，禁止删除`);
+      throw new Error(
+        `该标签当前已被 ${assignmentCount} 个客户关联使用，禁止删除`,
+      );
     }
 
     return client.customerTag.delete({

@@ -41,18 +41,15 @@ export const updateQuoteAction = defineServerAction(
   "修改报价单失败",
 );
 
-export const deleteQuoteAction = defineServerAction(
-  async (quoteId: string) => {
-    const { client, ability, userId } = await getTenantCustomerContext();
-    assertCustomerAbility(ability, "delete", CustomerQuoteSubject);
-    const deleted = await CustomerQuoteService.deleteQuote(client, quoteId, {
-      userId,
-    });
-    revalidatePath("/customer/quotes");
-    return deleted;
-  },
-  "删除报价单失败",
-);
+export const deleteQuoteAction = defineServerAction(async (quoteId: string) => {
+  const { client, ability, userId } = await getTenantCustomerContext();
+  assertCustomerAbility(ability, "delete", CustomerQuoteSubject);
+  const deleted = await CustomerQuoteService.deleteQuote(client, quoteId, {
+    userId,
+  });
+  revalidatePath("/customer/quotes");
+  return deleted;
+}, "删除报价单失败");
 
 export const updateQuoteStatusAction = defineServerAction(
   async (quoteId: string, status: "ACTIVE" | "VOIDED") => {
