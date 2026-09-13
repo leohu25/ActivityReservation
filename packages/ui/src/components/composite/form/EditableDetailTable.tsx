@@ -11,12 +11,16 @@ import {
   TableCell,
 } from "../../shadcn/table";
 import { Button } from "../../shadcn/button";
+import { Card } from "../../shadcn/card";
+import { EmptyState } from "../../feedback/EmptyState";
+import { cn } from "../../../lib/utils";
 
 export interface DetailTableColumn<T> {
   id: string;
   header: React.ReactNode;
   width?: number | string;
   align?: "left" | "center" | "right";
+  className?: string;
   renderCell: (
     row: T,
     index: number,
@@ -38,9 +42,9 @@ export interface EditableDetailTableProps<T> {
 
 /**
  * 通用单据明细表格 (EditableDetailTable)
- * - 纯基于 shadcn Table 工业风高密度呈现
- * - 支持动态增删行与行内单元格响应式交互
- * - 兼备只读查看模式 (readOnly) 与可编辑模式
+ * - 严格遵循项目官方 DataTable/Card/Table 设计语言规范
+ * - 纯基于 shadcn Table 系列组件构建工业风高密度呈现
+ * - 兼备编辑模式（动态增删行、响应式字段计算）与只读详情查看模式
  */
 export function EditableDetailTable<T>({
   columns,
@@ -84,7 +88,7 @@ export function EditableDetailTable<T>({
   };
 
   return (
-    <div className={`space-y-2 ${className ?? ""}`}>
+    <div className={cn("space-y-2", className)}>
       {!readOnly && onAddRow && onChange && (
         <div className="flex justify-end">
           <Button
@@ -100,85 +104,90 @@ export function EditableDetailTable<T>({
         </div>
       )}
 
-      <div className="border rounded-lg overflow-x-auto bg-card">
-        <Table className="w-full text-xs">
-          <TableHeader className="bg-muted/50">
-            <TableRow>
-              {columns.map((col) => (
-                <TableHead
-                  key={col.id}
-                  style={col.width ? { width: col.width } : undefined}
-                  className={`p-2 text-xs font-medium whitespace-nowrap ${
-                    col.align === "center"
-                      ? "text-center"
-                      : col.align === "right"
-                        ? "text-right"
-                        : "text-left"
-                  }`}
-                >
-                  {col.header}
-                </TableHead>
-              ))}
-              {!readOnly && onChange && (
-                <TableHead className="p-2 text-center w-12 whitespace-nowrap">
-                  操作
-                </TableHead>
-              )}
-            </TableRow>
-          </TableHeader>
-          <TableBody className="divide-y">
-            {data.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length + (readOnly ? 0 : 1)}
-                  className="p-4 text-center text-muted-foreground text-xs"
-                >
-                  {emptyText}
-                </TableCell>
+      <Card className="overflow-hidden rounded-xl border border-border/80 bg-card p-0 shadow-xs">
+        <div className="relative w-full overflow-x-auto">
+          <Table className="w-full text-xs">
+            <TableHeader className="bg-muted/50 font-medium">
+              <TableRow className="border-b border-border hover:bg-transparent">
+                {columns.map((col) => (
+                  <TableHead
+                    key={col.id}
+                    style={col.width ? { width: col.width } : undefined}
+                    className={cn(
+                      "text-xs font-semibold text-muted-foreground h-9 px-3 whitespace-nowrap",
+                      col.align === "center" && "text-center",
+                      col.align === "right" && "text-right",
+                      col.className,
+                    )}
+                  >
+                    {col.header}
+                  </TableHead>
+                ))}
+                {!readOnly && onChange && (
+                  <TableHead className="w-[50px] px-2 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                    操作
+                  </TableHead>
+                )}
               </TableRow>
-            ) : (
-              data.map((row, idx) => (
-                <TableRow key={idx} className="hover:bg-muted/30">
-                  {columns.map((col) => (
-                    <TableCell
-                      key={col.id}
-                      className={`p-2 align-middle ${
-                        col.align === "center"
-                          ? "text-center"
-                          : col.align === "right"
-                            ? "text-right"
-                            : "text-left"
-                      }`}
-                    >
-                      {col.renderCell(
-                        row,
-                        idx,
-                        readOnly
-                          ? undefined
-                          : (updater) => handleRowChange(idx, updater),
-                      )}
-                    </TableCell>
-                  ))}
-                  {!readOnly && onChange && (
-                    <TableCell className="p-2 text-center align-middle">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={data.length <= minRows}
-                        onClick={() => handleRemove(idx)}
-                        className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive disabled:opacity-30"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </TableCell>
-                  )}
+            </TableHeader>
+            <TableBody className="divide-y divide-border/60">
+              {data.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length + (readOnly ? 0 : 1)}
+                    className="p-6 text-center"
+                  >
+                    <EmptyState
+                      title={emptyText}
+                      description="当前无任何明细品项数据"
+                    />
+                  </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ) : (
+                data.map((row, idx) => (
+                  <TableRow
+                    key={idx}
+                    className="hover:bg-muted/30 transition-colors"
+                  >
+                    {columns.map((col) => (
+                      <TableCell
+                        key={col.id}
+                        className={cn(
+                          "px-3 py-2 align-middle",
+                          col.align === "center" && "text-center",
+                          col.align === "right" && "text-right",
+                        )}
+                      >
+                        {col.renderCell(
+                          row,
+                          idx,
+                          readOnly
+                            ? undefined
+                            : (updater) => handleRowChange(idx, updater),
+                        )}
+                      </TableCell>
+                    ))}
+                    {!readOnly && onChange && (
+                      <TableCell className="px-2 py-2 text-center align-middle">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={data.length <= minRows}
+                          onClick={() => handleRemove(idx)}
+                          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive disabled:opacity-30"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
     </div>
   );
 }
