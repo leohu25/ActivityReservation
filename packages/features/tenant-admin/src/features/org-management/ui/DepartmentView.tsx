@@ -10,18 +10,16 @@ import {
   Button,
   Badge,
   PageShell,
+  HierarchyTree,
+  ConfirmDialog,
+  type HierarchyNodeData,
 } from "@base/ui";
 import {
   Building,
   Plus,
   Edit2,
   Trash2,
-  ChevronRight,
-  ChevronDown,
   Users,
-  AlertCircle,
-  CheckCircle2,
-  FolderTree,
 } from "lucide-react";
 import type { DepartmentTreeNode } from "../types";
 import { deleteDepartmentAction, listDepartmentTreeAction } from "../actions";
@@ -52,21 +50,37 @@ function flattenTreeForSelect(
   return result;
 }
 
+export interface AdaptedDeptNode extends HierarchyNodeData {
+  id: string;
+  name: string;
+  code: string;
+  leaderName: string | null;
+  employeeCount: number;
+  raw: DepartmentTreeNode;
+  children?: AdaptedDeptNode[];
+}
+
+function adaptDeptTree(
+  nodes: readonly DepartmentTreeNode[],
+): AdaptedDeptNode[] {
+  return nodes.map((n) => ({
+    id: n.id,
+    name: n.name,
+    code: n.code,
+    leaderName: n.leaderName ?? null,
+    employeeCount: n.employeeCount,
+    raw: n,
+    children: n.children ? adaptDeptTree(n.children) : undefined,
+  }));
+}
+
 /**
- * 部门拓扑树形管理面板组件 (现代数智工业风)
- * 支持递归树状展开折叠、新增子部门、调整上下级与删除保护
+ * 部门拓扑树形管理面板组件
+ * 基于官方 HierarchyTree 构建，统一管理企业部门组织架构与就近派生操作
  */
 export function DepartmentView({ initialTree }: DepartmentViewProps) {
   const [treeData, setTreeData] =
     useState<readonly DepartmentTreeNode[]>(initialTree);
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => {
-    // 默认展开前两层
-    const set = new Set<string>();
-    for (const node of initialTree) {
-      set.add(node.id);
-    }
-    return set;
-  });
 
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
@@ -79,19 +93,9 @@ export function DepartmentView({ initialTree }: DepartmentViewProps) {
     defaultParentId?: string | null;
   } | null>(null);
 
-  const [isPending, startTransition] = useTransition();
+  const [deletingDept, setDeletingDept] = useState<DepartmentTreeNode | null>(null);
 
-  const toggleExpand = (id: string) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
+  const [isPending, startTransition] = useTransition();
 
   const refreshTree = async () => {
     const res = await listDepartmentTreeAction();
@@ -110,13 +114,12 @@ export function DepartmentView({ initialTree }: DepartmentViewProps) {
     setFeedback(null);
   };
 
-  const handleDelete = (dept: DepartmentTreeNode) => {
-    if (!confirm(`确定要删除部门 [${dept.name}] 吗？该操作不可逆。`)) {
-      return;
-    }
+  const handleConfirmDelete = async () => {
+    if (!deletingDept) return;
+    const target = deletingDept;
 
     startTransition(async () => {
-      const res = await deleteDepartmentAction(dept.id);
+      const res = await deleteDepartmentAction(target.id);
       if (res.success) {
         setFeedback({ type: "success", message: "部门已成功删除" });
         await refreshTree();
@@ -126,160 +129,137 @@ export function DepartmentView({ initialTree }: DepartmentViewProps) {
           message: res.error || "删除部门失败",
         });
       }
+      setDeletingDept(null);
     });
   };
 
   const flatSelectOptions = flattenTreeForSelect(treeData);
-
-  const renderTree = (nodes: readonly DepartmentTreeNode[], depth = 0) => {
-    if (!nodes || nodes.length === 0) return null;
-
-    return (
-      <div className="space-y-2">
-        {nodes.map((node) => {
-          const hasChildren = node.children && node.children.length > 0;
-          const isExpanded = expandedIds.has(node.id);
-
-          return (
-            <div key={node.id} className="space-y-1.5">
-              <div
-                className="group flex items-center justify-between rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-xs transition-all hover:border-blue-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900"
-                style={{ marginLeft: `${depth * 24}px` }}
-              >
-                <div className="flex items-center gap-2.5">
-                  {hasChildren ? (
-                    <button
-                      type="button"
-                      onClick={() => toggleExpand(node.id)}
-                      className="flex size-6 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
-                    >
-                      {isExpanded ? (
-                        <ChevronDown className="size-4 text-blue-600" />
-                      ) : (
-                        <ChevronRight className="size-4" />
-                      )}
-                    </button>
-                  ) : (
-                    <span className="size-6 shrink-0 flex items-center justify-center text-slate-300">
-                      •
-                    </span>
-                  )}
-
-                  <div className="flex items-center gap-2">
-                    <Building className="size-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                    <span className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                      {node.name}
-                    </span>
-                    <Badge variant="outline" className="text-[11px] font-mono">
-                      {node.code}
-                    </Badge>
-                  </div>
-
-                  {node.leaderName && (
-                    <Badge className="bg-slate-100 text-slate-600 border border-slate-200 text-[11px]">
-                      负责人: {node.leaderName}
-                    </Badge>
-                  )}
-
-                  <div className="flex items-center gap-1 text-xs text-slate-400 pl-2">
-                    <Users className="size-3.5 text-slate-400" />
-                    <span>在职 {node.employeeCount} 人</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1 opacity-90 transition-opacity group-hover:opacity-100">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs text-blue-600 hover:bg-blue-50"
-                    onClick={() => openCreateModal(node.id)}
-                  >
-                    <Plus className="mr-1 size-3.5" />
-                    添加子部门
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs text-slate-600 hover:bg-slate-100"
-                    onClick={() => openEditModal(node)}
-                  >
-                    <Edit2 className="mr-1 size-3.5" />
-                    编辑
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs text-rose-600 hover:bg-rose-50"
-                    onClick={() => handleDelete(node)}
-                  >
-                    <Trash2 className="mr-1 size-3.5" />
-                    删除
-                  </Button>
-                </div>
-              </div>
-
-              {hasChildren &&
-                isExpanded &&
-                renderTree(node.children, depth + 1)}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
+  const adaptedTree = adaptDeptTree(treeData);
 
   return (
     <PageShell
       title="企业部门架构"
       description="支持展开折叠查看完整部门拓扑。调换上级部门自动进行防环保护，严禁产生循环依赖。"
-      icon={<Building className="size-5 text-blue-600" />}
-      actions={
-        <Button
-          onClick={() => openCreateModal(null)}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs"
-        >
-          <Plus className="mr-1.5 size-4" />
-          新建部门
-        </Button>
-      }
+      icon={<Building className="size-5 text-primary" />}
       feedback={feedback}
       onDismissFeedback={() => setFeedback(null)}
     >
-      {/* 部门架构树主卡片 */}
-      <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
-        <CardHeader className="border-b border-slate-100 pb-4 dark:border-slate-800">
-          <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-slate-100">
-            <FolderTree className="size-5 text-blue-600" />
-            <span>企业部门组织树</span>
-          </CardTitle>
-          <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
-            支持展开折叠查看完整部门拓扑。调换上级部门自动进行防环保护，严禁产生循环依赖。
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-6">
-          {treeData.length === 0 ? (
-            <div className="py-12 text-center text-xs text-slate-400">
-              当前暂未建立任何部门，请点击右上角按钮创建初始部门
+      <Card className="rounded-xl border border-border/80 bg-card shadow-xs">
+        <CardHeader className="border-b border-border/80 pb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base font-bold text-foreground">
+                组织架构拓扑树
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground mt-1">
+                点击展开或收起子部门，首行常驻快速新建根级部门，行内支持就近新建子部门与信息维护。
+              </CardDescription>
             </div>
-          ) : (
-            renderTree(treeData)
-          )}
+          </div>
+        </CardHeader>
+
+        <CardContent className="p-4">
+          <HierarchyTree<AdaptedDeptNode>
+            data={adaptedTree}
+            createRootText="新建一级根部门"
+            emptyText="暂无部门架构数据，点击上方按钮创建第一条根部门"
+            onCreateRoot={() => openCreateModal(null)}
+            renderTitle={(node) => (
+              <div className="flex items-center gap-2 min-w-0">
+                <Building className="size-4 text-primary shrink-0" />
+                <span className="text-sm font-semibold text-foreground">
+                  {node.name}
+                </span>
+                <Badge variant="outline" className="text-[11px] font-mono">
+                  {node.code}
+                </Badge>
+              </div>
+            )}
+            renderExtra={(node) => (
+              <div className="flex items-center gap-2 pl-2">
+                {node.leaderName && (
+                  <Badge variant="secondary" className="text-[11px]">
+                    负责人: {node.leaderName}
+                  </Badge>
+                )}
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Users className="size-3.5" />
+                  <span>在职 {node.employeeCount} 人</span>
+                </div>
+              </div>
+            )}
+            renderActions={(node) => (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2 text-xs border-dashed text-primary hover:bg-primary/5 hover:text-primary"
+                  onClick={() => openCreateModal(node.id)}
+                  title={`在【${node.name}】下添加子部门`}
+                >
+                  <Plus className="mr-1 size-3.5" />
+                  子部门
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => openEditModal(node.raw)}
+                >
+                  <Edit2 className="mr-1 size-3.5" />
+                  编辑
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                  onClick={() => setDeletingDept(node.raw)}
+                  disabled={isPending}
+                  title="删除部门"
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </>
+            )}
+          />
         </CardContent>
       </Card>
 
+      {/* 新建/编辑部门 Modal */}
       {modalState && (
         <DepartmentFormModal
           mode={modalState.mode}
           record={modalState.targetDept}
-          parentOptions={flatSelectOptions}
           defaultParentId={modalState.defaultParentId}
+          parentOptions={flatSelectOptions}
           onClose={() => setModalState(null)}
           onSaved={async () => {
             setModalState(null);
+            setFeedback({
+              type: "success",
+              message:
+                modalState.mode === "create"
+                  ? "部门创建成功"
+                  : "部门信息更新成功",
+            });
             await refreshTree();
           }}
         />
       )}
+
+      {/* 部门删除二次确认弹窗 (UI 框架 ConfirmDialog) */}
+      <ConfirmDialog
+        open={Boolean(deletingDept)}
+        onOpenChange={(v) => {
+          if (!v) setDeletingDept(null);
+        }}
+        title={`确定要删除部门 [${deletingDept?.name}] 吗？`}
+        description="该操作不可逆。若部门下尚有在职员工或子级部门，系统将自动拦截并禁止删除。"
+        confirmText="确认删除"
+        cancelText="取消"
+        variant="destructive"
+        onConfirm={handleConfirmDelete}
+      />
     </PageShell>
   );
 }

@@ -186,7 +186,9 @@ export function FormDialog<TRecord = unknown>({
         {headerExtra}
 
         {/* 关键修复：内容区添加 px-1 py-1，避免内部 Input 聚焦时的 focus-visible:ring-3 外晕光圈被父级裁剪或截断 */}
-        <div className="flex-1 overflow-y-auto px-1 py-1 -mx-1 -my-1">{body}</div>
+        <div className="flex-1 overflow-y-auto px-1 py-1 -mx-1 -my-1">
+          {body}
+        </div>
 
         {renderedFooter}
       </DialogContent>

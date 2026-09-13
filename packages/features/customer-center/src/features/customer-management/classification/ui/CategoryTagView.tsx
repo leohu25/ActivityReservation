@@ -25,8 +25,8 @@ import {
   InputGroupAddon,
   InputGroupInput,
   ConfirmDialog,
-  TreeView,
-  type TreeNodeData,
+  HierarchyTree,
+  type HierarchyNodeData,
   toast,
   useSafeRouter,
 } from "@base/ui";
@@ -65,7 +65,7 @@ interface CategoryTagViewProps {
   readonly initialTags: CustomerTagItem[];
 }
 
-export interface CategoryTreeItem extends TreeNodeData {
+export interface CategoryTreeItem extends HierarchyNodeData {
   id: string;
   name: string;
   code: string;
@@ -271,8 +271,8 @@ export function CategoryTagView({
 
       <CardContent className="flex-1 p-4">
         <div className="max-h-[580px] overflow-y-auto pr-1">
-          {/* 纯正 shadcn 官方 TreeView 驱动 */}
-          <TreeView<CategoryTreeItem>
+          {/* 正式接入公共 UI 库 HierarchyTree */}
+          <HierarchyTree<CategoryTreeItem>
             data={adaptedTreeData}
             createRootText="新增一级根分类"
             emptyText="暂无分类数据，点击上方按钮创建第一条根分类"

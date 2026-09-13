@@ -25,7 +25,9 @@ export class CustomerCategoryTagService {
   /**
    * 自动生成分类唯一编码: CAT_YYYYMMDD_XXXX
    */
-  static async generateCategoryCode(client: TenantPrismaClient): Promise<string> {
+  static async generateCategoryCode(
+    client: TenantPrismaClient,
+  ): Promise<string> {
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, "0");
@@ -273,7 +275,9 @@ export class CustomerCategoryTagService {
       where: { tagCode },
     });
     if (assignmentCount > 0) {
-      throw new Error(`该标签当前已被 ${assignmentCount} 个客户关联使用，禁止删除`);
+      throw new Error(
+        `该标签当前已被 ${assignmentCount} 个客户关联使用，禁止删除`,
+      );
     }
 
     return client.customerTag.delete({

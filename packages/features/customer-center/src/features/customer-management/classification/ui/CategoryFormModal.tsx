@@ -25,7 +25,11 @@ function flattenCategoryTree(
   list: readonly CustomerCategoryItem[],
   depth = 0,
 ): { categoryCode: string; categoryName: string; depth: number }[] {
-  const result: { categoryCode: string; categoryName: string; depth: number }[] = [];
+  const result: {
+    categoryCode: string;
+    categoryName: string;
+    depth: number;
+  }[] = [];
   for (const item of list) {
     result.push({
       categoryCode: item.categoryCode,
@@ -55,7 +59,7 @@ export function CategoryFormModal({
     categoryName: record?.categoryName || "",
     parentCode: isEdit
       ? record?.parentCode || ""
-      : defaultParentCode ?? record?.parentCode ?? "",
+      : (defaultParentCode ?? record?.parentCode ?? ""),
     description: record?.description || "",
   });
 
