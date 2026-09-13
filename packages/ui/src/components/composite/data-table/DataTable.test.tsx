@@ -315,7 +315,7 @@ test("DataTable.ActionButton: disabled-tooltip 策略置灰并提示", () => {
   assert.match(html, /暂无导出权限|opacity-50/);
 });
 
-test("DataTableRowActions: 默认平铺「详情/编辑」并折叠删除", () => {
+test("DataTableRowActions: 默认平铺「详情/编辑/删除」", () => {
   const ability = {
     can(action: string, subject: string) {
       if (subject === "Material" && action === "read") return true;
@@ -344,7 +344,7 @@ test("DataTableRowActions: 默认平铺「详情/编辑」并折叠删除", () =
 
   assert.match(html, /详情/);
   assert.match(html, /编辑/);
-  assert.match(html, /打开操作菜单/);
+  assert.match(html, /删除/);
 });
 
 test("DataTableRowActions: 不传回调时默认仍展示内置操作（有权限无回调置灰）", () => {
@@ -371,7 +371,7 @@ test("DataTableRowActions: 不传回调时默认仍展示内置操作（有权�
 
   assert.match(html, /详情/);
   assert.match(html, /编辑/);
-  assert.match(html, /打开操作菜单/);
+  assert.match(html, /删除/);
   assert.match(html, /opacity-50/);
 });
 

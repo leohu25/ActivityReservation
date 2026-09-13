@@ -100,7 +100,9 @@ export function CategoryTagView({
   const [tagKeyword, setTagKeyword] = useState("");
 
   // 待删除分类状态（由 ConfirmDialog 驱动）
-  const [deletingCat, setDeletingCat] = useState<CustomerCategoryItem | null>(null);
+  const [deletingCat, setDeletingCat] = useState<CustomerCategoryItem | null>(
+    null,
+  );
   // 待删除标签状态（由 ConfirmDialog 驱动）
   const [deletingTag, setDeletingTag] = useState<CustomerTagItem | null>(null);
 
@@ -120,10 +122,7 @@ export function CategoryTagView({
   }>({ open: false, mode: "create", record: null });
 
   // --- 分类操作 ---
-  const handleToggleCatStatus = async (
-    code: string,
-    currentStatus: string,
-  ) => {
+  const handleToggleCatStatus = async (code: string, currentStatus: string) => {
     setLoading(true);
     const nextStatus = currentStatus === "ACTIVE" ? "DISABLED" : "ACTIVE";
     try {
@@ -162,10 +161,7 @@ export function CategoryTagView({
   };
 
   // --- 标签操作 ---
-  const handleToggleTagStatus = async (
-    code: string,
-    currentStatus: string,
-  ) => {
+  const handleToggleTagStatus = async (code: string, currentStatus: string) => {
     setLoading(true);
     const nextStatus = currentStatus === "ACTIVE" ? "DISABLED" : "ACTIVE";
     try {

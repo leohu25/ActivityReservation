@@ -267,6 +267,7 @@ export function CustomerView({
             {
               label: c.status === "ACTIVE" ? "停用客户" : "启用客户",
               action: "toggle_status",
+              collapsed: true,
               variant: c.status === "ACTIVE" ? "destructive" : "default",
               onClick: () =>
                 handleToggleStatus(c.customerCode || c.id || "", c.status),

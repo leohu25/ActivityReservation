@@ -10,6 +10,8 @@ import {
   Input,
   Button,
   Badge,
+  DirectoryTreeFilter,
+  type DirectoryTreeNode,
 } from "@base/ui";
 import {
   Users,
@@ -432,61 +434,44 @@ export function EmployeeView({
 
       {/* 左右分栏布局 */}
       <div className="flex flex-col gap-6 lg:flex-row items-start">
-        {/* 左栏：部门架构过滤树卡片 */}
-        <Card className="w-full lg:w-64 shrink-0 rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <CardHeader className="border-b border-slate-100 p-4 dark:border-slate-800">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-slate-100">
-                <FolderTree className="size-4 text-blue-600" />
-                <span>部门级联过滤</span>
-              </CardTitle>
-              <button
-                type="button"
-                onClick={() => handleDeptSelect(null)}
-                className={`text-[11px] font-semibold transition-colors ${
-                  selectedDeptId === null
-                    ? "text-blue-600 font-bold"
-                    : "text-slate-400 hover:text-slate-700"
-                }`}
-              >
-                全部
-              </button>
-            </div>
-            <div className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-500">
-              <input
-                type="checkbox"
-                id="inc_children"
-                checked={includeChildren}
-                onChange={(e) => {
-                  setIncludeChildren(e.target.checked);
-                  startTransition(async () => {
-                    const res = await listEmployeesAction({
-                      departmentId: selectedDeptId || undefined,
-                      includeChildren: e.target.checked,
-                      positionId: selectedPositionId || undefined,
-                      status: selectedStatus || undefined,
-                      search: searchKeyword || undefined,
-                    });
-                    if (res.success && res.data) setEmployees(res.data);
+        {/* 左栏：基于官方通用 DirectoryTreeFilter 的部门架构过滤树 */}
+        <div className="w-full lg:w-64 shrink-0">
+          <DirectoryTreeFilter
+            title="部门级联过滤"
+            allLabel="全公司所有员工"
+            totalCount={employees.length}
+            nodes={departmentTree.map((d) => ({
+              id: d.id,
+              name: d.name,
+              code: d.code,
+              badge: d.employeeCount > 0 ? d.employeeCount : undefined,
+              // SAFETY: DepartmentTreeNode 递归映射至 DirectoryTreeNode
+              children: d.children
+                ? (d.children as unknown as DirectoryTreeNode[])
+                : undefined,
+            }))}
+            selectedId={selectedDeptId}
+            onSelect={(id) => handleDeptSelect(id)}
+            searchPlaceholder="过滤部门..."
+            cascadeToggle={{
+              checked: includeChildren,
+              onChange: (checked) => {
+                setIncludeChildren(checked);
+                startTransition(async () => {
+                  const res = await listEmployeesAction({
+                    departmentId: selectedDeptId || undefined,
+                    includeChildren: checked,
+                    positionId: selectedPositionId || undefined,
+                    status: selectedStatus || undefined,
+                    search: searchKeyword || undefined,
                   });
-                }}
-                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 size-3.5"
-              />
-              <label htmlFor="inc_children" className="cursor-pointer">
-                级联包含子部门
-              </label>
-            </div>
-          </CardHeader>
-          <CardContent className="p-3 max-h-[500px] overflow-y-auto">
-            {departmentTree.length === 0 ? (
-              <div className="py-6 text-center text-xs text-slate-400">
-                暂无部门数据
-              </div>
-            ) : (
-              renderDeptFilterTree(departmentTree)
-            )}
-          </CardContent>
-        </Card>
+                  if (res.success && res.data) setEmployees(res.data);
+                });
+              },
+              label: "级联包含子部门",
+            }}
+          />
+        </div>
 
         {/* 右栏：员工列表与多维工具栏 */}
         <div className="flex-1 w-full space-y-4">

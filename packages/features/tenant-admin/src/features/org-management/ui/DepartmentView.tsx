@@ -1,27 +1,17 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  Button,
   Badge,
   PageShell,
-  HierarchyTree,
-  ConfirmDialog,
-  type HierarchyNodeData,
+  DirectoryTreeFilter,
+  DataTable,
+  type ColumnDef,
+  type DirectoryTreeNode,
 } from "@base/ui";
-import {
-  Building,
-  Plus,
-  Edit2,
-  Trash2,
-  Users,
-} from "lucide-react";
+import { Building, Users, FolderTree } from "lucide-react";
 import type { DepartmentTreeNode } from "../types";
+import { DepartmentSubject } from "../department.contract";
 import { deleteDepartmentAction, listDepartmentTreeAction } from "../actions";
 import { DepartmentFormModal } from "./DepartmentFormModal";
 
@@ -50,37 +40,69 @@ function flattenTreeForSelect(
   return result;
 }
 
-export interface AdaptedDeptNode extends HierarchyNodeData {
+/** 展平成带直接父级的一维列表模型，供 DataTable 使用 */
+export interface FlatDeptRow {
   id: string;
-  name: string;
   code: string;
+  name: string;
+  parentId: string | null;
+  parentName?: string;
   leaderName: string | null;
   employeeCount: number;
+  childCount: number;
   raw: DepartmentTreeNode;
-  children?: AdaptedDeptNode[];
 }
 
-function adaptDeptTree(
+function flattenTreeWithMeta(
   nodes: readonly DepartmentTreeNode[],
-): AdaptedDeptNode[] {
+  parentName?: string,
+): FlatDeptRow[] {
+  const result: FlatDeptRow[] = [];
+  for (const n of nodes) {
+    result.push({
+      id: n.id,
+      code: n.code,
+      name: n.name,
+      parentId: n.parentId,
+      parentName,
+      leaderName: n.leaderName ?? null,
+      employeeCount: n.employeeCount,
+      childCount: n.children?.length ?? 0,
+      raw: n,
+    });
+    if (n.children && n.children.length > 0) {
+      result.push(...flattenTreeWithMeta(n.children, n.name));
+    }
+  }
+  return result;
+}
+
+function convertToFilterNodes(
+  nodes: readonly DepartmentTreeNode[],
+): DirectoryTreeNode[] {
   return nodes.map((n) => ({
     id: n.id,
     name: n.name,
     code: n.code,
-    leaderName: n.leaderName ?? null,
-    employeeCount: n.employeeCount,
-    raw: n,
-    children: n.children ? adaptDeptTree(n.children) : undefined,
+    badge: n.employeeCount > 0 ? `${n.employeeCount}人` : undefined,
+    children: n.children ? convertToFilterNodes(n.children) : undefined,
   }));
 }
 
 /**
- * 部门拓扑树形管理面板组件
- * 基于官方 HierarchyTree 构建，统一管理企业部门组织架构与就近派生操作
+ * 现代企业部门架构管理面板
+ * 布局：【左树右表】
+ * - 左侧：DirectoryTreeFilter 部门拓扑导航树
+ * - 右侧：DataTable.Workspace 官方 CRUD 标准工作台（支持关键字、新增、编辑、删除等完整生命周期）
  */
 export function DepartmentView({ initialTree }: DepartmentViewProps) {
   const [treeData, setTreeData] =
     useState<readonly DepartmentTreeNode[]>(initialTree);
+
+  // 选中的部门 ID（null 代表“全公司所有部门”）
+  const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
+  const [includeChildren, setIncludeChildren] = useState(true);
+  const [keyword, setKeyword] = useState("");
 
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
@@ -89,13 +111,14 @@ export function DepartmentView({ initialTree }: DepartmentViewProps) {
 
   const [modalState, setModalState] = useState<{
     mode: "create" | "edit";
-    targetDept?: DepartmentTreeNode;
+    record?: DepartmentTreeNode;
     defaultParentId?: string | null;
   } | null>(null);
 
-  const [deletingDept, setDeletingDept] = useState<DepartmentTreeNode | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const refreshTree = async () => {
     const res = await listDepartmentTreeAction();
@@ -110,16 +133,13 @@ export function DepartmentView({ initialTree }: DepartmentViewProps) {
   };
 
   const openEditModal = (dept: DepartmentTreeNode) => {
-    setModalState({ mode: "edit", targetDept: dept });
+    setModalState({ mode: "edit", record: dept });
     setFeedback(null);
   };
 
-  const handleConfirmDelete = async () => {
-    if (!deletingDept) return;
-    const target = deletingDept;
-
+  const handleDelete = async (deptId: string) => {
     startTransition(async () => {
-      const res = await deleteDepartmentAction(target.id);
+      const res = await deleteDepartmentAction(deptId);
       if (res.success) {
         setFeedback({ type: "success", message: "部门已成功删除" });
         await refreshTree();
@@ -129,107 +149,236 @@ export function DepartmentView({ initialTree }: DepartmentViewProps) {
           message: res.error || "删除部门失败",
         });
       }
-      setDeletingDept(null);
     });
   };
 
   const flatSelectOptions = flattenTreeForSelect(treeData);
-  const adaptedTree = adaptDeptTree(treeData);
+  const allRows = useMemo(() => flattenTreeWithMeta(treeData), [treeData]);
+  const filterTreeNodes = useMemo(
+    () => convertToFilterNodes(treeData),
+    [treeData],
+  );
+
+  // 递归收集某个节点及其所有后代节点 ID
+  const collectDescendantIds = (
+    nodes: readonly DepartmentTreeNode[],
+    targetId: string,
+  ): Set<string> => {
+    const ids = new Set<string>();
+    const findAndCollect = (list: readonly DepartmentTreeNode[]) => {
+      for (const n of list) {
+        if (n.id === targetId) {
+          ids.add(n.id);
+          const addChildren = (children?: readonly DepartmentTreeNode[]) => {
+            if (!children) return;
+            for (const c of children) {
+              ids.add(c.id);
+              addChildren(c.children);
+            }
+          };
+          addChildren(n.children);
+          return true;
+        }
+        if (n.children && findAndCollect(n.children)) return true;
+      }
+      return false;
+    };
+    findAndCollect(nodes);
+    return ids;
+  };
+
+  // 右侧表格过滤逻辑
+  const filteredRows = useMemo(() => {
+    let rows = allRows;
+
+    if (selectedDeptId) {
+      if (includeChildren) {
+        const allowedIds = collectDescendantIds(treeData, selectedDeptId);
+        rows = rows.filter((r) => allowedIds.has(r.id));
+      } else {
+        rows = rows.filter(
+          (r) => r.id === selectedDeptId || r.parentId === selectedDeptId,
+        );
+      }
+    }
+
+    if (keyword.trim()) {
+      const kw = keyword.trim().toLowerCase();
+      rows = rows.filter(
+        (r) =>
+          r.name.toLowerCase().includes(kw) ||
+          r.code.toLowerCase().includes(kw) ||
+          (r.leaderName && r.leaderName.toLowerCase().includes(kw)),
+      );
+    }
+
+    return rows;
+  }, [allRows, selectedDeptId, includeChildren, keyword, treeData]);
+
+  // 表格列定义
+  const columns: ColumnDef<FlatDeptRow>[] = [
+    {
+      id: "name",
+      header: "部门名称",
+      cell: (row) => (
+        <span className="font-semibold text-foreground">{row.name}</span>
+      ),
+    },
+    {
+      id: "code",
+      header: "部门编码",
+      width: 140,
+      cell: (row) => (
+        <span className="rounded border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] text-foreground">
+          {row.code}
+        </span>
+      ),
+    },
+    {
+      id: "parentName",
+      header: "上级归属",
+      width: 170,
+      cell: (row) =>
+        row.parentName ? (
+          <span className="inline-flex items-center gap-1 text-muted-foreground">
+            <FolderTree className="size-3" />
+            {row.parentName}
+          </span>
+        ) : (
+          <span className="text-[11px] text-muted-foreground/60">根级部门</span>
+        ),
+    },
+    {
+      id: "leaderName",
+      header: "负责人",
+      width: 130,
+      cell: (row) =>
+        row.leaderName ? (
+          <Badge variant="secondary" className="text-[10px]">
+            {row.leaderName}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground text-[11px]">未指定</span>
+        ),
+    },
+    {
+      id: "employeeCount",
+      header: "在职人数",
+      width: 100,
+      align: "center",
+      cell: (row) => (
+        <span className="font-mono font-medium text-foreground inline-flex items-center gap-1">
+          <Users className="size-3 text-muted-foreground" />
+          {row.employeeCount}
+        </span>
+      ),
+    },
+    {
+      id: "childCount",
+      header: "下级数",
+      width: 80,
+      align: "center",
+      cell: (row) => (
+        <span className="font-mono text-muted-foreground">
+          {row.childCount}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "操作",
+      width: 150,
+      align: "right",
+      cell: (row) => (
+        <DataTable.RowActions
+          record={row}
+          hideView={true}
+          extraActions={[
+            {
+              label: "添加子部门",
+              action: "create",
+              onClick: () => openCreateModal(row.id),
+            },
+          ]}
+          onEdit={() => openEditModal(row.raw)}
+          onDelete={() => handleDelete(row.id)}
+          deleteConfirm={{
+            title: `确定撤销部门 [${row.name}] 吗？`,
+            description:
+              "该操作不可逆。若部门下尚有在职员工或子级部门，系统将自动拦截并禁止删除。",
+          }}
+        />
+      ),
+    },
+  ];
 
   return (
     <PageShell
       title="企业部门架构"
-      description="支持展开折叠查看完整部门拓扑。调换上级部门自动进行防环保护，严禁产生循环依赖。"
+      description="支持左侧部门树联动导航与右侧 DataTable.Workspace 标准表格管理。"
       icon={<Building className="size-5 text-primary" />}
       feedback={feedback}
       onDismissFeedback={() => setFeedback(null)}
     >
-      <Card className="rounded-xl border border-border/80 bg-card shadow-xs">
-        <CardHeader className="border-b border-border/80 pb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-base font-bold text-foreground">
-                组织架构拓扑树
-              </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground mt-1">
-                点击展开或收起子部门，首行常驻快速新建根级部门，行内支持就近新建子部门与信息维护。
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardContent className="p-4">
-          <HierarchyTree<AdaptedDeptNode>
-            data={adaptedTree}
-            createRootText="新建一级根部门"
-            emptyText="暂无部门架构数据，点击上方按钮创建第一条根部门"
-            onCreateRoot={() => openCreateModal(null)}
-            renderTitle={(node) => (
-              <div className="flex items-center gap-2 min-w-0">
-                <Building className="size-4 text-primary shrink-0" />
-                <span className="text-sm font-semibold text-foreground">
-                  {node.name}
-                </span>
-                <Badge variant="outline" className="text-[11px] font-mono">
-                  {node.code}
-                </Badge>
-              </div>
-            )}
-            renderExtra={(node) => (
-              <div className="flex items-center gap-2 pl-2">
-                {node.leaderName && (
-                  <Badge variant="secondary" className="text-[11px]">
-                    负责人: {node.leaderName}
-                  </Badge>
-                )}
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Users className="size-3.5" />
-                  <span>在职 {node.employeeCount} 人</span>
-                </div>
-              </div>
-            )}
-            renderActions={(node) => (
-              <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 px-2 text-xs border-dashed text-primary hover:bg-primary/5 hover:text-primary"
-                  onClick={() => openCreateModal(node.id)}
-                  title={`在【${node.name}】下添加子部门`}
-                >
-                  <Plus className="mr-1 size-3.5" />
-                  子部门
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                  onClick={() => openEditModal(node.raw)}
-                >
-                  <Edit2 className="mr-1 size-3.5" />
-                  编辑
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                  onClick={() => setDeletingDept(node.raw)}
-                  disabled={isPending}
-                  title="删除部门"
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
-              </>
-            )}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        {/* 左侧：通用 DirectoryTreeFilter 部门拓扑导航面板 */}
+        <div className="lg:col-span-1">
+          <DirectoryTreeFilter
+            title="部门组织拓扑"
+            allLabel="全公司所有部门"
+            totalCount={allRows.length}
+            nodes={filterTreeNodes}
+            selectedId={selectedDeptId}
+            onSelect={(id) => {
+              setSelectedDeptId(id);
+              setPage(1);
+            }}
+            searchPlaceholder="搜索部门名称或编码..."
+            cascadeToggle={{
+              checked: includeChildren,
+              onChange: (checked) => {
+                setIncludeChildren(checked);
+                setPage(1);
+              },
+              label: "包含下级所有子部门",
+            }}
           />
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* 右侧：官方统一 DataTable.Workspace 标准工作台 */}
+        <div className="lg:col-span-3">
+          <DataTable.Workspace
+            data={filteredRows}
+            columns={columns}
+            rowKey={(r: FlatDeptRow) => r.id}
+            subject={DepartmentSubject}
+            title="部门档案列表"
+            description="点击左侧节点可切换过滤范围，右侧支持快捷搜索与完整 CRUD 维护。"
+            page={page}
+            pageSize={pageSize}
+            total={filteredRows.length}
+            clientSidePagination={true}
+            onPageChange={(p, ps) => {
+              setPage(p);
+              setPageSize(ps);
+            }}
+            onRefresh={refreshTree}
+            onCreate={() => openCreateModal(selectedDeptId)}
+            createText={selectedDeptId ? "新建当前子部门" : "新建部门"}
+            keywordValue={keyword}
+            keywordPlaceholder="按名称、编码或负责人过滤..."
+            onKeywordChange={setKeyword}
+            hideStatusFilter={true}
+            showExport={false}
+          />
+        </div>
+      </div>
 
       {/* 新建/编辑部门 Modal */}
       {modalState && (
         <DepartmentFormModal
           mode={modalState.mode}
-          record={modalState.targetDept}
+          record={modalState.record}
           defaultParentId={modalState.defaultParentId}
           parentOptions={flatSelectOptions}
           onClose={() => setModalState(null)}
@@ -246,20 +395,6 @@ export function DepartmentView({ initialTree }: DepartmentViewProps) {
           }}
         />
       )}
-
-      {/* 部门删除二次确认弹窗 (UI 框架 ConfirmDialog) */}
-      <ConfirmDialog
-        open={Boolean(deletingDept)}
-        onOpenChange={(v) => {
-          if (!v) setDeletingDept(null);
-        }}
-        title={`确定要删除部门 [${deletingDept?.name}] 吗？`}
-        description="该操作不可逆。若部门下尚有在职员工或子级部门，系统将自动拦截并禁止删除。"
-        confirmText="确认删除"
-        cancelText="取消"
-        variant="destructive"
-        onConfirm={handleConfirmDelete}
-      />
     </PageShell>
   );
 }
