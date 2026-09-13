@@ -1,7 +1,7 @@
 /**
  * 工业ERP风 (Industrial ERP Theme Preset)
  * 对应设计系统事实源: design-system/chenrun-digital-erp/MASTER.md 与 .harness/context/design-system.md
- * 特征: 信任蓝 + 橙色CTA微强调, 高密度(8/10), 冷灰底色(#F8FAFC), 细腻边框(#E2E8F0)
+ * 特征: 信任蓝 + 极轻柔交互高亮, 高密度(8/10), 冷灰底色(#F8FAFC), 细腻边框(#E2E8F0)
  */
 
 :root {
@@ -25,9 +25,9 @@
  --muted: #e9eff8;
  --muted-foreground: #475569;
 
- /* CTA / 强调交互 (Accent Orange) */
- --accent: #ea580c;
- --accent-foreground: #ffffff;
+ /* 交互高亮与微强调 (Hover/Active 背景色: 浅蓝微底与品牌色文字，契合主题) */
+ --accent: #eff6ff;
+ --accent-foreground: #2563eb;
 
  /* 危险与告警 */
  --destructive: #dc2626;
@@ -65,8 +65,8 @@
  --secondary-foreground: #f8fafc;
  --muted: #1f2937;
  --muted-foreground: #94a3b8;
- --accent: #ea580c;
- --accent-foreground: #ffffff;
+ --accent: #1e293b;
+ --accent-foreground: #60a5fa;
  --destructive: #dc2626;
  --destructive-foreground: #ffffff;
  --border: #1f2937;

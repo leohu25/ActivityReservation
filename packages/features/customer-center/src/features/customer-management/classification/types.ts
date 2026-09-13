@@ -33,6 +33,7 @@ export interface CustomerCategoryItem {
   parentCode?: string | null;
   description?: string | null;
   status?: "ACTIVE" | "DISABLED" | string;
+  children?: CustomerCategoryItem[];
 }
 
 export interface CustomerTagItem {

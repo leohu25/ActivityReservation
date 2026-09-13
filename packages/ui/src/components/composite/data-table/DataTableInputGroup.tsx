@@ -1,10 +1,6 @@
 "use client";
 
 import React, { type ReactNode } from "react";
-import {
-  InputGroup,
-  InputGroupAddon,
-} from "../../shadcn/input-group";
 import { cn } from "../../../lib/utils";
 
 export interface DataTableInputGroupProps {
@@ -15,8 +11,9 @@ export interface DataTableInputGroupProps {
 }
 
 /**
- * 前缀标签输入组：基于官方 shadcn InputGroup + InputGroupAddon。
- * 禁止再用子选择器强行抹平 Input/Select 样式。
+ * 筛选栏前缀标签输入组
+ * 结构：统一的外层容器 border + bg-card，左侧紧凑等高 label (h-full flex items-center shrink-0 whitespace-nowrap bg-muted/60 px-3 text-xs border-r border-border)
+ * 右侧为无边框无阴影、完全撑满高度的 Input 或 Select
  */
 export function DataTableInputGroup({
   label,
@@ -24,21 +21,24 @@ export function DataTableInputGroup({
   className,
 }: DataTableInputGroupProps) {
   return (
-    <InputGroup
+    <div
+      data-slot="data-table-input-group"
       className={cn(
-        "h-10 w-full min-w-0 overflow-hidden rounded-lg bg-card",
-        "[&_[data-slot=select-trigger]]:h-full [&_[data-slot=select-trigger]]:min-w-0 [&_[data-slot=select-trigger]]:flex-1 [&_[data-slot=select-trigger]]:rounded-none [&_[data-slot=select-trigger]]:border-0 [&_[data-slot=select-trigger]]:bg-transparent [&_[data-slot=select-trigger]]:shadow-none [&_[data-slot=select-trigger]]:focus-visible:ring-0",
-        "[&_[role=combobox]]:h-full [&_[role=combobox]]:w-full",
+        "relative flex h-9 min-w-0 items-stretch overflow-hidden rounded-lg border border-input bg-card shadow-xs transition-colors focus-within:border-ring focus-within:ring-1 focus-within:ring-ring",
+        // 右侧如果是 Select，抹平边框、圆角与阴影，保证高度 100% 垂直居中
+        "[&_[data-slot=select-trigger]]:h-full [&_[data-slot=select-trigger]]:min-w-0 [&_[data-slot=select-trigger]]:flex-1 [&_[data-slot=select-trigger]]:rounded-none [&_[data-slot=select-trigger]]:border-0 [&_[data-slot=select-trigger]]:bg-transparent [&_[data-slot=select-trigger]]:shadow-none [&_[data-slot=select-trigger]]:focus:ring-0 [&_[data-slot=select-trigger]]:focus-visible:ring-0",
+        // 右侧如果是普通 Input，抹平边框、圆角与阴影，高度 100%
+        "[&_input]:h-full [&_input]:min-w-0 [&_input]:flex-1 [&_input]:rounded-none [&_input]:border-0 [&_input]:bg-transparent [&_input]:shadow-none [&_input]:focus-visible:ring-0",
         className,
       )}
     >
-      <InputGroupAddon
-        align="inline-start"
-        className="border-r border-border bg-muted/60 px-3 text-xs font-medium"
+      <div
+        data-slot="input-group-label"
+        className="flex h-full shrink-0 items-center justify-center whitespace-nowrap border-r border-border bg-muted/60 px-3 text-xs font-medium text-muted-foreground select-none"
       >
         {label}
-      </InputGroupAddon>
-      {children}
-    </InputGroup>
+      </div>
+      <div className="flex h-full min-w-0 flex-1 items-center">{children}</div>
+    </div>
   );
 }
