@@ -3,3 +3,4 @@ export * from "./FormDialog";
 export * from "./FormDrawer";
 export * from "./FormLayout";
 export * from "./FormFields";
+export * from "./EditableDetailTable";

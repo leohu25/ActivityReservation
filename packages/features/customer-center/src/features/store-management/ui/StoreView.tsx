@@ -14,11 +14,12 @@ import {
   toast,
   useListUrlNav,
   type ColumnDef,
+  type CrudFormMode,
 } from "@base/ui";
 import { exportContractCsv } from "@base/shared";
 import { useAbility } from "@base/authorization";
 import { updateStoreStatusAction, deleteStoreAction } from "../actions";
-import { CreateStoreModal } from "./CreateStoreModal";
+import { StoreFormModal } from "./StoreFormModal";
 import { CustomerStoreField, storePageContract } from "../contract";
 import type { StoreListItem } from "../types";
 import type { CustomerListItem } from "../../customer-management/types";
@@ -72,7 +73,15 @@ export function StoreView({
   const [selectedStatus, setSelectedStatus] = useState(initialStatus);
   const [loading, setLoading] = useState(false);
 
-  const [showModal, setShowModal] = useState(false);
+  const [modalState, setModalState] = useState<{
+    open: boolean;
+    mode: CrudFormMode;
+    record?: StoreListItem | null;
+  }>({
+    open: false,
+    mode: "create",
+    record: null,
+  });
 
   /**
    * 切换门店启用/停用状态
@@ -245,11 +254,13 @@ export function StoreView({
     {
       id: "actions",
       header: "操作",
-      width: 80,
+      width: 140,
       align: "right",
       cell: (s: StoreListItem) => (
         <DataTableRowActions
           record={s}
+          onView={() => setModalState({ open: true, mode: "view", record: s })}
+          onEdit={() => setModalState({ open: true, mode: "edit", record: s })}
           extraActions={[
             {
               label: s.status === "ACTIVE" ? "停用门店" : "启用门店",
@@ -295,7 +306,9 @@ export function StoreView({
         }}
         onRefresh={() => router?.refresh()}
         onExport={handleExport}
-        onCreate={() => setShowModal(true)}
+        onCreate={() =>
+          setModalState({ open: true, mode: "create", record: null })
+        }
         contentProps={{ selectable: true }}
         keywordValue={keyword}
         keywordPlaceholder="名称 / 编码 / 地址"
@@ -350,13 +363,19 @@ export function StoreView({
           navigateList({ page: 1, keyword: "", customer: "", status: "" });
         }}
       >
-        {showModal && (
-          <CreateStoreModal
-            customers={customers}
-            onClose={() => setShowModal(false)}
-            onCreated={() => router?.refresh()}
-          />
-        )}
+        <StoreFormModal
+          open={modalState.open}
+          mode={modalState.mode}
+          record={modalState.record}
+          customers={customers}
+          onClose={() =>
+            setModalState({ open: false, mode: "create", record: null })
+          }
+          onSuccess={() => {
+            setModalState({ open: false, mode: "create", record: null });
+            router?.refresh();
+          }}
+        />
       </DataTable.Workspace>
     </>
   );

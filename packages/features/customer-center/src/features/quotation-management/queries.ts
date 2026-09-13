@@ -1,6 +1,6 @@
 import "server-only";
 
-import { pickReadableFields } from "@base/authorization";
+import { getAccessibleWhere, pickReadableFields } from "@base/authorization";
 import { toPlainData } from "@base/shared";
 import {
   assertCustomerAbility,
@@ -13,7 +13,16 @@ import type { ListQuoteFilter, QuoteListItem } from "./types";
 export async function listQuotesQuery(filter: ListQuoteFilter = {}) {
   const { client, ability } = await getTenantCustomerContext();
   assertCustomerAbility(ability, "read", CustomerQuoteSubject);
-  const result = await CustomerQuoteService.listQuotes(client, filter);
+  const accessibleWhere = getAccessibleWhere(
+    ability,
+    CustomerQuoteSubject,
+    "read",
+  );
+  const result = await CustomerQuoteService.listQuotes(
+    client,
+    filter,
+    accessibleWhere,
+  );
   const items: QuoteListItem[] = result.items.map((item) => {
     const readable = pickReadableFields(
       ability,

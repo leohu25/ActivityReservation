@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FolderTree, Tag, Plus, LayoutGrid } from "lucide-react";
+import { FolderTree, Tag, Plus, LayoutGrid, Edit2, Trash2 } from "lucide-react";
 import {
   DictionarySectionCard,
   Button,
@@ -12,9 +12,14 @@ import {
   toast,
   useSafeRouter,
 } from "@base/ui";
-import { updateCategoryStatusAction, updateTagStatusAction } from "../actions";
-import { CreateCategoryModal } from "./CreateCategoryModal";
-import { CreateTagModal } from "./CreateTagModal";
+import {
+  updateCategoryStatusAction,
+  deleteCategoryAction,
+  updateTagStatusAction,
+  deleteTagAction,
+} from "../actions";
+import { CategoryFormModal } from "./CategoryFormModal";
+import { TagFormModal } from "./TagFormModal";
 import type { CustomerCategoryItem, CustomerTagItem } from "../types";
 
 /**
@@ -29,7 +34,7 @@ interface Props {
 
 /**
  * 客户中心 - 分类与标签字典管理工作台
- * 遵循现代数智工业风规范，全面基于 shadcn/ui 的 DictionarySectionCard、Tabs、Button、Input 等组件构建
+ * 遵循现代数智工业风规范，全面基于 shadcn/ui 的 DictionarySectionCard、Tabs、Button 等组件构建
  */
 export function CategoryTagView({ initialCategories, initialTags }: Props) {
   const router = useSafeRouter();
@@ -46,8 +51,19 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
   }, [initialTags]);
   const [loading, setLoading] = useState(false);
 
-  const [showCatModal, setShowCatModal] = useState(false);
-  const [showTagModal, setShowTagModal] = useState(false);
+  // 分类模态框状态
+  const [categoryModalState, setCategoryModalState] = useState<{
+    open: boolean;
+    mode: "create" | "edit";
+    record?: CustomerCategoryItem | null;
+  }>({ open: false, mode: "create", record: null });
+
+  // 标签模态框状态
+  const [tagModalState, setTagModalState] = useState<{
+    open: boolean;
+    mode: "create" | "edit";
+    record?: CustomerTagItem | null;
+  }>({ open: false, mode: "create", record: null });
 
   /**
    * 切换客户分类启用/停用状态
@@ -75,6 +91,30 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "变更状态异常");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * 删除分类
+   */
+  const handleDeleteCategory = async (categoryCode: string) => {
+    if (!window.confirm(`确认删除分类 [${categoryCode}] 吗？`)) return;
+    setLoading(true);
+    try {
+      const res = await deleteCategoryAction(categoryCode);
+      if (res.success) {
+        setCategories((prev) =>
+          prev.filter((item) => item.categoryCode !== categoryCode),
+        );
+        toast.success("分类已成功删除");
+        router?.refresh();
+      } else {
+        toast.error(res.error || "删除分类失败");
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "删除分类异常");
     } finally {
       setLoading(false);
     }
@@ -111,6 +151,28 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
     }
   };
 
+  /**
+   * 删除标签
+   */
+  const handleDeleteTag = async (tagCodeStr: string) => {
+    if (!window.confirm(`确认删除标签 [${tagCodeStr}] 吗？`)) return;
+    setLoading(true);
+    try {
+      const res = await deleteTagAction(tagCodeStr);
+      if (res.success) {
+        setTags((prev) => prev.filter((item) => item.tagCode !== tagCodeStr));
+        toast.success("标签已成功删除");
+        router?.refresh();
+      } else {
+        toast.error(res.error || "删除标签失败");
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "删除标签异常");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 标签类型语义字典映射
   const tagTypeLabels: Record<string, string> = {
     DELIVERY: "配送策略",
@@ -130,17 +192,44 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
     description: cat.description,
     status: cat.status || "ACTIVE",
     actions: (
-      <Button
-        variant="ghost"
-        size="sm"
-        disabled={loading}
-        onClick={() =>
-          handleToggleCategoryStatus(cat.categoryCode, cat.status || "ACTIVE")
-        }
-        className="h-7 px-2 text-xs"
-      >
-        {cat.status === "ACTIVE" ? "停用" : "启用"}
-      </Button>
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={loading}
+          onClick={() =>
+            setCategoryModalState({
+              open: true,
+              mode: "edit",
+              record: cat,
+            })
+          }
+          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <Edit2 className="size-3 mr-1" />
+          编辑
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={loading}
+          onClick={() =>
+            handleToggleCategoryStatus(cat.categoryCode, cat.status || "ACTIVE")
+          }
+          className="h-7 px-2 text-xs"
+        >
+          {cat.status === "ACTIVE" ? "停用" : "启用"}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={loading}
+          onClick={() => handleDeleteCategory(cat.categoryCode)}
+          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+        >
+          <Trash2 className="size-3" />
+        </Button>
+      </div>
     ),
   }));
 
@@ -155,15 +244,42 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
     description: t.description,
     status: t.status || "ACTIVE",
     actions: (
-      <Button
-        variant="ghost"
-        size="sm"
-        disabled={loading}
-        onClick={() => handleToggleTagStatus(t.tagCode, t.status || "ACTIVE")}
-        className="h-7 px-2 text-xs"
-      >
-        {t.status === "ACTIVE" ? "停用" : "启用"}
-      </Button>
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={loading}
+          onClick={() =>
+            setTagModalState({
+              open: true,
+              mode: "edit",
+              record: t,
+            })
+          }
+          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <Edit2 className="size-3 mr-1" />
+          编辑
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={loading}
+          onClick={() => handleToggleTagStatus(t.tagCode, t.status || "ACTIVE")}
+          className="h-7 px-2 text-xs"
+        >
+          {t.status === "ACTIVE" ? "停用" : "启用"}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={loading}
+          onClick={() => handleDeleteTag(t.tagCode)}
+          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+        >
+          <Trash2 className="size-3" />
+        </Button>
+      </div>
     ),
   }));
 
@@ -209,7 +325,16 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
               icon={<FolderTree className="size-4 text-primary" />}
               searchPlaceholder="搜索分类名称或编码..."
               actionButton={
-                <Button size="sm" onClick={() => setShowCatModal(true)}>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    setCategoryModalState({
+                      open: true,
+                      mode: "create",
+                      record: null,
+                    })
+                  }
+                >
                   <Plus data-icon="inline-start" />
                   <span>新建分类</span>
                 </Button>
@@ -224,7 +349,16 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
               icon={<Tag className="size-4 text-primary" />}
               searchPlaceholder="搜索标签名称或编码..."
               actionButton={
-                <Button size="sm" onClick={() => setShowTagModal(true)}>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    setTagModalState({
+                      open: true,
+                      mode: "create",
+                      record: null,
+                    })
+                  }
+                >
                   <Plus data-icon="inline-start" />
                   <span>新建标签</span>
                 </Button>
@@ -243,7 +377,16 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
             icon={<FolderTree className="size-4 text-primary" />}
             searchPlaceholder="搜索分类名称或编码..."
             actionButton={
-              <Button size="sm" onClick={() => setShowCatModal(true)}>
+              <Button
+                size="sm"
+                onClick={() =>
+                  setCategoryModalState({
+                    open: true,
+                    mode: "create",
+                    record: null,
+                  })
+                }
+              >
                 <Plus data-icon="inline-start" />
                 <span>新建分类</span>
               </Button>
@@ -261,7 +404,16 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
             icon={<Tag className="size-4 text-primary" />}
             searchPlaceholder="搜索标签名称或编码..."
             actionButton={
-              <Button size="sm" onClick={() => setShowTagModal(true)}>
+              <Button
+                size="sm"
+                onClick={() =>
+                  setTagModalState({
+                    open: true,
+                    mode: "create",
+                    record: null,
+                  })
+                }
+              >
                 <Plus data-icon="inline-start" />
                 <span>新建标签</span>
               </Button>
@@ -272,17 +424,31 @@ export function CategoryTagView({ initialCategories, initialTags }: Props) {
         </TabsContent>
       </Tabs>
 
-      {showCatModal && (
-        <CreateCategoryModal
+      {categoryModalState.open && (
+        <CategoryFormModal
+          mode={categoryModalState.mode}
+          record={categoryModalState.record}
           categories={categories}
-          onClose={() => setShowCatModal(false)}
-          onCreated={() => router?.refresh()}
+          onClose={() =>
+            setCategoryModalState({ open: false, mode: "create", record: null })
+          }
+          onSuccess={() => {
+            setCategoryModalState({ open: false, mode: "create", record: null });
+            router?.refresh();
+          }}
         />
       )}
-      {showTagModal && (
-        <CreateTagModal
-          onClose={() => setShowTagModal(false)}
-          onCreated={() => router?.refresh()}
+      {tagModalState.open && (
+        <TagFormModal
+          mode={tagModalState.mode}
+          record={tagModalState.record}
+          onClose={() =>
+            setTagModalState({ open: false, mode: "create", record: null })
+          }
+          onSuccess={() => {
+            setTagModalState({ open: false, mode: "create", record: null });
+            router?.refresh();
+          }}
         />
       )}
     </div>

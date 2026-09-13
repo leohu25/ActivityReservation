@@ -1,5 +1,8 @@
 export { CategoryTagView } from "./ui/CategoryTagView";
-export { CreateCategoryModal } from "./ui/CreateCategoryModal";
-export { CreateTagModal } from "./ui/CreateTagModal";
+export {
+  CategoryFormModal,
+  type CategoryFormModalProps,
+} from "./ui/CategoryFormModal";
+export { TagFormModal, type TagFormModalProps } from "./ui/TagFormModal";
 export * from "./contract";
 export type * from "./types";

@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import type { TenantPrismaClient } from "@base/db-tenant";
-import type { CreateQuoteInput, ListQuoteFilter } from "./types";
+import type { PrismaQueryCondition } from "@base/authorization";
+import type {
+  CreateQuoteInput,
+  UpdateQuoteInput,
+  ListQuoteFilter,
+} from "./types";
 
 export interface ListQuotesResult {
   items: Awaited<ReturnType<TenantPrismaClient["customerQuote"]["findMany"]>>;
@@ -43,30 +48,37 @@ export class CustomerQuoteService {
   }
 
   /**
-   * 报价单列表查询（服务端分页：count + skip/take）
+   * 报价单列表查询（服务端分页：严格过滤软删除并下推行级数据范围）
    */
   static async listQuotes(
     client: TenantPrismaClient,
     filter: ListQuoteFilter = {},
+    accessibleWhere?: PrismaQueryCondition,
   ): Promise<ListQuotesResult> {
     const page = Math.max(1, filter.page ?? 1);
     const pageSize = Math.min(100, Math.max(1, filter.pageSize ?? 10));
     const skip = (page - 1) * pageSize;
 
-    const where: any = {};
+    const andConditions: any[] = [{ isDeleted: false }];
+
+    if (accessibleWhere && Object.keys(accessibleWhere).length > 0) {
+      andConditions.push(accessibleWhere);
+    }
 
     if (filter.customerCode) {
-      where.customerCode = filter.customerCode;
+      andConditions.push({ customerCode: filter.customerCode });
     }
     if (filter.storeCode) {
-      where.storeCode = filter.storeCode;
+      andConditions.push({ storeCode: filter.storeCode });
     }
     if (filter.regionCode) {
-      where.regionCode = filter.regionCode;
+      andConditions.push({ regionCode: filter.regionCode });
     }
     if (filter.status) {
-      where.status = filter.status;
+      andConditions.push({ status: filter.status });
     }
+
+    const where = { AND: andConditions };
 
     const [total, items] = await Promise.all([
       client.customerQuote.count({ where }),
@@ -97,7 +109,7 @@ export class CustomerQuoteService {
   }
 
   /**
-   * 创建报价单（包含明细行）
+   * 创建报价单（包含明细行，初始状态为 DRAFT）
    */
   static async createQuote(
     client: TenantPrismaClient,
@@ -157,6 +169,100 @@ export class CustomerQuoteService {
   }
 
   /**
+   * 修改草稿报价单：仅 DRAFT 状态允许修改，并在事务中覆写品项清单
+   */
+  static async updateQuote(
+    client: TenantPrismaClient,
+    quoteId: string,
+    input: UpdateQuoteInput,
+    auditCtx?: { userId: string },
+  ) {
+    const existing = await client.customerQuote.findUnique({
+      where: { quoteId },
+    });
+    if (!existing || existing.isDeleted) {
+      throw new Error(`报价单 [${quoteId}] 不存在`);
+    }
+    if (existing.status !== "DRAFT") {
+      throw new Error(`仅“草稿”状态的报价单允许编辑基础信息与品项`);
+    }
+    if (!input.customerCode && !input.storeCode && !input.regionCode) {
+      throw new Error("报价单适用范围必须指定客户、门店或区域中的至少一项");
+    }
+    if (!input.items || input.items.length === 0) {
+      throw new Error("报价单必须至少包含一条商品明细");
+    }
+
+    return client.$transaction(async (tx) => {
+      const updated = await tx.customerQuote.update({
+        where: { quoteId },
+        data: {
+          customerCode: input.customerCode || null,
+          storeCode: input.storeCode || null,
+          regionCode: input.regionCode || null,
+          effectiveDate: new Date(input.effectiveDate),
+          expiryDate: input.expiryDate ? new Date(input.expiryDate) : null,
+          displayName: input.displayName || null,
+          itemCount: input.items.length,
+          customerCount: input.customerCode ? 1 : 0,
+          updatedById: auditCtx?.userId ?? null,
+        },
+      });
+
+      // 覆写子表：先清理已有明细再批量重建
+      await tx.customerQuoteItem.deleteMany({
+        where: { quoteId },
+      });
+
+      await tx.customerQuoteItem.createMany({
+        data: input.items.map((item) => ({
+          quoteDetailId: randomUUID(),
+          quoteId,
+          itemCode: item.itemCode,
+          itemName: item.itemName,
+          salesUnit: item.salesUnit,
+          unitPriceExclTax: item.unitPriceExclTax,
+          unitPriceInclTax: item.unitPriceInclTax,
+          taxRate: item.taxRate,
+          minQty: item.minQty ?? null,
+          maxQty: item.maxQty ?? null,
+          remark: item.remark || null,
+        })),
+      });
+
+      return updated;
+    });
+  }
+
+  /**
+   * 软删除报价单：仅允许删除草稿状态单据，记录审计追踪
+   */
+  static async deleteQuote(
+    client: TenantPrismaClient,
+    quoteId: string,
+    auditCtx?: { userId: string },
+  ) {
+    const existing = await client.customerQuote.findUnique({
+      where: { quoteId },
+    });
+    if (!existing || existing.isDeleted) {
+      throw new Error(`报价单 [${quoteId}] 不存在`);
+    }
+    if (existing.status !== "DRAFT") {
+      throw new Error(`仅“草稿”状态的报价单支持删除，已生效单据请执行作废操作`);
+    }
+
+    return client.customerQuote.update({
+      where: { quoteId },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedById: auditCtx?.userId ?? null,
+      },
+    });
+  }
+
+  /**
    * 变更报价单状态（草稿 -> 已生效 / 已作废）
    */
   static async updateQuoteStatus(
@@ -167,7 +273,7 @@ export class CustomerQuoteService {
     const existing = await client.customerQuote.findUnique({
       where: { quoteId },
     });
-    if (!existing) {
+    if (!existing || existing.isDeleted) {
       throw new Error(`报价单 [${quoteId}] 不存在`);
     }
 
@@ -203,6 +309,7 @@ export class CustomerQuoteService {
     // 筛选处于生效期内的有效报价单通用条件
     const activeQuoteCondition = {
       status: "ACTIVE",
+      isDeleted: false,
       effectiveDate: { lte: date },
       OR: [{ expiryDate: null }, { expiryDate: { gte: date } }],
     };
@@ -254,7 +361,7 @@ export class CustomerQuoteService {
       }
     }
 
-    // 3. 第三优先级：匹配【区域报价】（适用于该区域所有客户与门店）
+    // 3. 第三优先级：匹配【区域报价】（保底通用价）
     if (params.regionCode) {
       const regionQuoteItem = await client.customerQuoteItem.findFirst({
         where: {
@@ -279,7 +386,6 @@ export class CustomerQuoteService {
       }
     }
 
-    // 未命中任何有效报价
     return null;
   }
 }

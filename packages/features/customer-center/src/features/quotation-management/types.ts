@@ -23,6 +23,16 @@ export interface CreateQuoteInput {
   items: CreateQuoteItemInput[];
 }
 
+export interface UpdateQuoteInput {
+  customerCode?: string | null;
+  storeCode?: string | null;
+  regionCode?: string | null;
+  effectiveDate: string;
+  expiryDate?: string | null;
+  displayName?: string | null;
+  items: CreateQuoteItemInput[];
+}
+
 export interface ListQuoteFilter {
   customerCode?: string;
   storeCode?: string;
@@ -33,6 +43,7 @@ export interface ListQuoteFilter {
 }
 
 export interface QuoteItemDetail {
+  quoteDetailId?: string;
   id?: string;
   itemCode: string;
   itemName: string;
@@ -63,4 +74,8 @@ export interface QuoteListItem {
   status: "ACTIVE" | "DISABLED" | "DRAFT" | "EXPIRED" | "VOIDED" | string;
   itemCount?: number;
   items?: QuoteItemDetail[];
+  createdBy?: string;
+  createdById?: string;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
 }

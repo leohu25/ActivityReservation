@@ -8,7 +8,12 @@ import {
 } from "../../../assembly/context";
 import { CustomerCategorySubject, CustomerTagSubject } from "./contract";
 import { CustomerCategoryTagService } from "./service";
-import type { CreateCategoryInput, CreateTagInput } from "./types";
+import type {
+  CreateCategoryInput,
+  UpdateCategoryInput,
+  CreateTagInput,
+  UpdateTagInput,
+} from "./types";
 
 export const createCategoryAction = defineServerAction(
   async (input: CreateCategoryInput) => {
@@ -23,6 +28,37 @@ export const createCategoryAction = defineServerAction(
     return created;
   },
   "创建分类失败",
+);
+
+export const updateCategoryAction = defineServerAction(
+  async (categoryCode: string, input: UpdateCategoryInput) => {
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "update", CustomerCategorySubject);
+    const updated = await CustomerCategoryTagService.updateCategory(
+      client,
+      categoryCode,
+      input,
+    );
+    revalidatePath("/customer/categories-tags");
+    revalidatePath("/customer/customers");
+    return updated;
+  },
+  "修改分类失败",
+);
+
+export const deleteCategoryAction = defineServerAction(
+  async (categoryCode: string) => {
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "delete", CustomerCategorySubject);
+    const deleted = await CustomerCategoryTagService.deleteCategory(
+      client,
+      categoryCode,
+    );
+    revalidatePath("/customer/categories-tags");
+    revalidatePath("/customer/customers");
+    return deleted;
+  },
+  "删除分类失败",
 );
 
 export const updateCategoryStatusAction = defineServerAction(
@@ -50,6 +86,37 @@ export const createTagAction = defineServerAction(
     return created;
   },
   "创建标签失败",
+);
+
+export const updateTagAction = defineServerAction(
+  async (tagCode: string, input: UpdateTagInput) => {
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "update", CustomerTagSubject);
+    const updated = await CustomerCategoryTagService.updateTag(
+      client,
+      tagCode,
+      input,
+    );
+    revalidatePath("/customer/categories-tags");
+    revalidatePath("/customer/customers");
+    return updated;
+  },
+  "修改标签失败",
+);
+
+export const deleteTagAction = defineServerAction(
+  async (tagCode: string) => {
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, "delete", CustomerTagSubject);
+    const deleted = await CustomerCategoryTagService.deleteTag(
+      client,
+      tagCode,
+    );
+    revalidatePath("/customer/categories-tags");
+    revalidatePath("/customer/customers");
+    return deleted;
+  },
+  "删除标签失败",
 );
 
 export const updateTagStatusAction = defineServerAction(

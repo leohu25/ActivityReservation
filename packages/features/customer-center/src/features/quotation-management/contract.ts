@@ -65,6 +65,11 @@ export const quotePageContract: FeaturePagePermissionDescriptor = {
       supportedScopes: STANDARD_DATA_SCOPES,
     },
     {
+      action: StandardAction.DELETE,
+      label: "删除报价单",
+      supportedScopes: STANDARD_DATA_SCOPES,
+    },
+    {
       action: "audit",
       label: "审核报价单",
       supportedScopes: STANDARD_DATA_SCOPES,

@@ -11,33 +11,24 @@ import {
 } from "@base/ui";
 import { exportContractCsv } from "@base/shared";
 import { useAbility } from "@base/authorization";
-import { updateQuoteStatusAction } from "../actions";
-import { CreateQuoteModal } from "./CreateQuoteModal";
+import { updateQuoteStatusAction, deleteQuoteAction } from "../actions";
+import { QuoteDetailModal } from "./QuoteDetailModal";
+import { QuoteFormModal } from "./QuoteFormModal";
 import { CustomerQuoteField, quotePageContract } from "../contract";
 import type { QuoteListItem } from "../types";
 import type { CustomerListItem } from "../../customer-management/types";
 import type { StoreListItem } from "../../store-management/types";
 
-/**
- * 报价单中心组件入参属性契约
- */
 interface Props {
-  /** 初始报价单列表数据（服务端当前页） */
   initialQuotes: QuoteListItem[];
   initialTotal?: number;
   initialPage?: number;
   initialPageSize?: number;
   initialStatus?: string;
-  /** 可选客户字典列表 */
   customers: CustomerListItem[];
-  /** 可选门店字典列表 */
   stores: StoreListItem[];
 }
 
-/**
- * 客户中心 - 客户阶梯价与报价单中心工作台
- * 遵循现代数智工业风规范，全面接入 BusinessTableWorkspace 体系
- */
 export function QuoteView({
   initialQuotes,
   initialTotal,
@@ -53,6 +44,15 @@ export function QuoteView({
   const [total, setTotal] = useState(initialTotal ?? initialQuotes.length);
   const [page, setPage] = useState(initialPage);
   const [pageSize, setPageSize] = useState(initialPageSize);
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
+
+  // 弹窗状态管理
+  const [detailQuote, setDetailQuote] = useState<QuoteListItem | null>(null);
+  const [formState, setFormState] = useState<{
+    open: boolean;
+    mode: "create" | "edit";
+    record?: QuoteListItem | null;
+  }>({ open: false, mode: "create", record: null });
 
   useEffect(() => {
     setQuotes(initialQuotes);
@@ -60,12 +60,9 @@ export function QuoteView({
     setPage(initialPage);
     setPageSize(initialPageSize);
   }, [initialQuotes, initialTotal, initialPage, initialPageSize]);
-  const [statusFilter, setStatusFilter] = useState(initialStatus);
-
-  const [showModal, setShowModal] = useState(false);
 
   /**
-   * 更新报价单状态（审核生效 / 作废）
+   * 审核生效 / 作废
    */
   const handleUpdateStatus = async (
     quoteId: string,
@@ -89,6 +86,25 @@ export function QuoteView({
     }
   };
 
+  /**
+   * 删除草稿报价单 (软删除)
+   */
+  const handleDeleteQuote = async (quoteId: string) => {
+    try {
+      const res = await deleteQuoteAction(quoteId);
+      if (res.success) {
+        setQuotes((prev) => prev.filter((item) => item.quoteId !== quoteId));
+        setTotal((prev) => Math.max(0, prev - 1));
+        toast.success("草稿报价单已成功删除");
+        router?.refresh();
+      } else {
+        toast.error(res.error || "删除失败");
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "删除报价单异常");
+    }
+  };
+
   const handleExport = () => {
     exportContractCsv(quotes, quotePageContract.configurableFields ?? [], {
       subject: quotePageContract.subject,
@@ -100,9 +116,6 @@ export function QuoteView({
     });
   };
 
-  /**
-   * 状态语义化徽章组件渲染
-   */
   const renderStatusBadge = (status: string) => {
     switch (status) {
       case "DRAFT":
@@ -138,15 +151,12 @@ export function QuoteView({
     }
   };
 
-  /**
-   * 标准表格列定义（强类型化，无 any 逃逸）
-   */
   const columns: ColumnDef<QuoteListItem>[] = [
     {
       id: "quoteId",
       field: CustomerQuoteField.QUOTE_ID,
       header: "报价单号",
-      width: 150,
+      width: 160,
       cell: (q: QuoteListItem) => (
         <span className="font-mono text-xs font-semibold text-foreground">
           {q.quoteId}
@@ -172,7 +182,10 @@ export function QuoteView({
         if (q.storeCode) {
           return (
             <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-              【门店专价】{q.storeCode}
+              【门店专价】
+              {q.store?.storeName
+                ? `${q.store.storeName} (${q.storeCode})`
+                : q.storeCode}
             </span>
           );
         }
@@ -210,7 +223,7 @@ export function QuoteView({
     {
       id: "itemCount",
       header: "明细品项数",
-      width: 120,
+      width: 110,
       align: "center",
       cell: (q: QuoteListItem) => (
         <span className="font-mono text-xs text-foreground font-medium">
@@ -229,17 +242,36 @@ export function QuoteView({
     {
       id: "actions",
       header: "操作",
-      width: 90,
+      width: 140,
       align: "right",
       cell: (q: QuoteListItem) => (
         <DataTableRowActions
           record={q}
+          onView={() => setDetailQuote(q)}
+          onEdit={() => setFormState({ open: true, mode: "edit", record: q })}
+          hideEdit={q.status !== "DRAFT"}
+          onDelete={() => handleDeleteQuote(q.quoteId)}
+          hideDelete={q.status !== "DRAFT"}
+          deleteConfirm={{
+            title: `确认删除草稿报价单 "${q.displayName || q.quoteId}"？`,
+            description: "删除后此草稿报价单将从系统彻底移除，无法恢复。",
+            confirmText: "确认删除",
+            cancelText: "取消",
+          }}
           extraActions={[
             ...(q.status === "DRAFT"
               ? [
                   {
                     label: "审核生效",
+                    action: "audit",
                     onClick: () => handleUpdateStatus(q.quoteId, "ACTIVE"),
+                    confirm: {
+                      title: `确认审核并生效报价单 "${q.displayName || q.quoteId}"？`,
+                      description:
+                        "生效后对应维度的商品下单将立即执行此价格。",
+                      confirmText: "审核生效",
+                      cancelText: "取消",
+                    },
                   },
                 ]
               : []),
@@ -247,6 +279,7 @@ export function QuoteView({
               ? [
                   {
                     label: "作废报价单",
+                    action: "update",
                     variant: "destructive" as const,
                     onClick: () => handleUpdateStatus(q.quoteId, "VOIDED"),
                     confirm: {
@@ -283,7 +316,9 @@ export function QuoteView({
         }}
         onRefresh={() => router?.refresh()}
         onExport={handleExport}
-        onCreate={() => setShowModal(true)}
+        onCreate={() =>
+          setFormState({ open: true, mode: "create", record: null })
+        }
         showKeywordFilter={false}
         statusOptions={[
           { value: "DRAFT", label: "草稿" },
@@ -308,54 +343,32 @@ export function QuoteView({
           setPage(1);
           navigateList({ page: 1, status: "" });
         }}
-        contentProps={{
-          selectable: true,
-          renderExpandedRow: (q: QuoteListItem) => (
-            <div className="space-y-2">
-              <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <span>商品定价明细清单</span>
-                <span className="font-mono text-muted-foreground font-normal">
-                  ({q.items?.length || 0} 个品项)
-                </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                {q.items?.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="p-2.5 rounded border border-border/70 bg-card text-xs flex justify-between items-center"
-                  >
-                    <div>
-                      <div className="font-medium text-foreground">
-                        {item.itemName}
-                      </div>
-                      <div className="font-mono text-[10px] text-muted-foreground">
-                        {item.itemCode}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-mono font-semibold text-primary">
-                        ¥{Number(item.unitPriceInclTax || 0).toFixed(2)}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground">
-                        单位: {item.salesUnit}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ),
-        }}
-      >
-        {showModal && (
-          <CreateQuoteModal
-            customers={customers}
-            stores={stores}
-            onClose={() => setShowModal(false)}
-            onCreated={() => router?.refresh()}
-          />
-        )}
-      </DataTable.Workspace>
+      />
+
+      {/* 详情看板弹窗 */}
+      <QuoteDetailModal
+        open={Boolean(detailQuote)}
+        quote={detailQuote}
+        onClose={() => setDetailQuote(null)}
+        onEdit={(q) => setFormState({ open: true, mode: "edit", record: q })}
+      />
+
+      {/* 新增 / 编辑表单弹窗 */}
+      {formState.open && (
+        <QuoteFormModal
+          mode={formState.mode}
+          record={formState.record}
+          customers={customers}
+          stores={stores}
+          onClose={() =>
+            setFormState({ open: false, mode: "create", record: null })
+          }
+          onSuccess={() => {
+            setFormState({ open: false, mode: "create", record: null });
+            router?.refresh();
+          }}
+        />
+      )}
     </>
   );
 }

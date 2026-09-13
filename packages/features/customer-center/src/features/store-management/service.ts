@@ -1,12 +1,23 @@
 import type { TenantPrismaClient } from "@base/db-tenant";
+import type { PrismaQueryCondition } from "@base/authorization";
 import type {
   CreateStoreInput,
   ListStoreFilter,
   UpdateStoreInput,
 } from "./types";
 
+export type StorePrismaItem = Awaited<
+  ReturnType<TenantPrismaClient["customerStore"]["findMany"]>
+>[number] & {
+  customer?: {
+    customerCode: string;
+    customerName: string;
+    status: string;
+  } | null;
+};
+
 export interface ListStoresResult {
-  items: Awaited<ReturnType<TenantPrismaClient["customerStore"]["findMany"]>>;
+  items: StorePrismaItem[];
   total: number;
   page: number;
   pageSize: number;
@@ -46,36 +57,45 @@ export class CustomerStoreService {
   }
 
   /**
-   * 门店列表查询（服务端分页：count + skip/take）
+   * 门店列表查询（服务端分页：count + skip/take，严格过滤软删除并下推行级数据范围）
    */
   static async listStores(
     client: TenantPrismaClient,
     filter: ListStoreFilter = {},
+    accessibleWhere?: PrismaQueryCondition,
   ): Promise<ListStoresResult> {
     const page = Math.max(1, filter.page ?? 1);
     const pageSize = Math.min(100, Math.max(1, filter.pageSize ?? 10));
     const skip = (page - 1) * pageSize;
 
-    const where: any = {};
+    const andConditions: any[] = [{ isDeleted: false }];
+
+    if (accessibleWhere && Object.keys(accessibleWhere).length > 0) {
+      andConditions.push(accessibleWhere);
+    }
 
     if (filter.customerCode) {
-      where.customerCode = filter.customerCode;
+      andConditions.push({ customerCode: filter.customerCode });
     }
     if (filter.regionCode) {
-      where.regionCode = filter.regionCode;
+      andConditions.push({ regionCode: filter.regionCode });
     }
     if (filter.status) {
-      where.status = filter.status;
+      andConditions.push({ status: filter.status });
     }
     if (filter.keyword) {
-      where.OR = [
-        { storeName: { contains: filter.keyword } },
-        { storeCode: { contains: filter.keyword } },
-        { address: { contains: filter.keyword } },
-        { contactPerson: { contains: filter.keyword } },
-        { contactPhone: { contains: filter.keyword } },
-      ];
+      andConditions.push({
+        OR: [
+          { storeName: { contains: filter.keyword } },
+          { storeCode: { contains: filter.keyword } },
+          { address: { contains: filter.keyword } },
+          { contactPerson: { contains: filter.keyword } },
+          { contactPhone: { contains: filter.keyword } },
+        ],
+      });
     }
+
+    const where = { AND: andConditions };
 
     const [total, items] = await Promise.all([
       client.customerStore.count({ where }),
@@ -97,6 +117,35 @@ export class CustomerStoreService {
     ]);
 
     return { items, total, page, pageSize };
+  }
+
+  /**
+   * 获取单条门店详情
+   */
+  static async getStore(
+    client: TenantPrismaClient,
+    storeCode: string,
+    accessibleWhere?: PrismaQueryCondition,
+  ) {
+    const andConditions: any[] = [{ storeCode }, { isDeleted: false }];
+    if (accessibleWhere && Object.keys(accessibleWhere).length > 0) {
+      andConditions.push(accessibleWhere);
+    }
+
+    return client.customerStore.findFirst({
+      where: { AND: andConditions },
+      include: {
+        customer: true,
+        quotes: {
+          where: { isDeleted: false },
+          select: {
+            quoteId: true,
+            status: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
   }
 
   /**

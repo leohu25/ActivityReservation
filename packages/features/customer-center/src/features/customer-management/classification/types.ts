@@ -5,11 +5,25 @@ export interface CreateCategoryInput {
   description?: string | null;
 }
 
+export interface UpdateCategoryInput {
+  categoryName: string;
+  parentCode?: string | null;
+  description?: string | null;
+  status?: "ACTIVE" | "DISABLED";
+}
+
 export interface CreateTagInput {
   tagCode: string;
   tagName: string;
   tagType: string;
   description?: string | null;
+}
+
+export interface UpdateTagInput {
+  tagName: string;
+  tagType: string;
+  description?: string | null;
+  status?: "ACTIVE" | "DISABLED";
 }
 
 export interface CustomerCategoryItem {
