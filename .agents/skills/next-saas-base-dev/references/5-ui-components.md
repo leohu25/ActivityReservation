@@ -1,23 +1,23 @@
-# 模块 5：工业风 UI 交互与反馈规范
+# 模块 5：UI 交互、布局原语与组件沉淀规范
 
-本系统采用现代化数智工业风规范，全面基于 `@base/ui`（shadcn/ui 体系）构建。
+本系统基于技术中立的 `@base/ui`（shadcn/ui 官方原语体系）构建，具体视觉设计风格（如 Chenrun Digital ERP 风格）作为外部 Theme 资产在 `design-system/chenrun-digital-erp/MASTER.md` 与 CSS 语义变量中配置注入。
 
-## 0. 三层 UI 资产模型
+## 0. 三层 UI 资产模型与中立性原则
 
 | 层 | 目录 | 职责 |
 | ---- | ------ | ------ |
-| **原子层** | `packages/ui/.../primitives/` | Radix/shadcn 封装，业务禁止改 |
-| **组件层** | `composite/`、`layout/`、`feedback/` | 可复用组件单元 |
-| **模板层** | `templates/` | 整页骨架（`DataTable.Workspace`、`DashboardShell`） |
+| **原子层** | `packages/ui/.../shadcn/` | Radix / shadcn 官方无头原语封装，业务禁止手写修改 |
+| **组件层** | `composite/`、`layout/`、`feedback/` | 可复用中立组件单元（如 `EditableDetailTable`、`DatePicker` 等） |
+| **模板层** | `templates/` | 整页骨架（`DataTable.Workspace`、`DashboardShell`、`CrudFormModal`） |
 
-**新列表页优先 `DataTable.Workspace`**（默认刷新/导出/列设置/新增+筛选+表格+分页，`show*` 关闭）；特殊布局再下沉用原子拼装。
-
-> ⚠️ **核心红线**：
+> ⚠️ **核心红线与行为准则**：
 >
-> 1. **二次确认只在对话框提示一次**：破坏性操作统一由 `DataTableRowActions` 的 `ConfirmDialog` 进行模态对话框确认，严禁在回调函数内再次使用浏览器的 `window.confirm` 进行二次弹窗；
-> 2. **消息通知右上角 Toast 弹出**：严禁在页面顶部塞入静态红色大横幅挤压变形表格布局，所有成功、警告与错误提示统一使用右上角 `toast` 浮层通知；页内粘性反馈用 `FeedbackBanner`（基于 shadcn `Alert`）；
-> 3. **杜绝全页强刷**：严禁调用 `window.location.reload()`，状态变更必须由 React 本地 State 即时响应驱动，配合 `router?.refresh()` 静默同步；
-> 4. **服务端分页（生产必选）**
+> 1. **全量基于 shadcn 官方原语构建 (No Raw Divs/Controls)**：杜绝裸手写 `div` 布局或裸浏览器原生控件（如原生 `input type="date"`），所有布局排版与交互控件必须基于框架已有的原子与复合组件开发（`Table`、`Card`、`Dialog`、`DatePicker`、`Input`、`Select` 等）；
+> 2. **平台 UI 基建沉淀主动提问机制 (UI Infrastructure Extraction Trigger)**：在垂直切片实施过程中，一旦发现当前交互模式、明细表、子表单或看板具备通用性，**严禁在切片内部私造或闭门造车，必须主动向用户发起提问**，评估并沉淀至 `@base/ui`；
+> 3. **二次确认只在对话框提示一次**：破坏性操作统一由 `DataTableRowActions` 的 `ConfirmDialog` 进行模态对话框确认，严禁在回调函数内再次使用浏览器的 `window.confirm` 进行二次弹窗；
+> 4. **消息通知右上角 Toast 弹出**：严禁在页面顶部塞入静态红色大横幅挤压变形表格布局，所有成功、警告与错误提示统一使用右上角 `toast` 浮层通知；页内粘性反馈用 `FeedbackBanner`（基于 shadcn `Alert`）；
+> 5. **杜绝全页强刷**：严禁调用 `window.location.reload()`，状态变更必须由 React 本地 State 即时响应驱动，配合 `router?.refresh()` 静默同步；
+> 6. **服务端分页（生产必选）**：`DataTable.Root` 默认不做客户端切片，服务端分页驱动。
 
 `DataTable.Root` 默认**不做**客户端切片：`data` 必须是服务端返回的**当前页**，`total` 来自 API `count`。
 

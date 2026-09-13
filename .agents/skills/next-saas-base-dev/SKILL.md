@@ -38,10 +38,11 @@ agent_created: true
 11. **列表优先 shadcn**：简单列表/表单直接用 `Table`/`Form`/`Dialog`；需要统一工具栏时再用 `DataTable.Workspace`（可选加速，非强制）；
 12. **表单优先 shadcn Form**：短表单直接 `Form`+`Field`；长表单/批量字段可用 `FormFields` Schema（可选）；
 13. **导出走契约**：CSV 导出用 `exportContractCsv(rows, contract.configurableFields, ...)`，禁止手写 fieldKeys；
-14. **原子层 = shadcn 目录**：`packages/ui/.../shadcn/` 仅允许 `npx shadcn@latest add` 引入；禁止手写；业务不得裸写控件样式；
-15. **单一 Zod 强类型驱动与 Table 列派生**：增改查弹窗统一使用 `CrudFormModal`，强制传入 `schema: z.ZodType` 执行 safeParse 运行时校验拦截，消灭无校验双分支；列表优先使用 `DataTable.createColumnsFromSchema(schema)` 派生标准表格列；
-16. **测试同级就近共存 (Colocation)**：遵循 Next.js 官方最佳实践，单元测试文件必须与被测试的目标组件/服务处于同一目录下（如 `CustomerView.tsx` 与 `CustomerView.test.tsx` 同级），严禁在模块根目录平铺孤儿测试文件；
-17. **业务实体必须包含基础审计与软删除字段**：所有业务主数据和单据表必须强制具备 `createdById`、`deptId`、`updatedById`、`isDeleted`、`deletedAt`、`deletedById`、`createdAt`、`updatedAt` 8 个基准字段，静态门禁脚本 `scripts/check-entity-baseline.mjs` 在 `verify.sh` 与 `git commit` 时硬拦截违规模型（详见 `references/2-schema-migrate.md`）。
+14. **原子层与排版 100% 遵循 shadcn 官方原语**：`packages/ui/.../shadcn/` 由官方 CLI 引入并保持纯净。杜绝手写裸 `div` 布局或裸浏览器原生控件，所有布局排版与交互控件必须基于框架已有的原子与复合组件开发（`Table`、`Card`、`Input`、`DatePicker`、`Select`、`Dialog` 等）；
+15. **平台 UI 基建沉淀主动提问准则**：在垂直切片实施过程中，一旦识别到交互模式、子表单、明细表格、看板或展示卡片具备通用性，严禁在业务切片内部闭门造车，必须主动向用户发起提问，评估并沉淀至公共 `@base/ui` 库；
+16. **单一 Zod 强类型驱动与 Table 列派生**：增改查弹窗统一使用 `CrudFormModal`，强制传入 `schema: z.ZodType` 执行 safeParse 运行时校验拦截，消灭无校验双分支；列表优先使用 `DataTable.createColumnsFromSchema(schema)` 派生标准表格列；
+17. **测试同级就近共存 (Colocation)**：遵循 Next.js 官方最佳实践，单元测试文件必须与被测试的目标组件/服务处于同一目录下（如 `CustomerView.tsx` 与 `CustomerView.test.tsx` 同级），严禁在模块根目录平铺孤儿测试文件；
+18. **业务实体必须包含基础审计与软删除字段**：所有业务主数据和单据表必须强制具备 `createdById`、`deptId`、`updatedById`、`isDeleted`、`deletedAt`、`deletedById`、`createdAt`、`updatedAt` 8 个基准字段，静态门禁脚本 `scripts/check-entity-baseline.mjs` 在 `verify.sh` 与 `git commit` 时硬拦截违规模型（详见 `references/2-schema-migrate.md`）。
 
 ---
 
@@ -93,7 +94,7 @@ Phase 7: 契约对齐单测与全栈门禁验证
 - **`@base/db-tenant` (动态多租户物理分库连接池)**：PostgreSQL Database-per-tenant 治理，`globalThis` 全局单例杜绝 HMR 句柄泄漏，`initializing` 互斥锁防止高并发初次连接击穿，`secretRef` 环境变量安全凭据解耦；
 - **`@base/db-control` (总控库客户端)**：管理平台集中控制库 `saas_control`，服务于租户开辟、状态机管控与全局审计；
 - **`tooling/db-migrate` (12-Factor 无状态预编译迁移引擎)**：构建期静态化预编译 `runtime-catalog.ts`，运行期 0 CLI 子进程；`@db-migrate-extension` 切片 Schema 动态聚合；Day 0 状态机自愈与 `pg_advisory_xact_lock` 事务咨询锁保障；
-- **`@base/ui` (工业风设计系统与组件库)**：原子层严格由 `npx shadcn@latest add` 维护，组合层沉淀 `DataTable` 企业级积木套件、`CrudFormModal` 三态表单与声明式 `AuthGuard`；
+- **`@base/ui` (技术中立设计系统与组件库)**：技术基础设施保持完全中立，不硬编码具体视觉风格。原子层严格由 `npx shadcn@latest add` 维护，组合层沉淀 `DataTable` 企业级积木套件、`CrudFormModal` 三态表单、`EditableDetailTable` 明细表与声明式 `AuthGuard`；项目的具体视觉语言（如 Chenrun Digital ERP 风格）作为外部 Theme 资产在 `design-system/` 与 CSS 语义变量中配置注入；
 - **`@base/biz-shared` (跨切片中台公共资产库)**：沉淀经 2 个以上业务切片验证的公共业务模式（如单据流水号系统、通用审批流契约、明细行业务表格模板）；
 - **`@base/shared` (纯技术工具库)**：`Result<T, E>` 模式、`toPlainData` 跨端序列化防错与纯技术工具函数。
 

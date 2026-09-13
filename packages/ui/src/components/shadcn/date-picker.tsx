@@ -33,7 +33,8 @@ export function DatePicker({
 
   const selectedDate = React.useMemo(() => {
     if (!value) return undefined;
-    if (value instanceof Date) return isNaN(value.getTime()) ? undefined : value;
+    if (value instanceof Date)
+      return isNaN(value.getTime()) ? undefined : value;
     // 防止时区偏移，按本地时间解析 YYYY-MM-DD
     const parts = String(value).split("T")[0]?.split("-");
     if (parts && parts.length === 3) {
