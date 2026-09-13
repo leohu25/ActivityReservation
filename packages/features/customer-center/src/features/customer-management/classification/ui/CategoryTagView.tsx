@@ -1,16 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
-  ChevronRight,
-  ChevronDown,
-  Plus,
   Edit2,
   Trash2,
-  CornerDownRight,
   FolderTree,
   Tag as TagIcon,
   Search,
+  Plus,
 } from "lucide-react";
 import {
   Card,
@@ -27,6 +24,9 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
+  ConfirmDialog,
+  TreeView,
+  type TreeNodeData,
   toast,
   useSafeRouter,
 } from "@base/ui";
@@ -65,6 +65,18 @@ interface CategoryTagViewProps {
   readonly initialTags: CustomerTagItem[];
 }
 
+export interface CategoryTreeItem extends TreeNodeData {
+  id: string;
+  name: string;
+  code: string;
+  categoryCode: string;
+  categoryName: string;
+  parentCode: string | null;
+  description: string | null;
+  status: string;
+  children?: CategoryTreeItem[];
+}
+
 export function CategoryTagView({
   initialCategories,
   initialTags,
@@ -83,12 +95,14 @@ export function CategoryTagView({
     setTags(initialTags);
   }, [initialTags]);
 
-  // 折叠/展开节点集合
-  const [collapsedKeys, setCollapsedKeys] = useState<Set<string>>(new Set());
-
   // 搜索关键字
   const [catKeyword, setCatKeyword] = useState("");
   const [tagKeyword, setTagKeyword] = useState("");
+
+  // 待删除分类状态（由 ConfirmDialog 驱动）
+  const [deletingCat, setDeletingCat] = useState<CustomerCategoryItem | null>(null);
+  // 待删除标签状态（由 ConfirmDialog 驱动）
+  const [deletingTag, setDeletingTag] = useState<CustomerTagItem | null>(null);
 
   // 分类弹窗状态
   const [catModal, setCatModal] = useState<{
@@ -104,15 +118,6 @@ export function CategoryTagView({
     mode: "create" | "edit";
     record?: CustomerTagItem | null;
   }>({ open: false, mode: "create", record: null });
-
-  const toggleCollapse = (code: string) => {
-    setCollapsedKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(code)) next.delete(code);
-      else next.add(code);
-      return next;
-    });
-  };
 
   // --- 分类操作 ---
   const handleToggleCatStatus = async (
@@ -136,8 +141,9 @@ export function CategoryTagView({
     }
   };
 
-  const handleDeleteCat = async (code: string) => {
-    if (!window.confirm(`确认删除分类 [${code}] 吗？`)) return;
+  const handleConfirmDeleteCat = async () => {
+    if (!deletingCat) return;
+    const code = deletingCat.categoryCode;
     setLoading(true);
     try {
       const res = await deleteCategoryAction(code);
@@ -151,6 +157,7 @@ export function CategoryTagView({
       toast.error(err instanceof Error ? err.message : "删除分类异常");
     } finally {
       setLoading(false);
+      setDeletingCat(null);
     }
   };
 
@@ -181,8 +188,9 @@ export function CategoryTagView({
     }
   };
 
-  const handleDeleteTag = async (code: string) => {
-    if (!window.confirm(`确认删除标签 [${code}] 吗？`)) return;
+  const handleConfirmDeleteTag = async () => {
+    if (!deletingTag) return;
+    const code = deletingTag.tagCode;
     setLoading(true);
     try {
       const res = await deleteTagAction(code);
@@ -197,147 +205,29 @@ export function CategoryTagView({
       toast.error(err instanceof Error ? err.message : "删除标签异常");
     } finally {
       setLoading(false);
+      setDeletingTag(null);
     }
   };
 
   const totalCatCount = countTreeNodes(categories);
 
-  // 递归渲染分类树节点
-  const renderCategoryNode = (
-    node: CustomerCategoryItem,
-    depth = 0,
-  ): React.ReactNode => {
-    const hasChildren = Boolean(node.children && node.children.length > 0);
-    const isCollapsed = collapsedKeys.has(node.categoryCode);
-    const isActive = node.status === "ACTIVE";
-
-    // 关键词筛选命中逻辑
-    const matchesKeyword =
-      !catKeyword ||
-      node.categoryCode.toLowerCase().includes(catKeyword.toLowerCase()) ||
-      node.categoryName.toLowerCase().includes(catKeyword.toLowerCase());
-
-    return (
-      <div key={node.categoryCode} className="flex flex-col gap-1.5">
-        {matchesKeyword && (
-          <div
-            style={{ paddingLeft: `${depth * 24 + 12}px` }}
-            className="group flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-card p-2.5 transition-colors hover:bg-muted/40 shadow-xs"
-          >
-            <div className="flex min-w-0 flex-1 items-center gap-2">
-              {/* 折叠箭头或层级连线 */}
-              {hasChildren ? (
-                <button
-                  type="button"
-                  onClick={() => toggleCollapse(node.categoryCode)}
-                  className="size-5 rounded flex items-center justify-center text-muted-foreground hover:bg-muted"
-                >
-                  {isCollapsed ? (
-                    <ChevronRight className="size-3.5" />
-                  ) : (
-                    <ChevronDown className="size-3.5" />
-                  )}
-                </button>
-              ) : depth > 0 ? (
-                <div className="size-5 flex items-center justify-center text-muted-foreground/50">
-                  <CornerDownRight className="size-3.5" />
-                </div>
-              ) : (
-                <div className="size-5" />
-              )}
-
-              <span className="rounded border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-xs font-semibold text-foreground">
-                {node.categoryCode}
-              </span>
-              <span className="truncate text-sm font-medium text-foreground">
-                {node.categoryName}
-              </span>
-              {node.description && (
-                <span className="hidden sm:inline truncate text-xs text-muted-foreground max-w-[200px]">
-                  {node.description}
-                </span>
-              )}
-            </div>
-
-            <div className="flex shrink-0 items-center gap-1.5">
-              <Badge
-                variant={isActive ? "success" : "secondary"}
-                size="sm"
-                className="text-[11px]"
-              >
-                {isActive ? "启用" : "停用"}
-              </Badge>
-
-              {/* 核心创新：行内就近“+ 子级”按钮 */}
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={loading}
-                onClick={() =>
-                  setCatModal({
-                    open: true,
-                    mode: "create",
-                    record: null,
-                    defaultParentCode: node.categoryCode,
-                  })
-                }
-                className="h-7 px-2 text-xs border-dashed text-primary hover:bg-primary/5 hover:text-primary"
-                title={`在【${node.categoryName}】下新增子分类`}
-              >
-                <Plus className="size-3 mr-1" />
-                下级
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={loading}
-                onClick={() =>
-                  setCatModal({
-                    open: true,
-                    mode: "edit",
-                    record: node,
-                    defaultParentCode: null,
-                  })
-                }
-                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-              >
-                <Edit2 className="size-3 mr-1" />
-                编辑
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={loading}
-                onClick={() =>
-                  handleToggleCatStatus(node.categoryCode, node.status || "ACTIVE")
-                }
-                className="h-7 px-2 text-xs"
-              >
-                {isActive ? "停用" : "启用"}
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={loading}
-                onClick={() => handleDeleteCat(node.categoryCode)}
-                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 className="size-3" />
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* 递归渲染展开的子分类 */}
-        {hasChildren &&
-          !isCollapsed &&
-          node.children!.map((child) => renderCategoryNode(child, depth + 1))}
-      </div>
-    );
+  const adaptCategoryTree = (
+    items: CustomerCategoryItem[],
+  ): CategoryTreeItem[] => {
+    return items.map((it) => ({
+      id: it.categoryCode,
+      code: it.categoryCode,
+      name: it.categoryName,
+      categoryCode: it.categoryCode,
+      categoryName: it.categoryName,
+      parentCode: it.parentCode ?? null,
+      description: it.description ?? null,
+      status: it.status ?? "ACTIVE",
+      children: it.children ? adaptCategoryTree(it.children) : undefined,
+    }));
   };
+
+  const adaptedTreeData = adaptCategoryTree(categories);
 
   const filteredTags = tags.filter((t) => {
     if (!tagKeyword) return true;
@@ -380,13 +270,13 @@ export function CategoryTagView({
       </CardHeader>
 
       <CardContent className="flex-1 p-4">
-        <div className="flex max-h-[580px] flex-col gap-2 overflow-y-auto pr-1">
-          {/* 核心创新：第一行常驻通栏“+ 新增一级根分类”虚线按钮 */}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() =>
+        <div className="max-h-[580px] overflow-y-auto pr-1">
+          {/* 纯正 shadcn 官方 TreeView 驱动 */}
+          <TreeView<CategoryTreeItem>
+            data={adaptedTreeData}
+            createRootText="新增一级根分类"
+            emptyText="暂无分类数据，点击上方按钮创建第一条根分类"
+            onCreateRoot={() =>
               setCatModal({
                 open: true,
                 mode: "create",
@@ -394,19 +284,91 @@ export function CategoryTagView({
                 defaultParentCode: null,
               })
             }
-            className="w-full h-10 border-dashed border-border/90 bg-muted/20 hover:bg-primary/5 hover:border-primary/50 text-muted-foreground hover:text-primary transition-all flex items-center justify-center gap-2 rounded-lg font-medium text-xs"
-          >
-            <Plus className="size-4" />
-            <span>新增一级根分类</span>
-          </Button>
+            renderExtra={(node) =>
+              node.description ? (
+                <span className="hidden sm:inline truncate text-xs text-muted-foreground max-w-[200px]">
+                  {node.description}
+                </span>
+              ) : null
+            }
+            renderActions={(node) => {
+              const isActive = node.status === "ACTIVE";
+              return (
+                <>
+                  <Badge
+                    variant={isActive ? "success" : "secondary"}
+                    size="sm"
+                    className="text-[11px]"
+                  >
+                    {isActive ? "启用" : "停用"}
+                  </Badge>
 
-          {categories.length === 0 ? (
-            <div className="p-8 border border-dashed rounded-lg text-center text-xs text-muted-foreground">
-              暂无分类数据，点击上方按钮创建第一条根分类
-            </div>
-          ) : (
-            categories.map((rootNode) => renderCategoryNode(rootNode, 0))
-          )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={loading}
+                    onClick={() =>
+                      setCatModal({
+                        open: true,
+                        mode: "create",
+                        record: null,
+                        defaultParentCode: node.categoryCode,
+                      })
+                    }
+                    className="h-7 px-2 text-xs border-dashed text-primary hover:bg-primary/5 hover:text-primary"
+                    title={`在【${node.categoryName}】下新增子分类`}
+                  >
+                    <Plus className="size-3 mr-1" />
+                    下级
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={loading}
+                    onClick={() =>
+                      setCatModal({
+                        open: true,
+                        mode: "edit",
+                        record: node,
+                        defaultParentCode: null,
+                      })
+                    }
+                    className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    <Edit2 className="size-3 mr-1" />
+                    编辑
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={loading}
+                    onClick={() =>
+                      handleToggleCatStatus(
+                        node.categoryCode,
+                        node.status || "ACTIVE",
+                      )
+                    }
+                    className="h-7 px-2 text-xs"
+                  >
+                    {isActive ? "停用" : "启用"}
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={loading}
+                    onClick={() => setDeletingCat(node)}
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                    title="删除分类"
+                  >
+                    <Trash2 className="size-3" />
+                  </Button>
+                </>
+              );
+            }}
+          />
         </div>
       </CardContent>
     </Card>
@@ -444,7 +406,7 @@ export function CategoryTagView({
 
       <CardContent className="flex-1 p-4">
         <div className="flex max-h-[580px] flex-col gap-2 overflow-y-auto pr-1">
-          {/* 核心创新：第一行常驻通栏“+ 新增业务标签”虚线按钮 */}
+          {/* 第一行常驻通栏“+ 新增业务标签”虚线按钮 */}
           <Button
             type="button"
             variant="outline"
@@ -533,8 +495,9 @@ export function CategoryTagView({
                       variant="ghost"
                       size="sm"
                       disabled={loading}
-                      onClick={() => handleDeleteTag(t.tagCode)}
+                      onClick={() => setDeletingTag(t)}
                       className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                      title="删除标签"
                     >
                       <Trash2 className="size-3" />
                     </Button>
@@ -595,6 +558,7 @@ export function CategoryTagView({
         </TabsContent>
       </Tabs>
 
+      {/* 分类模态框 */}
       {catModal.open && (
         <CategoryFormModal
           mode={catModal.mode}
@@ -621,6 +585,7 @@ export function CategoryTagView({
         />
       )}
 
+      {/* 标签模态框 */}
       {tagModal.open && (
         <TagFormModal
           mode={tagModal.mode}
@@ -634,6 +599,34 @@ export function CategoryTagView({
           }}
         />
       )}
+
+      {/* 分类删除二次确认弹窗 (基于 UI 库 ConfirmDialog) */}
+      <ConfirmDialog
+        open={Boolean(deletingCat)}
+        onOpenChange={(v) => {
+          if (!v) setDeletingCat(null);
+        }}
+        title={`确认删除分类 [${deletingCat?.categoryName || deletingCat?.categoryCode}]？`}
+        description="删除后该分类将从分类树中彻底移除。若该分类下存在子级分类或有关联客户档案，系统将自动拦截并禁止删除。"
+        confirmText="确认删除"
+        cancelText="取消"
+        variant="destructive"
+        onConfirm={handleConfirmDeleteCat}
+      />
+
+      {/* 标签删除二次确认弹窗 (基于 UI 库 ConfirmDialog) */}
+      <ConfirmDialog
+        open={Boolean(deletingTag)}
+        onOpenChange={(v) => {
+          if (!v) setDeletingTag(null);
+        }}
+        title={`确认删除标签 [${deletingTag?.tagName || deletingTag?.tagCode}]？`}
+        description="删除后该标签将从标签字典中彻底移除。若当前已被客户档案引用打标，系统将自动拦截并禁止删除。"
+        confirmText="确认删除"
+        cancelText="取消"
+        variant="destructive"
+        onConfirm={handleConfirmDeleteTag}
+      />
     </div>
   );
 }

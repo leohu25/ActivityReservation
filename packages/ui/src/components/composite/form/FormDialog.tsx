@@ -172,7 +172,7 @@ export function FormDialog<TRecord = unknown>({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "flex max-h-[85vh] w-full max-w-2xl flex-col gap-4 overflow-hidden p-6 sm:max-w-2xl",
+          "flex max-h-[85vh] w-full max-w-2xl flex-col gap-4 p-6 sm:max-w-2xl",
           className,
         )}
       >
@@ -185,7 +185,8 @@ export function FormDialog<TRecord = unknown>({
 
         {headerExtra}
 
-        <div className="flex-1 overflow-y-auto pr-1">{body}</div>
+        {/* 关键修复：内容区添加 px-1 py-1，避免内部 Input 聚焦时的 focus-visible:ring-3 外晕光圈被父级裁剪或截断 */}
+        <div className="flex-1 overflow-y-auto px-1 py-1 -mx-1 -my-1">{body}</div>
 
         {renderedFooter}
       </DialogContent>

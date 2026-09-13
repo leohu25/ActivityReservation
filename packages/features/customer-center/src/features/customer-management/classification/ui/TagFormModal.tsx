@@ -18,7 +18,7 @@ export interface TagFormModalProps {
   readonly onSuccess?: () => void;
 }
 
-/** 客户业务标签表单：支持新建与编辑修改 */
+/** 客户业务标签表单：支持新建与编辑修改，唯一编码全自动生成 */
 export function TagFormModal({
   mode,
   record,
@@ -36,26 +36,28 @@ export function TagFormModal({
 
   const fields: FormFieldSchema[] = useMemo(
     () => [
-      {
-        name: "tagCode",
-        label: "标签编码 (唯一标识)",
-        type: "text",
-        required: true,
-        disabled: isEdit,
-        placeholder: "如: TAG_VIP",
-        hint: isEdit ? "标签唯一标识创建后不可修改" : undefined,
-      },
+      ...(isEdit
+        ? ([
+            {
+              name: "tagCode",
+              label: "标签编码 (唯一标识)",
+              type: "text" as const,
+              disabled: true,
+              hint: "标签唯一标识由系统自动生成，不可修改",
+            },
+          ] as FormFieldSchema[])
+        : []),
       {
         name: "tagName",
         label: "标签名称",
-        type: "text",
+        type: "text" as const,
         required: true,
         placeholder: "如: VIP专属、早间必达",
       },
       {
         name: "tagType",
         label: "标签业务类型",
-        type: "select",
+        type: "select" as const,
         required: true,
         options: [
           { value: "DELIVERY", label: "配送策略 (DELIVERY)" },
@@ -67,8 +69,8 @@ export function TagFormModal({
       {
         name: "description",
         label: "业务描述说明",
-        type: "text",
-        span: 2,
+        type: "text" as const,
+        span: 2 as const,
         placeholder: "标签打标规则与适用场景",
       },
     ],
@@ -85,9 +87,9 @@ export function TagFormModal({
       description={
         isEdit
           ? "修改业务标签名称、类型及打标业务规则"
-          : "标签编码全局唯一，创建后可为客户进行精细化策略打标"
+          : "标签编码由系统自动生成（格式：TAG_YYYYMMDD_XXXX），无需人工维护"
       }
-      submitText={isEdit ? "保存修改" : "保存标签"}
+      submitText={isEdit ? "保存修改" : "立即创建"}
       onSubmit={async () => {
         if (isEdit && record) {
           const res = await updateTagAction(record.tagCode, {
@@ -102,7 +104,6 @@ export function TagFormModal({
           toast.success("业务标签修改成功");
         } else {
           const res = await createTagAction({
-            tagCode: values.tagCode,
             tagName: values.tagName,
             tagType: values.tagType,
             description: values.description || null,

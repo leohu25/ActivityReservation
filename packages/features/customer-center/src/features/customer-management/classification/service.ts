@@ -23,6 +23,56 @@ export interface CategoryTreeNode {
  */
 export class CustomerCategoryTagService {
   /**
+   * 自动生成分类唯一编码: CAT_YYYYMMDD_XXXX
+   */
+  static async generateCategoryCode(client: TenantPrismaClient): Promise<string> {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    const prefix = `CAT_${yyyy}${mm}${dd}_`;
+
+    const latest = await client.customerCategory.findFirst({
+      where: { categoryCode: { startsWith: prefix } },
+      orderBy: { categoryCode: "desc" },
+      select: { categoryCode: true },
+    });
+
+    let seq = 1;
+    if (latest) {
+      const parts = latest.categoryCode.split("_");
+      const lastSeq = parseInt(parts[2] || "0", 10);
+      if (!isNaN(lastSeq)) seq = lastSeq + 1;
+    }
+    return `${prefix}${String(seq).padStart(4, "0")}`;
+  }
+
+  /**
+   * 自动生成标签唯一编码: TAG_YYYYMMDD_XXXX
+   */
+  static async generateTagCode(client: TenantPrismaClient): Promise<string> {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    const prefix = `TAG_${yyyy}${mm}${dd}_`;
+
+    const latest = await client.customerTag.findFirst({
+      where: { tagCode: { startsWith: prefix } },
+      orderBy: { tagCode: "desc" },
+      select: { tagCode: true },
+    });
+
+    let seq = 1;
+    if (latest) {
+      const parts = latest.tagCode.split("_");
+      const lastSeq = parseInt(parts[2] || "0", 10);
+      if (!isNaN(lastSeq)) seq = lastSeq + 1;
+    }
+    return `${prefix}${String(seq).padStart(4, "0")}`;
+  }
+
+  /**
    * 获取多级分类树
    */
   static async getCategoryTree(
@@ -58,7 +108,7 @@ export class CustomerCategoryTagService {
   }
 
   /**
-   * 创建分类（校验父级防环）
+   * 创建分类（支持自动生成唯一编码，校验父级防环）
    */
   static async createCategory(
     client: TenantPrismaClient,
@@ -73,9 +123,14 @@ export class CustomerCategoryTagService {
       }
     }
 
+    const categoryCode =
+      input.categoryCode && input.categoryCode.trim().length > 0
+        ? input.categoryCode.trim()
+        : await CustomerCategoryTagService.generateCategoryCode(client);
+
     return client.customerCategory.create({
       data: {
-        categoryCode: input.categoryCode,
+        categoryCode,
         categoryName: input.categoryName,
         parentCode: input.parentCode || null,
         description: input.description,
@@ -165,12 +220,17 @@ export class CustomerCategoryTagService {
   }
 
   /**
-   * 创建标签
+   * 创建标签（支持自动生成唯一编码）
    */
   static async createTag(client: TenantPrismaClient, input: CreateTagInput) {
+    const tagCode =
+      input.tagCode && input.tagCode.trim().length > 0
+        ? input.tagCode.trim()
+        : await CustomerCategoryTagService.generateTagCode(client);
+
     return client.customerTag.create({
       data: {
-        tagCode: input.tagCode,
+        tagCode,
         tagName: input.tagName,
         tagType: input.tagType,
         description: input.description,
@@ -213,9 +273,7 @@ export class CustomerCategoryTagService {
       where: { tagCode },
     });
     if (assignmentCount > 0) {
-      throw new Error(
-        `该标签当前已被 ${assignmentCount} 个客户关联使用，禁止删除`,
-      );
+      throw new Error(`该标签当前已被 ${assignmentCount} 个客户关联使用，禁止删除`);
     }
 
     return client.customerTag.delete({

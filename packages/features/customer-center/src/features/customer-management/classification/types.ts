@@ -1,5 +1,5 @@
 export interface CreateCategoryInput {
-  categoryCode: string;
+  categoryCode?: string;
   categoryName: string;
   parentCode?: string | null;
   description?: string | null;
@@ -13,7 +13,7 @@ export interface UpdateCategoryInput {
 }
 
 export interface CreateTagInput {
-  tagCode: string;
+  tagCode?: string;
   tagName: string;
   tagType: string;
   description?: string | null;

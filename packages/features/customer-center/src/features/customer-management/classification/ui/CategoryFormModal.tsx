@@ -68,26 +68,28 @@ export function CategoryFormModal({
 
   const fields: FormFieldSchema[] = useMemo(
     () => [
-      {
-        name: "categoryCode",
-        label: "分类编码 (唯一标识)",
-        type: "text",
-        required: true,
-        disabled: isEdit,
-        placeholder: "如: CUST_CAT_001",
-        hint: isEdit ? "分类唯一标识创建后不可修改" : undefined,
-      },
+      ...(isEdit
+        ? ([
+            {
+              name: "categoryCode",
+              label: "分类编码 (唯一标识)",
+              type: "text" as const,
+              disabled: true,
+              hint: "分类编码由系统自动生成，创建后不可修改",
+            },
+          ] as FormFieldSchema[])
+        : []),
       {
         name: "categoryName",
         label: "分类名称",
-        type: "text",
+        type: "text" as const,
         required: true,
         placeholder: "如: 连锁餐饮 / 企事业单位",
       },
       {
         name: "parentCode",
         label: "父级分类",
-        type: "select",
+        type: "select" as const,
         hint: "留空则作为一级根分类",
         options: [
           { value: "", label: "(无父级 · 作为一级根分类)" },
@@ -100,8 +102,8 @@ export function CategoryFormModal({
       {
         name: "description",
         label: "业务描述说明",
-        type: "text",
-        span: 2,
+        type: "text" as const,
+        span: 2 as const,
         placeholder: "分类适用范围与说明",
       },
     ],
@@ -124,7 +126,7 @@ export function CategoryFormModal({
       description={
         isEdit
           ? "更新分类名称、上级归属及业务说明"
-          : "分类编码全局唯一，创建成功后将实时进入树结构"
+          : "分类编码由系统自动生成（格式：CAT_YYYYMMDD_XXXX），无需人工维护"
       }
       submitText={isEdit ? "保存修改" : "立即创建"}
       onSubmit={async () => {
@@ -141,7 +143,6 @@ export function CategoryFormModal({
           toast.success("客户分类修改成功");
         } else {
           const res = await createCategoryAction({
-            categoryCode: values.categoryCode,
             categoryName: values.categoryName,
             parentCode: values.parentCode || null,
             description: values.description || null,
