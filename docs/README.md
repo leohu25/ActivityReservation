@@ -30,7 +30,8 @@ docs/
 │   └── DEPLOYMENT.md                # 生产与多环境部署实战指南
 ├── collaboration/                   # 【工程协同】团队与多智能体协作机制
 │   ├── agent-development-workflow.md                          # 智能体全生命周期开发工作流指南 (SOP)
-│   └── harness-collaboration-guide.md                         # Harness 协同指南
+│   ├── harness-collaboration-guide.md                         # Harness 协同指南
+│   └── scripts-reference.md                                   # 根 package.json 全量命令参考手册 (SSoT)
 └── archive/                         # 【历史归档】已完成阶段性使命的初期 PRD 与闭环设计底座
     ├── README.md                    # 归档背景与现行架构映射说明
     ├── SaaS Foundation 权限基础设施工程实施规格.md
