@@ -5,13 +5,12 @@ import {
   z,
   FormModal,
   TagMultiSelect,
-  type FormFieldSchema,
   type FormModalMode,
   type FormModalSection,
   toast,
 } from "@base/ui";
 import { useOptionalAbility } from "@base/authorization";
-import { CustomerSubject, CustomerField } from "../contract";
+import { CustomerSubject } from "../contract";
 import { createCustomerAction, updateCustomerAction } from "../actions";
 import type {
   CustomerCategoryItem,
@@ -83,24 +82,12 @@ export const DEFAULT_CUSTOMER_VALUES: CustomerFormData = {
   tagCodes: [],
 };
 
-const FIELD_NAME_TO_AUTH_FIELD: Record<string, string> = {
-  customerCode: CustomerField.CUSTOMER_CODE,
-  customerName: CustomerField.CUSTOMER_NAME,
-  categoryCode: CustomerField.CATEGORY,
-  contactPerson: CustomerField.CONTACT_PERSON,
-  contactPhone: CustomerField.CONTACT_PHONE,
-  settlementMethod: CustomerField.SETTLEMENT_METHOD,
-  defaultTaxRate: CustomerField.DEFAULT_TAX_RATE,
-  creditLimit: CustomerField.CREDIT_LIMIT,
-  status: CustomerField.STATUS,
-};
-
 /**
  * 客户中心通用 CRUD 三态模态框（新增/编辑/居中查看）
  * - 新增与编辑共用同一表单，编辑支持完整字段回填与修改
  * - 客户编码/ID 等唯一标识全自动生成，严禁人工输入维护
  * - 查看详情采用居中模态窗，全字段只读置灰，带下属履约门店统计卡片
- * - 深度接入 CASL 字段权限：不可读字段安全剥离隐藏，不可写字段自动锁定禁用
+ * - 声明 subject={CustomerSubject}，由 @base/ui FormModal 统一驱动 CASL 字段权限三态闭环
  */
 export function CustomerFormModal({
   open,
@@ -282,65 +269,24 @@ export function CustomerFormModal({
       },
     ];
 
-    const filterAndDecorateFields = (
-      rawFields: readonly FormFieldSchema[],
-    ): FormFieldSchema[] => {
-      return rawFields
-        .filter((f) => {
-          if (!ability) return true;
-          const authField = FIELD_NAME_TO_AUTH_FIELD[f.name];
-          if (!authField) return true;
-          return ability.can("read", CustomerSubject, authField);
-        })
-        .map((f) => {
-          if (!ability) return f;
-          const authField = FIELD_NAME_TO_AUTH_FIELD[f.name];
-          if (!authField) return f;
-          const writeAction = isCreate ? "create" : "update";
-          const canWrite = ability.can(writeAction, CustomerSubject, authField);
-          if (!canWrite) {
-            return {
-              ...f,
-              disabled: true,
-              hint: f.hint
-                ? `${f.hint} (当前角色无权编辑)`
-                : "受字段权限控制，当前角色不可修改",
-            };
-          }
-          return f;
-        });
-    };
-
-    const sectionsList: FormModalSection[] = [];
-    const visibleBaseFields = filterAndDecorateFields(baseFields);
-    if (visibleBaseFields.length > 0) {
-      sectionsList.push({
+    return [
+      {
         title: "基础信息",
-        fields: visibleBaseFields,
+        fields: baseFields,
         columns: 2,
-      });
-    }
-
-    const visibleSettleFields = filterAndDecorateFields(settleFields);
-    if (visibleSettleFields.length > 0) {
-      sectionsList.push({
+      },
+      {
         title: "结算与授信",
-        fields: visibleSettleFields,
+        fields: settleFields,
         columns: 3,
-      });
-    }
-
-    const visibleBizFields = filterAndDecorateFields(bizFields);
-    if (visibleBizFields.length > 0) {
-      sectionsList.push({
+      },
+      {
         title: "业务归属",
-        fields: visibleBizFields,
+        fields: bizFields,
         columns: 2,
-      });
-    }
-
-    return sectionsList;
-  }, [mode, resolvedCategoryOptions, resolvedTagOptions, ability]);
+      },
+    ];
+  }, [mode, resolvedCategoryOptions, resolvedTagOptions]);
 
   const handleSubmit = async (values: CustomerFormData) => {
     if (mode === "create") {
@@ -414,6 +360,8 @@ export function CustomerFormModal({
       open={open}
       inline={inline}
       mode={mode}
+      subject={CustomerSubject}
+      ability={ability}
       title={title}
       description={description}
       bannerTitle={mode === "create" ? "自动编号提醒" : undefined}

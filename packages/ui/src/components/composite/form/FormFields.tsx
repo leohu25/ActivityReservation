@@ -25,6 +25,8 @@ export interface FormFieldOption {
 
 type BaseField = {
   readonly name: string;
+  /** 可选权限契约映射键，未显式声明时默认使用 name */
+  readonly field?: string;
   readonly label: string;
   readonly required?: boolean;
   readonly hint?: string;

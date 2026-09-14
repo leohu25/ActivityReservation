@@ -222,3 +222,90 @@ test("FormModal: 缺省 initialItems 与 extraActions 时正确渲染并使用�
   assert.match(html, /查看客户详情/);
   assert.match(html, /企业B/);
 });
+
+test("FormModal [CASL 字段权限闭环]: subject + ability 驱动 HIDDEN 字段剔除与 READONLY 字段禁用", () => {
+  const restrictedAbility = {
+    can(action: string, subject?: string, field?: string) {
+      if (subject === "Customer") {
+        // contactPhone 隐藏 (不可读不可写)
+        if (field === "contactPhone") return false;
+        // creditLimit 只读 (可读不可写)
+        if (
+          field === "creditLimit" &&
+          (action === "create" || action === "update")
+        ) {
+          return false;
+        }
+      }
+      return true;
+    },
+  };
+
+  const html = renderToString(
+    <FormModal
+      open={true}
+      inline={true}
+      mode="edit"
+      subject="Customer"
+      ability={restrictedAbility}
+      title="编辑客户"
+      schema={customerFormSchema}
+      fields={formFields}
+      initialValues={{
+        customerName: "好味超市",
+        contactPhone: "13800001111",
+        creditLimit: 5000,
+      }}
+      onClose={() => {}}
+      onSubmit={async () => {}}
+    />,
+  );
+
+  // 1. 正常放行字段
+  assert.match(html, /客户全称/);
+  assert.match(html, /好味超市/);
+
+  // 2. HIDDEN 字段彻底从 HTML 结构中剥离
+  assert.doesNotMatch(html, /联系电话/);
+  assert.doesNotMatch(html, /13800001111/);
+
+  // 3. READONLY 字段保留但标记为禁用态
+  assert.match(html, /授信额度/);
+  assert.match(html, /受字段权限控制，当前角色不可修改/);
+});
+
+test("FormModal [必填与隐藏动态协调]: 被 HIDDEN 隐藏的必填字段自动豁免 Zod 校验错误", () => {
+  // contactPhone 为必填项，但权限将其彻底隐藏
+  const hiddenRequiredAbility = {
+    can(_action: string, subject?: string, field?: string) {
+      if (subject === "Customer" && field === "contactPhone") {
+        return false;
+      }
+      return true;
+    },
+  };
+
+  // 渲染并验证渲染中不含该必填项
+  const html = renderToString(
+    <FormModal
+      open={true}
+      inline={true}
+      mode="create"
+      subject="Customer"
+      ability={hiddenRequiredAbility}
+      title="新建客户"
+      schema={customerFormSchema}
+      fields={formFields}
+      initialValues={{
+        customerName: "好味超市",
+        contactPhone: "", // 虽未填且为必填，但由于被权限隐藏，不应阻断
+        creditLimit: 5000,
+      }}
+      onClose={() => {}}
+      onSubmit={async () => {}}
+    />,
+  );
+
+  assert.match(html, /客户全称/);
+  assert.doesNotMatch(html, /联系电话/);
+});

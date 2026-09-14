@@ -24,6 +24,7 @@ import {
   type DetailTableColumn,
 } from "../composite/table/DetailTable";
 import { toast } from "../feedback/Toast";
+import { useOptionalAbility } from "@base/authorization";
 import { cn } from "../../lib/utils";
 
 export type FormModalMode = "create" | "edit" | "view";
@@ -117,6 +118,23 @@ export interface FormModalProps<
     readonly onClick: (values: TValues) => void | Promise<void>;
   }[];
 
+  /**
+   * 业务实体 Subject (如 'Customer', 'PurchaseOrder')。
+   * 声明后 FormModal 将全自动结合 CASL Ability 执行字段三态闭环：
+   * - HIDDEN (不可读): 自动从 fields / sections 中彻底剥离隐藏；
+   * - READONLY (可读不可写): 在新增/编辑模式下自动标记 disabled 并展示只读提示；
+   * - 整组字段全部被隐藏的 section 自动剔除。
+   */
+  readonly subject?: string;
+
+  /**
+   * 可选 CASL Ability 覆盖注入。
+   * 默认自动从上下文 AbilityProvider (useOptionalAbility) 读取。
+   */
+  readonly ability?: {
+    can(action: string, subject?: string, field?: string): boolean;
+  } | null;
+
   // 布局控制与扩展插槽
   readonly columns?: 2 | 3 | 4;
   readonly inline?: boolean;
@@ -165,6 +183,8 @@ export function FormModal<
   onValuesChange,
   schema,
   headerSchema,
+  subject,
+  ability: explicitAbility,
   detailConfig,
   detail,
   initialItems = EMPTY_INITIAL_ITEMS,
@@ -256,25 +276,84 @@ export function FormModal<
     onClose?.();
   }, [getFreshValues, initialItems, onOpenChange, onClose]);
 
-  // 模式感知：只读模式下全部字段禁用
+  // 官方 CASL Ability 权限感知：优先取显式传入，未传取上层 AbilityProvider
+  const contextAbility = useOptionalAbility();
+  const effectiveAbility =
+    explicitAbility === undefined ? contextAbility : explicitAbility;
+  const writeAction = mode === "create" ? "create" : "update";
+
+  const filterAndDecorateField = useCallback(
+    (field: FormFieldSchema): FormFieldSchema | null => {
+      // 1. 若未指定受控主体 subject 或无 ability 上下文，按常规 isView 基础禁用返回
+      if (!subject || !effectiveAbility) {
+        return isView ? { ...field, disabled: true } : field;
+      }
+
+      // 2. 检查读取权限 (HIDDEN 彻底剥离剔除，优先使用 field 别名映射)
+      const authKey = field.field || field.name;
+      const canRead = effectiveAbility.can("read", subject, authKey);
+      if (!canRead) {
+        return null;
+      }
+
+      // 3. 查看模式下全部只读置灰
+      if (isView) {
+        return { ...field, disabled: true };
+      }
+
+      // 4. 新增/编辑模式下检查写入权限 (READONLY 禁用置灰并附带提示)
+      const canWrite = effectiveAbility.can(writeAction, subject, authKey);
+      if (!canWrite) {
+        return {
+          ...field,
+          disabled: true,
+          hint: field.hint
+            ? `${field.hint} (受字段权限控制，当前角色不可修改)`
+            : "受字段权限控制，当前角色不可修改",
+        };
+      }
+
+      return field;
+    },
+    [subject, effectiveAbility, isView, writeAction],
+  );
+
+  // 模式与权限感知：自动剔除 HIDDEN 字段，自动禁用 READONLY 字段
   const activeFields = useMemo(() => {
     if (!fields) return [];
-    if (isView) {
-      return fields.map((f) => ({ ...f, disabled: true }));
-    }
-    return fields;
-  }, [fields, isView]);
+    return fields
+      .map(filterAndDecorateField)
+      .filter((f): f is FormFieldSchema => f !== null);
+  }, [fields, filterAndDecorateField]);
 
   const activeSections = useMemo(() => {
     if (!sections) return [];
-    if (isView) {
-      return sections.map((s) => ({
-        ...s,
-        fields: s.fields.map((f) => ({ ...f, disabled: true })),
-      }));
+    return sections
+      .map((s) => {
+        const visibleFields = s.fields
+          .map(filterAndDecorateField)
+          .filter((f): f is FormFieldSchema => f !== null);
+        return {
+          ...s,
+          fields: visibleFields,
+        };
+      })
+      .filter((s) => s.fields.length > 0);
+  }, [sections, filterAndDecorateField]);
+
+  // 收集当前界面真正可见的字段名称集合，供动态必填校验与提交过滤使用
+  const visibleFieldNames = useMemo(() => {
+    const names = new Set<string>();
+    for (const f of activeFields) {
+      names.add(f.name);
     }
-    return sections;
-  }, [sections, isView]);
+    for (const s of activeSections) {
+      for (const f of s.fields) {
+        names.add(f.name);
+      }
+    }
+    return names;
+  }, [activeFields, activeSections]);
 
   const handleFieldChange = (name: keyof TValues & string, val: unknown) => {
     const prev = valuesRef.current;
@@ -325,13 +404,23 @@ export function FormModal<
         const newErrors: Partial<Record<keyof TValues & string, string>> = {};
         for (const issue of parseResult.error.issues) {
           const fieldName = String(issue.path[0] ?? "");
+          // 豁免逻辑：若当前启用了受控主体权限 (subject)，且该字段被 HIDDEN 彻底隐藏（不在可见字段集合），自动豁免该字段的校验错误
+          if (
+            subject &&
+            effectiveAbility &&
+            !visibleFieldNames.has(fieldName)
+          ) {
+            continue;
+          }
           if (fieldName && !newErrors[fieldName as keyof TValues & string]) {
             newErrors[fieldName as keyof TValues & string] = issue.message;
           }
         }
-        setErrors(newErrors);
-        toast.error("表单数据校验未通过，请检查红字提示");
-        return;
+        if (Object.keys(newErrors).length > 0) {
+          setErrors(newErrors);
+          toast.error("表单数据校验未通过，请检查红字提示");
+          return;
+        }
       }
     }
 

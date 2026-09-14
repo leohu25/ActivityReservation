@@ -243,3 +243,27 @@
      - 严禁使用模糊的 `categories`、`tags`、`data`，一眼识别其“只读下拉数据源”的职责属性；
   5. **门禁脚本机械化硬拦截**：
      - 在 `scripts/check/check-permission-contracts.mjs` 中内置静态扫描：业务列表页面严禁直接跨域调用管理端专属的 `getCategoryTreeQuery`，强制要求消费宿主聚合的 `*OptionsQuery`。
+
+## 18. 字段级权限 (Field-Level Security) 全栈闭环与表单模板沉淀规范 (FLS Zero-Trust Invariant)
+
+- **痛点复盘**：
+  1. **弹窗脱节，权限穿透**：在 UI 模板重构中，通用模态框（如 `CustomerFormModal`）内静态写死业务字段数组，未接入 CASL 字段三态判定，导致在后台配置了字段隐藏/只读后，详情与编辑弹窗依然全量无损呈现；
+  2. **必填与隐藏死锁矛盾**：若某字段在 Zod Schema 中声明为必填（如 `contactPhone`），但管理员对某角色配置了 `HIDDEN` 隐藏。由于用户在前端看不到该字段输入框，提交时 Zod 强校验空值失败，导致表单“永远无法提交且看不到报错”；
+  3. **UI 隐藏伪安全**：前端表单虽然隐藏了字段，但后端写路径 Server Action 仅有动作级粗粒度门禁（`assertCustomerAbility`），未调用 `assertEditableFields` 对 Payload 字段白名单进行防篡改断言，攻击者绕过前端伪造 RPC 仍能非法篡改受限字段；
+  4. **列表复合列绑定错位**：列表将联系人姓名与手机号合并在单列渲染，但列配置仅绑定了 `field: CustomerField.CONTACT_PHONE`。当管理员关闭“联系人姓名”权限时，DataTable 因手机号有权而放行整列，姓名依然在单元格中暴露。
+- **工业级正统解法与全栈防御铁律 (Zero-Trust Standard)**：
+  1. **基座 UI 模板统一沉淀，消除私有胶水 (FormModal 字段三态闭环)**：
+     - 严禁在每个业务页面的 FormModal 中重复手写私有字段过滤代码；
+     - `@base/ui` 的场景模板 `FormModal` 自动消费全局 `useOptionalAbility()`，业务侧**只需声明 `subject={XxxSubject}`**；
+     - 内部对 `fields` 与 `sections` 全自动执行三态治理：
+       - `HIDDEN`：彻底剥离不入 DOM 树，且整组字段均隐藏的 Section 自动收敛剔除；
+       - `READONLY`：新增/编辑模式下自动追加 `disabled: true` 并展示权限只读提示；
+     - 字段支持 `FormFieldSchema.field?: string` 别名映射，防止表单名称与权限契约字段漂移；
+  2. **动态可见性与必填协同原则 (“不显示即可不填，显示且必填才必须填”)**：
+     - 在 `FormModal` 内部执行 Zod Schema 校验时，动态提取当前用户真正可见的字段集合（`visibleFieldNames`）；
+     - **自动豁免校验**：若校验错误发生在被权限 `HIDDEN` 隐藏的字段上，系统自动忽略该错误并放行提交；仅当可见字段校验未通过时才进行红字拦截，彻底解决必填死锁；
+  3. **后端写路径强防篡改硬门禁 (assertEditableFields)**：
+     - 前端 UI 隐藏绝不等于物理安全。所有实体的 `createXxxAction` 与 `updateXxxAction` 在调用业务 Service 之前，**必须强制执行 `assertEditableFields` 校验**；
+     - 过滤掉未传的 `undefined` 键，提取实际提交的显式受控键，一旦检测到包含不可编辑或隐藏字段，立即抛出 CASL `ForbiddenError` 物理阻断事务；
+  4. **列表列配置细粒度契约对齐**：
+     - 列表复合列若包含多个不同受控维度的敏感字段，应拆分为独立列，或在单元格内部针对各子字段进行 `ability.can("read", subject, field)` 细粒度判断，杜绝因宿主字段放行而导致敏感子文本越权泄露。

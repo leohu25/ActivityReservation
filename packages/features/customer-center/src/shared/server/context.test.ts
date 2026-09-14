@@ -1,8 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createMongoAbility } from "@casl/ability";
-import { ForbiddenError } from "@casl/ability";
-import { StandardAction, type AppAbility } from "@base/authorization";
+import { createMongoAbility, ForbiddenError } from "@casl/ability";
+import {
+  StandardAction,
+  assertEditableFields,
+  type AppAbility,
+} from "@base/authorization";
 import { assertCustomerAbility } from "./context";
 import { customerCatalog } from "../../catalog";
 import { CustomerSubject } from "../../features/customer-management/contract";
@@ -67,4 +70,41 @@ test("customerCatalog 从契约派生 Customer 动作（含 toggle_status）", (
   assert.ok(def.actions.includes("toggle_status"));
   assert.ok(def.actions.includes("create"));
   assert.ok(def.actions.includes("export"));
+});
+
+test("assertEditableFields [写路径防篡改]: 拦截对只读或隐藏字段的越权篡改", () => {
+  // 构造 ability：允许更新 Customer，但限制仅可写 customerName，授信额度 creditLimit 不可写
+  const limitedAbility = createMongoAbility([
+    {
+      action: "update",
+      subject: CustomerSubject,
+      fields: ["customerName", "contactPerson"],
+    },
+  ]);
+
+  // 1. 提交合法字段：正常放行
+  assert.doesNotThrow(() => {
+    assertEditableFields(limitedAbility, CustomerSubject, {
+      customerName: "新客户名称",
+      contactPerson: "新联系人",
+    });
+  });
+
+  // 2. 越权提交未授权字段 creditLimit：必须抛出 ForbiddenError 物理拦截
+  assert.throws(
+    () => {
+      assertEditableFields(limitedAbility, CustomerSubject, {
+        customerName: "新客户名称",
+        creditLimit: 999999,
+      });
+    },
+    (err: unknown) => {
+      assert.ok(err instanceof ForbiddenError);
+      assert.match(
+        (err as Error).message,
+        /禁止修改 Customer 的非编辑或隐藏字段: creditLimit/,
+      );
+      return true;
+    },
+  );
 });

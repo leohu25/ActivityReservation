@@ -184,13 +184,14 @@ Fail-Closed：`actions: []` → 一切拒绝；无 Provider 时 `useOptionalAbil
 | 场景 / 积木 | 规范与行为 |
 | ------ | ------ |
 | **标准 `DataTable` / `DataTable.Workspace`** | **必须传入 `subject={XxxSubject}`**。内部工具栏 `onCreate`（新增）、`onExport`（导出）、`onRefresh`、列设置及分页自动继承该上下文；当用户缺少 `create` 权限时，表格右上方的新建按钮自动 Fail-Closed 隐藏。 |
+| **标准 `FormModal` (三态模态框模板)** | **必须传入 `subject={XxxSubject}`**。内部自动感应 CASL 字段三态闭环：`HIDDEN` 字段从 DOM 与 Schema 校验中彻底剥离（**不显示则自动豁免必填**，绝不阻塞提交）；`READONLY` 字段在新增/编辑时自动标记 `disabled` 并展示只读提示；空 Section 自动折叠移除。支持 `FormFieldSchema.field` 别名映射。 |
 | **页面自定义独立按钮 / 快捷操作入口** | **必须使用 `<AuthGuard subject={...} action={...}>` 包裹**。例如页面顶部的独立“新建物料”、“编排 BOM”等按钮，若脱离了 DataTable 容器，必须用 `<AuthGuard>` 包裹，确保普通成员在无相应 Action 权限时组件完全不渲染。 |
 | `DataTable.ActionButton` | 无 ability/subject → 拒绝；`action` 未授权 → 隐藏/置灰 |
 | `DataTable.Content` | `ColumnDef.field` 无 `read` → 整列剥离 |
 | `AuthField` / `AuthorizedField` | HIDDEN 不渲染；READONLY → shadcn `Field` + `Badge「只读」` + 控件 disabled |
 | `DataTableRowActions` | 行级 action 按 `ability.can` 过滤 |
 
-### 4.1 核心实战范式 (DataTable vs AuthGuard)
+### 4.1 核心实战范式 (DataTable & FormModal vs AuthGuard)
 
 #### (1) 使用标准模板 DataTable 时：显式注入 subject
 
@@ -204,7 +205,22 @@ Fail-Closed：`actions: []` → 一切拒绝；无 Provider 时 `useOptionalAbil
 />
 ```
 
-#### (2) 脱离 DataTable 上下文的独立自定义按钮/表单：必须使用 AuthGuard
+#### (2) 使用标准表单模态框 FormModal 时：显式注入 subject，零私有权限胶水代码
+
+```tsx
+<FormModal<CustomerFormData>
+  open={open}
+  mode={mode}
+  subject={CustomerSubject} // 👈 必须传：内部自动执行字段三态过滤、动态豁免不可见字段必填并禁用只读项
+  schema={customerFormZodSchema}
+  sections={sections}
+  initialValues={initialValues}
+  onClose={onClose}
+  onSubmit={handleSubmit}
+/>
+```
+
+#### (3) 脱离 DataTable/FormModal 上下文的独立自定义按钮/表单：必须使用 AuthGuard
 
 ```tsx
 import { AuthGuard } from "@base/ui";
@@ -216,6 +232,17 @@ import { ItemMasterSubject, StandardAction } from "../contract";
     <Plus className="mr-1 h-4 w-4" /> 新建商品
   </Button>
 </AuthGuard>
+```
+
+#### (4) 写路径物理安全闭环 (Server Action)
+
+前端 UI 隐藏绝不等于物理安全。所有 `createXxxAction` 与 `updateXxxAction` 必须在执行事务前加锁：
+
+```tsx
+// 1. 动作级校验
+assertCustomerAbility(ability, StandardAction.UPDATE, CustomerSubject);
+// 2. 字段级防篡改校验 (拦截恶意通过网络请求篡改只读/隐藏字段)
+assertEditableFields(ability as unknown as AnyMongoAbility, CustomerSubject, extractControlledPayload(input));
 ```
 
 > ⚠️ **严禁反模式**：
