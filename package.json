@@ -26,9 +26,13 @@
     "db:control:diff:sql": "pnpm --filter @base/db-control db:diff:sql",
     "db:control:push": "pnpm --filter @base/db-control db:push",
     "db:control:status": "pnpm --filter @base/db-control db:status",
-    "db:control:gen": "pnpm --filter @base/db-control generate"
+    "db:control:gen": "pnpm --filter @base/db-control generate",
+    "clean:cache": "rm -rf .turbo apps/*/.next"
   },
   "devDependencies": {
+    "eslint": "^9.39.5",
+    "eslint-config-next": "16.3.4",
+    "eslint-plugin-boundaries": "^5.4.0",
     "turbo": "^2.4.4",
     "typescript": "^5.8.2"
   }
