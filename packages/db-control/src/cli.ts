@@ -76,9 +76,7 @@ function printHelp(): void {
 核心命令:
   diff                        扫描比对当前总控物理库与 schema.prisma 的结构差异 (支持自动检测未同步字段)
   diff:sql                    扫描比对并将变更差异直接渲染为可执行的 SQL 补丁预览
-  push                        [开发环境专用] 将 schema.prisma 的最新结构安全同步至物理 Control DB
   generate                    依据 schema.prisma 重新生成 @prisma/client 强类型代码
-  status                      检查总控物理库连接与 Schema 对齐状态
   help                        显示此帮助信息
 `);
 }
@@ -104,7 +102,13 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const prismaBin = path.join(workspaceRoot, "node_modules/.bin/prisma");
+  const candidateBins = [
+    path.join(packageDir, "node_modules/.bin/prisma"),
+    path.join(workspaceRoot, "node_modules/.bin/prisma"),
+  ];
+  const prismaBin =
+    candidateBins.find((bin) => fs.existsSync(bin)) ??
+    path.join(packageDir, "node_modules/.bin/prisma");
   const configPath = path.join(packageDir, "prisma.config.ts");
   const schemaPath = path.join(packageDir, "prisma/schema.prisma");
 
@@ -141,7 +145,7 @@ async function main(): Promise<void> {
           );
           console.log(output);
           console.log(
-            "\x1b[36m提示: 可执行 `pnpm run db:control:push` 立即同步至物理库，或 `pnpm run db:control:diff:sql` 查看 DDL 详情。\x1b[0m",
+            "\x1b[36m提示: 生产或开发环境均请前往平台管控后台 (/migrations) 或运行 migration 流程完成安全升级，可执行 `pnpm run db:control:diff:sql` 查看 DDL 详情。\x1b[0m",
           );
         }
         break;
@@ -178,23 +182,6 @@ async function main(): Promise<void> {
           console.log("\x1b[32m✔ 生成增量 SQL 补丁预览如下:\x1b[0m\n");
           console.log(sqlOutput);
         }
-        break;
-      }
-
-      case "push": {
-        console.log(
-          ">>> 正在将 schema.prisma 的最新定义同步至 Control 物理数据库...",
-        );
-        const forceReset = process.argv.includes("--force-reset");
-        const pushArgs = ["db", "push", "--config", configPath];
-        if (forceReset) {
-          pushArgs.push("--force-reset");
-        }
-        execFileSync(prismaBin, pushArgs, {
-          env: process.env,
-          stdio: "inherit",
-        });
-        console.log("\x1b[32m✔ Control 物理库结构同步完成！\x1b[0m");
         break;
       }
 

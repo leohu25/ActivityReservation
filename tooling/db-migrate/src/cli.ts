@@ -5,6 +5,7 @@ import process from "node:process";
 import { checkMigrationArtifacts } from "./check";
 import type { DestructiveApproval, MigrationScope } from "./core/types";
 import { findWorkspaceRoot } from "./core/paths";
+import { diffSchema } from "./generation/diff";
 import {
   generateBaseline,
   generateMigration,
@@ -69,6 +70,8 @@ function help(): void {
   db-migrate baseline --scope <platform|tenant> [--version <version>] [--reset]
   db-migrate generate --scope <platform|tenant> --name <name>
       [--allow-destructive --reason <text> --data-plan <text> --rollback-plan <text>]
+  db-migrate diff --scope <platform|tenant>
+  db-migrate diff:sql --scope <platform|tenant>
   db-migrate catalog
   db-migrate check
   db-migrate ensure-platform
@@ -79,7 +82,13 @@ async function main(): Promise<void> {
   const { command, options } = parseArgs(process.argv.slice(2));
   const workspaceRoot = findWorkspaceRoot();
   loadEnvironment(workspaceRoot);
-  if (command === "help" || options.help) {
+  if (
+    command === "help" ||
+    options.help ||
+    (command === "generate" && !options.scope && !options.name) ||
+    (command === "baseline" && !options.scope) ||
+    (command.startsWith("diff") && !options.scope)
+  ) {
     help();
     return;
   }
@@ -120,6 +129,30 @@ async function main(): Promise<void> {
     console.log(
       `Generated ${scope} migration ${result.version}_${result.name}`,
     );
+    return;
+  }
+  if (command === "diff") {
+    const scope = parseScope(options.scope);
+    const result = diffSchema({ scope, workspaceRoot });
+    console.log(result.summary);
+    if (result.hasChange) {
+      console.log(
+        `\x1b[36m提示: 可执行 \`pnpm db:migrate:generate -- --scope ${scope} --name <名称>\` 生成增量迁移，或查看详细 SQL 补丁。\x1b[0m`,
+      );
+    }
+    return;
+  }
+  if (command === "diff:sql") {
+    const scope = parseScope(options.scope);
+    const result = diffSchema({ scope, workspaceRoot, script: true });
+    if (result.sql.trim()) {
+      console.log(`\x1b[32m✔ [${scope}] 生成增量 SQL 补丁预览如下:\x1b[0m\n`);
+      console.log(result.sql);
+    } else {
+      console.log(
+        `\x1b[32m✔ [${scope}] 当前 Schema 已是最新状态，所需 SQL 为空。\x1b[0m`,
+      );
+    }
     return;
   }
   if (command === "catalog") {

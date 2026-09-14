@@ -17,8 +17,12 @@
         "packages/db-tenant/prisma/schema.generated.prisma"
       ]
     },
+    "generate": {
+      "dependsOn": ["//#codegen"],
+      "cache": false
+    },
     "build": {
-      "dependsOn": ["//#codegen", "^build"],
+      "dependsOn": ["generate", "^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*", ".env.local"],
       "outputs": [
         ".next/**",
@@ -31,15 +35,15 @@
       "dependsOn": ["^lint"]
     },
     "check": {
-      "dependsOn": ["//#codegen", "^check"],
+      "dependsOn": ["generate", "^check"],
       "cache": false
     },
     "test": {
-      "dependsOn": ["//#codegen", "^test"],
+      "dependsOn": ["generate", "^test"],
       "cache": false
     },
     "dev": {
-      "dependsOn": ["//#codegen"],
+      "dependsOn": ["generate"],
       "cache": false,
       "persistent": true
     }

@@ -295,6 +295,15 @@
       "status": "completed",
       "owner": "implementer",
       "evidence": "1. apps/control/src/instrumentation.ts 落地 Next.js 官方 register() 钩子，平台端启动时自动执行 ensurePlatformDatabase() 完成总控库 Day 0 自愈与超管 Seed，彻底消灭外部前置脚本；2. turbo.json 配置根 codegen 拓扑任务与文件 Hash 缓存，dev/build/check 自动依赖 codegen，实现切片未变动时 20ms FULL TURBO 增量跳过；3. 根 package.json 启动与构建命令彻底消除 && 串联，全部纯化为 turbo 调度；4. .vscode/launch.json 对齐使用 pnpm dev:tenant / dev:control，消除子进程死锁与双轨制；5. 全栈门禁 verify.sh 8 项全绿通过。"
+    },
+    {
+      "id": "arch-prisma-config-and-generate-pipeline",
+      "name": "【架构规范与DX治理】Prisma配置应用级环境加载、消除静默兜底与Turborepo生成流水线拓扑",
+      "description": "基于 Prisma 7 官方规范、Next.js Monorepo 多环境标准与 Turborepo 任务拓扑架构重构数据库配置与代码生成链路：1. 消除 db-control 与 db-tenant 中的静默默认连接串兜底，遵循 Fail-Fast 原则防止环境穿透与隐性脏数据；2. 在 prisma.config.ts 中规范化加载 apps/*/.env.local，确保本地与远程配置均真实生效；3. 消除 package.json 中的胶水脚本，将 prisma generate 规范为标准 Turbo 任务纳入 dev/build/check/test 前置依赖拓扑；4. init.sh 补齐初次 Client 自愈生成，确保干净克隆后开箱即用，并通过自动化测试严密防退化。",
+      "dependencies": ["arch-turborepo-pipeline-and-app-instrumentation"],
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "1. 重构 db-control, db-tenant 与 db-migrate 的 prisma.config.ts，彻底消除硬编码连接串兜底，遵循 Fail-Fast 原则并实现应用级 .env.local 规范化加载；2. packages/db-tenant 与 packages/db-control 的 generate 纯化为干净的 prisma 命令，去除 Node 拼接胶水；3. turbo.json 注册 generate 任务并建立 //#codegen -> generate -> (build/check/test/dev) 拓扑流水线；4. init.sh 接入自动自愈 Client 生成；5. 编写 packages/db-control/src/prisma-config.test.ts 与 packages/db-tenant/src/prisma-config.test.ts 单测，全仓 247 个测试用例 100% 通过，check/lint 全绿。"
     }
   ]
 }

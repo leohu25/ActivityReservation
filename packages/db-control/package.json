@@ -17,8 +17,6 @@
     "generate": "prisma generate --config prisma.config.ts",
     "db:diff": "tsx src/cli.ts diff",
     "db:diff:sql": "tsx src/cli.ts diff:sql",
-    "db:push": "tsx src/cli.ts push",
-    "db:status": "tsx src/cli.ts status",
     "prisma:validate": "prisma validate --config prisma.config.ts",
     "test": "tsx --test --test-reporter=../../scripts/reporter/fail-only-reporter.mjs src/*.test.ts"
   },

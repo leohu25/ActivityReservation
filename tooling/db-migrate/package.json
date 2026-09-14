@@ -13,7 +13,7 @@
     "./platform": "./src/runtime/platform-entry.ts"
   },
   "scripts": {
-    "generate": "tsx src/cli.ts generate",
+    "migration:generate": "tsx src/cli.ts generate",
     "baseline": "tsx src/cli.ts baseline",
     "check": "tsx src/cli.ts check && tsc --noEmit",
     "test": "tsx --test --test-reporter=../../scripts/reporter/fail-only-reporter.mjs src/**/*.test.ts"
