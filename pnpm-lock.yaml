@@ -32,6 +32,9 @@ importers:
       '@base/db-control':
         specifier: workspace:*
         version: link:../../packages/db-control
+      '@base/db-migrate':
+        specifier: workspace:*
+        version: link:../../tooling/db-migrate
       '@base/db-tenant':
         specifier: workspace:*
         version: link:../../packages/db-tenant

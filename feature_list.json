@@ -286,6 +286,15 @@
       "status": "completed",
       "owner": "implementer",
       "evidence": "1. classification 领域服务与 queries.ts 新增 getCustomerCategoryOptionsQuery 与 getCustomerTagOptionsQuery，仅查 ACTIVE 状态字典项，不强依赖分类管理权限；2. getCategoryTreeQuery 与 listTagsQuery 恢复纯粹的独立 Subject 强管控守卫；3. 客户档案列表页 CustomersPage 切换消费专用 Options Query，彻底消除跨模块权限级联瘫痪；4. 补充 service 与 context 单测 37/37 全部 PASS，tenant 与 customer-center 类型检查 0 错误，权限四维契约门禁校验通过。"
+    },
+    {
+      "id": "arch-turborepo-pipeline-and-app-instrumentation",
+      "name": "【架构演进与DX提效】Turborepo 拓扑流水线与 Next.js instrumentation 运行时自愈",
+      "description": "基于 Next.js 官方最佳实践与 Turborepo 拓扑编排标准范式彻底重构工程启动与构建生命周期：1. 消除根 package.json 的 Shell 胶水 && 串联，将代码生成 (sync:features) 下沉为 Turborepo 原生拓扑依赖任务 (^codegen) 并配置文件 Hash 增量缓存；2. 利用 Next.js 官方 instrumentation.ts 将总控库 Day 0 自愈 (ensure-platform) 内聚到 apps/control 运行时启动阶段，彻底消除外部前置脚本；3. 静态门禁 (db:migrate:check) 归位至 git commit 与 CI；4. 纯化根启动命令为 turbo 调度，使终端与 IDE 调试 100% 同源同轨，消除子进程附加死锁与双轨制认知黑盒。",
+      "dependencies": ["feature-customer-reference-options-decoupling"],
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "1. apps/control/src/instrumentation.ts 落地 Next.js 官方 register() 钩子，平台端启动时自动执行 ensurePlatformDatabase() 完成总控库 Day 0 自愈与超管 Seed，彻底消灭外部前置脚本；2. turbo.json 配置根 codegen 拓扑任务与文件 Hash 缓存，dev/build/check 自动依赖 codegen，实现切片未变动时 20ms FULL TURBO 增量跳过；3. 根 package.json 启动与构建命令彻底消除 && 串联，全部纯化为 turbo 调度；4. .vscode/launch.json 对齐使用 pnpm dev:tenant / dev:control，消除子进程死锁与双轨制；5. 全栈门禁 verify.sh 8 项全绿通过。"
     }
   ]
 }

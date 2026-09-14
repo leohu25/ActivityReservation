@@ -4,8 +4,21 @@
   "cacheMaxSize": "2GB",
   "cacheMaxAge": "7d",
   "tasks": {
+    "//#codegen": {
+      "inputs": [
+        "packages/features/**/src/manifest.ts",
+        "packages/features/**/prisma/schema.prisma",
+        "packages/features/**/package.json",
+        "packages/db-tenant/prisma/schema.prisma",
+        "scripts/sync/**"
+      ],
+      "outputs": [
+        "apps/tenant/src/kernel/registry.generated.ts",
+        "packages/db-tenant/prisma/schema.generated.prisma"
+      ]
+    },
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["//#codegen", "^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*", ".env.local"],
       "outputs": [
         ".next/**",
@@ -18,14 +31,15 @@
       "dependsOn": ["^lint"]
     },
     "check": {
-      "dependsOn": ["^check"],
+      "dependsOn": ["//#codegen", "^check"],
       "cache": false
     },
     "test": {
-      "dependsOn": ["^test"],
+      "dependsOn": ["//#codegen", "^test"],
       "cache": false
     },
     "dev": {
+      "dependsOn": ["//#codegen"],
       "cache": false,
       "persistent": true
     }

@@ -12,6 +12,7 @@
   "dependencies": {
     "@base/auth": "workspace:*",
     "@base/db-control": "workspace:*",
+    "@base/db-migrate": "workspace:*",
     "@base/db-tenant": "workspace:*",
     "@base/feature-control-admin": "workspace:*",
     "@base/shared": "workspace:*",

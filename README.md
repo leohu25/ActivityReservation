@@ -91,6 +91,10 @@ docker compose -f compose.local.yaml up -d
 
 ## 常用开发命令清单
 
+> 💡 **命令设计与架构事实源**：
+> 本工程已完成架构去胶水化重构，代码生成全自动接入 **Turborepo 任务拓扑 (`codegen`)**，平台库初始化全自动接入 **Next.js `instrumentation.ts`** 运行时钩子，日常启动无需关心前置顺序。
+> 完整 26 条命令技术细节与依赖拓扑请参见：[《命令参考手册 (Scripts Reference)》](docs/collaboration/scripts-reference.md)。
+
 ### 代码检查与自动化测试
 
 ```bash
@@ -115,7 +119,7 @@ pnpm run lint
 # 1. 一致性检查（校验当前所有 Schema 与已提交的迁移/基线/Catalog 是否一致）
 pnpm run db:migrate:check
 
-# 2. 平台控制库 Day 0 结构与种子数据自愈（开箱即用建表并初始化超管）
+# 2. 平台控制库 Day 0 结构与种子数据自愈（开发服务已通过 instrumentation.ts 自动集成，亦可手动执行）
 pnpm run db:platform:ensure
 
 # 3. 实体变更后显式生成增量迁移

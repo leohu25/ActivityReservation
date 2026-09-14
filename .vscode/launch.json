@@ -5,13 +5,13 @@
       "name": "Next.js: Debug Tenant (租户端)",
       "type": "node-terminal",
       "request": "launch",
-      "command": "pnpm --filter tenant dev"
+      "command": "pnpm dev:tenant"
     },
     {
       "name": "Next.js: Debug Control (平台总控端)",
       "type": "node-terminal",
       "request": "launch",
-      "command": "pnpm --filter control dev"
+      "command": "pnpm dev:control"
     }
   ]
 }

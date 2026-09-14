@@ -105,6 +105,7 @@ node .harness/lifecycle/session-end.mjs
 | **多租户分库深度解析** | `docs/architecture/saas-multitenant-architecture.md` | 物理分库连接池治理、并发防击穿、TenantDbManager 与全生命周期 |
 | **权限系统全链路** | `docs/permissions/permission-architecture-deep-dive.md` | CASL 四层权限闭环、SQL 自动下推、字段物理剥离与端到端时序 |
 | **自愈数据迁移引擎** | `docs/architecture/database-migration-engine.md` | 12-Factor 原则、预编译 Catalog、Schema 聚合与咨询锁机制 |
+| **工程命令技术手册** | `docs/collaboration/scripts-reference.md` | 根 package.json 全量命令参考、Turborepo 任务拓扑与 Next.js 运行时自愈机制 |
 | **团队架构决策 (ADR)** | `.harness/memory/adr/` | 核心决策记录（ADR-001 ~ ADR-009 分层、分库、权限、审计基线） |
 | **团队持久记忆** | `.harness/memory/` | 避坑经验 (`learnings.md`) 与技术债台账 (`technical-debt.md`) |
 | **多智能体编排 (按需选用)** | `.harness/agents/index.md` | **仅在复杂多阶段或跨模块并行任务中选用**：Coordinator 编排与角色契约 |
