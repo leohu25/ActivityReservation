@@ -277,6 +277,15 @@
       "status": "completed",
       "owner": "coordinator",
       "evidence": "1. 落地packages/features/material-center独立切片包与四大受控Feature(classification/unit-management/item-master/bom-management)；2. Prisma模型全量落地并通过8大审计字段门禁；3. 生成tenant增量迁移20260913105634_add_material_and_bom_models并编译catalog；4. 多单位换算引擎与BOM出成率/DFS循环检测单测8/8通过；5. 租户端装配/materials下5张业务视图与BomVisualDag流程图；6. ./scripts/verify.sh门禁全绿通过。"
+    },
+    {
+      "id": "feature-customer-reference-options-decoupling",
+      "name": "【架构规范与权限解耦】客户分类与标签下拉选项查询解耦与权限安全隔离",
+      "description": "参考主流企业级 ERP (ERPNext/若依) 标准，将基础字典与分类的后台管理查询 (Management Query) 与前台业务下拉选项查询 (Options Query) 进行物理与权限解耦。管理端严格遵循独立 Subject 强管控；业务下拉端提供精简、高频、只读的有效选项接口，消除权限配置变更导致的业务页面级联瘫痪与 Runtime ForbiddenError 崩溃。",
+      "dependencies": ["feature-material-center"],
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "1. classification 领域服务与 queries.ts 新增 getCustomerCategoryOptionsQuery 与 getCustomerTagOptionsQuery，仅查 ACTIVE 状态字典项，不强依赖分类管理权限；2. getCategoryTreeQuery 与 listTagsQuery 恢复纯粹的独立 Subject 强管控守卫；3. 客户档案列表页 CustomersPage 切换消费专用 Options Query，彻底消除跨模块权限级联瘫痪；4. 补充 service 与 context 单测 37/37 全部 PASS，tenant 与 customer-center 类型检查 0 错误，权限四维契约门禁校验通过。"
     }
   ]
 }

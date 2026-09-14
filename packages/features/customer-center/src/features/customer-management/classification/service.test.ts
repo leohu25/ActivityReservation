@@ -96,3 +96,60 @@ test("CustomerCategoryTagService deleteTag 拦截已被使用的标签", async (
     /当前已被 5 个客户关联使用/,
   );
 });
+
+test("CustomerCategoryTagService.listCategories 仅返回 ACTIVE 状态的分类选项", async () => {
+  let passedWhere: any = null;
+  const mockClient = {
+    customerCategory: {
+      findMany: async ({ where }: any) => {
+        passedWhere = where;
+        return [
+          {
+            categoryCode: "CAT_ACT_1",
+            categoryName: "餐饮客户",
+            parentCode: null,
+            description: null,
+            status: "ACTIVE",
+          },
+        ];
+      },
+    },
+  };
+
+  const options = await CustomerCategoryTagService.listCategories(
+    mockClient as never,
+    { status: "ACTIVE" },
+  );
+  assert.equal(passedWhere.status, "ACTIVE");
+  assert.equal(options.length, 1);
+  assert.equal(options[0]?.categoryCode, "CAT_ACT_1");
+});
+
+test("CustomerCategoryTagService.listTags 仅返回 ACTIVE 状态的标签选项", async () => {
+  let passedWhere: any = null;
+  const mockClient = {
+    customerTag: {
+      findMany: async ({ where }: any) => {
+        passedWhere = where;
+        return [
+          {
+            tagCode: "TAG_VIP",
+            tagName: "重点客户",
+            tagType: "VIP",
+            description: null,
+            status: "ACTIVE",
+          },
+        ];
+      },
+    },
+  };
+
+  const options = await CustomerCategoryTagService.listTags(
+    mockClient as never,
+    { tagType: "VIP", status: "ACTIVE" },
+  );
+  assert.equal(passedWhere.status, "ACTIVE");
+  assert.equal(passedWhere.tagType, "VIP");
+  assert.equal(options.length, 1);
+  assert.equal(options[0]?.tagCode, "TAG_VIP");
+});

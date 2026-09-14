@@ -178,3 +178,50 @@ export async function listCustomersQuery(filter: ListCustomerFilter = {}) {
   return toPlainData({ ...result, items });
 }
 ```
+
+---
+
+## 4. 宿主外键下拉选项聚合查询 (`get*PageOptionsQuery`)
+
+### 核心架构痛点与反模式
+
+在业务列表页面（如客户档案、销售订单、物料主数据）中，通常需要表格顶部的下拉筛选或新建弹窗里的外键选择（如选择分类、标签、单位）。
+**严禁直接在业务页面调用关联字典模块后台管理专用的 `*TreeQuery` 或详情 Query**！
+否则一旦在角色管理中剥夺了用户的“分类维护权限”，进入主业务列表时就会因关联字典的强断言导致整页抛出 `ForbiddenError` 崩溃。
+
+### 标准规范：宿主聚合 BFF 模式 (Contextual Page Options)
+
+1. **鉴权归宿主**：由宿主业务的 `queries.ts` 提供聚合查询 `get*PageOptionsQuery`，内部只校验宿主自身的读取权限（如 `CustomerSubject`）；
+2. **底层方法统一复用 (DRY)**：底层 Service 统一提供带 `{ status?: "ACTIVE" }` 过滤的方法，管理端不传 status 查全量，下拉端传 `status: "ACTIVE"` 只查启用项；
+3. **全链路统一命名**：Query、Props、变量一律命名为 `*Options`（如 `categoryOptions`, `tagOptions`）。
+
+```ts
+import "server-only";
+import { toPlainData } from "@base/shared";
+import { StandardAction } from "@base/authorization";
+import { getTenantCustomerContext, assertCustomerAbility } from "../../assembly/context";
+import { CustomerSubject } from "./contract";
+import { CustomerCategoryTagService } from "./classification/service";
+import type { CustomerCategoryItem, CustomerTagItem } from "./classification/types";
+
+export interface CustomerPageOptions {
+  categoryOptions: CustomerCategoryItem[];
+  tagOptions: CustomerTagItem[];
+}
+
+/**
+ * 客户档案页面所需下拉选项聚合查询 (BFF 模式)
+ * 校验宿主 CustomerSubject 读权限，一次性聚合当前租户 ACTIVE 状态的分类与标签
+ */
+export async function getCustomerPageOptionsQuery(): Promise<CustomerPageOptions> {
+  const { client, ability } = await getTenantCustomerContext();
+  assertCustomerAbility(ability, StandardAction.READ, CustomerSubject);
+
+  const [categoryOptions, tagOptions] = await Promise.all([
+    CustomerCategoryTagService.listCategories(client, { status: "ACTIVE" }),
+    CustomerCategoryTagService.listTags(client, { status: "ACTIVE" }),
+  ]);
+
+  return toPlainData({ categoryOptions, tagOptions });
+}
+```

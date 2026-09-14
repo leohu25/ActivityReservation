@@ -1,3 +1,7 @@
 import "server-only";
 
-export { listCustomersQuery } from "./queries";
+export {
+  listCustomersQuery,
+  getCustomerPageOptionsQuery,
+  type CustomerPageOptions,
+} from "./queries";

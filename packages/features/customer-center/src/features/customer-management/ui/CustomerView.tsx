@@ -41,8 +41,13 @@ interface Props {
   initialKeyword?: string;
   initialCategory?: string;
   initialStatus?: string;
-  categories: CustomerCategoryItem[];
-  tags: CustomerTagItem[];
+  /** 下拉选项数据源：统一 Options 命名 */
+  categoryOptions?: CustomerCategoryItem[];
+  tagOptions?: CustomerTagItem[];
+  /** @deprecated 使用 categoryOptions */
+  categories?: CustomerCategoryItem[];
+  /** @deprecated 使用 tagOptions */
+  tags?: CustomerTagItem[];
 }
 
 const SETTLEMENT_LABELS: Record<string, string> = {
@@ -59,9 +64,13 @@ export function CustomerView({
   initialKeyword = "",
   initialCategory = "",
   initialStatus = "",
+  categoryOptions,
+  tagOptions,
   categories,
   tags,
 }: Props) {
+  const resolvedCategoryOptions = categoryOptions ?? categories ?? [];
+  const resolvedTagOptions = tagOptions ?? tags ?? [];
   // 官方范式：Ability 一律来自上层 AbilityProvider（customer layout）
   const ability = useAbility();
   const { navigateList, router } = useListUrlNav();
@@ -351,7 +360,7 @@ export function CustomerView({
               <SelectContent>
                 <SelectGroup>
                   <SelectItem value="ALL">全部</SelectItem>
-                  {categories.map((c) => (
+                  {resolvedCategoryOptions.map((c) => (
                     <SelectItem key={c.categoryCode} value={c.categoryCode}>
                       {c.categoryName}
                     </SelectItem>
@@ -381,8 +390,8 @@ export function CustomerView({
         open={modalState.open}
         mode={modalState.mode}
         record={modalState.record}
-        categories={categories}
-        tags={tags}
+        categoryOptions={resolvedCategoryOptions}
+        tagOptions={resolvedTagOptions}
         onClose={() =>
           setModalState({ open: false, mode: "create", record: null })
         }

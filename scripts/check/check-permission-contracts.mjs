@@ -382,6 +382,33 @@ for (const file of allTsFiles) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// 架构红线：外键字典与下拉选项解耦门禁 (Contextual Options Architecture Redline)
+// 1. 业务列表页面 (非分类标签管理自身) 严禁直接调用管理端专属的 getCategoryTreeQuery，必须消费宿主 Options Query
+// ---------------------------------------------------------------------------
+const tenantDashboardPages = filesUnder(
+  path.join(root, "apps/tenant/src/app/(dashboard)"),
+  (f) => f.endsWith("page.tsx"),
+);
+
+for (const file of tenantDashboardPages) {
+  const rel = path.relative(root, file).replace(/\\/g, "/");
+  // 排除分类标签管理自身页面
+  if (rel.includes("customer/categories-tags")) continue;
+
+  const source = fs.readFileSync(file, "utf8");
+  for (const match of source.matchAll(/\b(getCategoryTreeQuery)\b/g)) {
+    fail(
+      file,
+      match.index,
+      "options-architecture",
+      "no direct administrative TreeQuery in business pages",
+      match[1],
+      "consume contextual get*PageOptionsQuery (e.g. getCustomerPageOptionsQuery) instead of getCategoryTreeQuery",
+    );
+  }
+}
+
 if (violations.length) {
   console.error(
     `\u001b[31m✗ [Permission Contract Violations] found ${violations.length} violation(s)\u001b[0m`,

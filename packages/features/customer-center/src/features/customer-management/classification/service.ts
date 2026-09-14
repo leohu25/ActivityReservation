@@ -4,6 +4,8 @@ import type {
   UpdateCategoryInput,
   CreateTagInput,
   UpdateTagInput,
+  CustomerCategoryItem,
+  CustomerTagItem,
 } from "./types";
 
 /**
@@ -75,23 +77,41 @@ export class CustomerCategoryTagService {
   }
 
   /**
-   * 获取多级分类树
+   * 查询分类列表（底层统一方法，供管理端查全量与下拉端查启用项共同复用）
+   */
+  static async listCategories(
+    client: TenantPrismaClient,
+    filter?: { status?: "ACTIVE" | "DISABLED" },
+  ): Promise<CustomerCategoryItem[]> {
+    return client.customerCategory.findMany({
+      where: filter?.status ? { status: filter.status } : undefined,
+      orderBy: { categoryCode: "asc" },
+      select: {
+        categoryCode: true,
+        categoryName: true,
+        parentCode: true,
+        description: true,
+        status: true,
+      },
+    });
+  }
+
+  /**
+   * 获取多级分类树（管理后台专用）
    */
   static async getCategoryTree(
     client: TenantPrismaClient,
   ): Promise<CategoryTreeNode[]> {
-    const list = await client.customerCategory.findMany({
-      orderBy: { categoryCode: "asc" },
-    });
+    const list = await CustomerCategoryTagService.listCategories(client);
 
     const map = new Map<string, CategoryTreeNode>();
     for (const item of list) {
       map.set(item.categoryCode, {
         categoryCode: item.categoryCode,
         categoryName: item.categoryName,
-        parentCode: item.parentCode,
-        description: item.description,
-        status: item.status,
+        parentCode: item.parentCode ?? null,
+        description: item.description ?? null,
+        status: item.status ?? "ACTIVE",
         children: [],
       });
     }
@@ -212,12 +232,25 @@ export class CustomerCategoryTagService {
   }
 
   /**
-   * 获取所有标签（可按类型过滤）
+   * 查询标签列表（底层统一方法，供管理端查全量与下拉端查启用项共同复用）
    */
-  static async listTags(client: TenantPrismaClient, tagType?: string) {
+  static async listTags(
+    client: TenantPrismaClient,
+    filter?: { tagType?: string; status?: "ACTIVE" | "DISABLED" },
+  ): Promise<CustomerTagItem[]> {
     return client.customerTag.findMany({
-      where: tagType ? { tagType } : undefined,
-      orderBy: { createdAt: "desc" },
+      where: {
+        ...(filter?.tagType ? { tagType: filter.tagType } : {}),
+        ...(filter?.status ? { status: filter.status } : {}),
+      },
+      orderBy: { tagCode: "asc" },
+      select: {
+        tagCode: true,
+        tagName: true,
+        tagType: true,
+        description: true,
+        status: true,
+      },
     });
   }
 

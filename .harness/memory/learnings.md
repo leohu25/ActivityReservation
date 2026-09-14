@@ -221,3 +221,25 @@
      - **规则 A（使用标准模板 DataTable）**：必须显式传入对应实体的 `subject={XxxSubject}`。DataTable 内部的工具栏（新建、导出、批量动作）及数据列会自动继承该上下文，无权限时自动 Fail-Closed 隐藏对应动作；
      - **规则 B（脱离 DataTable 的自定义按钮/表单）**：凡是在表格之外自定义渲染的写入/破坏性 UI 入口（如页面右上角“新建”、看板“编排 BOM”、快捷新增输入表单等），**必须强制使用 `<AuthGuard subject={XxxSubject} action={StandardAction.CREATE}>` 进行包裹**；
      - **规则 C（对齐自动化单测）**：每个包含受控入口的页面必须编写 `<Page>View.test.tsx`，分别注入“只读权限快照”与“完整权限快照”，机械化断言无权限时入口 100% 自动隐藏、有权限时正常呈现。
+
+## 17. 外键字典与下拉选项解耦规范 (BFF Contextual Options Pattern 与防级联瘫痪)
+
+- **痛点复盘**：
+  - 在租户角色管理中取消勾选某个角色的“客户分类”权限（期望该角色不能去维护客户分类字典）；
+  - 该角色登录后访问“客户档案”列表页面，页面直接报 `Runtime ForbiddenError: Cannot execute "read" on "CustomerCategory"` 崩溃中断；
+  - 核心根因：客户档案列表页（`CustomersPage`）为了渲染表格顶部的“分类筛选下拉框”和新建弹窗里的“选择分类”，直接调用了分类管理后台专用的 `getCategoryTreeQuery`。该查询内部硬编码了对 `CustomerCategorySubject` 的强校验，导致**子字典的后台维护权限反向击穿了宿主业务页面的可用性**。
+- **工业级正统解法 (BFF Contextual Options Pattern)**：
+  1. **宿主业务聚合元数据模式**：
+     - 参考主流 ERP（ERPNext、销售订单已跑通范式）规范，业务页面所需的下拉选项，统一由**宿主 Feature 自身暴露的聚合接口**（如 `getCustomerPageOptionsQuery`）提供；
+     - **鉴权只认宿主**：由于用户正在访问的是客户档案页面，该接口理直气壮只校验宿主自身的读取权限（`assertCustomerAbility(ability, StandardAction.READ, CustomerSubject)`）；
+     - **内部安全查询**：宿主服务在底层调用分类/标签服务，自动过滤 `status: "ACTIVE"` 的启用字典项，返回纯净的选项列表；
+  2. **管理端查询坚守独立底线**：
+     - 分类/标签管理后台专用的 `getCategoryTreeQuery`、`listTagsQuery` 保持纯粹严格的独立权限校验（`CustomerCategorySubject`），坚守管理后台安全防线；
+  3. **底层数据库查询方法 100% 复用 (DRY 原则)**：
+     - 底层 Service 统一收敛为同一个 `listCategories(client, { status })` 和 `listTags(client, { status, tagType })`；
+     - 管理端不传 status（查全量并组装树），下拉端传 `status: "ACTIVE"`（只查启用项），彻底杜绝重复代码与排序/软删除维护不一致的隐患；
+  4. **全链路统一 Option 命名规范 (Ubiquitous Language)**：
+     - 无论是服务端 Query（`getCustomerPageOptionsQuery`）、页面与组件 Props（`categoryOptions`、`tagOptions`），还是本地静态枚举（`settlementMethodOptions`），全链路统一收敛以 **`*Options`** 命名；
+     - 严禁使用模糊的 `categories`、`tags`、`data`，一眼识别其“只读下拉数据源”的职责属性；
+  5. **门禁脚本机械化硬拦截**：
+     - 在 `scripts/check/check-permission-contracts.mjs` 中内置静态扫描：业务列表页面严禁直接跨域调用管理端专属的 `getCategoryTreeQuery`，强制要求消费宿主聚合的 `*OptionsQuery`。

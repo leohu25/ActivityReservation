@@ -2,15 +2,10 @@ import {
     CustomerView,
     type CustomerListItem,
 } from "@base/feature-customer-center/customer-management";
-import { listCustomersQuery } from "@base/feature-customer-center/customer-management/server";
-import type {
-    CustomerCategoryItem,
-    CustomerTagItem,
-} from "@base/feature-customer-center/customer-management/classification";
 import {
-    getCategoryTreeQuery,
-    listTagsQuery,
-} from "@base/feature-customer-center/customer-management/classification/server";
+    listCustomersQuery,
+    getCustomerPageOptionsQuery,
+} from "@base/feature-customer-center/customer-management/server";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -38,7 +33,7 @@ export default async function CustomersPage({
     const categoryCode = readOne(params, "category");
     const status = readOne(params, "status");
 
-    const [customerPage, categories, tags] = await Promise.all([
+    const [customerPage, pageOptions] = await Promise.all([
         listCustomersQuery({
             page,
             pageSize,
@@ -46,8 +41,7 @@ export default async function CustomersPage({
             categoryCode: categoryCode || undefined,
             status: status || undefined,
         }),
-        getCategoryTreeQuery(),
-        listTagsQuery(),
+        getCustomerPageOptionsQuery(),
     ]);
 
     return (
@@ -59,8 +53,8 @@ export default async function CustomersPage({
             initialKeyword={keyword}
             initialCategory={categoryCode}
             initialStatus={status}
-            categories={categories as CustomerCategoryItem[]}
-            tags={tags as CustomerTagItem[]}
+            categoryOptions={pageOptions.categoryOptions}
+            tagOptions={pageOptions.tagOptions}
         />
     );
 }
