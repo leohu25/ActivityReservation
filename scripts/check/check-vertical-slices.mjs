@@ -195,6 +195,52 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
           code: "shared/server context missing",
         });
       }
+
+      // 检查 AbilityBoundary 权限能力边界组件规范与 "use client" 强约束
+      const allSrcFiles = walkCodeFiles(srcDir);
+      const boundaryFiles = allSrcFiles.filter((f) =>
+        /AbilityBoundary\.tsx$/.test(f),
+      );
+
+      if (boundaryFiles.length === 0) {
+        violations.push({
+          file: `${relPkgDir}/src`,
+          line: 1,
+          rule: "租户业务特性包必须在 src/shared/ui/ 或类似共享路径下定义 *AbilityBoundary.tsx 权限能力边界组件 (ADR-003/008)",
+          code: "*AbilityBoundary.tsx missing",
+        });
+      }
+
+      for (const boundaryFile of boundaryFiles) {
+        const relBoundaryPath = path
+          .relative(workspaceRoot, boundaryFile)
+          .replace(/\\/g, "/");
+        const content = fs.readFileSync(boundaryFile, "utf-8");
+
+        // 强校验 1: 必须在头部声明 "use client";
+        if (!/^\s*["']use client["'];/m.test(content)) {
+          violations.push({
+            file: relBoundaryPath,
+            line: 1,
+            rule: '权限能力边界组件 (*AbilityBoundary.tsx) 必须在文件头部显式声明 "use client"; 作为 Client Component 容器运行，防止内部实例化 CASL Ability 并在透传给 UI Provider 时触发 Next.js RSC 跨端序列化异常 (ADR-003/008)',
+            code: 'missing "use client"',
+          });
+        }
+
+        // 强校验 2: 组件命名规范必须为 export function/const *AbilityBoundary
+        const hasBoundaryExport =
+          /export\s+(function|const)\s+[A-Za-z0-9_]*AbilityBoundary\b/.test(
+            content,
+          );
+        if (!hasBoundaryExport) {
+          violations.push({
+            file: relBoundaryPath,
+            line: 1,
+            rule: "权限能力边界组件导出名称必须遵循 *AbilityBoundary 统一语义规范 (如 CustomerAbilityBoundary)",
+            code: "export *AbilityBoundary missing",
+          });
+        }
+      }
     }
 
     // 检查 shared/public.ts

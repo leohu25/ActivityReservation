@@ -25,7 +25,6 @@ import {
   CardContent,
   Button,
   Badge,
-  useSubjectCan,
   ConfirmDialog,
   Table,
   TableHeader,
@@ -38,6 +37,7 @@ import {
   DataScope,
   FieldPolicy,
   StandardAction,
+  useSubjectCan,
   resolveFieldAccess,
   type DataScopeType,
   type FieldAccessMode,
@@ -592,7 +592,9 @@ export function RolePermissionManager({
               <Table className="w-full text-xs">
                 <TableHeader className="bg-muted/50 font-medium">
                   <TableRow className="border-b border-border">
-                    <TableHead className="py-2.5 px-3 w-[280px] text-xs font-semibold text-muted-foreground">功能模块 / 页面</TableHead>
+                    <TableHead className="py-2.5 px-3 w-[280px] text-xs font-semibold text-muted-foreground">
+                      功能模块 / 页面
+                    </TableHead>
                     <TableHead className="py-2.5 px-3 text-left text-xs font-semibold text-muted-foreground">
                       功能操作权限 (Actions)
                     </TableHead>

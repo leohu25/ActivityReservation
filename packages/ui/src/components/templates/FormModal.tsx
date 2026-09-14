@@ -24,7 +24,7 @@ import {
   type DetailTableColumn,
 } from "../composite/table/DetailTable";
 import { toast } from "../feedback/Toast";
-import { useOptionalAbility } from "@base/authorization";
+import { useUiAbility, type UiAbilityLike } from "../composite/auth";
 import { cn } from "../../lib/utils";
 
 export type FormModalMode = "create" | "edit" | "view";
@@ -128,12 +128,10 @@ export interface FormModalProps<
   readonly subject?: string;
 
   /**
-   * 可选 CASL Ability 覆盖注入。
-   * 默认自动从上下文 AbilityProvider (useOptionalAbility) 读取。
+   * 可选 Ability 覆盖注入。
+   * 默认自动从上下文 UiAbilityProvider (useUiAbility) 读取。
    */
-  readonly ability?: {
-    can(action: string, subject?: string, field?: string): boolean;
-  } | null;
+  readonly ability?: UiAbilityLike | null;
 
   // 布局控制与扩展插槽
   readonly columns?: 2 | 3 | 4;
@@ -276,8 +274,8 @@ export function FormModal<
     onClose?.();
   }, [getFreshValues, initialItems, onOpenChange, onClose]);
 
-  // 官方 CASL Ability 权限感知：优先取显式传入，未传取上层 AbilityProvider
-  const contextAbility = useOptionalAbility();
+  // Ability 权限感知：优先取显式传入，未传取上层 UI AbilityProvider
+  const contextAbility = useUiAbility();
   const effectiveAbility =
     explicitAbility === undefined ? contextAbility : explicitAbility;
   const writeAction = mode === "create" ? "create" : "update";

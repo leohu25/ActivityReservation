@@ -1,7 +1,7 @@
 "use client";
 
 import React, { type ReactNode } from "react";
-import { useOptionalAbility } from "@base/authorization";
+import { useUiAbility } from "../auth";
 import { Button } from "../../shadcn/button";
 import {
   Tooltip,
@@ -50,7 +50,7 @@ export function DataTableActionButton({
   ...props
 }: DataTableActionButtonProps) {
   const { subject: contextSubject } = useDataTableContext();
-  const ability = useOptionalAbility();
+  const ability = useUiAbility();
 
   const targetSubject = explicitSubject || contextSubject;
 
@@ -116,7 +116,7 @@ export function DataTableActions({
   className,
 }: DataTableActionsProps) {
   const { subject, isAnySelected, selectedKeys } = useDataTableContext();
-  const ability = useOptionalAbility();
+  const ability = useUiAbility();
 
   const can = (action: string, field?: string) => {
     // Fail-Closed：缺 ability/subject 一律拒绝，禁止无上下文放行

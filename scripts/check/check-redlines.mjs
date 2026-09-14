@@ -336,6 +336,36 @@ for (const pkg of workspacePackages) {
         });
       }
       if (
+        pkg.name === "@base/ui" &&
+        (importedPkg === "@base/authorization" ||
+          importedPkg === "@base/biz-shared" ||
+          importedPkg === "@base/auth" ||
+          importedPkg.startsWith("@base/db-"))
+      ) {
+        violations.push({
+          file: relPath,
+          line: 1,
+          rule: `架构分层违规：@base/ui 处于纯视觉/交互地基，严禁直接依赖 [${importedPkg}] (必须通过 UiAbilityContext 抽象控制反转注入)`,
+          code: `import from "${importedPkg}"`,
+        });
+      }
+      if (pkg.name === "@base/shared" && importedPkg.startsWith("@base/")) {
+        violations.push({
+          file: relPath,
+          line: 1,
+          rule: `架构分层违规：@base/shared 处于最底层纯工具/契约地基，严禁依赖工作区包 [${importedPkg}]`,
+          code: `import from "${importedPkg}"`,
+        });
+      }
+      if (pkg.name === "@base/authorization" && importedPkg === "@base/ui") {
+        violations.push({
+          file: relPath,
+          line: 1,
+          rule: `架构分层违规：@base/authorization 安全横切面严禁反向依赖 @base/ui 视觉横切面 (两者保持正交零依赖)`,
+          code: `import from "${importedPkg}"`,
+        });
+      }
+      if (
         horizontalPlatformPackages.has(pkg.name) &&
         importedPkg.startsWith(featurePackagePrefix)
       ) {

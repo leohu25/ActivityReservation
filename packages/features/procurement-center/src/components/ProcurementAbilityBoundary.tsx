@@ -3,8 +3,10 @@
 import React from "react";
 import {
   TenantAbilityProvider,
+  createAbilityFromSnapshot,
   type AbilitySnapshot,
 } from "@base/authorization";
+import { UiAbilityProvider } from "@base/ui";
 import { ProcurementOrderSubject } from "../contracts";
 
 export interface ProcurementAbilityPermissions {
@@ -38,10 +40,14 @@ export function ProcurementAbilityBoundary({
     () => buildProcurementAbilitySnapshots(permissions),
     [permissions],
   );
+  const ability = React.useMemo(
+    () => createAbilityFromSnapshot(snapshots),
+    [snapshots],
+  );
 
   return (
     <TenantAbilityProvider snapshots={snapshots}>
-      {children}
+      <UiAbilityProvider ability={ability}>{children}</UiAbilityProvider>
     </TenantAbilityProvider>
   );
 }

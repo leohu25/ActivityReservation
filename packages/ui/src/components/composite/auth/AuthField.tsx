@@ -2,16 +2,13 @@
 
 import React, { cloneElement, isValidElement, useContext } from "react";
 import { FieldPolicy, type FieldAccessMode } from "@base/shared";
-import { useOptionalAbility } from "@base/authorization";
+import { useUiAbility, type UiAbilityLike } from "./ui-ability-context";
 import { Field, FieldLabel } from "../../shadcn/field";
 import { Badge } from "../../shadcn/badge";
 import { DataTableContext } from "../table/DataTableContext";
 
 export type { FieldAccessMode } from "@base/shared";
-
-export interface AbilityLike {
-  can(action: string, subject: string, field?: string): boolean;
-}
+export type AbilityLike = UiAbilityLike;
 
 export interface AuthFieldProps {
   /** CASL Ability；未传则读 AbilityProvider（官方范式） */
@@ -85,9 +82,10 @@ export function AuthField({
   className,
 }: AuthFieldProps) {
   const tableContext = useContext(DataTableContext);
-  const caslAbility = useOptionalAbility();
+  const contextAbility = useUiAbility();
 
-  const ability = explicitAbility === undefined ? caslAbility : explicitAbility;
+  const ability =
+    explicitAbility === undefined ? contextAbility : explicitAbility;
   const subject = explicitSubject || tableContext?.subject || "";
 
   const resolvedMode = deriveFieldMode(ability, subject, field, action, mode);

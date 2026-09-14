@@ -1,8 +1,12 @@
+"use client";
+
 import React from "react";
 import {
   TenantAbilityProvider,
+  createAbilityFromSnapshot,
   type AbilitySnapshot,
 } from "@base/authorization";
+import { UiAbilityProvider } from "@base/ui";
 import { SalesOrderSubject } from "../../features/sales-order/contract";
 
 export interface OrderAbilityPermissions {
@@ -35,10 +39,14 @@ export function OrderAbilityBoundary({
     () => buildOrderAbilitySnapshots(permissions),
     [permissions],
   );
+  const ability = React.useMemo(
+    () => createAbilityFromSnapshot(snapshots),
+    [snapshots],
+  );
 
   return (
     <TenantAbilityProvider snapshots={snapshots}>
-      {children}
+      <UiAbilityProvider ability={ability}>{children}</UiAbilityProvider>
     </TenantAbilityProvider>
   );
 }

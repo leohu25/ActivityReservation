@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
 import { renderToString } from "react-dom/server";
-import { TenantAbilityProvider } from "@base/authorization";
+import {
+  TenantAbilityProvider,
+  createAbilityFromSnapshot,
+} from "@base/authorization";
+import { UiAbilityProvider } from "@base/ui";
 import {
   ProcurementOrderStatus,
   procurementOrderPageContract,
@@ -37,45 +41,47 @@ function renderCenter(
   if (!permissions) {
     return renderToString(ui);
   }
+  const snapshots = {
+    subject: procurementOrderPageContract.subject,
+    actions: permissions.actions,
+    fieldPolicies: permissions.fieldPolicies,
+  };
+  const ability = createAbilityFromSnapshot(snapshots);
   return renderToString(
-    <TenantAbilityProvider
-      snapshots={{
-        subject: procurementOrderPageContract.subject,
-        actions: permissions.actions,
-        fieldPolicies: permissions.fieldPolicies,
-      }}
-    >
-      {ui}
+    <TenantAbilityProvider snapshots={snapshots}>
+      <UiAbilityProvider ability={ability}>{ui}</UiAbilityProvider>
     </TenantAbilityProvider>,
   );
 }
 
 test("ProcurementOrderCenter 依据 fieldVisibility 对 HIDDEN 字段直接移除整列且不渲染掩码", () => {
+  const snapshots = {
+    subject: procurementOrderPageContract.subject,
+    actions: ["read"],
+    fieldPolicies: {},
+  };
+  const ability = createAbilityFromSnapshot(snapshots);
   const html = renderToString(
-    <TenantAbilityProvider
-      snapshots={{
-        subject: procurementOrderPageContract.subject,
-        actions: ["read"],
-        fieldPolicies: {},
-      }}
-    >
-      <ProcurementOrderCenter
-        orders={[order]}
-        sqlWhere={{ deptId: "dept_root" }}
-        activeOrgId="org_test"
-        departmentName="采购部"
-        canCreate={false}
-        canExport={false}
-        fieldVisibility={{
-          orderNo: false,
-          supplierName: false,
-          quantity: true,
-          costPrice: false,
-          status: true,
-          auditComment: false,
-        }}
-        currentUserId="user_viewer"
-      />
+    <TenantAbilityProvider snapshots={snapshots}>
+      <UiAbilityProvider ability={ability}>
+        <ProcurementOrderCenter
+          orders={[order]}
+          sqlWhere={{ deptId: "dept_root" }}
+          activeOrgId="org_test"
+          departmentName="采购部"
+          canCreate={false}
+          canExport={false}
+          fieldVisibility={{
+            orderNo: false,
+            supplierName: false,
+            quantity: true,
+            costPrice: false,
+            status: true,
+            auditComment: false,
+          }}
+          currentUserId="user_viewer"
+        />
+      </UiAbilityProvider>
     </TenantAbilityProvider>,
   );
 

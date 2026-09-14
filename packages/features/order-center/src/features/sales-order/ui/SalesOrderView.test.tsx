@@ -2,7 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToString } from "react-dom/server";
-import { TenantAbilityProvider } from "@base/authorization";
+import {
+  TenantAbilityProvider,
+  createAbilityFromSnapshot,
+} from "@base/authorization";
+import { UiAbilityProvider } from "@base/ui";
 import { SalesOrderView } from "./SalesOrderView";
 import { salesOrderPageContract, SalesOrderAction } from "../contract";
 import type { SalesOrderListItem } from "../types";
@@ -37,15 +41,16 @@ function renderSalesOrderView(
     fieldPolicies?: Readonly<Record<string, string>>;
   },
 ) {
+  const snapshots = {
+    subject: salesOrderPageContract.subject,
+    actions: permissions.actions,
+    fieldPolicies: permissions.fieldPolicies,
+  };
+  const ability = createAbilityFromSnapshot(snapshots);
+
   return renderToString(
-    <TenantAbilityProvider
-      snapshots={{
-        subject: salesOrderPageContract.subject,
-        actions: permissions.actions,
-        fieldPolicies: permissions.fieldPolicies,
-      }}
-    >
-      {ui}
+    <TenantAbilityProvider snapshots={snapshots}>
+      <UiAbilityProvider ability={ability}>{ui}</UiAbilityProvider>
     </TenantAbilityProvider>,
   );
 }

@@ -697,9 +697,6 @@ importers:
 
   packages/ui:
     dependencies:
-      '@base/authorization':
-        specifier: workspace:*
-        version: link:../authorization
       '@base/shared':
         specifier: workspace:*
         version: link:../shared

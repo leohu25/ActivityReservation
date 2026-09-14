@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { AbilityContext } from "@base/authorization";
+import { UiAbilityProvider, type UiAbilityLike } from "../auth";
 import { Card } from "../../shadcn/card";
 import {
   DataTableContext,
@@ -27,12 +27,10 @@ export interface DataTableRootProps<TData> {
   /** 业务实体 Subject；Ability 一律来自 AbilityProvider（或下方 ability 测试/注入入口） */
   subject?: string;
   /**
-   * 可选：直接注入 CASL Ability 实例（测试或非 Provider 场景）。
-   * 生产页面优先在上层使用 TenantAbilityProvider。
+   * 可选：直接注入 Ability 实例（测试或独立注入场景）。
+   * 生产页面优先在上层使用 AbilityProvider。
    */
-  ability?: {
-    can(action: string, subject?: string, field?: string): boolean;
-  };
+  ability?: UiAbilityLike | null;
   /**
    * 一体化白卡容器。默认 true：
    * 渲染 `bg-card border shadow-xs rounded-xl`，将标题/筛选/表格/分页整合为一体化操作容器。
@@ -277,12 +275,10 @@ export function DataTableRoot<TData>({
     </DataTableContext.Provider>
   );
 
-  // 官方范式：显式 ability 时经 AbilityProvider 下发，下游统一 useOptionalAbility
+  // 显式 ability 时经 UiAbilityProvider 下发，下游统一读取 UI 上下文
   if (explicitAbility) {
     return (
-      <AbilityContext value={explicitAbility as never}>
-        {content}
-      </AbilityContext>
+      <UiAbilityProvider ability={explicitAbility}>{content}</UiAbilityProvider>
     );
   }
 
@@ -291,4 +287,3 @@ export function DataTableRoot<TData>({
 
 export const TableRoot = DataTableRoot;
 export type TableRootProps<TData> = DataTableRootProps<TData>;
-

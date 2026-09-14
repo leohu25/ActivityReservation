@@ -71,7 +71,51 @@ test("redline rejects horizontal platform package depending on Feature", async (
   assert.notEqual(result.status, 0);
   assert.match(
     result.stderr,
-    /Horizontal Shared \/ Platform Module 禁止反向依赖业务 Feature/,
+    /架构分层违规：@base\/shared 处于最底层纯工具\/契约地基/,
+  );
+});
+
+test("redline rejects @base/ui depending on @base/authorization", async () => {
+  const result = await runFixture({
+    "packages/ui/package.json": JSON.stringify({
+      name: "@base/ui",
+      dependencies: { "@base/authorization": "workspace:*" },
+    }),
+    "packages/ui/src/index.ts":
+      'import { useOptionalAbility } from "@base/authorization";\nexport { useOptionalAbility };\n',
+    "packages/authorization/package.json": JSON.stringify({
+      name: "@base/authorization",
+    }),
+    "packages/authorization/src/index.ts":
+      "export const useOptionalAbility = () => null;\n",
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.match(
+    result.stderr,
+    /架构分层违规：@base\/ui 处于纯视觉\/交互地基，严禁直接依赖 \[@base\/authorization\]/,
+  );
+});
+
+test("redline rejects @base/authorization depending on @base/ui", async () => {
+  const result = await runFixture({
+    "packages/authorization/package.json": JSON.stringify({
+      name: "@base/authorization",
+      dependencies: { "@base/ui": "workspace:*" },
+    }),
+    "packages/authorization/src/index.ts":
+      'import { UiAbilityProvider } from "@base/ui";\nexport { UiAbilityProvider };\n',
+    "packages/ui/package.json": JSON.stringify({
+      name: "@base/ui",
+    }),
+    "packages/ui/src/index.ts":
+      "export const UiAbilityProvider = () => null;\n",
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.match(
+    result.stderr,
+    /架构分层违规：@base\/authorization 安全横切面严禁反向依赖 @base\/ui/,
   );
 });
 
@@ -114,8 +158,5 @@ test("redline rejects raw active/disabled status magic strings in business code"
   });
 
   assert.notEqual(result.status, 0);
-  assert.match(
-    result.stderr,
-    /严禁在业务代码中裸写主数据启停状态魔法值/,
-  );
+  assert.match(result.stderr, /严禁在业务代码中裸写主数据启停状态魔法值/);
 });

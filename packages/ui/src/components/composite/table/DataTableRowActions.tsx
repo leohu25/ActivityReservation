@@ -2,7 +2,7 @@
 
 import React, { type ReactNode, useState } from "react";
 import { MoreHorizontal, Eye, Edit2, Trash2 } from "lucide-react";
-import { useOptionalAbility } from "@base/authorization";
+import { useUiAbility } from "../auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -94,7 +94,7 @@ export function DataTableRowActions<TRecord>({
   className,
 }: DataTableRowActionsProps<TRecord>) {
   const { subject } = useDataTableContext();
-  const ability = useOptionalAbility();
+  const ability = useUiAbility();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [activeConfirmAction, setActiveConfirmAction] =
     useState<RowActionItem<TRecord> | null>(null);

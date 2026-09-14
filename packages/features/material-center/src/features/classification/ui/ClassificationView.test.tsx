@@ -2,7 +2,11 @@ import * as React from "react";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { renderToString } from "react-dom/server";
-import { TenantAbilityProvider } from "@base/authorization";
+import {
+  TenantAbilityProvider,
+  createAbilityFromSnapshot,
+} from "@base/authorization";
+import { UiAbilityProvider } from "@base/ui";
 import { ClassificationView } from "./ClassificationView";
 import { ItemCategorySubject, ItemVarietySubject } from "../contract";
 
@@ -24,7 +28,9 @@ test("ClassificationView 权限门禁：普通成员无 create 权限时，DataT
 
   const readOnlyHtml = renderToString(
     <TenantAbilityProvider snapshots={readOnlySnapshots}>
-      <ClassificationView initialCategories={[]} initialVarieties={[]} />
+      <UiAbilityProvider ability={createAbilityFromSnapshot(readOnlySnapshots)}>
+        <ClassificationView initialCategories={[]} initialVarieties={[]} />
+      </UiAbilityProvider>
     </TenantAbilityProvider>,
   );
 
@@ -45,7 +51,9 @@ test("ClassificationView 权限门禁：普通成员无 create 权限时，DataT
 
   const fullHtml = renderToString(
     <TenantAbilityProvider snapshots={fullSnapshots}>
-      <ClassificationView initialCategories={[]} initialVarieties={[]} />
+      <UiAbilityProvider ability={createAbilityFromSnapshot(fullSnapshots)}>
+        <ClassificationView initialCategories={[]} initialVarieties={[]} />
+      </UiAbilityProvider>
     </TenantAbilityProvider>,
   );
 

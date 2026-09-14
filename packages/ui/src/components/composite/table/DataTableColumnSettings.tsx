@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import * as React from "react";
 import { Columns3 } from "lucide-react";
 import { Button } from "../../shadcn/button";
 import { Checkbox } from "../../shadcn/checkbox";
@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../shadcn/dropdown-menu";
-import { useOptionalAbility } from "@base/authorization";
+import { useUiAbility } from "../auth";
 import { useDataTableContext } from "./DataTableContext";
 import { cn } from "../../../lib/utils";
 
@@ -40,17 +40,17 @@ export function DataTableColumnSettings({
     resetColumnVisibility,
     subject,
   } = useDataTableContext();
-  const ability = useOptionalAbility();
+  const ability = useUiAbility();
 
   // 字段级 HIDDEN 列不进入面板
-  const panelColumns = useMemo(() => {
+  const panelColumns = React.useMemo(() => {
     return columns.filter((col) => {
       if (!col.field || !ability || !subject) return true;
       return ability.can("read", subject, col.field);
     });
   }, [columns, ability, subject]);
 
-  const visibleCount = useMemo(() => {
+  const visibleCount = React.useMemo(() => {
     return panelColumns.filter((col) => visibleColumnIds.has(col.id)).length;
   }, [panelColumns, visibleColumnIds]);
 
@@ -91,7 +91,7 @@ export function DataTableColumnSettings({
               const checked = visibleColumnIds.has(col.id);
               const locked = Boolean(col.lockVisible);
               return (
-                <label
+                <div
                   key={col.id}
                   className={cn(
                     "flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-muted/60",
@@ -99,6 +99,7 @@ export function DataTableColumnSettings({
                   )}
                 >
                   <Checkbox
+                    id={`col-${col.id}`}
                     checked={checked}
                     disabled={locked}
                     onCheckedChange={() => {
@@ -106,15 +107,18 @@ export function DataTableColumnSettings({
                     }}
                     aria-label={`切换列 ${col.id}`}
                   />
-                  <span className="truncate text-foreground">
+                  <label
+                    htmlFor={`col-${col.id}`}
+                    className="truncate text-foreground cursor-pointer"
+                  >
                     {typeof col.header === "string" ? col.header : col.id}
-                  </span>
+                  </label>
                   {locked ? (
                     <span className="ml-auto text-[10px] text-muted-foreground">
                       锁定
                     </span>
                   ) : null}
-                </label>
+                </div>
               );
             })}
           </DropdownMenuGroup>
@@ -126,4 +130,3 @@ export function DataTableColumnSettings({
 
 export const TableColumnSettings = DataTableColumnSettings;
 export type TableColumnSettingsProps = DataTableColumnSettingsProps;
-

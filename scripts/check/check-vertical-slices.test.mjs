@@ -36,6 +36,8 @@ function createValidFeatureFiles(pkgDir = "packages/features/demo-feature") {
     [`${pkgDir}/src/catalog.ts`]: "export const demoCatalog = {};\n",
     [`${pkgDir}/src/shared/server/context.ts`]:
       "export const getContext = () => {};\n",
+    [`${pkgDir}/src/shared/ui/DemoAbilityBoundary.tsx`]:
+      '"use client";\nexport function DemoAbilityBoundary() { return null; }\n',
     [`${pkgDir}/src/shared/public.ts`]:
       "export const SharedBoundary = () => null;\n",
     [`${pkgDir}/src/features/order-management/contract.ts`]:
@@ -233,5 +235,41 @@ test("checkVerticalSlices: rejects slice directly importing sibling slice privat
     );
   } finally {
     await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("checkVerticalSlices: rejects AbilityBoundary missing 'use client' or invalid export name", async () => {
+  const filesMissingClient = createValidFeatureFiles();
+  filesMissingClient[
+    "packages/features/demo-feature/src/shared/ui/DemoAbilityBoundary.tsx"
+  ] = "export function DemoAbilityBoundary() { return null; }\n";
+
+  const root1 = await createFixture(filesMissingClient);
+  try {
+    const { violations } = checkVerticalSlices(root1);
+    assert(
+      violations.some(
+        (v) =>
+          v.rule.includes('missing "use client"') ||
+          v.code.includes('missing "use client"'),
+      ),
+    );
+  } finally {
+    await rm(root1, { recursive: true, force: true });
+  }
+
+  const filesBadName = createValidFeatureFiles();
+  filesBadName[
+    "packages/features/demo-feature/src/shared/ui/DemoAbilityBoundary.tsx"
+  ] = '"use client";\nexport function WrongBoundaryName() { return null; }\n';
+
+  const root2 = await createFixture(filesBadName);
+  try {
+    const { violations } = checkVerticalSlices(root2);
+    assert(
+      violations.some((v) => v.rule.includes("*AbilityBoundary 统一语义规范")),
+    );
+  } finally {
+    await rm(root2, { recursive: true, force: true });
   }
 });

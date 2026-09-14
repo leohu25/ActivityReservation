@@ -2,17 +2,15 @@ export * from "./lib/utils";
 export { useSafeRouter } from "./lib/use-safe-router";
 export { useListUrlNav, type ListUrlPatch } from "./lib/use-list-url-nav";
 export { useIsMobile } from "./hooks/use-mobile";
-// 官方 CASL 客户端范式（AbilityProvider / Can / useAbility）
+// 纯 UI 抽象权限上下文（与具体鉴权框架解耦）
 export {
-  TenantAbilityProvider,
-  useOptionalAbility,
-  useSubjectCan,
-  createAbilityFromSnapshot,
-  AbilityContext,
-  Can,
-  useAbility,
-  type AbilitySnapshot,
-} from "@base/authorization";
+  UiAbilityProvider,
+  useUiAbility,
+  type UiAbilityLike,
+  type UiAbilityProviderProps,
+} from "./components/composite/auth";
+/** @deprecated 请使用 useUiAbility 替代，以保持 UI 库与鉴权引擎解耦 */
+export { useUiAbility as useOptionalAbility } from "./components/composite/auth";
 // 1 shadcn 层
 export * from "./components/shadcn";
 // 2 组件层

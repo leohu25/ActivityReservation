@@ -1,8 +1,12 @@
+"use client";
+
 import React from "react";
 import {
   TenantAbilityProvider,
+  createAbilityFromSnapshot,
   type AbilitySnapshot,
 } from "@base/authorization";
+import { UiAbilityProvider } from "@base/ui";
 import {
   ItemCategorySubject,
   ItemGradeSubject,
@@ -121,10 +125,14 @@ export function MaterialAbilityBoundary({
     () => buildMaterialAbilitySnapshots(permissions),
     [permissions],
   );
+  const ability = React.useMemo(
+    () => createAbilityFromSnapshot(snapshots),
+    [snapshots],
+  );
 
   return (
     <TenantAbilityProvider snapshots={snapshots}>
-      {children}
+      <UiAbilityProvider ability={ability}>{children}</UiAbilityProvider>
     </TenantAbilityProvider>
   );
 }

@@ -12,7 +12,7 @@ import {
 } from "../../shadcn/table";
 import { Checkbox } from "../../shadcn/checkbox";
 import { Card } from "../../shadcn/card";
-import { useOptionalAbility } from "@base/authorization";
+import { useUiAbility } from "../auth";
 import { EmptyState } from "../../feedback/EmptyState";
 import { useDataTableContext } from "./DataTableContext";
 import { cn } from "../../../lib/utils";
@@ -55,7 +55,7 @@ export function DataTableContent<TData = any>({
     pageSize = pageData.length || 10,
     subject,
   } = useDataTableContext<TData>();
-  const ability = useOptionalAbility();
+  const ability = useUiAbility();
 
   // CASL 字段 HIDDEN + 用户列设置 visibleColumnIds 双重过滤
   const visibleColumns = useMemo(() => {
@@ -223,4 +223,3 @@ export function DataTableContent<TData = any>({
 
 export const TableContent = DataTableContent;
 export type TableContentProps<TData> = DataTableContentProps<TData>;
-
