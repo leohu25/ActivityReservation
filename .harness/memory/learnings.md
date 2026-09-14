@@ -139,6 +139,7 @@
   1. **全仓禁止 `export enum`**：
      - 所有常量状态、类型、字典必须 100% 使用 `as const` 常量对象声明；
      - 借助 `typeof + keyof` 语法一行自动推导开放的字面量联合类型：
+
        ```ts
        export const FieldPolicy = {
          HIDDEN: "HIDDEN",
@@ -147,6 +148,7 @@
        } as const;
        export type FieldPolicy = (typeof FieldPolicy)[keyof typeof FieldPolicy];
        ```
+
   2. **开放联合类型的优势**：
      - 运行时是纯粹干净的 JavaScript 对象（可直接调用 `Object.values()` 供给下拉框或循环）；
      - 编译后无多余 IIFE 胶水，零运行时包袱；
@@ -162,6 +164,7 @@
      - 在业务切片共享层集中导出由各契约推导出的精准 Subject 与 Action 联合类型（如 `MaterialSubject`、`MaterialAction`）；
   2. **守卫函数入参强制绑定**：
      - 鉴权守卫函数入参严禁写 `string`，必须直接使用领域联合类型：
+
        ```ts
        export function assertMaterialAbility(
          ability: AppAbility<string, string>,
@@ -171,6 +174,7 @@
          ForbiddenError.from(ability).throwUnlessCan(action, subject);
        }
        ```
+
   3. **静态门禁机械化兜底**：
      - `scripts/check/check-permission-contracts.mjs` 中内置 AST/正则静态拦截，一旦检测到任何 `assert*Ability` 守卫函数将 `action` 或 `subject` 声明为 `string`，提交门禁直接报错阻断！
 
@@ -188,3 +192,32 @@
   3. **数据幂等与容错自愈**：
      - 在编排器支持快速选择预设工序模板时，服务端 Action 必须具备防击穿逻辑：若数据库无历史主数据则自动建档补充，防止因外键约束崩溃导致用户无法保存业务数据。
 
+## 15. 数据库基线演化与本地缓存诊断自愈规范 (Database Baseline & Turbopack Cache SOP)
+
+- **痛点复盘**：
+  - 代码提交将数据库基线版本重命名/收敛（如从 `20260910141042` 改为 `20260913144500`），但本地已初始化的开发库中 `platform_migration` 账本仍记录旧版本号；
+  - 本地启动 `pnpm run dev:control` 时触发 `@base/db-migrate ensure-platform` 报 `Platform database is non-empty but incomplete; missing tables: baseline ledger`；
+  - 修复数据库基线版本后，Next.js Turbopack（`.next/dev/cache`）残留旧代码缓存（如已废弃的旧 `instrumentation.ts`），导致启动时依然报旧的校验错误。
+- **解法与自动化处置 SOP (Invariant)**：
+  1. **基线版本漂移识别**：
+     - 当报 `missing tables: baseline ledger` 时，先比对代码中 `baseline.version` 与本地数据库 `platform_migration` 账本中的 `version`；
+     - 若 SQL 内容与 SHA256 Checksum 一致，仅版本标识不同，可安全执行 `UPDATE platform_migration SET version = '<new_version>' WHERE migration_name = 'baseline';` 对齐。
+  2. **Turbopack 编译脏缓存清理**：
+     - Next.js 16 (Turbopack) 会持久化缓存 server runtime bundle；在修改底层 DB 协议、移除全局 instrumentation 或重构依赖后，需清理 `.next` 缓存目录（`rm -rf apps/<app>/.next`）。
+  3. **智能体操作铁律（必须事先跟用户确认）**：
+     - **严禁静默修改数据库或静默清理缓存**；
+     - 当诊断出该类问题时，智能体必须**明确向用户展示诊断依据（当前版本 vs 目标版本）、即将执行的 SQL/命令及影响范围，待用户明确确认后方可执行**。
+
+## 16. 暗色模式 (Dark Mode) 语义设计令牌与权限门禁防错规范 (Dark Mode & AuthGuard Invariant)
+
+- **痛点复盘**：
+  1. **暗色模式“白块”突兀**：部分卡片与表格手写了 `bg-slate-50`、`border-slate-200`、`text-slate-700` 等绝对浅色/灰色类名，绕过了 `--muted`、`--border`、`--foreground` 等设计令牌，在深色底色（Dark Mode）下泛出突兀刺眼的白底白边，文字对比度严重失衡；
+  2. **“后端拦截了但前端按钮可见”的脱节现象**：页面组件顶部的“添加/新建/编排”按钮脱离了 `DataTable` 容器，直接手写裸 `<form>` 或 `<Button>` 渲染在页面上，既未传入 DataTable 的 `subject`，又未包裹 `<AuthGuard>`。当没有写权限的普通成员登录时，前端依然渲染了新建按钮，用户点击后被后端的 CASL Server Action 硬拦截并报错 `Cannot execute "create" on ...`，用户体验极其粗糙割裂。
+- **解法与铁律 (Tokens & AuthGuard Standard)**：
+  1. **100% 杜绝硬编码浅灰色**：
+     - 严禁在页面卡片、弹窗或容器上写 `bg-slate-50`、`border-slate-100`，统一使用 `bg-muted/30`、`border-border`、`bg-card`、`bg-background`；
+     - 状态徽章与带色彩小块必须具备透明度阶梯与暗色适配，如 `bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20`；
+  2. **双轨权限消费法则 (DataTable vs AuthGuard)**：
+     - **规则 A（使用标准模板 DataTable）**：必须显式传入对应实体的 `subject={XxxSubject}`。DataTable 内部的工具栏（新建、导出、批量动作）及数据列会自动继承该上下文，无权限时自动 Fail-Closed 隐藏对应动作；
+     - **规则 B（脱离 DataTable 的自定义按钮/表单）**：凡是在表格之外自定义渲染的写入/破坏性 UI 入口（如页面右上角“新建”、看板“编排 BOM”、快捷新增输入表单等），**必须强制使用 `<AuthGuard subject={XxxSubject} action={StandardAction.CREATE}>` 进行包裹**；
+     - **规则 C（对齐自动化单测）**：每个包含受控入口的页面必须编写 `<Page>View.test.tsx`，分别注入“只读权限快照”与“完整权限快照”，机械化断言无权限时入口 100% 自动隐藏、有权限时正常呈现。

@@ -1,26 +1,35 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Button, Badge, toast } from "@base/ui";
+import {
+  Button,
+  Badge,
+  Input,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  toast,
+} from "@base/ui";
 import {
   Plus,
   Trash2,
-  Clock,
   Sparkles,
   Layers,
-  ArrowRight,
   Package,
   Wrench,
   CheckCircle2,
-  AlertCircle,
   X,
 } from "lucide-react";
 import type {
   BomListItem,
   ProcessTemplateItem,
   CreateBomProcessInput,
-  ProcessInputItem,
-  ProcessOutputItem,
 } from "../types";
 import { createBomAction } from "../actions";
 
@@ -487,18 +496,21 @@ export function BomFlowEditorModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-      <div className="bg-background border border-slate-200 rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent
+        showCloseButton={false}
+        className="max-w-5xl! w-full max-h-[92vh] flex flex-col p-0 overflow-hidden rounded-2xl border border-border shadow-2xl bg-background"
+      >
         {/* 对话框头部 */}
-        <div className="flex justify-between items-center border-b border-slate-100 px-6 py-4 bg-slate-50/50">
+        <div className="flex justify-between items-center border-b border-border px-6 py-4 bg-muted/30">
           <div>
-            <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+            <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
               <Layers className="w-5 h-5 text-primary" />
               工艺 BOM 编排设计器 (BOM Flow Editor)
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground mt-0.5">
               按先后时序编排加工工序、原料投料明细与各环节产出，自动核算综合出成率并点亮流程图
-            </p>
+            </DialogDescription>
           </div>
           <Button
             variant="ghost"
@@ -516,8 +528,8 @@ export function BomFlowEditorModal({
           className="flex-1 overflow-y-auto p-6 space-y-6"
         >
           {/* 1. 基本信息卡片 */}
-          <div className="border border-slate-200 rounded-xl p-5 bg-card shadow-xs space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
+          <div className="border border-border rounded-xl p-5 bg-card shadow-xs space-y-4">
+            <div className="flex items-center gap-2 border-b border-border pb-2.5">
               <Package className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-bold text-foreground">
                 基础信息配置
@@ -543,11 +555,11 @@ export function BomFlowEditorModal({
                     重新生成
                   </Button>
                 </label>
-                <input
+                <Input
                   type="text"
                   value={bomCode}
                   onChange={(e) => setBomCode(e.target.value)}
-                  className="mt-1 w-full px-3 py-1.5 text-sm border rounded-lg bg-background font-mono"
+                  className="mt-1 font-mono text-sm"
                   placeholder="如 BOM-TDS-001"
                   required
                 />
@@ -558,18 +570,21 @@ export function BomFlowEditorModal({
                 <label className="text-xs font-semibold text-foreground">
                   交付产出商品 *
                 </label>
-                <select
+                <Select
                   value={outputItemCode}
-                  onChange={(e) => handleOutputItemChange(e.target.value)}
-                  className="mt-1 w-full px-3 py-1.5 text-sm border rounded-lg bg-background"
-                  required
+                  onValueChange={handleOutputItemChange}
                 >
-                  {items.map((i) => (
-                    <option key={i.itemCode} value={i.itemCode}>
-                      {i.itemName} ({i.itemCode})
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1 w-full text-sm">
+                    <SelectValue placeholder="选择产出商品" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {items.map((i) => (
+                      <SelectItem key={i.itemCode} value={i.itemCode}>
+                        {i.itemName} ({i.itemCode})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* BOM 名称 */}
@@ -577,11 +592,11 @@ export function BomFlowEditorModal({
                 <label className="text-xs font-semibold text-foreground">
                   BOM 描述名称 *
                 </label>
-                <input
+                <Input
                   type="text"
                   value={bomName}
                   onChange={(e) => setBomName(e.target.value)}
-                  className="mt-1 w-full px-3 py-1.5 text-sm border rounded-lg bg-background"
+                  className="mt-1 text-sm"
                   placeholder="如 土豆丝500g 标品工艺BOM"
                   required
                 />
@@ -618,24 +633,24 @@ export function BomFlowEditorModal({
                   <label className="text-xs font-semibold text-foreground">
                     基准批量
                   </label>
-                  <input
+                  <Input
                     type="number"
                     min="0.1"
                     step="0.1"
                     value={batchQty}
                     onChange={(e) => setBatchQty(Number(e.target.value))}
-                    className="mt-1 w-full px-3 py-1.5 text-sm border rounded-lg bg-background font-mono tabular-nums"
+                    className="mt-1 font-mono tabular-nums text-sm"
                   />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-foreground">
                     批量单位
                   </label>
-                  <input
+                  <Input
                     type="text"
                     value={batchUnit}
                     onChange={(e) => setBatchUnit(e.target.value)}
-                    className="mt-1 w-full px-3 py-1.5 text-sm border rounded-lg bg-background"
+                    className="mt-1 text-sm"
                     placeholder="kg / 份 / 包"
                   />
                 </div>
@@ -646,25 +661,31 @@ export function BomFlowEditorModal({
                 <label className="text-xs font-semibold text-foreground">
                   生产车间产线
                 </label>
-                <select
-                  value={productionLineId}
-                  onChange={(e) => setProductionLineId(e.target.value)}
-                  className="mt-1 w-full px-3 py-1.5 text-sm border rounded-lg bg-background"
+                <Select
+                  value={productionLineId || "NONE"}
+                  onValueChange={(val) =>
+                    setProductionLineId(val === "NONE" ? "" : val)
+                  }
                 >
-                  <option value="">未指定固定产线</option>
-                  {productionLines.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.lineName}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1 w-full text-sm">
+                    <SelectValue placeholder="未指定固定产线" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NONE">未指定固定产线</SelectItem>
+                    {productionLines.map((l) => (
+                      <SelectItem key={l.id} value={l.id}>
+                        {l.lineName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
 
           {/* 2. 工序流程步骤列表卡片 */}
-          <div className="border border-slate-200 rounded-xl p-5 bg-card shadow-xs space-y-4">
-            <div className="flex flex-wrap justify-between items-center gap-3 border-b border-slate-100 pb-3">
+          <div className="border border-border rounded-xl p-5 bg-card shadow-xs space-y-4">
+            <div className="flex flex-wrap justify-between items-center gap-3 border-b border-border pb-3">
               <div>
                 <div className="flex items-center gap-2">
                   <Wrench className="w-4 h-4 text-primary" />
@@ -706,8 +727,8 @@ export function BomFlowEditorModal({
             </div>
 
             {/* 人工覆盖选项 */}
-            <div className="flex items-center gap-3 bg-slate-50 border border-slate-100 p-2.5 rounded-lg text-xs">
-              <label className="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700">
+            <div className="flex items-center gap-3 bg-muted/40 border border-border p-2.5 rounded-lg text-xs">
+              <label className="flex items-center gap-1.5 cursor-pointer font-medium text-foreground">
                 <input
                   type="checkbox"
                   checked={overrideTotalYield}
@@ -719,7 +740,7 @@ export function BomFlowEditorModal({
               {overrideTotalYield && (
                 <div className="flex items-center gap-1">
                   <span className="text-muted-foreground">设定出成率:</span>
-                  <input
+                  <Input
                     type="number"
                     min="1"
                     max="100"
@@ -728,7 +749,7 @@ export function BomFlowEditorModal({
                     onChange={(e) =>
                       setCustomTotalYieldRate(Number(e.target.value))
                     }
-                    className="w-20 px-2 py-0.5 text-xs border rounded bg-background font-mono tabular-nums"
+                    className="w-20 h-7 text-xs font-mono tabular-nums text-center"
                   />
                   <span>%</span>
                 </div>
@@ -745,10 +766,10 @@ export function BomFlowEditorModal({
                 return (
                   <div
                     key={step.id}
-                    className="border border-slate-200/90 rounded-xl p-4 bg-background space-y-4 relative shadow-2xs hover:border-slate-300 transition-colors"
+                    className="border border-border rounded-xl p-4 bg-background space-y-4 relative shadow-2xs hover:border-primary/50 transition-colors"
                   >
                     {/* 工序头 */}
-                    <div className="flex flex-wrap justify-between items-center gap-3 border-b border-slate-100 pb-3">
+                    <div className="flex flex-wrap justify-between items-center gap-3 border-b border-border pb-3">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                           步骤 #{sIdx + 1}
@@ -818,7 +839,7 @@ export function BomFlowEditorModal({
                       <div className="flex items-center gap-4 text-xs">
                         <div className="flex items-center gap-1.5">
                           <span className="text-muted-foreground">损耗率:</span>
-                          <input
+                          <Input
                             type="number"
                             min="0"
                             max="100"
@@ -830,7 +851,7 @@ export function BomFlowEditorModal({
                                 Number(e.target.value),
                               )
                             }
-                            className="w-16 px-1.5 py-0.5 border rounded text-xs font-mono tabular-nums text-center"
+                            className="w-16 h-7 text-xs font-mono tabular-nums text-center"
                           />
                           <span>%</span>
                         </div>
@@ -839,7 +860,7 @@ export function BomFlowEditorModal({
                           <span className="text-emerald-700 font-medium">
                             出成率:
                           </span>
-                          <input
+                          <Input
                             type="number"
                             min="0"
                             max="100"
@@ -851,12 +872,14 @@ export function BomFlowEditorModal({
                                 Number(e.target.value),
                               )
                             }
-                            className="w-16 px-1.5 py-0.5 border rounded text-xs font-mono tabular-nums text-center font-bold text-emerald-700 bg-emerald-50/50"
+                            className="w-16 h-7 text-xs font-mono tabular-nums text-center font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10"
                           />
-                          <span className="text-emerald-700">%</span>
+                          <span className="text-emerald-700 dark:text-emerald-400">
+                            %
+                          </span>
                         </div>
 
-                        <label className="flex items-center gap-1 cursor-pointer text-slate-600">
+                        <label className="flex items-center gap-1 cursor-pointer text-muted-foreground">
                           <input
                             type="checkbox"
                             checked={step.qcCheckpoint}
@@ -879,7 +902,7 @@ export function BomFlowEditorModal({
                             type="button"
                             variant="ghost"
                             size="sm"
-                            className="text-destructive hover:bg-rose-50 h-7 px-2 cursor-pointer"
+                            className="text-destructive hover:bg-destructive/10 h-7 px-2 cursor-pointer"
                             onClick={() => handleRemoveStep(step.id)}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -891,9 +914,9 @@ export function BomFlowEditorModal({
                     {/* 投入与产出双列面板 */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* 投入原料 */}
-                      <div className="border border-slate-100 rounded-lg p-3 bg-slate-50/40 space-y-2">
+                      <div className="border border-border rounded-lg p-3 bg-muted/20 space-y-2">
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                          <span className="text-xs font-bold text-foreground flex items-center gap-1">
                             投入物料明细 (Inputs)
                           </span>
                           <Button
@@ -910,7 +933,7 @@ export function BomFlowEditorModal({
                         {step.inputs.map((inp) => (
                           <div
                             key={inp.id}
-                            className="flex items-center gap-2 bg-background p-2 border border-slate-200/80 rounded-md text-xs shadow-2xs"
+                            className="flex items-center gap-2 bg-background p-2 border border-border rounded-md text-xs shadow-2xs"
                           >
                             {/* 选择物料 */}
                             <select
@@ -933,7 +956,7 @@ export function BomFlowEditorModal({
                             </select>
 
                             {/* 数量 */}
-                            <input
+                            <Input
                               type="number"
                               min="0.001"
                               step="0.01"
@@ -946,12 +969,12 @@ export function BomFlowEditorModal({
                                   Number(e.target.value),
                                 )
                               }
-                              className="w-16 px-1.5 py-1 border rounded font-mono tabular-nums text-center"
+                              className="w-16 h-7 font-mono tabular-nums text-center text-xs"
                               placeholder="数量"
                             />
 
                             {/* 单位 */}
-                            <input
+                            <Input
                               type="text"
                               value={inp.uom}
                               onChange={(e) =>
@@ -962,7 +985,7 @@ export function BomFlowEditorModal({
                                   e.target.value,
                                 )
                               }
-                              className="w-12 px-1 py-1 border rounded text-center text-xs"
+                              className="w-14 h-7 text-center text-xs"
                               placeholder="单位"
                             />
 
@@ -1002,9 +1025,9 @@ export function BomFlowEditorModal({
                       </div>
 
                       {/* 工序产出 */}
-                      <div className="border border-slate-100 rounded-lg p-3 bg-slate-50/40 space-y-2">
+                      <div className="border border-border rounded-lg p-3 bg-muted/20 space-y-2">
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                          <span className="text-xs font-bold text-foreground flex items-center gap-1">
                             工序产出物料 (Outputs)
                           </span>
                           <Button
@@ -1021,7 +1044,7 @@ export function BomFlowEditorModal({
                         {step.outputs.map((out) => (
                           <div
                             key={out.id}
-                            className="flex items-center gap-2 bg-background p-2 border border-slate-200/80 rounded-md text-xs shadow-2xs"
+                            className="flex items-center gap-2 bg-background p-2 border border-border rounded-md text-xs shadow-2xs"
                           >
                             {/* 产出物料 */}
                             <select
@@ -1044,7 +1067,7 @@ export function BomFlowEditorModal({
                             </select>
 
                             {/* 数量 */}
-                            <input
+                            <Input
                               type="number"
                               min="0.001"
                               step="0.01"
@@ -1057,12 +1080,12 @@ export function BomFlowEditorModal({
                                   Number(e.target.value),
                                 )
                               }
-                              className="w-16 px-1.5 py-1 border rounded font-mono tabular-nums text-center"
+                              className="w-16 h-7 font-mono tabular-nums text-center text-xs"
                               placeholder="数量"
                             />
 
                             {/* 单位 */}
-                            <input
+                            <Input
                               type="text"
                               value={out.uom}
                               onChange={(e) =>
@@ -1073,7 +1096,7 @@ export function BomFlowEditorModal({
                                   e.target.value,
                                 )
                               }
-                              className="w-12 px-1 py-1 border rounded text-center text-xs"
+                              className="w-14 h-7 text-center text-xs"
                               placeholder="单位"
                             />
 
@@ -1136,7 +1159,7 @@ export function BomFlowEditorModal({
           </div>
 
           {/* 底部保存条 */}
-          <div className="flex flex-wrap justify-between items-center gap-3 border-t border-slate-100 pt-4">
+          <div className="flex flex-wrap justify-between items-center gap-3 border-t border-border pt-4">
             <div className="text-xs text-muted-foreground flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               <span>
@@ -1171,7 +1194,7 @@ export function BomFlowEditorModal({
             </div>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

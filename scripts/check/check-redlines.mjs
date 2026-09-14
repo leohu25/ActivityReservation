@@ -187,15 +187,23 @@ for (const filePath of allFiles) {
     });
   }
 
-  // 4.2 检查业务切片内手写裸 <table DOM 标签
-  // 规则红线 3：严禁手写裸 DOM 与原生非受控控件，切片界面必须 100% 使用 @base/ui (Table / DataTable / DetailTable)
+  // 4.2 检查业务切片内手写裸 DOM 标签 (table / select 等)
+  // 规则红线 3：严禁手写裸 DOM 与原生非受控控件，切片界面必须 100% 使用 @base/ui (Table / DataTable / DetailTable / Select / FormModal)
   if (!isTestFile && relPath.startsWith("packages/features/")) {
     lines.forEach((line, idx) => {
-      if (/<table[\s>]/.test(line)) {
+      if (/<table[\s>]/.test(line) && !line.includes("// redline-ignore")) {
         violations.push({
           file: relPath,
           line: idx + 1,
           rule: "严禁在业务切片内手写原生 <table> DOM (必须基于 @base/ui 的 Table / DataTable / DetailTable 套件开发)",
+          code: line.trim(),
+        });
+      }
+      if (/<select[\s>]/.test(line) && !line.includes("// redline-ignore")) {
+        violations.push({
+          file: relPath,
+          line: idx + 1,
+          rule: "严禁在业务切片内手写原生 <select> DOM (必须使用 @base/ui Select 组件或 FormModal 声明式字段)",
           code: line.trim(),
         });
       }

@@ -84,7 +84,7 @@ export default async function BomDetailPage({ params }: BomDetailPageProps) {
   return (
     <div className="space-y-6">
       {/* 顶部导航与面包屑 */}
-      <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+      <div className="flex items-center justify-between border-b border-border pb-4">
         <div className="flex items-center gap-3">
           <Link href="/materials/boms">
             <Button
@@ -139,7 +139,7 @@ export default async function BomDetailPage({ params }: BomDetailPageProps) {
       />
 
       {/* 工序明细详表 */}
-      <div className="border border-slate-200 rounded-xl p-5 bg-card shadow-xs space-y-4">
+      <div className="border border-border rounded-xl p-5 bg-card shadow-xs space-y-4">
         <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
           <Clock className="w-4 h-4 text-primary" />
           工序分步投入产出结构清单
@@ -154,9 +154,9 @@ export default async function BomDetailPage({ params }: BomDetailPageProps) {
             {dagProcesses.map((proc: DagProcess) => (
               <div
                 key={proc.seqNo}
-                className="border border-slate-100 rounded-lg p-4 bg-slate-50/50 space-y-3"
+                className="border border-border rounded-lg p-4 bg-muted/20 space-y-3"
               >
-                <div className="flex justify-between items-center border-b border-slate-200/60 pb-2">
+                <div className="flex justify-between items-center border-b border-border pb-2">
                   <div className="flex items-center gap-2">
                     <span className="font-mono font-bold text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                       步骤 #{proc.seqNo}
@@ -171,7 +171,7 @@ export default async function BomDetailPage({ params }: BomDetailPageProps) {
                     )}
                   </div>
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 tabular-nums">
+                    <span className="font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 tabular-nums">
                       出成率: {proc.yieldRate}%
                     </span>
                     <span className="text-muted-foreground tabular-nums">
@@ -182,14 +182,14 @@ export default async function BomDetailPage({ params }: BomDetailPageProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                   {/* 投入 */}
-                  <div className="bg-background border rounded-md p-2.5 space-y-1.5">
-                    <div className="font-semibold text-slate-700 text-[11px] uppercase">
+                  <div className="bg-background border border-border rounded-md p-2.5 space-y-1.5">
+                    <div className="font-semibold text-foreground text-[11px] uppercase">
                       本步投入物料 ({proc.inputs.length})
                     </div>
                     {proc.inputs.map((inp, idx: number) => (
                       <div
                         key={idx}
-                        className="flex justify-between items-center py-1 border-b border-slate-50 last:border-0"
+                        className="flex justify-between items-center py-1 border-b border-border/50 last:border-0"
                       >
                         <span className="font-mono">{inp.itemCode}</span>
                         <span className="font-semibold tabular-nums">
@@ -200,14 +200,14 @@ export default async function BomDetailPage({ params }: BomDetailPageProps) {
                   </div>
 
                   {/* 产出 */}
-                  <div className="bg-background border rounded-md p-2.5 space-y-1.5">
-                    <div className="font-semibold text-slate-700 text-[11px] uppercase">
+                  <div className="bg-background border border-border rounded-md p-2.5 space-y-1.5">
+                    <div className="font-semibold text-foreground text-[11px] uppercase">
                       本步产出物料 ({proc.outputs.length})
                     </div>
                     {proc.outputs.map((out, idx: number) => (
                       <div
                         key={idx}
-                        className="flex justify-between items-center py-1 border-b border-slate-50 last:border-0 text-primary"
+                        className="flex justify-between items-center py-1 border-b border-border/50 last:border-0 text-primary"
                       >
                         <span className="font-mono">{out.itemCode}</span>
                         <span className="font-bold tabular-nums">

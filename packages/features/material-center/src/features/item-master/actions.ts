@@ -6,10 +6,7 @@ import {
         getTenantMaterialContext,
         assertMaterialAbility,
 } from "../../assembly/context";
-import {
-        ItemMasterSubject,
-        ItemMasterAction,
-      } from "./contract";
+import { ItemMasterSubject, ItemMasterAction } from "./contract";
 
 export const createItemMasterAction = defineServerAction(
         async (input: {
@@ -113,5 +110,95 @@ export const toggleItemStatusAction = defineServerAction(
                 });
 
                 return toPlainData(updated);
+        },
+);
+
+export const updateItemMasterAction = defineServerAction(
+        async (input: {
+                id: string;
+                itemName?: string;
+                itemAlias?: string | null;
+                itemCategory?:
+                        | "RAW"
+                        | "SEMI_FINISHED"
+                        | "FINISHED"
+                        | "PACKAGING";
+                categoryId?: string;
+                varietyId?: string | null;
+                supplyMode?: "PURCHASE" | "MANUFACTURE" | "HYBRID";
+                baseUnit?: string;
+                purchaseUnit?: string;
+                salesUnit?: string | null;
+                status?: "ACTIVE" | "DISCONTINUED" | "OBSOLETE";
+        }) => {
+                const { client, ability, userId } =
+                        await getTenantMaterialContext();
+                assertMaterialAbility(
+                        ability,
+                        StandardAction.UPDATE,
+                        ItemMasterSubject,
+                );
+
+                const updated = await (client as any).itemMaster.update({
+                        where: { id: input.id },
+                        data: {
+                                ...(input.itemName
+                                        ? { itemName: input.itemName.trim() }
+                                        : {}),
+                                ...(input.itemAlias === undefined
+                                        ? {}
+                                        : { itemAlias: input.itemAlias }),
+                                ...(input.itemCategory
+                                        ? { itemCategory: input.itemCategory }
+                                        : {}),
+                                ...(input.categoryId
+                                        ? { categoryId: input.categoryId }
+                                        : {}),
+                                ...(input.varietyId === undefined
+                                        ? {}
+                                        : { varietyId: input.varietyId }),
+                                ...(input.supplyMode
+                                        ? { supplyMode: input.supplyMode }
+                                        : {}),
+                                ...(input.baseUnit
+                                        ? { baseUnit: input.baseUnit }
+                                        : {}),
+                                ...(input.purchaseUnit
+                                        ? { purchaseUnit: input.purchaseUnit }
+                                        : {}),
+                                ...(input.salesUnit === undefined
+                                        ? {}
+                                        : { salesUnit: input.salesUnit }),
+                                ...(input.status
+                                        ? { status: input.status }
+                                        : {}),
+                                updatedById: userId,
+                        },
+                });
+
+                return toPlainData(updated);
+        },
+);
+
+export const deleteItemMasterAction = defineServerAction(
+        async (input: { id: string }) => {
+                const { client, ability, userId } =
+                        await getTenantMaterialContext();
+                assertMaterialAbility(
+                        ability,
+                        StandardAction.DELETE,
+                        ItemMasterSubject,
+                );
+
+                const deleted = await (client as any).itemMaster.update({
+                        where: { id: input.id },
+                        data: {
+                                isDeleted: true,
+                                deletedAt: new Date(),
+                                deletedById: userId,
+                        },
+                });
+
+                return toPlainData(deleted);
         },
 );

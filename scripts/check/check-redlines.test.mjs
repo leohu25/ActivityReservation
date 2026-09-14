@@ -90,3 +90,16 @@ test("redline rejects internal /src/ path penetration", async () => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /严禁通过 \/src\/ 穿透工作区包内部实现/);
 });
+
+test("redline rejects raw select DOM in features package", async () => {
+  const result = await runFixture({
+    "packages/features/demo/package.json": JSON.stringify({
+      name: "@base/feature-demo",
+    }),
+    "packages/features/demo/src/DemoView.tsx":
+      'export function Demo() { return <select><option value="1">1</option></select>; }\n',
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /严禁在业务切片内手写原生 <select> DOM/);
+});

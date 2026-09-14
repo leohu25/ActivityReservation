@@ -55,21 +55,39 @@ export function BomVisualDag({
   };
 
   const roleLabels: Record<string, { label: string; cls: string }> = {
-    PURCHASE: { label: "采购领料", cls: "bg-blue-50 text-blue-700 border-blue-200" },
-    FLOW: { label: "工序流转", cls: "bg-amber-50 text-amber-700 border-amber-200" },
-    SUB_BOM: { label: "外部子BOM", cls: "bg-purple-50 text-purple-700 border-purple-200" },
+    PURCHASE: {
+      label: "采购领料",
+      cls: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
+    },
+    FLOW: {
+      label: "工序流转",
+      cls: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
+    },
+    SUB_BOM: {
+      label: "外部子BOM",
+      cls: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20",
+    },
   };
 
   const outputTypeLabels: Record<string, { label: string; cls: string }> = {
-    MAIN: { label: "主产出", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-    BYPRODUCT: { label: "副产品", cls: "bg-orange-50 text-orange-700 border-orange-200" },
-    SCRAP: { label: "废料", cls: "bg-rose-50 text-rose-700 border-rose-200" },
+    MAIN: {
+      label: "主产出",
+      cls: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+    },
+    BYPRODUCT: {
+      label: "副产品",
+      cls: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20",
+    },
+    SCRAP: {
+      label: "废料",
+      cls: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20",
+    },
   };
 
   return (
-    <div className="border border-slate-200/80 rounded-xl p-5 bg-card space-y-5 shadow-xs">
+    <div className="border border-border rounded-xl p-5 bg-card space-y-5 shadow-xs">
       {/* 顶部 BOM 概览条 */}
-      <div className="flex flex-wrap justify-between items-center gap-3 border-b border-slate-100 pb-4">
+      <div className="flex flex-wrap justify-between items-center gap-3 border-b border-border pb-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
@@ -99,7 +117,7 @@ export function BomVisualDag({
               ({outputItemCode})
             </span>
             {batchQty && batchUnit && (
-              <span className="ml-2 font-medium text-slate-600">
+              <span className="ml-2 font-medium text-muted-foreground">
                 基准批量:{" "}
                 <span className="tabular-nums font-mono">
                   {batchQty} {batchUnit}
@@ -115,7 +133,7 @@ export function BomVisualDag({
               <Sparkles className="w-3 h-3 text-amber-500" />
               综合出成率
               {overrideTotalYield && (
-                <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
+                <span className="text-[10px] text-amber-700 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
                   人工覆盖
                 </span>
               )}
@@ -153,7 +171,7 @@ export function BomVisualDag({
       <div className="overflow-x-auto pb-3 pt-1">
         <div className="flex items-center gap-3 min-w-max">
           {processes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 px-12 border border-dashed border-slate-200 rounded-xl bg-slate-50/50 w-full">
+            <div className="flex flex-col items-center justify-center py-8 px-12 border border-dashed border-border rounded-xl bg-muted/30 w-full">
               <Layers className="w-8 h-8 text-muted-foreground/50 mb-2" />
               <p className="text-sm font-medium text-muted-foreground">
                 当前 BOM 暂未配置工序流程与投料关系
@@ -177,13 +195,13 @@ export function BomVisualDag({
             processes.map((proc, idx) => (
               <React.Fragment key={proc.seqNo}>
                 {/* 工序节点卡片 */}
-                <div className="border border-slate-200 rounded-xl bg-background p-4 w-72 shadow-xs space-y-3 relative hover:border-primary/60 transition-all hover:shadow-sm">
-                  <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                <div className="border border-border rounded-xl bg-background p-4 w-72 shadow-xs space-y-3 relative hover:border-primary/60 transition-all hover:shadow-sm">
+                  <div className="flex justify-between items-center border-b border-border pb-2">
                     <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
                       步骤 #{proc.seqNo}
                     </span>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded tabular-nums">
+                      <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded tabular-nums">
                         出成 {proc.yieldRate}%
                       </span>
                       {proc.lossRate > 0 && (
@@ -202,7 +220,7 @@ export function BomVisualDag({
                     {proc.specName && (
                       <p className="text-xs text-muted-foreground mt-0.5">
                         规格:{" "}
-                        <span className="font-medium text-slate-700">
+                        <span className="font-medium text-foreground">
                           {proc.specName}
                         </span>
                       </p>
@@ -218,7 +236,7 @@ export function BomVisualDag({
                   </div>
 
                   {/* 投入物料 */}
-                  <div className="border-t border-slate-100 pt-2 space-y-1.5">
+                  <div className="border-t border-border pt-2 space-y-1.5">
                     <div className="flex justify-between items-center">
                       <span className="text-[11px] font-bold text-muted-foreground">
                         投入原料/子件
@@ -239,7 +257,7 @@ export function BomVisualDag({
                         return (
                           <div
                             key={i}
-                            className="flex justify-between items-center text-xs bg-slate-50 border border-slate-100/80 px-2 py-1 rounded"
+                            className="flex justify-between items-center text-xs bg-muted/40 border border-border px-2 py-1 rounded"
                           >
                             <div className="flex items-center gap-1 min-w-0">
                               <span className="font-mono font-medium truncate">
@@ -263,7 +281,7 @@ export function BomVisualDag({
                   </div>
 
                   {/* 产出物料 */}
-                  <div className="border-t border-slate-100 pt-2 space-y-1.5">
+                  <div className="border-t border-border pt-2 space-y-1.5">
                     <div className="flex justify-between items-center">
                       <span className="text-[11px] font-bold text-muted-foreground">
                         工序产出物料
@@ -309,14 +327,14 @@ export function BomVisualDag({
                 </div>
 
                 {/* 连接箭头 */}
-                <ArrowRight className="w-5 h-5 text-slate-400 shrink-0 mx-1" />
+                <ArrowRight className="w-5 h-5 text-muted-foreground/60 shrink-0 mx-1" />
               </React.Fragment>
             ))
           )}
 
           {/* 最终产出节点 */}
-          <div className="border-2 border-emerald-500/80 rounded-xl bg-emerald-50/40 p-4 w-60 shadow-xs space-y-2 shrink-0">
-            <div className="flex items-center gap-1.5 text-emerald-700 text-xs font-bold">
+          <div className="border-2 border-emerald-500/80 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 p-4 w-60 shadow-xs space-y-2 shrink-0">
+            <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
               <PackageCheck className="w-4 h-4" /> 最终交付产成品
             </div>
             <div className="font-bold text-sm text-foreground">
@@ -325,7 +343,7 @@ export function BomVisualDag({
             <div className="font-mono text-xs text-muted-foreground">
               {outputItemCode}
             </div>
-            <div className="border-t border-emerald-200/80 pt-2 flex justify-between items-center text-xs text-emerald-800">
+            <div className="border-t border-emerald-500/20 pt-2 flex justify-between items-center text-xs text-emerald-700 dark:text-emerald-400">
               <span>交付标准</span>
               <span className="font-semibold">检验合格入库</span>
             </div>

@@ -1,14 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
-import { DataTable, Button, Badge, toast, type ColumnDef } from "@base/ui";
-import { Plus, Tag, FolderTree } from "lucide-react";
-import type { CategoryListItem, VarietyListItem } from "../types";
+import { useState, useMemo } from "react";
 import {
-  createCategoryAction,
-  createVarietyAction,
-  toggleVarietyStatusAction,
-} from "../actions";
+  DataTable,
+  Button,
+  Badge,
+  DataTableRowActions,
+  toast,
+  type ColumnDef,
+} from "@base/ui";
+import { FolderTree, Tag } from "lucide-react";
+import type { CategoryListItem, VarietyListItem } from "../types";
+import { ItemCategorySubject, ItemVarietySubject } from "../contract";
+import { deleteCategoryAction, toggleVarietyStatusAction } from "../actions";
+import { CategoryFormModal } from "./CategoryFormModal";
+import { VarietyFormModal } from "./VarietyFormModal";
 
 interface ClassificationViewProps {
   initialCategories: CategoryListItem[];
@@ -27,84 +33,22 @@ export function ClassificationView({
     "category",
   );
 
-  const [newCatCode, setNewCatCode] = useState("");
-  const [newCatName, setNewCatName] = useState("");
-  const [newVarCode, setNewVarCode] = useState("");
-  const [newVarName, setNewVarName] = useState("");
-  const [newVarDesc, setNewVarDesc] = useState("");
-  const [loading, setLoading] = useState(false);
+  // 搜索关键字状态
+  const [catKeyword, setCatKeyword] = useState("");
+  const [varKeyword, setVarKeyword] = useState("");
 
-  const handleCreateCategory = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    if (!newCatCode || !newCatName) return;
-    setLoading(true);
-    try {
-      const res = await createCategoryAction({
-        categoryCode: newCatCode,
-        categoryName: newCatName,
-        level: 1,
-      });
-      if (res.success && res.data) {
-        setCategories((prev) => [
-          ...prev,
-          {
-            id: res.data.id,
-            categoryCode: res.data.categoryCode,
-            categoryName: res.data.categoryName,
-            parentId: null,
-            parentName: null,
-            level: res.data.level,
-            sortOrder: res.data.sortOrder,
-            status: res.data.status,
-            createdAt: res.data.createdAt,
-            updatedAt: res.data.updatedAt,
-          },
-        ]);
-        setNewCatCode("");
-        setNewCatName("");
-        toast.success("分类添加成功");
-      } else if (!res.success) {
-        toast.error(res.error || "添加失败");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  // 标准 FormModal 状态
+  const [catModal, setCatModal] = useState<{
+    open: boolean;
+    mode: "create" | "edit";
+    record?: CategoryListItem | null;
+  }>({ open: false, mode: "create", record: null });
 
-  const handleCreateVariety = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    if (!newVarCode || !newVarName) return;
-    setLoading(true);
-    try {
-      const res = await createVarietyAction({
-        varietyCode: newVarCode,
-        varietyName: newVarName,
-        description: newVarDesc,
-      });
-      if (res.success && res.data) {
-        setVarieties((prev) => [
-          ...prev,
-          {
-            id: res.data.id,
-            varietyCode: res.data.varietyCode,
-            varietyName: res.data.varietyName,
-            description: res.data.description,
-            status: res.data.status,
-            createdAt: res.data.createdAt,
-            updatedAt: res.data.updatedAt,
-          },
-        ]);
-        setNewVarCode("");
-        setNewVarName("");
-        setNewVarDesc("");
-        toast.success("品种添加成功");
-      } else if (!res.success) {
-        toast.error(res.error || "添加失败");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [varModal, setVarModal] = useState<{
+    open: boolean;
+    mode: "create" | "edit";
+    record?: VarietyListItem | null;
+  }>({ open: false, mode: "create", record: null });
 
   const handleToggleVariety = async (id: string, current: string) => {
     const targetStatus = current === "ACTIVE" ? "DISABLED" : "ACTIVE";
@@ -118,6 +62,43 @@ export function ClassificationView({
       toast.error(res.error || "状态更新失败");
     }
   };
+
+  const handleDeleteCategory = async (id: string, name: string) => {
+    try {
+      const res = await deleteCategoryAction({ id });
+      if (res.success) {
+        setCategories((prev) => prev.filter((c) => c.id !== id));
+        toast.success(`分类 [${name}] 已成功删除`);
+      } else {
+        toast.error(res.error || "删除分类失败");
+      }
+    } catch {
+      toast.error("删除分类异常");
+    }
+  };
+
+  // 客户端过滤分类
+  const filteredCategories = useMemo(() => {
+    const q = catKeyword.trim().toLowerCase();
+    if (!q) return categories;
+    return categories.filter(
+      (c) =>
+        c.categoryCode.toLowerCase().includes(q) ||
+        c.categoryName.toLowerCase().includes(q),
+    );
+  }, [categories, catKeyword]);
+
+  // 客户端过滤品种
+  const filteredVarieties = useMemo(() => {
+    const q = varKeyword.trim().toLowerCase();
+    if (!q) return varieties;
+    return varieties.filter(
+      (v) =>
+        v.varietyCode.toLowerCase().includes(q) ||
+        v.varietyName.toLowerCase().includes(q) ||
+        (v.description && v.description.toLowerCase().includes(q)),
+    );
+  }, [varieties, varKeyword]);
 
   const categoryColumns: ColumnDef<CategoryListItem>[] = [
     {
@@ -144,6 +125,24 @@ export function ClassificationView({
         <Badge variant={row.status === "ACTIVE" ? "default" : "secondary"}>
           {row.status === "ACTIVE" ? "启用" : "停用"}
         </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      header: "操作",
+      width: 130,
+      align: "right",
+      cell: (row) => (
+        <DataTableRowActions
+          record={row}
+          hideView
+          onEdit={() => setCatModal({ open: true, mode: "edit", record: row })}
+          onDelete={() => handleDeleteCategory(row.id, row.categoryName)}
+          deleteConfirm={{
+            title: `确定删除分类 [${row.categoryName}] 吗？`,
+            description: "删除后该商品分类将移入回收站，不可继续关联新商品。",
+          }}
+        />
       ),
     },
   ];
@@ -180,14 +179,20 @@ export function ClassificationView({
     {
       id: "actions",
       header: "操作",
+      width: 140,
+      align: "right",
       cell: (row) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleToggleVariety(row.id, row.status)}
-        >
-          {row.status === "ACTIVE" ? "停用" : "启用"}
-        </Button>
+        <DataTableRowActions
+          record={row}
+          hideView
+          hideDelete
+          extraActions={[
+            {
+              label: row.status === "ACTIVE" ? "停用" : "启用",
+              onClick: () => handleToggleVariety(row.id, row.status),
+            },
+          ]}
+        />
       ),
     },
   ];
@@ -225,79 +230,75 @@ export function ClassificationView({
 
       {activeTab === "category" ? (
         <div className="space-y-4">
-          <form
-            onSubmit={handleCreateCategory}
-            className="flex gap-2 items-center bg-muted/40 p-3 rounded-md"
-          >
-            <input
-              type="text"
-              placeholder="分类编码 (如 CAT-VEG)"
-              value={newCatCode}
-              onChange={(e) => setNewCatCode(e.target.value)}
-              className="px-3 py-1.5 text-sm border rounded bg-background"
-              required
-            />
-            <input
-              type="text"
-              placeholder="分类名称 (如 蔬菜、净菜加工)"
-              value={newCatName}
-              onChange={(e) => setNewCatName(e.target.value)}
-              className="px-3 py-1.5 text-sm border rounded bg-background"
-              required
-            />
-            <Button type="submit" size="sm" disabled={loading}>
-              <Plus className="mr-1 h-3.5 w-3.5" /> 添加分类
-            </Button>
-          </form>
-
           <DataTable
-            data={categories}
+            data={filteredCategories}
             columns={categoryColumns}
             rowKey={(c) => c.id}
+            subject={ItemCategorySubject}
             title="商品分类树"
+            description="维护生鲜净菜加工的一二级商品分类"
+            onCreate={() =>
+              setCatModal({ open: true, mode: "create", record: null })
+            }
+            createText="新增分类"
+            keywordValue={catKeyword}
+            keywordPlaceholder="按分类名称或编码搜索..."
+            onKeywordChange={setCatKeyword}
+            onSearch={() => {}}
+            onReset={() => setCatKeyword("")}
+            hideStatusFilter={true}
           />
         </div>
       ) : (
         <div className="space-y-4">
-          <form
-            onSubmit={handleCreateVariety}
-            className="flex gap-2 items-center bg-muted/40 p-3 rounded-md"
-          >
-            <input
-              type="text"
-              placeholder="品种编码 (如 VAR-POTATO)"
-              value={newVarCode}
-              onChange={(e) => setNewVarCode(e.target.value)}
-              className="px-3 py-1.5 text-sm border rounded bg-background"
-              required
-            />
-            <input
-              type="text"
-              placeholder="品种名称 (如 土豆、青椒)"
-              value={newVarName}
-              onChange={(e) => setNewVarName(e.target.value)}
-              className="px-3 py-1.5 text-sm border rounded bg-background"
-              required
-            />
-            <input
-              type="text"
-              placeholder="描述 (选填)"
-              value={newVarDesc}
-              onChange={(e) => setNewVarDesc(e.target.value)}
-              className="px-3 py-1.5 text-sm border rounded bg-background"
-            />
-            <Button type="submit" size="sm" disabled={loading}>
-              <Plus className="mr-1 h-3.5 w-3.5" /> 添加品种
-            </Button>
-          </form>
-
           <DataTable
-            data={varieties}
+            data={filteredVarieties}
             columns={varietyColumns}
             rowKey={(v) => v.id}
+            subject={ItemVarietySubject}
             title="独立品种档案"
+            description="维护农产品、生鲜作物的独立生物品种与性状"
+            onCreate={() =>
+              setVarModal({ open: true, mode: "create", record: null })
+            }
+            createText="新增品种"
+            keywordValue={varKeyword}
+            keywordPlaceholder="按品种名称、编码或描述搜索..."
+            onKeywordChange={setVarKeyword}
+            onSearch={() => {}}
+            onReset={() => setVarKeyword("")}
+            hideStatusFilter={true}
           />
         </div>
+      )}
+
+      {/* 标准 FormModal：分类 */}
+      {catModal.open && (
+        <CategoryFormModal
+          mode={catModal.mode}
+          record={catModal.record}
+          categories={categories}
+          onClose={() =>
+            setCatModal({ open: false, mode: "create", record: null })
+          }
+          onSuccess={() => {
+            setCatModal({ open: false, mode: "create", record: null });
+          }}
+        />
+      )}
+
+      {/* 标准 FormModal：品种 */}
+      {varModal.open && (
+        <VarietyFormModal
+          mode={varModal.mode}
+          record={varModal.record}
+          onClose={() =>
+            setVarModal({ open: false, mode: "create", record: null })
+          }
+          onSuccess={() => {
+            setVarModal({ open: false, mode: "create", record: null });
+          }}
+        />
       )}
     </div>
   );

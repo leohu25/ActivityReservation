@@ -1,10 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
-import { DataTable, Button, Badge, toast, type ColumnDef } from "@base/ui";
-import { Plus, Package, X } from "lucide-react";
+import { useState } from "react";
+import {
+  DataTable,
+  Badge,
+  DataTableRowActions,
+  toast,
+  type ColumnDef,
+} from "@base/ui";
+import { Package } from "lucide-react";
 import type { ItemMasterListItem } from "../types";
-import { createItemMasterAction, toggleItemStatusAction } from "../actions";
+import { ItemMasterSubject } from "../contract";
+import { toggleItemStatusAction, deleteItemMasterAction } from "../actions";
+import { ItemMasterFormModal } from "./ItemMasterFormModal";
 
 interface ItemMasterViewProps {
   initialItems: ItemMasterListItem[];
@@ -21,94 +29,15 @@ export function ItemMasterView({
 }: ItemMasterViewProps) {
   const [items, setItems] = useState<ItemMasterListItem[]>(initialItems);
   const [activeCategory, setActiveCategory] = useState<string>("ALL");
-  const [showModal, setShowModal] = useState(false);
+  const [keyword, setKeyword] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
-  // 表单状态
-  const [itemCode, setItemCode] = useState("");
-  const [itemName, setItemName] = useState("");
-  const [itemCategory, setItemCategory] = useState<
-    "RAW" | "SEMI_FINISHED" | "FINISHED" | "PACKAGING"
-  >("RAW");
-  const [categoryId, setCategoryId] = useState(categories[0]?.id || "");
-  const [varietyId, setVarietyId] = useState(varieties[0]?.id || "");
-  const [supplyMode, setSupplyMode] = useState<
-    "PURCHASE" | "MANUFACTURE" | "HYBRID"
-  >("PURCHASE");
-  const [baseUnit, setBaseUnit] = useState(units[0]?.unitCode || "kg");
-  const [purchaseUnit, setPurchaseUnit] = useState(units[0]?.unitCode || "kg");
-  const [salesUnit, setSalesUnit] = useState(units[0]?.unitCode || "kg");
-  const [qtyPrecision] = useState(2);
-  const [loading, setLoading] = useState(false);
-
-  const handleCreate = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const res = await createItemMasterAction({
-        itemCode,
-        itemName,
-        itemCategory,
-        categoryId,
-        varietyId: varietyId || null,
-        supplyMode,
-        baseUnit,
-        purchaseUnit,
-        salesUnit,
-        stockUnit: baseUnit,
-        qtyPrecision,
-      });
-
-      if (res.success && res.data) {
-        const cat = categories.find((c) => c.id === categoryId);
-        const varObj = varieties.find((v) => v.id === varietyId);
-        setItems((prev) => [
-          {
-            id: res.data.id,
-            itemCode: res.data.itemCode,
-            itemName: res.data.itemName,
-            itemAlias: null,
-            pictureUrl: null,
-            itemCategory: res.data.itemCategory,
-            categoryId: res.data.categoryId,
-            categoryName: cat?.categoryName || "-",
-            varietyId: res.data.varietyId,
-            varietyName: varObj?.varietyName || null,
-            gradeId: null,
-            gradeName: null,
-            supplyMode: res.data.supplyMode,
-            itemType: res.data.itemType,
-            baseUnit: res.data.baseUnit,
-            purchaseUnit: res.data.purchaseUnit,
-            salesUnit: res.data.salesUnit,
-            stockUnit: res.data.stockUnit,
-            productionUnit: res.data.productionUnit,
-            minPurchaseQty: null,
-            minSalesQty: null,
-            maxSalesQty: Number(res.data.maxSalesQty),
-            qtyPrecision: res.data.qtyPrecision,
-            shelfLifeHours: null,
-            batchManaged: res.data.batchManaged,
-            temperatureZone: null,
-            processingForm: null,
-            freshCutFlag: res.data.freshCutFlag,
-            referencePrice: null,
-            status: res.data.status,
-            createdAt: res.data.createdAt,
-            updatedAt: res.data.updatedAt,
-          },
-          ...prev,
-        ]);
-        setShowModal(false);
-        setItemCode("");
-        setItemName("");
-        toast.success("商品档案创建成功");
-      } else if (!res.success) {
-        toast.error(res.error || "创建失败");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  // 标准 FormModal 状态
+  const [modalState, setModalState] = useState<{
+    open: boolean;
+    mode: "create" | "edit";
+    record?: ItemMasterListItem | null;
+  }>({ open: false, mode: "create", record: null });
 
   const handleToggleStatus = async (id: string, current: string) => {
     const targetStatus = current === "ACTIVE" ? "DISCONTINUED" : "ACTIVE";
@@ -123,10 +52,40 @@ export function ItemMasterView({
     }
   };
 
-  const filteredItems =
-    activeCategory === "ALL"
-      ? items
-      : items.filter((i) => i.itemCategory === activeCategory);
+  const handleDeleteItem = async (id: string, name: string) => {
+    try {
+      const res = await deleteItemMasterAction({ id });
+      if (res.success) {
+        setItems((prev) => prev.filter((i) => i.id !== id));
+        toast.success(`商品 [${name}] 已移入回收站`);
+      } else {
+        toast.error(res.error || "删除失败");
+      }
+    } catch {
+      toast.error("删除商品异常");
+    }
+  };
+
+  const filteredItems = items.filter((i) => {
+    // 1. 大类筛选
+    if (activeCategory !== "ALL" && i.itemCategory !== activeCategory) {
+      return false;
+    }
+    // 2. 状态筛选
+    if (statusFilter && i.status !== statusFilter) {
+      return false;
+    }
+    // 3. 关键字搜索（按编码或名称）
+    if (keyword.trim()) {
+      const q = keyword.trim().toLowerCase();
+      const codeMatch = i.itemCode.toLowerCase().includes(q);
+      const nameMatch = i.itemName.toLowerCase().includes(q);
+      if (!codeMatch && !nameMatch) {
+        return false;
+      }
+    }
+    return true;
+  });
 
   const columns: ColumnDef<ItemMasterListItem>[] = [
     {
@@ -206,32 +165,40 @@ export function ItemMasterView({
     {
       id: "actions",
       header: "操作",
+      width: 170,
+      align: "right",
       cell: (row) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleToggleStatus(row.id, row.status)}
-        >
-          {row.status === "ACTIVE" ? "停售" : "启售"}
-        </Button>
+        <DataTableRowActions
+          record={row}
+          hideView
+          onEdit={() =>
+            setModalState({ open: true, mode: "edit", record: row })
+          }
+          extraActions={[
+            {
+              label: row.status === "ACTIVE" ? "停售" : "启售",
+              onClick: () => handleToggleStatus(row.id, row.status),
+            },
+          ]}
+          onDelete={() => handleDeleteItem(row.id, row.itemName)}
+          deleteConfirm={{
+            title: `确定删除商品 [${row.itemName}] 吗？`,
+            description: "删除后该商品将移入回收站，不可再进行采购订货或流转。",
+          }}
+        />
       ),
     },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b pb-4">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Package className="h-5 w-5" /> 商品档案主数据
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            涵盖原料、半成品、成品、包材四类物料，打通多单位换算、供应方式与工艺路线
-          </p>
-        </div>
-        <Button onClick={() => setShowModal(true)}>
-          <Plus className="mr-1 h-4 w-4" /> 新建商品
-        </Button>
+      <div className="border-b border-border pb-4">
+        <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <Package className="h-5 w-5 text-primary" /> 商品档案主数据
+        </h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          涵盖原料、半成品、成品、包材四类物料，打通多单位换算、供应方式与工艺路线
+        </p>
       </div>
 
       {/* 大类筛选切换 */}
@@ -243,14 +210,18 @@ export function ItemMasterView({
           { key: "FINISHED", label: "成品 (配送标品)" },
           { key: "PACKAGING", label: "包材辅料" },
         ].map((tab) => (
-          <Button
+          <button
+            type="button"
             key={tab.key}
-            variant={activeCategory === tab.key ? "default" : "outline"}
-            size="sm"
             onClick={() => setActiveCategory(tab.key)}
+            className={`px-3 py-1 text-xs rounded-md border cursor-pointer transition-colors ${
+              activeCategory === tab.key
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background text-foreground border-border hover:bg-muted/50"
+            }`}
           >
             {tab.label}
-          </Button>
+          </button>
         ))}
       </div>
 
@@ -258,181 +229,44 @@ export function ItemMasterView({
         data={filteredItems}
         columns={columns}
         rowKey={(i) => i.id}
+        subject={ItemMasterSubject}
         title="商品档案列表"
+        description="系统全部物料商品档案主数据"
+        onCreate={() =>
+          setModalState({ open: true, mode: "create", record: null })
+        }
+        createText="新建商品"
+        keywordValue={keyword}
+        keywordPlaceholder="按商品编码或名称搜索..."
+        onKeywordChange={setKeyword}
+        statusOptions={[
+          { value: "ACTIVE", label: "在售/有效" },
+          { value: "DISCONTINUED", label: "停售/停用" },
+        ]}
+        statusValue={statusFilter}
+        onStatusChange={setStatusFilter}
+        onSearch={() => {}}
+        onReset={() => {
+          setKeyword("");
+          setStatusFilter("");
+        }}
       />
 
-      {/* 新建商品弹窗 */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-background border rounded-lg max-w-lg w-full p-6 shadow-xl space-y-4">
-            <div className="flex justify-between items-center border-b pb-3">
-              <h2 className="text-lg font-bold">新建商品档案</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowModal(false)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-            <form onSubmit={handleCreate} className="space-y-3">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">
-                  物料编码
-                </label>
-                <input
-                  type="text"
-                  placeholder="如 ITM202609001"
-                  value={itemCode}
-                  onChange={(e) => setItemCode(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border rounded bg-background"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">
-                  物料名称
-                </label>
-                <input
-                  type="text"
-                  placeholder="如 青椒段5cm、五花肉片"
-                  value={itemName}
-                  onChange={(e) => setItemName(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border rounded bg-background"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">
-                    物料大类
-                  </label>
-                  <select
-                    value={itemCategory}
-                    onChange={(e) => setItemCategory(e.target.value as any)}
-                    className="w-full px-3 py-1.5 text-sm border rounded bg-background"
-                  >
-                    <option value="RAW">原料</option>
-                    <option value="SEMI_FINISHED">半成品</option>
-                    <option value="FINISHED">成品</option>
-                    <option value="PACKAGING">包材</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">
-                    供应方式
-                  </label>
-                  <select
-                    value={supplyMode}
-                    onChange={(e) => setSupplyMode(e.target.value as any)}
-                    className="w-full px-3 py-1.5 text-sm border rounded bg-background"
-                  >
-                    <option value="PURCHASE">外购</option>
-                    <option value="MANUFACTURE">自制</option>
-                    <option value="HYBRID">自制为主可外购</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">
-                    商品分类
-                  </label>
-                  <select
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full px-3 py-1.5 text-sm border rounded bg-background"
-                  >
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.categoryName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">
-                    独立品种
-                  </label>
-                  <select
-                    value={varietyId}
-                    onChange={(e) => setVarietyId(e.target.value)}
-                    className="w-full px-3 py-1.5 text-sm border rounded bg-background"
-                  >
-                    <option value="">未指定</option>
-                    {varieties.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.varietyName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">
-                    基本核算单位
-                  </label>
-                  <select
-                    value={baseUnit}
-                    onChange={(e) => setBaseUnit(e.target.value)}
-                    className="w-full px-3 py-1.5 text-sm border rounded bg-background"
-                  >
-                    {units.map((u) => (
-                      <option key={u.id} value={u.unitCode}>
-                        {u.unitName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">
-                    默认采购单位
-                  </label>
-                  <select
-                    value={purchaseUnit}
-                    onChange={(e) => setPurchaseUnit(e.target.value)}
-                    className="w-full px-3 py-1.5 text-sm border rounded bg-background"
-                  >
-                    {units.map((u) => (
-                      <option key={u.id} value={u.unitCode}>
-                        {u.unitName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">
-                    默认销售单位
-                  </label>
-                  <select
-                    value={salesUnit}
-                    onChange={(e) => setSalesUnit(e.target.value)}
-                    className="w-full px-3 py-1.5 text-sm border rounded bg-background"
-                  >
-                    {units.map((u) => (
-                      <option key={u.id} value={u.unitCode}>
-                        {u.unitName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                >
-                  取消
-                </Button>
-                <Button type="submit" disabled={loading}>
-                  确认创建
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* 标准 FormModal */}
+      {modalState.open && (
+        <ItemMasterFormModal
+          mode={modalState.mode}
+          record={modalState.record}
+          categories={categories}
+          varieties={varieties}
+          units={units}
+          onClose={() =>
+            setModalState({ open: false, mode: "create", record: null })
+          }
+          onSuccess={() => {
+            setModalState({ open: false, mode: "create", record: null });
+          }}
+        />
       )}
     </div>
   );

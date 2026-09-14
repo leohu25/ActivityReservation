@@ -34,7 +34,10 @@ agent_created: true
 7. **一体化卡片容器**：列表页必须用 `DataTable.Root` 白卡整合标题/筛选/表格/分页，严禁零散漂浮在页面底色上（详见 `references/5-ui-components.md`）；
 8. **写路径强制 CASL 守卫**：Server Action 写/删/状态变更必须 `assert*Ability(ability, action, subject)`，与页面按钮同一动作名（详见 `references/4-server-actions.md`）；
 9. **认证只管进门，授权只认 CASL**：Better Auth 仅负责登录、会话与租户成员身份；业务权限统一由 CASL 强类型判定，禁止用 Better Auth 权限函数查询业务资源；
-10. **客户端权限 = 官方 AbilityProvider**：RSC layout 拉快照 → `TenantAbilityProvider` 注入 → View 只 `useAbility()`/积木；禁止 View 自建 plain ability、禁止把 `permissions` 传进 View/Workspace（详见 `references/7-casl-ability-provider.md`）；
+10. **客户端权限 = 官方 AbilityProvider + 声明式门禁**：RSC layout 拉快照 → `TenantAbilityProvider` 注入 → View 只声明 `subject` 或用门禁积木：
+    - **标准模板 `DataTable` / `DataTable.Workspace`**：必须显式传递 `subject={XxxSubject}` 上下文（内部工具栏新增、导出、批量操作及列/行权限自动受控联动）；
+    - **非模板 / 自定义外部按钮与操作入口**：凡是脱离了 DataTable 自动上下文的页面自定义按钮（如独立的“新建”、“编排”、“批量操作”等）、独立快捷表单或卡片，**必须强制使用 `<AuthGuard subject={XxxSubject} action={StandardAction.CREATE}>` 进行包裹**。严禁裸渲染未经权限门禁保护的破坏性/写入型 UI 入口，杜绝“后端拦截了但前端按钮依然可见”的体验缺陷（详见 `references/7-casl-ability-provider.md`）；
+    - 禁止 View 自建 plain ability、禁止把 `permissions` 传进 View/Workspace；
 11. **列表优先 shadcn**：简单列表/表单直接用 `Table`/`Form`/`Dialog`；需要统一工具栏时再用 `DataTable.Workspace`（可选加速，非强制）；
 12. **表单优先 shadcn Form**：短表单直接 `Form`+`Field`；长表单/批量字段可用 `FormFields` Schema（可选）；
 13. **导出走契约**：CSV 导出用 `exportContractCsv(rows, contract.configurableFields, ...)`，禁止手写 fieldKeys；

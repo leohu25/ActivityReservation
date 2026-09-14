@@ -81,3 +81,75 @@ export const configureConversionAction = defineServerAction(
     return toPlainData(conversion);
   },
 );
+
+export const updateUnitAction = defineServerAction(
+  async (input: {
+    id: string;
+    unitName?: string;
+    unitType?: "WEIGHT" | "COUNT" | "VOLUME";
+    baseRatio?: number;
+    isBaseUnit?: boolean;
+    status?: string;
+  }) => {
+    const { client, ability, userId } = await getTenantMaterialContext();
+    assertMaterialAbility(ability, StandardAction.UPDATE, UnitOfMeasureSubject);
+
+    const updated = await (client as any).unitOfMeasure.update({
+      where: { id: input.id },
+      data: {
+        ...(input.unitName ? { unitName: input.unitName.trim() } : {}),
+        ...(input.unitType ? { unitType: input.unitType } : {}),
+        ...(input.baseRatio === undefined
+          ? {}
+          : { baseRatio: input.baseRatio }),
+        ...(input.isBaseUnit === undefined
+          ? {}
+          : { isBaseUnit: input.isBaseUnit }),
+        ...(input.status ? { status: input.status } : {}),
+        updatedById: userId,
+      },
+    });
+
+    return toPlainData(updated);
+  },
+);
+
+export const deleteUnitAction = defineServerAction(
+  async (input: { id: string }) => {
+    const { client, ability, userId } = await getTenantMaterialContext();
+    assertMaterialAbility(ability, StandardAction.DELETE, UnitOfMeasureSubject);
+
+    const deleted = await (client as any).unitOfMeasure.update({
+      where: { id: input.id },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedById: userId,
+      },
+    });
+
+    return toPlainData(deleted);
+  },
+);
+
+export const deleteConversionAction = defineServerAction(
+  async (input: { id: string }) => {
+    const { client, ability, userId } = await getTenantMaterialContext();
+    assertMaterialAbility(
+      ability,
+      UnitManagementAction.CONFIGURE_CONVERSION,
+      UnitConversionSubject,
+    );
+
+    const deleted = await (client as any).unitConversion.update({
+      where: { id: input.id },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedById: userId,
+      },
+    });
+
+    return toPlainData(deleted);
+  },
+);

@@ -177,20 +177,52 @@ Fail-Closed：`actions: []` → 一切拒绝；无 Provider 时 `useOptionalAbil
 
 ---
 
-## 4. DataTable 积木如何吃权限
+## 4. DataTable 积木与自定义控件如何吃权限
 
 积木内部统一 `useOptionalAbility()`（或 Root 显式 `ability` 时经 AbilityProvider 再下发）：
 
-| 积木 | 行为 |
+| 场景 / 积木 | 规范与行为 |
 | ------ | ------ |
+| **标准 `DataTable` / `DataTable.Workspace`** | **必须传入 `subject={XxxSubject}`**。内部工具栏 `onCreate`（新增）、`onExport`（导出）、`onRefresh`、列设置及分页自动继承该上下文；当用户缺少 `create` 权限时，表格右上方的新建按钮自动 Fail-Closed 隐藏。 |
+| **页面自定义独立按钮 / 快捷操作入口** | **必须使用 `<AuthGuard subject={...} action={...}>` 包裹**。例如页面顶部的独立“新建物料”、“编排 BOM”等按钮，若脱离了 DataTable 容器，必须用 `<AuthGuard>` 包裹，确保普通成员在无相应 Action 权限时组件完全不渲染。 |
 | `DataTable.ActionButton` | 无 ability/subject → 拒绝；`action` 未授权 → 隐藏/置灰 |
 | `DataTable.Content` | `ColumnDef.field` 无 `read` → 整列剥离 |
 | `AuthField` / `AuthorizedField` | HIDDEN 不渲染；READONLY → shadcn `Field` + `Badge「只读」` + 控件 disabled |
 | `DataTableRowActions` | 行级 action 按 `ability.can` 过滤 |
 
-`AuthField` 外壳已对齐官方 `Field`/`FieldLabel`（`pnpm ui:add field`），禁止再手写 label/div 私有样式。
+### 4.1 核心实战范式 (DataTable vs AuthGuard)
 
-页面侧：**声明按钮 + 契约 action**，不要手写 `can() && <Button>`。
+#### (1) 使用标准模板 DataTable 时：显式注入 subject
+
+```tsx
+<DataTable
+  data={items}
+  columns={columns}
+  rowKey={(i) => i.id}
+  subject={ItemMasterSubject} // 👈 必须传：内部 ActionButton 自动按此 Subject 校验 create/export 等权限
+  title="商品档案列表"
+/>
+```
+
+#### (2) 脱离 DataTable 上下文的独立自定义按钮/表单：必须使用 AuthGuard
+
+```tsx
+import { AuthGuard } from "@base/ui";
+import { ItemMasterSubject, StandardAction } from "../contract";
+
+// 自定义页面顶部按钮或快捷录入表单
+<AuthGuard subject={ItemMasterSubject} action={StandardAction.CREATE}>
+  <Button onClick={() => setShowModal(true)}>
+    <Plus className="mr-1 h-4 w-4" /> 新建商品
+  </Button>
+</AuthGuard>
+```
+
+> ⚠️ **严禁反模式**：
+>
+> 1. 严禁直接手写裸 `<Button onClick={...}>新建</Button>` 却不加 `<AuthGuard>` 包裹；
+> 2. 严禁使用 `<DataTable>` 时遗漏 `subject` 属性，导致内部权限判断失效；
+> 3. 严禁在页面侧手写 `can("create", ...) && <Button>`（用 `<AuthGuard>` 声明式包裹）。
 
 ---
 
