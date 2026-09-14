@@ -1,5 +1,6 @@
 import type { TenantPrismaClient, TenantPrisma } from "@base/db-tenant";
 import { formatBusinessDocNo } from "@base/biz-shared";
+import { MasterDataStatus } from "@base/shared";
 import type {
   CreateSalesOrderInput,
   AddOrderFeeInput,
@@ -40,7 +41,7 @@ export async function findEffectiveQuotationPrice(
     select: { regionCode: true, status: true },
   });
 
-  if (!store || store.status !== "ACTIVE") {
+  if (!store || store.status !== MasterDataStatus.ACTIVE) {
     // 门店不存在或停用
     return null;
   }
@@ -48,7 +49,7 @@ export async function findEffectiveQuotationPrice(
   // 2. 检索所有符合日期与状态范围的报价单（优先匹配门店、再客户、再区域）
   const activeQuotes = await client.customerQuote.findMany({
     where: {
-      status: "ACTIVE",
+      status: MasterDataStatus.ACTIVE,
       isDeleted: false,
       effectiveDate: { lte: targetDate },
       OR: [{ expiryDate: null }, { expiryDate: { gte: targetDate } }],
@@ -124,7 +125,7 @@ export async function createSalesOrder(
       defaultTaxRate: true,
     },
   });
-  if (!customer || customer.status !== "ACTIVE") {
+  if (!customer || customer.status !== MasterDataStatus.ACTIVE) {
     throw new Error(`客户不存在或已停用: ${input.customerCode}`);
   }
 
@@ -138,7 +139,7 @@ export async function createSalesOrder(
       deliveryPeriod: true,
     },
   });
-  if (!store || store.status !== "ACTIVE") {
+  if (!store || store.status !== MasterDataStatus.ACTIVE) {
     throw new Error(`门店不存在或已停用: ${input.storeCode}`);
   }
 

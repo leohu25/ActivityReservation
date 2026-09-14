@@ -1,4 +1,7 @@
 import type { CustomerCategoryItem } from "./classification/types";
+import type { MasterDataStatus } from "@base/shared";
+
+export type CustomerStatus = MasterDataStatus;
 
 export type {
   CustomerCategoryItem,
@@ -21,7 +24,7 @@ export interface CreateCustomerInput {
 }
 
 export interface UpdateCustomerInput extends Partial<CreateCustomerInput> {
-  status?: "ACTIVE" | "DISABLED";
+  status?: CustomerStatus;
 }
 
 export interface ListCustomerFilter {

@@ -29,12 +29,11 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import type { PositionItem } from "../types";
+import { MasterDataStatus } from "@base/shared";
 import {
-  createPositionAction,
   deletePositionAction,
   listPositionsAction,
   togglePositionStatusAction,
-  updatePositionAction,
 } from "../actions";
 import { PositionFormModal } from "./PositionFormModal";
 
@@ -59,7 +58,7 @@ export function PositionView({ initialPositions }: PositionViewProps) {
     targetPosition?: PositionItem;
   } | null>(null);
 
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const refreshPositions = async () => {
     const res = await listPositionsAction();
@@ -78,15 +77,12 @@ export function PositionView({ initialPositions }: PositionViewProps) {
     setFeedback(null);
   };
 
-  const closeModal = () => {
-    setModalState(null);
-  };
-
   const handleToggleStatus = (pos: PositionItem) => {
     startTransition(async () => {
       const res = await togglePositionStatusAction(pos.id);
       if (res.success) {
-        const statusText = res.data?.status === "ACTIVE" ? "已启用" : "已停用";
+        const statusText =
+          res.data?.status === MasterDataStatus.ACTIVE ? "已启用" : "已停用";
         setFeedback({
           type: "success",
           message: `岗位 [${pos.name}] ${statusText}`,
@@ -169,7 +165,7 @@ export function PositionView({ initialPositions }: PositionViewProps) {
                 </TableHeader>
                 <TableBody className="divide-y divide-border/60">
                   {positions.map((pos) => {
-                    const isActive = pos.status === "ACTIVE";
+                    const isActive = pos.status === MasterDataStatus.ACTIVE;
                     return (
                       <TableRow
                         key={pos.id}

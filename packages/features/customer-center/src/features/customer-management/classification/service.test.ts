@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { MasterDataStatus } from "@base/shared";
 import { CustomerCategoryTagService } from "./service";
 
 test("CustomerCategoryTagService 构建多级分类树", async () => {
@@ -11,14 +12,14 @@ test("CustomerCategoryTagService 构建多级分类树", async () => {
           categoryName: "根",
           parentCode: null,
           description: null,
-          status: "ACTIVE",
+          status: MasterDataStatus.ACTIVE,
         },
         {
           categoryCode: "CHILD",
           categoryName: "子",
           parentCode: "ROOT",
           description: null,
-          status: "ACTIVE",
+          status: MasterDataStatus.ACTIVE,
         },
       ],
     },
@@ -109,7 +110,7 @@ test("CustomerCategoryTagService.listCategories 仅返回 ACTIVE 状态的分类
             categoryName: "餐饮客户",
             parentCode: null,
             description: null,
-            status: "ACTIVE",
+            status: MasterDataStatus.ACTIVE,
           },
         ];
       },
@@ -118,9 +119,9 @@ test("CustomerCategoryTagService.listCategories 仅返回 ACTIVE 状态的分类
 
   const options = await CustomerCategoryTagService.listCategories(
     mockClient as never,
-    { status: "ACTIVE" },
+    { status: MasterDataStatus.ACTIVE },
   );
-  assert.equal(passedWhere.status, "ACTIVE");
+  assert.equal(passedWhere.status, MasterDataStatus.ACTIVE);
   assert.equal(options.length, 1);
   assert.equal(options[0]?.categoryCode, "CAT_ACT_1");
 });
@@ -137,7 +138,7 @@ test("CustomerCategoryTagService.listTags 仅返回 ACTIVE 状态的标签选项
             tagName: "重点客户",
             tagType: "VIP",
             description: null,
-            status: "ACTIVE",
+            status: MasterDataStatus.ACTIVE,
           },
         ];
       },
@@ -146,9 +147,9 @@ test("CustomerCategoryTagService.listTags 仅返回 ACTIVE 状态的标签选项
 
   const options = await CustomerCategoryTagService.listTags(
     mockClient as never,
-    { tagType: "VIP", status: "ACTIVE" },
+    { tagType: "VIP", status: MasterDataStatus.ACTIVE },
   );
-  assert.equal(passedWhere.status, "ACTIVE");
+  assert.equal(passedWhere.status, MasterDataStatus.ACTIVE);
   assert.equal(passedWhere.tagType, "VIP");
   assert.equal(options.length, 1);
   assert.equal(options[0]?.tagCode, "TAG_VIP");

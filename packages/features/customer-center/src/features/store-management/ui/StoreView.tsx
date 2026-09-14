@@ -17,7 +17,7 @@ import {
   type ColumnDef,
   type FormModalMode,
 } from "@base/ui";
-import { exportContractCsv } from "@base/shared";
+import { exportContractCsv, MasterDataStatus } from "@base/shared";
 import { useAbility } from "@base/authorization";
 import { updateStoreStatusAction, deleteStoreAction } from "../actions";
 import { StoreFormModal } from "./StoreFormModal";
@@ -89,10 +89,13 @@ export function StoreView({
    */
   const handleToggleStatus = async (
     storeCode: string,
-    currentStatus: "ACTIVE" | "DISABLED" | string,
+    currentStatus: MasterDataStatus | string,
   ) => {
     setLoading(true);
-    const nextStatus = currentStatus === "ACTIVE" ? "DISABLED" : "ACTIVE";
+    const nextStatus =
+      currentStatus === MasterDataStatus.ACTIVE
+        ? MasterDataStatus.DISABLED
+        : MasterDataStatus.ACTIVE;
     try {
       const res = await updateStoreStatusAction(storeCode, nextStatus);
       if (res.success) {
@@ -103,7 +106,11 @@ export function StoreView({
               : item,
           ),
         );
-        toast.success(nextStatus === "ACTIVE" ? "门店已启用" : "门店已停用");
+        toast.success(
+          nextStatus === MasterDataStatus.ACTIVE
+            ? "门店已启用"
+            : "门店已停用",
+        );
         router?.refresh();
       } else {
         toast.error(res.error || "变更门店状态失败");
@@ -145,7 +152,7 @@ export function StoreView({
       filename: `门店档案_${new Date().toISOString().slice(0, 10)}.csv`,
       format: {
         [CustomerStoreField.STATUS]: (s) =>
-          s.status === "ACTIVE" ? "正常" : "已停用",
+          s.status === MasterDataStatus.ACTIVE ? "正常" : "已停用",
       },
     });
   };
@@ -245,10 +252,12 @@ export function StoreView({
       align: "center",
       cell: (s: StoreListItem) => (
         <Badge
-          variant={s.status === "ACTIVE" ? "success" : "secondary"}
+          variant={
+            s.status === MasterDataStatus.ACTIVE ? "success" : "secondary"
+          }
           size="sm"
         >
-          {s.status === "ACTIVE" ? "正常" : "已停用"}
+          {s.status === MasterDataStatus.ACTIVE ? "正常" : "已停用"}
         </Badge>
       ),
     },
@@ -264,11 +273,15 @@ export function StoreView({
           onEdit={() => setModalState({ open: true, mode: "edit", record: s })}
           extraActions={[
             {
-              label: s.status === "ACTIVE" ? "停用门店" : "启用门店",
-              variant: s.status === "ACTIVE" ? "destructive" : "default",
+              label:
+                s.status === MasterDataStatus.ACTIVE ? "停用门店" : "启用门店",
+              variant:
+                s.status === MasterDataStatus.ACTIVE
+                  ? "destructive"
+                  : "default",
               onClick: () => handleToggleStatus(s.storeCode, s.status),
               confirm:
-                s.status === "ACTIVE"
+                s.status === MasterDataStatus.ACTIVE
                   ? {
                       title: `确认停用门店 "${s.storeName}"？`,
                       description: "停用后该门店将无法继续下单或关联配送调度。",
@@ -315,8 +328,8 @@ export function StoreView({
         keywordPlaceholder="名称 / 编码 / 地址"
         onKeywordChange={setKeyword}
         statusOptions={[
-          { value: "ACTIVE", label: "正常" },
-          { value: "DISABLED", label: "已停用" },
+          { value: MasterDataStatus.ACTIVE, label: "正常" },
+          { value: MasterDataStatus.DISABLED, label: "已停用" },
         ]}
         statusValue={selectedStatus}
         onStatusChange={(v) => {

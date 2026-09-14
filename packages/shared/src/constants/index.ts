@@ -21,6 +21,20 @@ export type FieldPolicy = (typeof FieldPolicy)[keyof typeof FieldPolicy];
 export type FieldAccessMode = FieldPolicy;
 
 /**
+ * 主数据通用启停生命周期状态常量 (Master Data Status)
+ * 适用于客户、门店、物料分类、业务标签等各类基础主数据实体
+ */
+export const MasterDataStatus = {
+ /** 正常启用 / 生效 */
+ ACTIVE: "ACTIVE",
+ /** 已停用 / 禁用 */
+ DISABLED: "DISABLED",
+} as const;
+
+export type MasterDataStatus =
+ (typeof MasterDataStatus)[keyof typeof MasterDataStatus];
+
+/**
  * 分页默认参数与阈值
  */
 export const DEFAULT_PAGINATION = {

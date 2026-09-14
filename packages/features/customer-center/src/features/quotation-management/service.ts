@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { TenantPrismaClient } from "@base/db-tenant";
 import type { PrismaQueryCondition } from "@base/authorization";
+import { CustomerQuoteStatus } from "./contract";
 import type {
   CreateQuoteInput,
   UpdateQuoteInput,
@@ -268,7 +269,9 @@ export class CustomerQuoteService {
   static async updateQuoteStatus(
     client: TenantPrismaClient,
     quoteId: string,
-    status: "ACTIVE" | "VOIDED",
+    status:
+      | typeof CustomerQuoteStatus.ACTIVE
+      | typeof CustomerQuoteStatus.VOIDED,
   ) {
     const existing = await client.customerQuote.findUnique({
       where: { quoteId },
@@ -277,7 +280,10 @@ export class CustomerQuoteService {
       throw new Error(`报价单 [${quoteId}] 不存在`);
     }
 
-    if (status === "ACTIVE" && existing.status !== "DRAFT") {
+    if (
+      status === CustomerQuoteStatus.ACTIVE &&
+      existing.status !== CustomerQuoteStatus.DRAFT
+    ) {
       throw new Error(`仅“草稿”状态的报价单允许审核生效`);
     }
 

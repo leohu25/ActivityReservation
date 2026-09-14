@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { MasterDataStatus } from "@base/shared";
 import {
   Edit2,
   Trash2,
@@ -124,11 +125,18 @@ export function CategoryTagView({
   // --- 分类操作 ---
   const handleToggleCatStatus = async (code: string, currentStatus: string) => {
     setLoading(true);
-    const nextStatus = currentStatus === "ACTIVE" ? "DISABLED" : "ACTIVE";
+    const nextStatus =
+      currentStatus === MasterDataStatus.ACTIVE
+        ? MasterDataStatus.DISABLED
+        : MasterDataStatus.ACTIVE;
     try {
       const res = await updateCategoryStatusAction(code, nextStatus);
       if (res.success) {
-        toast.success(nextStatus === "ACTIVE" ? "分类已启用" : "分类已停用");
+        toast.success(
+          nextStatus === MasterDataStatus.ACTIVE
+            ? "分类已启用"
+            : "分类已停用",
+        );
         router?.refresh();
       } else {
         toast.error(res.error || "变更状态失败");
@@ -163,7 +171,10 @@ export function CategoryTagView({
   // --- 标签操作 ---
   const handleToggleTagStatus = async (code: string, currentStatus: string) => {
     setLoading(true);
-    const nextStatus = currentStatus === "ACTIVE" ? "DISABLED" : "ACTIVE";
+    const nextStatus =
+      currentStatus === MasterDataStatus.ACTIVE
+        ? MasterDataStatus.DISABLED
+        : MasterDataStatus.ACTIVE;
     try {
       const res = await updateTagStatusAction(code, nextStatus);
       if (res.success) {
@@ -172,7 +183,11 @@ export function CategoryTagView({
             t.tagCode === code ? { ...t, status: nextStatus } : t,
           ),
         );
-        toast.success(nextStatus === "ACTIVE" ? "标签已启用" : "标签已停用");
+        toast.success(
+          nextStatus === MasterDataStatus.ACTIVE
+            ? "标签已启用"
+            : "标签已停用",
+        );
         router?.refresh();
       } else {
         toast.error(res.error || "变更状态失败");
@@ -218,7 +233,7 @@ export function CategoryTagView({
       categoryName: it.categoryName,
       parentCode: it.parentCode ?? null,
       description: it.description ?? null,
-      status: it.status ?? "ACTIVE",
+      status: it.status ?? MasterDataStatus.ACTIVE,
       children: it.children ? adaptCategoryTree(it.children) : undefined,
     }));
   };
@@ -288,7 +303,7 @@ export function CategoryTagView({
               ) : null
             }
             renderActions={(node) => {
-              const isActive = node.status === "ACTIVE";
+              const isActive = node.status === MasterDataStatus.ACTIVE;
               return (
                 <>
                   <Badge
@@ -426,7 +441,7 @@ export function CategoryTagView({
             </div>
           ) : (
             filteredTags.map((t) => {
-              const isActive = t.status === "ACTIVE";
+              const isActive = t.status === MasterDataStatus.ACTIVE;
               return (
                 <div
                   key={t.tagCode}
@@ -480,7 +495,10 @@ export function CategoryTagView({
                       size="sm"
                       disabled={loading}
                       onClick={() =>
-                        handleToggleTagStatus(t.tagCode, t.status || "ACTIVE")
+                        handleToggleTagStatus(
+                          t.tagCode,
+                          t.status || MasterDataStatus.ACTIVE,
+                        )
                       }
                       className="h-7 px-2 text-xs"
                     >

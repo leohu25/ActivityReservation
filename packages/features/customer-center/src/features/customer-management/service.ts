@@ -1,3 +1,4 @@
+import { MasterDataStatus } from "@base/shared";
 import type { TenantPrismaClient } from "@base/db-tenant";
 import type { PrismaQueryCondition } from "@base/authorization";
 import type {
@@ -313,11 +314,11 @@ export class CustomerService {
       });
 
       // 铁律：停用客户，下属所有门店强制同时停用
-      if (status === "DISABLED") {
+      if (status === MasterDataStatus.DISABLED) {
         await tx.customerStore.updateMany({
           where: { customerCode },
           data: {
-            status: "DISABLED",
+            status: MasterDataStatus.DISABLED,
             updatedById: auditCtx?.userId ?? null,
           },
         });

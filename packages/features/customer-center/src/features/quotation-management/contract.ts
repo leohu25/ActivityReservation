@@ -25,6 +25,16 @@ export const CustomerQuoteField = {
   STATUS: "status",
 } as const;
 
+/** 报价单生命周期状态 (SSoT) */
+export const CustomerQuoteStatus = {
+  DRAFT: "DRAFT",
+  ACTIVE: "ACTIVE",
+  VOIDED: "VOIDED",
+} as const;
+
+export type CustomerQuoteStatus =
+  (typeof CustomerQuoteStatus)[keyof typeof CustomerQuoteStatus];
+
 /** 报价单受控字段元数据定义 */
 export const customerQuoteConfigurableFields = [
   { field: CustomerQuoteField.QUOTE_ID, label: "报价单号", isSensitive: false },

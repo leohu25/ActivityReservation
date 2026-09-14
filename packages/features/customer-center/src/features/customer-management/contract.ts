@@ -1,8 +1,11 @@
+import { MasterDataStatus } from "@base/shared";
 import {
   STANDARD_DATA_SCOPES,
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
+
+export { MasterDataStatus };
 
 /** 客户主数据实体与资源标识 (SSoT) */
 export const CustomerSubject = "Customer";

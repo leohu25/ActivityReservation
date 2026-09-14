@@ -1,3 +1,7 @@
+import type { MasterDataStatus } from "@base/shared";
+
+export type CustomerClassificationStatus = MasterDataStatus;
+
 export interface CreateCategoryInput {
   categoryCode?: string;
   categoryName: string;
@@ -9,7 +13,7 @@ export interface UpdateCategoryInput {
   categoryName: string;
   parentCode?: string | null;
   description?: string | null;
-  status?: "ACTIVE" | "DISABLED";
+  status?: CustomerClassificationStatus;
 }
 
 export interface CreateTagInput {
@@ -23,7 +27,7 @@ export interface UpdateTagInput {
   tagName: string;
   tagType: string;
   description?: string | null;
-  status?: "ACTIVE" | "DISABLED";
+  status?: CustomerClassificationStatus;
 }
 
 export interface CustomerCategoryItem {
@@ -32,7 +36,7 @@ export interface CustomerCategoryItem {
   categoryName: string;
   parentCode?: string | null;
   description?: string | null;
-  status?: "ACTIVE" | "DISABLED" | string;
+  status?: CustomerClassificationStatus | string;
   children?: CustomerCategoryItem[];
 }
 
@@ -42,5 +46,5 @@ export interface CustomerTagItem {
   tagName: string;
   tagType?: string;
   description?: string | null;
-  status?: "ACTIVE" | "DISABLED" | string;
+  status?: CustomerClassificationStatus | string;
 }

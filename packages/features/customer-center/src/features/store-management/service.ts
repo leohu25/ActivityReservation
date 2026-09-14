@@ -1,4 +1,5 @@
 import type { TenantPrismaClient } from "@base/db-tenant";
+import { MasterDataStatus } from "@base/shared";
 import type { PrismaQueryCondition } from "@base/authorization";
 import type {
   CreateStoreInput,
@@ -163,7 +164,7 @@ export class CustomerStoreService {
     if (!customer || customer.isDeleted) {
       throw new Error(`所属客户 [${input.customerCode}] 不存在`);
     }
-    if (customer.status === "DISABLED") {
+    if (customer.status === MasterDataStatus.DISABLED) {
       throw new Error(
         `所属客户 [${customer.customerName}] 已停用，无法为其新建门店`,
       );
@@ -190,7 +191,7 @@ export class CustomerStoreService {
         storeTags: input.storeTags || null,
         billingContact: input.billingContact || null,
         billingPhone: input.billingPhone || null,
-        status: "ACTIVE",
+        status: MasterDataStatus.ACTIVE,
         createdById: auditCtx.userId,
         deptId: auditCtx.deptId ?? null,
         isDeleted: false,
@@ -253,7 +254,7 @@ export class CustomerStoreService {
   static async updateStoreStatus(
     client: TenantPrismaClient,
     storeCode: string,
-    status: "ACTIVE" | "DISABLED",
+    status: MasterDataStatus,
     auditCtx?: { userId: string },
   ) {
     const store = await client.customerStore.findUnique({
@@ -265,7 +266,10 @@ export class CustomerStoreService {
     }
 
     // 若试图启用门店，需确保客户也是启用状态
-    if (status === "ACTIVE" && store.customer.status === "DISABLED") {
+    if (
+      status === MasterDataStatus.ACTIVE &&
+      store.customer.status === MasterDataStatus.DISABLED
+    ) {
       throw new Error(
         `所属客户 [${store.customer.customerName}] 处于停用状态，无法单独启用该门店`,
       );

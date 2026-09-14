@@ -1,7 +1,7 @@
 import {
   PrismaControlDbRepository,
+  TenantDatabaseStatus,
   type ControlPrismaClient,
-  type TenantDatabaseStatus,
 } from "@base/db-control";
 import {
   TenantDatabaseSeeder,
@@ -548,7 +548,9 @@ export class TenantManagementService {
     }
 
     const nextStatus: TenantDatabaseStatus =
-      db.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
+      db.status === TenantDatabaseStatus.ACTIVE
+        ? TenantDatabaseStatus.SUSPENDED
+        : TenantDatabaseStatus.ACTIVE;
 
     await this.prisma.tenantDatabase.update({
       where: { organizationId },

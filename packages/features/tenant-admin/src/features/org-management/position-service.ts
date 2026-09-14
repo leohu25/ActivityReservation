@@ -1,4 +1,5 @@
 import type { TenantPrismaClient } from "@base/db-tenant";
+import { MasterDataStatus } from "@base/shared";
 import type {
   CreatePositionInput,
   PositionItem,
@@ -32,7 +33,7 @@ export class PositionService {
     const counts = await tenantPrisma.employeeProfile.groupBy({
       by: ["positionId"],
       where: {
-        status: "ACTIVE",
+        status: MasterDataStatus.ACTIVE,
         positionId: { not: null },
       },
       _count: {
@@ -184,14 +185,17 @@ export class PositionService {
       throw new Error("目标岗位不存在");
     }
 
-    const nextStatus = existing.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+    const nextStatus =
+      existing.status === MasterDataStatus.ACTIVE
+        ? "INACTIVE"
+        : MasterDataStatus.ACTIVE;
     const updated = await tenantPrisma.position.update({
       where: { id },
       data: { status: nextStatus },
     });
 
     const count = await tenantPrisma.employeeProfile.count({
-      where: { positionId: updated.id, status: "ACTIVE" },
+      where: { positionId: updated.id, status: MasterDataStatus.ACTIVE },
     });
 
     return {

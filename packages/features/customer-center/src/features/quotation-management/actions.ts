@@ -7,7 +7,7 @@ import {
   assertCustomerAbility,
   getTenantCustomerContext,
 } from "../../assembly/context";
-import { CustomerQuoteSubject } from "./contract";
+import { CustomerQuoteStatus, CustomerQuoteSubject } from "./contract";
 import { CustomerQuoteService } from "./service";
 import type { CreateQuoteInput, UpdateQuoteInput } from "./types";
 
@@ -53,10 +53,16 @@ export const deleteQuoteAction = defineServerAction(async (quoteId: string) => {
 }, "删除报价单失败");
 
 export const updateQuoteStatusAction = defineServerAction(
-  async (quoteId: string, status: "ACTIVE" | "VOIDED") => {
+  async (
+    quoteId: string,
+    status:
+      | typeof CustomerQuoteStatus.ACTIVE
+      | typeof CustomerQuoteStatus.VOIDED,
+  ) => {
     const { client, ability } = await getTenantCustomerContext();
     // 审核生效走 audit 动作契约；作废走 update 动作契约
-    const requiredAction = status === "ACTIVE" ? "audit" : "update";
+    const requiredAction =
+      status === CustomerQuoteStatus.ACTIVE ? "audit" : "update";
     assertCustomerAbility(ability, requiredAction, CustomerQuoteSubject);
     const updated = await CustomerQuoteService.updateQuoteStatus(
       client,

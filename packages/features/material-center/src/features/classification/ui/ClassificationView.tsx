@@ -13,6 +13,7 @@ import { FolderTree, Tag } from "lucide-react";
 import type { CategoryListItem, VarietyListItem } from "../types";
 import { ItemCategorySubject, ItemVarietySubject } from "../contract";
 import { deleteCategoryAction, toggleVarietyStatusAction } from "../actions";
+import { MasterDataStatus } from "@base/shared";
 import { CategoryFormModal } from "./CategoryFormModal";
 import { VarietyFormModal } from "./VarietyFormModal";
 
@@ -51,7 +52,10 @@ export function ClassificationView({
   }>({ open: false, mode: "create", record: null });
 
   const handleToggleVariety = async (id: string, current: string) => {
-    const targetStatus = current === "ACTIVE" ? "DISABLED" : "ACTIVE";
+    const targetStatus =
+      current === MasterDataStatus.ACTIVE
+        ? MasterDataStatus.DISABLED
+        : MasterDataStatus.ACTIVE;
     const res = await toggleVarietyStatusAction({ id, targetStatus });
     if (res.success && res.data) {
       setVarieties((prev) =>
@@ -122,8 +126,12 @@ export function ClassificationView({
       id: "status",
       header: "状态",
       cell: (row) => (
-        <Badge variant={row.status === "ACTIVE" ? "default" : "secondary"}>
-          {row.status === "ACTIVE" ? "启用" : "停用"}
+        <Badge
+          variant={
+            row.status === MasterDataStatus.ACTIVE ? "default" : "secondary"
+          }
+        >
+          {row.status === MasterDataStatus.ACTIVE ? "启用" : "停用"}
         </Badge>
       ),
     },
@@ -171,8 +179,12 @@ export function ClassificationView({
       id: "status",
       header: "状态",
       cell: (row) => (
-        <Badge variant={row.status === "ACTIVE" ? "default" : "secondary"}>
-          {row.status === "ACTIVE" ? "启用" : "停用"}
+        <Badge
+          variant={
+            row.status === MasterDataStatus.ACTIVE ? "default" : "secondary"
+          }
+        >
+          {row.status === MasterDataStatus.ACTIVE ? "启用" : "停用"}
         </Badge>
       ),
     },
@@ -188,7 +200,8 @@ export function ClassificationView({
           hideDelete
           extraActions={[
             {
-              label: row.status === "ACTIVE" ? "停用" : "启用",
+              label:
+                row.status === MasterDataStatus.ACTIVE ? "停用" : "启用",
               onClick: () => handleToggleVariety(row.id, row.status),
             },
           ]}

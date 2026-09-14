@@ -1,10 +1,12 @@
 import type { TenantPrismaClient } from "@base/db-tenant";
+import { MasterDataStatus } from "@base/shared";
 import type {
   CreateCategoryInput,
   UpdateCategoryInput,
   CreateTagInput,
   UpdateTagInput,
   CustomerCategoryItem,
+  CustomerClassificationStatus,
   CustomerTagItem,
 } from "./types";
 
@@ -81,7 +83,7 @@ export class CustomerCategoryTagService {
    */
   static async listCategories(
     client: TenantPrismaClient,
-    filter?: { status?: "ACTIVE" | "DISABLED" },
+    filter?: { status?: CustomerClassificationStatus },
   ): Promise<CustomerCategoryItem[]> {
     return client.customerCategory.findMany({
       where: filter?.status ? { status: filter.status } : undefined,
@@ -111,7 +113,7 @@ export class CustomerCategoryTagService {
         categoryName: item.categoryName,
         parentCode: item.parentCode ?? null,
         description: item.description ?? null,
-        status: item.status ?? "ACTIVE",
+        status: item.status ?? MasterDataStatus.ACTIVE,
         children: [],
       });
     }
@@ -156,7 +158,7 @@ export class CustomerCategoryTagService {
         categoryName: input.categoryName,
         parentCode: input.parentCode || null,
         description: input.description,
-        status: "ACTIVE",
+        status: MasterDataStatus.ACTIVE,
       },
     });
   }
@@ -223,7 +225,7 @@ export class CustomerCategoryTagService {
   static async updateCategoryStatus(
     client: TenantPrismaClient,
     categoryCode: string,
-    status: "ACTIVE" | "DISABLED",
+    status: CustomerClassificationStatus,
   ) {
     return client.customerCategory.update({
       where: { categoryCode },
@@ -236,7 +238,7 @@ export class CustomerCategoryTagService {
    */
   static async listTags(
     client: TenantPrismaClient,
-    filter?: { tagType?: string; status?: "ACTIVE" | "DISABLED" },
+    filter?: { tagType?: string; status?: CustomerClassificationStatus },
   ): Promise<CustomerTagItem[]> {
     return client.customerTag.findMany({
       where: {
@@ -269,7 +271,7 @@ export class CustomerCategoryTagService {
         tagName: input.tagName,
         tagType: input.tagType,
         description: input.description,
-        status: "ACTIVE",
+        status: MasterDataStatus.ACTIVE,
       },
     });
   }
@@ -324,7 +326,7 @@ export class CustomerCategoryTagService {
   static async updateTagStatus(
     client: TenantPrismaClient,
     tagCode: string,
-    status: "ACTIVE" | "DISABLED",
+    status: CustomerClassificationStatus,
   ) {
     return client.customerTag.update({
       where: { tagCode },

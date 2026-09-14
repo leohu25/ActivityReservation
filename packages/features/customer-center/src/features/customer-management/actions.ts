@@ -10,7 +10,11 @@ import {
 } from "../../assembly/context";
 import { CustomerAction, CustomerField, CustomerSubject } from "./contract";
 import { CustomerService } from "./service";
-import type { CreateCustomerInput, UpdateCustomerInput } from "./types";
+import type {
+  CreateCustomerInput,
+  CustomerStatus,
+  UpdateCustomerInput,
+} from "./types";
 
 const CONTROLLED_FIELDS = new Set<string>(Object.values(CustomerField));
 
@@ -71,7 +75,7 @@ export const updateCustomerAction = defineServerAction(
 );
 
 export const updateCustomerStatusAction = defineServerAction(
-  async (customerCode: string, status: "ACTIVE" | "DISABLED") => {
+  async (customerCode: string, status: CustomerStatus) => {
     const { client, ability, userId } = await getTenantCustomerContext();
     assertCustomerAbility(
       ability,

@@ -1,4 +1,7 @@
-import type { ControlPrismaClient } from "@base/db-control";
+import {
+  TenantDatabaseStatus,
+  type ControlPrismaClient,
+} from "@base/db-control";
 import { assertControlAdmin } from "../../shared/server/control-guard";
 import type { ControlStats } from "./types";
 
@@ -39,13 +42,13 @@ export class PlatformOverviewService {
 
     for (const org of orgs) {
       const status = org.tenantDatabase?.status;
-      if (status === "ACTIVE") {
+      if (status === TenantDatabaseStatus.ACTIVE) {
         active++;
-      } else if (status === "SUSPENDED") {
+      } else if (status === TenantDatabaseStatus.SUSPENDED) {
         suspended++;
-      } else if (status === "FAILED") {
+      } else if (status === TenantDatabaseStatus.FAILED) {
         failed++;
-      } else if (status === "PROVISIONING") {
+      } else if (status === TenantDatabaseStatus.PROVISIONING) {
         provisioning++;
       }
     }

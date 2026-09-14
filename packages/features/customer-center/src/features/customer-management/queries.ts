@@ -14,7 +14,7 @@ import type {
   CustomerCategoryItem,
   CustomerTagItem,
 } from "./classification/types";
-import { toPlainData } from "@base/shared";
+import { toPlainData, MasterDataStatus } from "@base/shared";
 
 export interface CustomerPageOptions {
   categoryOptions: CustomerCategoryItem[];
@@ -32,8 +32,12 @@ export async function getCustomerPageOptionsQuery(): Promise<CustomerPageOptions
   assertCustomerAbility(ability, StandardAction.READ, CustomerSubject);
 
   const [categoryOptions, tagOptions] = await Promise.all([
-    CustomerCategoryTagService.listCategories(client, { status: "ACTIVE" }),
-    CustomerCategoryTagService.listTags(client, { status: "ACTIVE" }),
+    CustomerCategoryTagService.listCategories(client, {
+      status: MasterDataStatus.ACTIVE,
+    }),
+    CustomerCategoryTagService.listTags(client, {
+      status: MasterDataStatus.ACTIVE,
+    }),
   ]);
 
   return toPlainData({

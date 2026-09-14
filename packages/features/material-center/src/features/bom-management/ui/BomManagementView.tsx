@@ -15,6 +15,7 @@ import type { BomListItem, ProcessTemplateItem } from "../types";
 import { BomHeaderSubject } from "../contract";
 import { publishBomAction, createNewBomVersionAction } from "../actions";
 import { BomFlowEditorModal } from "./BomFlowEditorModal";
+import { MasterDataStatus } from "@base/shared";
 
 interface BomManagementViewProps {
   initialBoms: BomListItem[];
@@ -221,7 +222,7 @@ export function BomManagementView({
                     },
                   ]
                 : []),
-              ...(row.status === "ACTIVE"
+              ...(row.status === MasterDataStatus.ACTIVE
                 ? [
                     {
                       label: "另存新版",

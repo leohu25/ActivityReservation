@@ -24,6 +24,7 @@ import {
   CustomerAction,
   CustomerField,
   customerPageContract,
+  MasterDataStatus,
 } from "../contract";
 import type {
   CustomerListItem,
@@ -105,7 +106,10 @@ export function CustomerView({
     currentStatus: string,
   ) => {
     setLoading(true);
-    const nextStatus = currentStatus === "ACTIVE" ? "DISABLED" : "ACTIVE";
+    const nextStatus =
+      currentStatus === MasterDataStatus.ACTIVE
+        ? MasterDataStatus.DISABLED
+        : MasterDataStatus.ACTIVE;
     try {
       const res = await updateCustomerStatusAction(customerCode, nextStatus);
       if (res.success) {
@@ -116,7 +120,11 @@ export function CustomerView({
               : item,
           ),
         );
-        toast.success(nextStatus === "ACTIVE" ? "客户已启用" : "客户已停用");
+        toast.success(
+          nextStatus === MasterDataStatus.ACTIVE
+            ? "客户已启用"
+            : "客户已停用",
+        );
         router?.refresh();
       } else {
         toast.error(res.error || "更新状态失败");
@@ -161,7 +169,7 @@ export function CustomerView({
           [CustomerField.SETTLEMENT_METHOD]: (c) =>
             SETTLEMENT_LABELS[c.settlementMethod] || c.settlementMethod,
           [CustomerField.STATUS]: (c) =>
-            c.status === "ACTIVE" ? "正常" : "已停用",
+            c.status === MasterDataStatus.ACTIVE ? "正常" : "已停用",
         },
       },
     );
@@ -260,10 +268,12 @@ export function CustomerView({
       align: "center",
       cell: (c: CustomerListItem) => (
         <Badge
-          variant={c.status === "ACTIVE" ? "success" : "secondary"}
+          variant={
+            c.status === MasterDataStatus.ACTIVE ? "success" : "secondary"
+          }
           size="sm"
         >
-          {c.status === "ACTIVE" ? "正常" : "已停用"}
+          {c.status === MasterDataStatus.ACTIVE ? "正常" : "已停用"}
         </Badge>
       ),
     },
@@ -279,14 +289,18 @@ export function CustomerView({
           onEdit={() => setModalState({ open: true, mode: "edit", record: c })}
           extraActions={[
             {
-              label: c.status === "ACTIVE" ? "停用客户" : "启用客户",
+              label:
+                c.status === MasterDataStatus.ACTIVE ? "停用客户" : "启用客户",
               action: CustomerAction.TOGGLE_STATUS,
               collapsed: true,
-              variant: c.status === "ACTIVE" ? "destructive" : "default",
+              variant:
+                c.status === MasterDataStatus.ACTIVE
+                  ? "destructive"
+                  : "default",
               onClick: () =>
                 handleToggleStatus(c.customerCode || c.id || "", c.status),
               confirm:
-                c.status === "ACTIVE"
+                c.status === MasterDataStatus.ACTIVE
                   ? {
                       title: `确认停用客户 "${c.customerName}"？`,
                       description:
@@ -334,8 +348,8 @@ export function CustomerView({
         keywordPlaceholder="单号 / 名称 / 联系人"
         onKeywordChange={setKeyword}
         statusOptions={[
-          { value: "ACTIVE", label: "正常" },
-          { value: "DISABLED", label: "已停用" },
+          { value: MasterDataStatus.ACTIVE, label: "正常" },
+          { value: MasterDataStatus.DISABLED, label: "已停用" },
         ]}
         statusValue={selectedStatus}
         onStatusChange={(v) => {

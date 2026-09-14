@@ -210,6 +210,30 @@ for (const filePath of allFiles) {
     });
   }
 
+  // 4.3 检查业务代码中裸写主数据启停状态魔法值 ("ACTIVE" / "DISABLED")
+  // 规则红线：禁止使用裸字符串魔法值，必须使用 MasterDataStatus 常量对象 (as const 契约)
+  if (
+    !isTestFile &&
+    (relPath.startsWith("packages/features/") ||
+      relPath.startsWith("apps/tenant/"))
+  ) {
+    const rawActiveDisabledRegex =
+      /\bstatus\s*(?:===|!==)\s*["'](ACTIVE|DISABLED)["']|\b(?:nextStatus|targetStatus)\s*=\s*[^;\n]*["'](ACTIVE|DISABLED)["']|\bstatusOptions\s*=\s*\[[^\]]*["'](ACTIVE|DISABLED)["']/;
+    lines.forEach((line, idx) => {
+      if (
+        rawActiveDisabledRegex.test(line) &&
+        !line.includes("// redline-ignore")
+      ) {
+        violations.push({
+          file: relPath,
+          line: idx + 1,
+          rule: "严禁在业务代码中裸写主数据启停状态魔法值 (必须使用 @base/shared 导出的 MasterDataStatus.ACTIVE / DISABLED)",
+          code: line.trim(),
+        });
+      }
+    });
+  }
+
   // 5. 检查 UI 组件单元测试文件是否就近放置 (Colocation)
   // 规则：禁止在 UI 包 src 根目录下平铺 *.test.ts / *.test.tsx，组件测试必须与组件同级放置
   const isDirectlyUnderUiSrc =

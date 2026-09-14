@@ -103,3 +103,19 @@ test("redline rejects raw select DOM in features package", async () => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /严禁在业务切片内手写原生 <select> DOM/);
 });
+
+test("redline rejects raw active/disabled status magic strings in business code", async () => {
+  const result = await runFixture({
+    "packages/features/demo/package.json": JSON.stringify({
+      name: "@base/feature-demo",
+    }),
+    "packages/features/demo/src/DemoView.tsx":
+      'export function isLive(s: string) { return s.status === "ACTIVE"; }\n',
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.match(
+    result.stderr,
+    /严禁在业务代码中裸写主数据启停状态魔法值/,
+  );
+});

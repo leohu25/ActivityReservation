@@ -12,6 +12,7 @@ import { Package } from "lucide-react";
 import type { ItemMasterListItem } from "../types";
 import { ItemMasterSubject } from "../contract";
 import { toggleItemStatusAction, deleteItemMasterAction } from "../actions";
+import { MasterDataStatus } from "@base/shared";
 import { ItemMasterFormModal } from "./ItemMasterFormModal";
 
 interface ItemMasterViewProps {
@@ -40,7 +41,10 @@ export function ItemMasterView({
   }>({ open: false, mode: "create", record: null });
 
   const handleToggleStatus = async (id: string, current: string) => {
-    const targetStatus = current === "ACTIVE" ? "DISCONTINUED" : "ACTIVE";
+    const targetStatus =
+      current === MasterDataStatus.ACTIVE
+        ? "DISCONTINUED"
+        : MasterDataStatus.ACTIVE;
     const res = await toggleItemStatusAction({ id, targetStatus });
     if (res.success && res.data) {
       setItems((prev) =>
@@ -157,8 +161,12 @@ export function ItemMasterView({
       id: "status",
       header: "状态",
       cell: (row) => (
-        <Badge variant={row.status === "ACTIVE" ? "default" : "secondary"}>
-          {row.status === "ACTIVE" ? "在售" : "停售"}
+        <Badge
+          variant={
+            row.status === MasterDataStatus.ACTIVE ? "default" : "secondary"
+          }
+        >
+          {row.status === MasterDataStatus.ACTIVE ? "在售" : "停售"}
         </Badge>
       ),
     },
@@ -176,7 +184,8 @@ export function ItemMasterView({
           }
           extraActions={[
             {
-              label: row.status === "ACTIVE" ? "停售" : "启售",
+              label:
+                row.status === MasterDataStatus.ACTIVE ? "停售" : "启售",
               onClick: () => handleToggleStatus(row.id, row.status),
             },
           ]}
@@ -240,7 +249,7 @@ export function ItemMasterView({
         keywordPlaceholder="按商品编码或名称搜索..."
         onKeywordChange={setKeyword}
         statusOptions={[
-          { value: "ACTIVE", label: "在售/有效" },
+          { value: MasterDataStatus.ACTIVE, label: "在售/有效" },
           { value: "DISCONTINUED", label: "停售/停用" },
         ]}
         statusValue={statusFilter}

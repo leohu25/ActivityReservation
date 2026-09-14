@@ -55,6 +55,7 @@ import {
   isValidEmail,
   // 常量与枚举
   FieldPolicy,
+  MasterDataStatus,
 } from "./index";
 
 test("Result 工具：支持 ok, err, isOk, isErr 与 unwrap", () => {
@@ -263,6 +264,8 @@ test("异常与枚举：AppError 继承与枚举完备性", () => {
   assert.equal(err.status, 404);
 
   assert.equal(FieldPolicy.EDITABLE, "EDITABLE");
+  assert.equal(MasterDataStatus.ACTIVE, "ACTIVE");
+  assert.equal(MasterDataStatus.DISABLED, "DISABLED");
 });
 
 test("defineServerAction: 统一安全包装与序列化，成功与异常全覆盖", async () => {

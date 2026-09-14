@@ -52,7 +52,7 @@ import {
   transferPositionAction,
   transferRolesAction,
 } from "../actions";
-import { flattenTree } from "@base/shared";
+import { flattenTree, MasterDataStatus } from "@base/shared";
 
 export interface EmployeeViewProps {
   readonly initialEmployees: readonly EmployeeItem[];
@@ -571,7 +571,7 @@ export function EmployeeView({
                     </TableHeader>
                     <TableBody className="divide-y divide-border/60">
                       {employees.map((emp) => {
-                        const isActive = emp.status === "ACTIVE";
+                        const isActive = emp.status === MasterDataStatus.ACTIVE;
                         const isSuspended = emp.status === "SUSPENDED";
                         return (
                           <TableRow

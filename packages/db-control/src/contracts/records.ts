@@ -1,8 +1,12 @@
+export const TenantDatabaseStatus = {
+  PROVISIONING: "PROVISIONING",
+  ACTIVE: "ACTIVE",
+  SUSPENDED: "SUSPENDED",
+  FAILED: "FAILED",
+} as const;
+
 export type TenantDatabaseStatus =
-  | "PROVISIONING"
-  | "ACTIVE"
-  | "SUSPENDED"
-  | "FAILED";
+  (typeof TenantDatabaseStatus)[keyof typeof TenantDatabaseStatus];
 
 /** 租户迁移状态枚举定义 */
 export type TenantMigrationStatus =
