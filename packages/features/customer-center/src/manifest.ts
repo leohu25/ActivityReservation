@@ -21,48 +21,38 @@ import {
 export const customerManifest: TenantFeatureManifest = {
   id: "customer-center",
   name: "客户中心",
-  order: 10,
-  navSections: [
+  pages: [
     {
-      id: "customer",
-      order: 10,
-      items: [
-        {
-          id: "group-customer-center",
-          label: "客户中心",
-          icon: "UserCheck",
-          items: [
-            {
-              id: "customer-customers",
-              label: "客户档案",
-              href: "/customer/customers",
-              requiredAction: StandardAction.READ,
-              requiredSubject: CustomerSubject,
-            },
-            {
-              id: "customer-stores",
-              label: "门店档案",
-              href: "/customer/stores",
-              requiredAction: StandardAction.READ,
-              requiredSubject: CustomerStoreSubject,
-            },
-            {
-              id: "customer-categories-tags",
-              label: "分类与标签",
-              href: "/customer/categories-tags",
-              requiredAction: StandardAction.READ,
-              requiredSubject: CustomerCategorySubject,
-            },
-            {
-              id: "customer-quotes",
-              label: "门店报价单",
-              href: "/customer/quotes",
-              requiredAction: StandardAction.READ,
-              requiredSubject: CustomerQuoteSubject,
-            },
-          ],
-        },
-      ],
+      pageKey: "customer-customers",
+      defaultLabel: "客户档案",
+      href: "/customer/customers",
+      defaultIcon: "Users",
+      requiredAction: StandardAction.READ,
+      requiredSubject: CustomerSubject,
+    },
+    {
+      pageKey: "customer-stores",
+      defaultLabel: "门店档案",
+      href: "/customer/stores",
+      defaultIcon: "Store",
+      requiredAction: StandardAction.READ,
+      requiredSubject: CustomerStoreSubject,
+    },
+    {
+      pageKey: "customer-categories-tags",
+      defaultLabel: "分类与标签",
+      href: "/customer/categories-tags",
+      defaultIcon: "Tags",
+      requiredAction: StandardAction.READ,
+      requiredSubject: CustomerCategorySubject,
+    },
+    {
+      pageKey: "customer-quotes",
+      defaultLabel: "门店报价单",
+      href: "/customer/quotes",
+      defaultIcon: "Receipt",
+      requiredAction: StandardAction.READ,
+      requiredSubject: CustomerQuoteSubject,
     },
   ],
   permissionModules: [

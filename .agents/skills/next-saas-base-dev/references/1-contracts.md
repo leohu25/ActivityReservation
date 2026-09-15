@@ -6,14 +6,15 @@
 
 ## 权限四维命名与 SSoT 铁律
 
-权限契约由 **Resource + Subject + Action + Field** 四维显式绑定组成，禁止根据名称推测映射关系：
+权限契约由 **Resource + Subject + Action + Field** 四维显式绑定组成，加上功能池唯一标识 **PageKey**，禁止根据名称推测映射关系：
 
-| 维度 | 强制命名 | SSoT 规则 |
-| --- | --- | --- |
+| 维度     | 强制命名                                                                | SSoT 规则                                                                                                                                                                                 |
+| -------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Resource | `<domain>.<singular_resource>`；全小写，段内 `snake_case`，默认恰好两段 | 在 `contract.ts` 导出 `XxxResource` 常量；Descriptor 与 Manifest 只引用常量。例：`material.item_master`、`customer.store`。禁止裸 key、大小写、复数漂移。确需更深层级必须先在本规范登记。 |
-| Subject | `PascalCase` | 实体型 Subject 必须与真实 Prisma model 同名；非实体能力只能使用门禁内有界白名单，并在定义处写明 capability 例外原因。 |
-| Action | 小写动词或 `snake_case` 动作 | CRUD/导入导出使用共享 `StandardAction`；领域动作使用 `as const` 对象，如 `QuoteAction.AUDIT`。Contract、Manifest、guard、`ability.can`、`assert*Ability` 禁止魔法字符串。 |
-| Field | `camelCase` | 每个 Subject 有自己的 `XxxField = {...} as const` 字典；实体型字段必须存在于对应 Prisma model；受控列与字段策略调用点只引用字段常量。 |
+| Subject  | `PascalCase`                                                            | 实体型 Subject 必须与真实 Prisma model 同名；非实体能力只能使用门禁内有界白名单，并在定义处写明 capability 例外原因。                                                                     |
+| Action   | 小写动词或 `snake_case` 动作                                            | CRUD/导入导出使用共享 `StandardAction`；领域动作使用 `as const` 对象，如 `QuoteAction.AUDIT`。Contract、Manifest、guard、`ability.can`、`assert*Ability` 禁止魔法字符串。                 |
+| Field    | `camelCase`                                                             | 每个 Subject 有自己的 `XxxField = {...} as const` 字典；实体型字段必须存在于对应 Prisma model；受控列与字段策略调用点只引用字段常量。                                                     |
+| PageKey  | 全小写 `kebab-case`，包含至少一个中划线                                 | 切片贡献功能页面池的唯一标识，例如 `customer-stores`、`material-categories`。门禁正则 `/^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$/` 强制校验，杜绝驼峰或下划线混杂。                                |
 
 TypeScript 中使用 `as const` 常量对象和推导 union，禁止使用 TypeScript 原生 `enum`（消除 IIFE 胶水与打包冗余）：
 
@@ -49,9 +50,7 @@ export const itemMasterPageContract: FeaturePagePermissionDescriptor = {
   resource: ItemResource.MASTER,
   subject: ItemSubject.MASTER,
   actions: [{ action: StandardAction.READ, label: "查看" }],
-  configurableFields: [
-    { field: ItemMasterField.ITEM_CODE, label: "商品编码" },
-  ],
+  configurableFields: [{ field: ItemMasterField.ITEM_CODE, label: "商品编码" }],
 };
 ```
 
@@ -121,8 +120,16 @@ export const CustomerField = {
 export const customerConfigurableFields = [
   { field: CustomerField.CUSTOMER_CODE, label: "客户编码", isSensitive: false },
   { field: CustomerField.CUSTOMER_NAME, label: "客户名称", isSensitive: false },
-  { field: CustomerField.DEFAULT_TAX_RATE, label: "默认税率(%)", isSensitive: true },
-  { field: CustomerField.CREDIT_LIMIT, label: "信用额度(元)", isSensitive: true },
+  {
+    field: CustomerField.DEFAULT_TAX_RATE,
+    label: "默认税率(%)",
+    isSensitive: true,
+  },
+  {
+    field: CustomerField.CREDIT_LIMIT,
+    label: "信用额度(元)",
+    isSensitive: true,
+  },
   { field: CustomerField.STATUS, label: "客户状态", isSensitive: false },
 ] as const;
 

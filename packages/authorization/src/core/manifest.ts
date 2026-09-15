@@ -51,29 +51,33 @@ export interface FeatureConfigurableField {
 }
 
 /**
- * 标准功能页面元数据契约（供功能池与动态菜单引用，纯数据兼容 RSC 跨端序列化）
+ * 切片自声明页面输入项（切片只需声明页面本身属性，featureId 和 featureName 由 Manifest 容器层自动注入）
  */
-export interface StandardPageDescriptor {
-  /** 全局唯一功能键，例如 'material.unit', 'customer.classification' */
+export interface FeaturePageInput {
+  /** 全局唯一功能键，例如 'material-categories', 'customer-stores' */
   readonly pageKey: string;
-  /** 默认显示中文名称（例如 '计量单位'） */
+  /** 默认显示中文名称（例如 '分类与品种'） */
   readonly defaultLabel: string;
-  /** 物理路由地址（例如 '/materials/units'） */
+  /** 物理路由地址（例如 '/materials/categories'） */
   readonly href: string;
-  /** 默认推荐图标名称（例如 'Scale', 'Tags'） */
+  /** 默认推荐图标名称（例如 'Layers', 'Store'） */
   readonly defaultIcon?: string;
   /** 关联的 CASL 权限主体 (SSoT) */
   readonly requiredSubject?: string;
   /** 关联的 CASL 权限动作 (默认为 read) */
   readonly requiredAction?: string;
-  /** 所属业务切片标识（例如 'material-center'） */
-  readonly featureId: string;
-  /** 所属业务切片中文名（例如 '物料管理'） */
-  readonly featureName: string;
-  /** 排序权重 */
-  readonly order?: number;
   /** 徽标或额外提示（可选） */
   readonly badge?: string;
+}
+
+/**
+ * 标准功能页面元数据契约（供功能池与动态菜单引用，纯数据兼容 RSC 跨端序列化）
+ */
+export interface StandardPageDescriptor extends FeaturePageInput {
+  /** 所属业务切片标识（自动继承 Manifest.id） */
+  readonly featureId: string;
+  /** 所属业务切片中文名（自动继承 Manifest.name） */
+  readonly featureName: string;
 }
 
 /**
@@ -143,11 +147,11 @@ export interface TenantFeatureManifest {
   readonly id: string;
   /** 切片中文显示名称 (如 '采购中心') */
   readonly name: string;
-  /** 排序权重 (数字越小越靠前) */
+  /** 排序权重 (可选，仅用于全局注册排序) */
   readonly order?: number;
-  /** 切片贡献的标准页面功能池清单（解耦粒度，供动态菜单选用） */
-  readonly pages?: readonly StandardPageDescriptor[];
-  /** 切片贡献的导航区块与菜单项（出厂默认预设推荐树） */
+  /** 切片贡献的标准页面功能池清单（解耦粒度，供动态菜单选用；切片内无需重复写 featureId 与 featureName） */
+  readonly pages?: readonly (FeaturePageInput | StandardPageDescriptor)[];
+  /** 切片贡献的导航区块与菜单项（出厂默认预设推荐树，系统基座专用） */
   readonly navSections?: readonly FeatureNavSection[];
   /** 切片贡献的角色权限树与受控资源定义（全局唯一权限事实源） */
   readonly permissionModules?: readonly FeatureModulePermissionDescriptor[];
@@ -513,12 +517,20 @@ export function derivePageList(
   const pages: StandardPageDescriptor[] = [];
 
   for (const manifest of sortedManifests) {
-    // 1. 若切片显式提供了 pages，直接收集
+    // 1. 若切片显式提供了 pages，直接规范化收集（自动注入容器层的 featureId 与 featureName）
     if (manifest.pages && manifest.pages.length > 0) {
       for (const p of manifest.pages) {
         if (!seenPageKeys.has(p.pageKey)) {
           seenPageKeys.add(p.pageKey);
-          pages.push(p);
+          pages.push({
+            ...p,
+            featureId:
+              "featureId" in p && p.featureId ? p.featureId : manifest.id,
+            featureName:
+              "featureName" in p && p.featureName
+                ? p.featureName
+                : manifest.name,
+          });
         }
       }
     }

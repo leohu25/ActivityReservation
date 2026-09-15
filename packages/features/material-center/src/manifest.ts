@@ -27,48 +27,38 @@ import {
 export const materialManifest: TenantFeatureManifest = {
   id: "material-center",
   name: "物料与工艺中心",
-  order: 15,
-  navSections: [
+  pages: [
     {
-      id: "materials",
-      order: 15,
-      items: [
-        {
-          id: "group-material-center",
-          label: "物料管理",
-          icon: "Boxes",
-          items: [
-            {
-              id: "material-categories",
-              label: "分类与品种",
-              href: "/materials/categories",
-              requiredAction: StandardAction.READ,
-              requiredSubject: ItemCategorySubject,
-            },
-            {
-              id: "material-units",
-              label: "计量单位",
-              href: "/materials/units",
-              requiredAction: StandardAction.READ,
-              requiredSubject: UnitOfMeasureSubject,
-            },
-            {
-              id: "material-items",
-              label: "商品档案",
-              href: "/materials/items",
-              requiredAction: StandardAction.READ,
-              requiredSubject: ItemMasterSubject,
-            },
-            {
-              id: "material-boms",
-              label: "工艺BOM",
-              href: "/materials/boms",
-              requiredAction: StandardAction.READ,
-              requiredSubject: BomHeaderSubject,
-            },
-          ],
-        },
-      ],
+      pageKey: "material-categories",
+      defaultLabel: "分类与品种",
+      href: "/materials/categories",
+      defaultIcon: "Layers",
+      requiredAction: StandardAction.READ,
+      requiredSubject: ItemCategorySubject,
+    },
+    {
+      pageKey: "material-units",
+      defaultLabel: "计量单位",
+      href: "/materials/units",
+      defaultIcon: "Scale",
+      requiredAction: StandardAction.READ,
+      requiredSubject: UnitOfMeasureSubject,
+    },
+    {
+      pageKey: "material-items",
+      defaultLabel: "商品档案",
+      href: "/materials/items",
+      defaultIcon: "Boxes",
+      requiredAction: StandardAction.READ,
+      requiredSubject: ItemMasterSubject,
+    },
+    {
+      pageKey: "material-boms",
+      defaultLabel: "工艺BOM",
+      href: "/materials/boms",
+      defaultIcon: "FileSpreadsheet",
+      requiredAction: StandardAction.READ,
+      requiredSubject: BomHeaderSubject,
     },
   ],
   permissionModules: [

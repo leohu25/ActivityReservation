@@ -89,7 +89,6 @@ function generateRegistryCode(features) {
     "import {",
     "  deriveCatalogDefinitions,",
     "  derivePermissionCatalog,",
-    "  deriveNavSections,",
     "  derivePermissionTree,",
     "  derivePageList,",
     "  derivePageCatalog,",
@@ -129,9 +128,6 @@ export const globalTenantCatalogDefinitions = deriveCatalogDefinitions(
 
 /** 全局租户 CASL PermissionCatalog 实例 (供全局 Ability 工厂编译使用) */
 export const globalTenantCatalog = derivePermissionCatalog(ALL_TENANT_MANIFESTS);
-
-/** 全局租户侧边栏导航区块定义 (出厂默认预设，含工作台、客户中心、业务中心、系统管理) */
-export const globalTenantNavSections = deriveNavSections(ALL_TENANT_MANIFESTS);
 
 /** 全局租户角色权限管理树 (供系统管理 / 角色权限配置界面直接消费) */
 export const globalTenantPermissionTree = derivePermissionTree(ALL_TENANT_MANIFESTS);

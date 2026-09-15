@@ -9,6 +9,7 @@ const resourcePattern = /^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/;
 const subjectPattern = /^[A-Z][A-Za-z0-9]*$/;
 const actionPattern = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/;
 const fieldPattern = /^[a-z][A-Za-z0-9]*$/;
+const pageKeyPattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$/;
 const violations = [];
 
 function lineOf(source, index) {
@@ -260,6 +261,19 @@ for (const [fieldName, item] of fieldsByName) {
 
 for (const file of filesUnder(featureRoot, (f) => f.endsWith("/manifest.ts"))) {
   const source = fs.readFileSync(file, "utf8");
+  for (const match of source.matchAll(/pageKey:\s*"([^"]+)"/g)) {
+    const value = match[1];
+    if (!pageKeyPattern.test(value)) {
+      fail(
+        file,
+        match.index,
+        "pageKey",
+        "lowercase kebab-case (e.g. customer-stores or material-categories)",
+        value,
+        "lowercase kebab-case string with at least one hyphen",
+      );
+    }
+  }
   for (const match of source.matchAll(/requiredAction:\s*"([^"]+)"/g))
     fail(
       file,
