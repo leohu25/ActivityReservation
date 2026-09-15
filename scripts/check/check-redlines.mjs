@@ -388,6 +388,33 @@ for (const pkg of workspacePackages) {
   }
 }
 
+// 规则 8：严禁在仓库内引入平台相关 Bash 脚本 (*.sh)，所有脚本必须使用跨平台 Node.js (*.mjs)
+function scanForbiddenShellScripts(dir, shellFiles = []) {
+  if (!fs.existsSync(dir)) return shellFiles;
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (shouldIgnore(fullPath)) continue;
+    if (entry.isDirectory()) {
+      scanForbiddenShellScripts(fullPath, shellFiles);
+    } else if (/\.(sh|bash)$/i.test(entry.name)) {
+      shellFiles.push(fullPath);
+    }
+  }
+  return shellFiles;
+}
+
+const forbiddenShellFiles = scanForbiddenShellScripts(workspaceRoot);
+for (const shellFile of forbiddenShellFiles) {
+  const relPath = path.relative(workspaceRoot, shellFile).replace(/\\/g, "/");
+  violations.push({
+    file: relPath,
+    line: 1,
+    rule: "严禁在仓库中新增平台相关的 Shell 脚本 (*.sh/*.bash)，所有构建/门禁/治理脚本必须统一使用跨平台 Node.js (*.mjs)",
+    code: `Forbidden shell script: ${path.basename(shellFile)}`,
+  });
+}
+
 if (violations.length > 0) {
   process.stderr.write(
     `\x1b[31m✗ [Redline Violations] 发现 ${violations.length} 处违背架构红线代码:\x1b[0m\n`,

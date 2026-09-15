@@ -12,13 +12,14 @@ process.chdir(WORKSPACE_ROOT);
 
 const GREEN = "\x1b[32m";
 const BLUE = "\x1b[34m";
+const YELLOW = "\x1b[33m";
 const RED = "\x1b[31m";
 const NC = "\x1b[0m";
 
 console.log(`${BLUE}>>> 全栈 Harness 启动自检 (Environment Check & Test)${NC}`);
 
 // 1. 检查根目录治理底座
-console.log(`${BLUE}[1/6] 治理底座:${NC}`);
+console.log(`${BLUE}[1/7] 治理底座:${NC}`);
 const bootstrapScript = path.join(
   WORKSPACE_ROOT,
   ".harness/lifecycle/bootstrap.mjs",
@@ -30,8 +31,51 @@ if (bootstrapRes.status !== 0) {
   process.exit(bootstrapRes.status ?? 1);
 }
 
-// 2. 检查开发环境 (Node / pnpm / Git / Hooks)
-console.log(`${BLUE}[2/6] 开发环境:${NC}`);
+// 2. 检查跨平台脚本规范（强制全部使用 .mjs，严禁 .sh 脚本）
+console.log(`${BLUE}[2/7] 跨平台脚本规范检查:${NC}`);
+function scanShellScripts(dir, list = []) {
+  if (!fs.existsSync(dir)) return list;
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (
+      entry.name === "node_modules" ||
+      entry.name === ".git" ||
+      entry.name === ".turbo" ||
+      entry.name === ".next" ||
+      entry.name === "dist"
+    ) {
+      continue;
+    }
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      scanShellScripts(fullPath, list);
+    } else if (/\.(sh|bash)$/i.test(entry.name)) {
+      list.push(fullPath);
+    }
+  }
+  return list;
+}
+
+const illegalShellScripts = scanShellScripts(WORKSPACE_ROOT);
+if (illegalShellScripts.length > 0) {
+  console.log(
+    `  ${RED}✗ 跨平台规范违规：检测到 ${illegalShellScripts.length} 个平台相关的 Shell 脚本 (*.sh/*.bash)${NC}`,
+  );
+  for (const item of illegalShellScripts) {
+    const rel = path.relative(WORKSPACE_ROOT, item);
+    console.log(`    ${RED}• ${rel}${NC}`);
+  }
+  console.log(
+    `  ${YELLOW}💡 规范指引：为了确保 Windows/Mac/Linux 跨平台无缝协同，所有脚本必须统一使用 Node.js (*.mjs)${NC}`,
+  );
+  process.exit(1);
+}
+console.log(
+  `  • 脚本生态: ${GREEN}合规 (100% 纯 Node.js/*.mjs，无平台耦合 .sh 脚本)${NC}`,
+);
+
+// 3. 检查开发环境 (Node / pnpm / Git / Hooks)
+console.log(`${BLUE}[3/7] 开发环境:${NC}`);
 const REQ_NODE = 22;
 const nodeVer = process.version;
 const majorNodeVer = Number.parseInt(
@@ -79,8 +123,8 @@ node scripts/verify.mjs
   console.log(`  • Git     : ${GREEN}就绪 (clean restartable)${NC}`);
 }
 
-// 3. 环境变量引导检查
-console.log(`${BLUE}[3/6] 环境变量检查:${NC}`);
+// 4. 环境变量引导检查
+console.log(`${BLUE}[4/7] 环境变量检查:${NC}`);
 const tenantEnv = path.join(WORKSPACE_ROOT, "apps/tenant/.env.local");
 if (!fs.existsSync(tenantEnv)) {
   console.log(
@@ -99,8 +143,8 @@ if (!fs.existsSync(controlEnv)) {
   console.log(`  • apps/control/.env.local: ${GREEN}已就绪${NC}`);
 }
 
-// 4. 离线类型与客户端生成（自愈确保干净克隆后开箱即用）
-console.log(`${BLUE}[4/6] Prisma 客户端自愈生成 (Turborepo Pipeline):${NC}`);
+// 5. 离线类型与客户端生成（自愈确保干净克隆后开箱即用）
+console.log(`${BLUE}[5/7] Prisma 客户端自愈生成 (Turborepo Pipeline):${NC}`);
 try {
   execSync("pnpm turbo run generate --output-logs=errors-only", {
     stdio: "inherit",
@@ -110,9 +154,9 @@ try {
 }
 console.log(`  • Prisma Client: ${GREEN}已就绪 (db-control & db-tenant)${NC}`);
 
-// 5. Control DB Day 0 自愈初始化（开发与生产使用相同运行时机制）
+// 6. Control DB Day 0 自愈初始化（开发与生产使用相同运行时机制）
 if (fs.existsSync(controlEnv)) {
-  console.log(`${BLUE}[5/6] Control DB 基线检查:${NC}`);
+  console.log(`${BLUE}[6/7] Control DB 基线检查:${NC}`);
   try {
     execSync("pnpm db:platform:ensure", { stdio: "inherit" });
   } catch {
@@ -120,12 +164,12 @@ if (fs.existsSync(controlEnv)) {
     process.exit(1);
   }
 } else {
-  console.log(`${BLUE}[5/6] Control DB 基线检查:${NC}`);
+  console.log(`${BLUE}[6/7] Control DB 基线检查:${NC}`);
   console.log("  • 跳过：apps/control/.env.local 未配置");
 }
 
-// 6. 会话状态与沙盒检测
-console.log(`${BLUE}[6/6] 会话上下文:${NC}`);
+// 7. 会话状态与沙盒检测
+console.log(`${BLUE}[7/7] 会话上下文:${NC}`);
 const sessionStartScript = path.join(
   WORKSPACE_ROOT,
   ".harness/lifecycle/session-start.mjs",

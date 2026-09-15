@@ -45,6 +45,16 @@
   - 刚刚验证通过且代码未再修改时，直接执行提交，由 `pre-commit` 自动兜底；
   - 日常开发优先执行单 Package 测试或类型检查，避免无节制全量扫盘。
 
+## 6.1. 跨平台脚本全量采用 Node.js (*.mjs)，严禁新增 Shell 脚本 (*.sh)
+
+- **痛点**：团队成员跨 Windows、macOS 与 Linux 协同开发，历史上使用 Bash (`*.sh`) 编写的 `init.sh`、`verify.sh`、`status.sh` 在 Windows（PowerShell / CMD / VS Code 默认终端）下无法直接运行或路径解析错乱，导致流程中断，甚至因 CRLF 换行符引发门禁误报。
+- **解法与铁律**：
+  - **100% 纯 Node.js 实现**：全仓所有环境探测、质量门禁、清理与日常辅助工具全面使用 `*.mjs` 编写（如 `scripts/init.mjs`、`scripts/verify.mjs`、`scripts/clean.mjs`）；
+  - **双重硬拦截机制**：
+    1. **启动时拦截**：`pnpm init`（`scripts/init.mjs`）在启动自检的第 2 步专门扫描工作区，发现任何 `*.sh` / `*.bash` 立即硬退出；
+    2. **提交时拦截**：`scripts/check/check-redlines.mjs` 作为提交红线，发现 Shell 脚本立即阻止 `git commit`；
+  - **换行符防御**：通过根目录 `.gitattributes` 强制 `eol=lf`，彻底消除跨操作系统文本行尾符差异。
+
 ## 7. 公共 UI 模块与 shadcn 官方组件安装规范 (Monorepo SOP)
 
 - **痛点**：

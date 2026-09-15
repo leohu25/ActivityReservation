@@ -160,3 +160,16 @@ test("redline rejects raw active/disabled status magic strings in business code"
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /严禁在业务代码中裸写主数据启停状态魔法值/);
 });
+
+test("redline rejects platform-specific shell scripts (*.sh)", async () => {
+  const result = await runFixture({
+    "packages/shared/package.json": JSON.stringify({
+      name: "@base/shared",
+    }),
+    "packages/shared/src/index.ts": "export const ok = 1;\n",
+    "scripts/legacy.sh": "#!/usr/bin/env bash\necho 1\n",
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /严禁在仓库中新增平台相关的 Shell 脚本/);
+});

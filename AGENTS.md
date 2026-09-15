@@ -25,13 +25,13 @@
 - **单任务聚焦 (One feature/task at a time)**：每次仅处理一个明确目标，严禁跨范围随意修改无关文件；
 - **提交前必须审阅确认 (Human Review Before Commit)**：在执行 `git commit` 前，智能体必须主动向用户呈现本次修改清单与核心变更说明，**获得用户明确确认审阅通过后方可执行提交**，严禁擅自静默提交；
 - **提交信息必须使用中文 (Chinese Commit Message)**：Git 提交信息必须严格遵循 Conventional Commits 规范，且 Header 说明与 Body 详细要点**必须使用中文书写**（例如 `feat(material): 实现物料与工艺BOM中心及全仓权限四维契约标准化`），严禁使用全英文提交信息；
-- **门禁由钩子兜底 (No manual gate runs)**：日常开发**不要**手动全量运行 `./scripts/verify.sh`（耗时且由 Git `pre-commit` 自动兜底）；即时反馈仅对改动文件执行同级单测或类型检查；
+- **门禁由钩子兜底 (No manual gate runs)**：日常开发**不要**手动全量运行 `pnpm verify`（耗时且由 Git `pre-commit` 自动兜底）；即时反馈仅对改动文件执行同级单测或类型检查；
 - **单源状态收敛**：特性开发进度与真实交付证据严格记录至 `feature_list.json` 与沙盒 `progress.md`；
 - **保持整洁可重启**：结束时工作区随时可重新无损运行 `pnpm init`（或 `node scripts/init.mjs`）。
 
 ---
 
-## 八大工程红线 (Zero-Tolerance Rules)
+## 九大工程红线 (Zero-Tolerance Rules)
 
 1. **严禁破坏模块与依赖边界**：严格受限于目标改动范围；引用兄弟包必须在 `package.json` 显式声明 `"workspace:*"`，严禁幽灵依赖；
 2. **严禁未经审阅擅自提交与带病提交**：必须经用户显式审阅确认后提交；代码必须保证 `git commit` 时 pre-commit 门禁一次性通过，**严禁用 `--no-verify` 绕过钩子**；
@@ -40,7 +40,8 @@
 5. **严禁硬编码权限与越权**：认证归 Better Auth（管进门），授权统一由 CASL 强类型判定（管屋内），禁止混淆两者边界；
 6. **严禁绕过租户物理隔离**：PostgreSQL Database-per-tenant 隔离，业务数据必须由 `TenantDbManager` 动态路由，严禁拼接直连连接串或跨租户穿透；
 7. **业务实体必带审计基线**：除明确白名单豁免外，所有业务数据实体模型必须强制包含 8 大基础审计与软删除字段（ADR-009，门禁静态硬拦截）；
-8. **交互单次确认与零全页强刷**：破坏性操作统一由 `ConfirmDialog` 提示一次，严禁浏览器原生 `confirm(...)` 与 `window.location.reload()`。
+8. **交互单次确认与零全页强刷**：破坏性操作统一由 `ConfirmDialog` 提示一次，严禁浏览器原生 `confirm(...)` 与 `window.location.reload()`；
+9. **跨平台统一 Node.js 脚本规范**：全仓所有构建、门禁、初始化与治理脚本必须 100% 使用 Node.js (`*.mjs`) 实现，**严禁引入平台相关的 Shell 脚本 (`*.sh` / `*.bash`)**，抹平 Windows/Mac/Linux 开发环境差异。门禁与 `init.mjs` 强制静态与运行时双重拦截。
 
 ---
 
