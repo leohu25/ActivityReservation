@@ -1140,6 +1140,50 @@ model SalesOrderItem {
   @@map("sales_order_item")
 }
 
+model TenantMenuItem {
+  /// 节点主键ID
+  id           String    @id @default(cuid())
+  /// 父节点ID (空表示顶级大菜单/顶级单页)
+  parentId     String?   @map("parent_id")
+  /// 节点类型: GROUP(大菜单/目录分组) | PAGE(具体功能页面) | LINK(外部链接)
+  itemType     String    @default("PAGE") @map("item_type")
+  /// 关联的标准页面键名 (若 itemType="PAGE"，对应 StandardPageDescriptor.pageKey)
+  pageKey      String?   @map("page_key")
+  /// 外部跳转 URL (若 itemType="LINK"，如 "https://bi.company.com")
+  externalUrl  String?   @map("external_url")
+  /// 是否在新标签页打开
+  openInNewTab Boolean   @default(false) @map("open_in_new_tab")
+  /// 自定义显示别名 (现场实施重命名；空则使用页面契约 defaultLabel)
+  customLabel  String?   @map("custom_label")
+  /// 自定义图标名称 (空则使用页面契约 defaultIcon)
+  customIcon   String?   @map("custom_icon")
+  /// 排序权重 (升序排列)
+  sortOrder    Int       @default(0) @map("sort_order")
+  /// 是否可见
+  isVisible    Boolean   @default(true) @map("is_visible")
+
+  /// 创建人 ID
+  createdById  String    @default("system") @map("created_by_id")
+  /// 归属部门 ID
+  deptId       String?   @map("dept_id")
+  /// 更新人 ID
+  updatedById  String?   @map("updated_by_id")
+  /// 创建时间
+  createdAt    DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  /// 软删除标记
+  isDeleted    Boolean   @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt    DateTime? @map("deleted_at")
+  /// 软删除人 ID
+  deletedById  String?   @map("deleted_by_id")
+
+  @@index([parentId, sortOrder])
+  @@index([isDeleted])
+  @@map("tenant_menu_item")
+}
+
 model UnitConversion {
   /// 换算规则主键ID
   id             String    @id @default(cuid())

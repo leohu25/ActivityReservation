@@ -5,7 +5,6 @@ export {
   saveRolePermissionsAction,
   createRoleAction,
   deleteRoleAction,
-  getSystemRoleDefaultsAction,
 } from "./actions";
 export {
   TenantRoleService,

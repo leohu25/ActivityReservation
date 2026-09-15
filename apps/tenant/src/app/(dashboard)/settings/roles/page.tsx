@@ -8,7 +8,9 @@ import {
   ALL_TENANT_MANIFESTS,
   globalTenantPermissionTree,
   getTenantSubjectPermissions,
+  getTenantCustomMenuTree,
 } from "@/kernel";
+import { deriveMenuAlignedPermissionTree } from "@base/authorization";
 
 /**
  * 租户角色与权限管理页面 (Server Component - 极薄装配线)
@@ -79,12 +81,23 @@ export default async function SettingsRolesPage() {
   // 2. 加载当前租户下的全量角色列表 (通过 Server Query，包含内置与自定义角色)
   const roles = await listTenantRolesQuery(ALL_TENANT_MANIFESTS);
 
+  // 3. 读取租户当前自定义业务菜单树，动态组装出与菜单层级 100% 对齐的角色权限树
+  const customMenuTree = await getTenantCustomMenuTree(activeOrgId);
+  const alignedPermissionTree = deriveMenuAlignedPermissionTree(
+    ALL_TENANT_MANIFESTS,
+    customMenuTree,
+  );
+
   return (
     <div className="space-y-6">
       <RolePermissionManager
         initialRoles={roles}
         activeOrgId={activeOrgId}
-        permissionTree={globalTenantPermissionTree}
+        permissionTree={
+          alignedPermissionTree.length > 0
+            ? alignedPermissionTree
+            : globalTenantPermissionTree
+        }
       />
     </div>
   );

@@ -12,6 +12,10 @@ export interface FeatureNavItem {
   /** 图标名称 (例如 'PackageCheck', 'UserCheck', 'LayoutDashboard') */
   readonly icon?: string;
   readonly badge?: string;
+  /** 链接打开方式，如 '_blank' 在新标签页打开 */
+  readonly target?: string;
+  /** 是否为外部链接 */
+  readonly isExternal?: boolean;
   readonly requiredAction?: string;
   readonly requiredSubject?: string;
 }
@@ -44,6 +48,58 @@ export interface FeatureConfigurableField {
   readonly field: string;
   readonly label: string;
   readonly sensitive?: boolean;
+}
+
+/**
+ * 标准功能页面元数据契约（供功能池与动态菜单引用，纯数据兼容 RSC 跨端序列化）
+ */
+export interface StandardPageDescriptor {
+  /** 全局唯一功能键，例如 'material.unit', 'customer.classification' */
+  readonly pageKey: string;
+  /** 默认显示中文名称（例如 '计量单位'） */
+  readonly defaultLabel: string;
+  /** 物理路由地址（例如 '/materials/units'） */
+  readonly href: string;
+  /** 默认推荐图标名称（例如 'Scale', 'Tags'） */
+  readonly defaultIcon?: string;
+  /** 关联的 CASL 权限主体 (SSoT) */
+  readonly requiredSubject?: string;
+  /** 关联的 CASL 权限动作 (默认为 read) */
+  readonly requiredAction?: string;
+  /** 所属业务切片标识（例如 'material-center'） */
+  readonly featureId: string;
+  /** 所属业务切片中文名（例如 '物料管理'） */
+  readonly featureName: string;
+  /** 排序权重 */
+  readonly order?: number;
+  /** 徽标或额外提示（可选） */
+  readonly badge?: string;
+}
+
+/**
+ * 租户自定义菜单树节点模型（纯数据结构，持久化于租户独立数据库）
+ */
+export interface TenantMenuNode {
+  readonly id: string;
+  readonly parentId?: string | null;
+  /** 节点类型: "GROUP"（目录大菜单）| "PAGE"（具体功能页面）| "LINK"（外部链接） */
+  readonly itemType: "GROUP" | "PAGE" | "LINK";
+  /** 若为 PAGE，则关联 StandardPageDescriptor.pageKey */
+  readonly pageKey?: string | null;
+  /** 若为 LINK，则为外部跳转完整 URL (如 "https://bi.company.com") */
+  readonly externalUrl?: string | null;
+  /** 是否在新标签页打开 */
+  readonly openInNewTab?: boolean;
+  /** 租户自定义覆盖名称（为空则使用对应页面的 defaultLabel） */
+  readonly customLabel?: string | null;
+  /** 租户自定义图标（为空则使用对应页面的 defaultIcon） */
+  readonly customIcon?: string | null;
+  /** 排序权重 (升序) */
+  readonly sortOrder: number;
+  /** 是否可见 */
+  readonly isVisible?: boolean;
+  /** 子节点列表 */
+  readonly children?: readonly TenantMenuNode[];
 }
 
 /**
@@ -89,7 +145,9 @@ export interface TenantFeatureManifest {
   readonly name: string;
   /** 排序权重 (数字越小越靠前) */
   readonly order?: number;
-  /** 切片贡献的导航区块与菜单项 */
+  /** 切片贡献的标准页面功能池清单（解耦粒度，供动态菜单选用） */
+  readonly pages?: readonly StandardPageDescriptor[];
+  /** 切片贡献的导航区块与菜单项（出厂默认预设推荐树） */
   readonly navSections?: readonly FeatureNavSection[];
   /** 切片贡献的角色权限树与受控资源定义（全局唯一权限事实源） */
   readonly permissionModules?: readonly FeatureModulePermissionDescriptor[];
@@ -99,6 +157,159 @@ export interface TenantFeatureManifest {
  * 从 Feature Manifests 数组中提取并派生全局 CASL PermissionDefinition 数组
  * 纯函数：从各切片的 permissionModules 中无损提取受控资源、动作及字段配置，消除双重声明
  */
+/**
+ * 根据租户动态菜单树生成与菜单心智对齐的角色权限树 (Menu-Aligned Permission Tree)
+ * 遵循主流企业级 ERP 规范：
+ * 1. 优先按照租户当前实际保存的菜单目录结构（Group -> Page）组织权限项；
+ * 2. 如果页面挂载了对应的 CASL FeaturePagePermissionDescriptor，则挂载其 Actions、Scopes 与 Fields；
+ * 3. 自动将未出现在菜单中的系统基座（工作台、组织与员工、角色权限、系统设置等）统一聚合为底部的【系统底座与管理】分区；
+ * 4. 若租户未配置任何自定义菜单（tree 为空），则安全平滑回退为底座默认派生的切片权限树。
+ */
+export function deriveMenuAlignedPermissionTree(
+  manifests: readonly TenantFeatureManifest[],
+  menuTree: readonly TenantMenuNode[],
+): FeatureModulePermissionDescriptor[] {
+  const basePermissionTree = derivePermissionTree(manifests);
+  if (!menuTree || menuTree.length === 0) {
+    return basePermissionTree;
+  }
+
+  // 1. 构建全局全量受控页面索引：resource -> descriptor, subject -> descriptor, path -> descriptor
+  const resourceMap = new Map<string, FeaturePagePermissionDescriptor>();
+  const subjectMap = new Map<string, FeaturePagePermissionDescriptor>();
+  const pathMap = new Map<string, FeaturePagePermissionDescriptor>();
+
+  for (const mod of basePermissionTree) {
+    for (const page of mod.pages) {
+      resourceMap.set(page.resource, page);
+      if (page.subject) subjectMap.set(page.subject, page);
+      if (page.path) pathMap.set(page.path, page);
+    }
+  }
+
+  const pageCatalog = derivePageCatalog(manifests);
+  const matchedResources = new Set<string>();
+
+  // 2. 递归遍历菜单树，将菜单目录转化为权限模块
+  const modules: FeatureModulePermissionDescriptor[] = [];
+  let moduleOrder = 10;
+
+  function processMenuNodes(
+    nodes: readonly TenantMenuNode[],
+    parentLabelPrefix = "",
+  ) {
+    for (const node of nodes) {
+      if (node.isVisible === false) continue;
+
+      if (node.itemType === "GROUP") {
+        const groupLabel = node.customLabel || "未命名分组";
+        const fullLabel = parentLabelPrefix
+          ? `${parentLabelPrefix} / ${groupLabel}`
+          : groupLabel;
+
+        // 收集该目录下所有叶子页面节点
+        const groupPages: FeaturePagePermissionDescriptor[] = [];
+
+        function collectLeaves(subNodes: readonly TenantMenuNode[]) {
+          for (const sub of subNodes) {
+            if (sub.isVisible === false) continue;
+            if (sub.itemType === "PAGE" && sub.pageKey) {
+              const meta = pageCatalog.get(sub.pageKey);
+              if (!meta) continue;
+
+              // 尝试匹配受控页面契约
+              const pageContract =
+                (meta.requiredSubject
+                  ? subjectMap.get(meta.requiredSubject)
+                  : undefined) ||
+                (meta.href ? pathMap.get(meta.href) : undefined);
+
+              if (pageContract) {
+                matchedResources.add(pageContract.resource);
+                // 覆盖 label 与 path，带上菜单里的自定义名称
+                groupPages.push({
+                  ...pageContract,
+                  label:
+                    sub.customLabel || meta.defaultLabel || pageContract.label,
+                  path: meta.href || pageContract.path,
+                });
+              }
+            } else if (sub.itemType === "GROUP" && sub.children) {
+              collectLeaves(sub.children);
+            }
+          }
+        }
+
+        if (node.children) {
+          collectLeaves(node.children);
+        }
+
+        if (groupPages.length > 0) {
+          modules.push({
+            moduleKey: `menu-${node.id}`,
+            label: fullLabel,
+            iconName: node.customIcon || "Folder",
+            order: moduleOrder++,
+            pages: groupPages,
+          });
+        }
+      } else if (
+        node.itemType === "PAGE" &&
+        node.pageKey &&
+        !parentLabelPrefix
+      ) {
+        // 顶级单页
+        const meta = pageCatalog.get(node.pageKey);
+        if (meta) {
+          const pageContract =
+            (meta.requiredSubject
+              ? subjectMap.get(meta.requiredSubject)
+              : undefined) || (meta.href ? pathMap.get(meta.href) : undefined);
+
+          if (pageContract) {
+            matchedResources.add(pageContract.resource);
+            modules.push({
+              moduleKey: `menu-${node.id}`,
+              label: node.customLabel || meta.defaultLabel,
+              iconName: node.customIcon || meta.defaultIcon || "FileText",
+              order: moduleOrder++,
+              pages: [
+                {
+                  ...pageContract,
+                  label: node.customLabel || meta.defaultLabel,
+                  path: meta.href || pageContract.path,
+                },
+              ],
+            });
+          }
+        }
+      }
+    }
+  }
+
+  processMenuNodes(menuTree);
+
+  // 3. 将未挂载在自定义业务菜单中的系统基座（或未分配受控页面）追加在末尾
+  for (const mod of basePermissionTree) {
+    const unallocatedPages = mod.pages.filter(
+      (p) => !matchedResources.has(p.resource),
+    );
+    if (unallocatedPages.length > 0) {
+      modules.push({
+        ...mod,
+        moduleKey: `base-${mod.moduleKey}`,
+        label: mod.label.includes("管理")
+          ? mod.label
+          : `${mod.label} (系统内置)`,
+        order: 1000 + (mod.order ?? 0),
+        pages: unallocatedPages,
+      });
+    }
+  }
+
+  return modules;
+}
+
 export function deriveCatalogDefinitions(
   manifests: readonly TenantFeatureManifest[],
 ): PermissionDefinition[] {
@@ -285,4 +496,261 @@ export function filterNavSections(
   }
 
   return filteredSections;
+}
+
+/**
+ * 从 Feature Manifests 数组中提取并聚合所有可用标准页面功能池 (Page Catalog)
+ * 具备自愈与无损兼容能力：优先读取 manifest.pages；若切片未声明 pages，则从 navSections 递归提取
+ */
+export function derivePageList(
+  manifests: readonly TenantFeatureManifest[],
+): StandardPageDescriptor[] {
+  const sortedManifests = [...manifests].sort(
+    (a, b) => (a.order ?? 100) - (b.order ?? 100),
+  );
+
+  const seenPageKeys = new Set<string>();
+  const pages: StandardPageDescriptor[] = [];
+
+  for (const manifest of sortedManifests) {
+    // 1. 若切片显式提供了 pages，直接收集
+    if (manifest.pages && manifest.pages.length > 0) {
+      for (const p of manifest.pages) {
+        if (!seenPageKeys.has(p.pageKey)) {
+          seenPageKeys.add(p.pageKey);
+          pages.push(p);
+        }
+      }
+    }
+
+    // 2. 同时从 navSections 扫描补充（确保已有切片零改动即可无缝充实功能池）
+    if (manifest.navSections) {
+      for (const sec of manifest.navSections) {
+        for (const item of sec.items) {
+          if ("items" in item && Array.isArray(item.items)) {
+            for (const child of item.items) {
+              const key = child.id;
+              if (!seenPageKeys.has(key)) {
+                seenPageKeys.add(key);
+                pages.push({
+                  pageKey: key,
+                  defaultLabel: child.label,
+                  href: child.href,
+                  defaultIcon: child.icon,
+                  requiredAction: child.requiredAction ?? "read",
+                  requiredSubject: child.requiredSubject,
+                  featureId: manifest.id,
+                  featureName: manifest.name,
+                  badge: child.badge,
+                });
+              }
+            }
+          } else {
+            const leaf = item as FeatureNavItem;
+            const key = leaf.id;
+            if (!seenPageKeys.has(key)) {
+              seenPageKeys.add(key);
+              pages.push({
+                pageKey: key,
+                defaultLabel: leaf.label,
+                href: leaf.href,
+                defaultIcon: leaf.icon,
+                requiredAction: leaf.requiredAction ?? "read",
+                requiredSubject: leaf.requiredSubject,
+                featureId: manifest.id,
+                featureName: manifest.name,
+                badge: leaf.badge,
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return pages;
+}
+
+/**
+ * 生成按 pageKey 索引的只读 Map，加速运行时权限与路由检索
+ */
+export function derivePageCatalog(
+  manifests: readonly TenantFeatureManifest[],
+): Map<string, StandardPageDescriptor> {
+  const list = derivePageList(manifests);
+  return new Map(list.map((p) => [p.pageKey, p]));
+}
+
+/**
+ * 租户菜单扁平记录抽象契约（与数据库持久化实体解耦）
+ */
+export interface FlatTenantMenuItemRecord {
+  readonly id: string;
+  readonly parentId?: string | null;
+  readonly itemType: string;
+  readonly pageKey?: string | null;
+  readonly externalUrl?: string | null;
+  readonly openInNewTab?: boolean;
+  readonly customLabel?: string | null;
+  readonly customIcon?: string | null;
+  readonly sortOrder?: number;
+  readonly isVisible?: boolean;
+}
+
+/**
+ * 通用纯函数：将扁平数据库记录组装为支持无限多层级嵌套的菜单树 (Flat to Recursive Tree)
+ * 具备 O(n) 时间复杂度，自动纠偏无效 parentId 孤儿节点并按 sortOrder 稳定排序
+ */
+export function buildMenuTree(
+  records: readonly FlatTenantMenuItemRecord[],
+): TenantMenuNode[] {
+  if (!records || records.length === 0) {
+    return [];
+  }
+
+  type MutableMenuNode = TenantMenuNode & { children: TenantMenuNode[] };
+  const nodeMap = new Map<string, MutableMenuNode>();
+  const roots: MutableMenuNode[] = [];
+
+  for (const r of records) {
+    nodeMap.set(r.id, {
+      id: r.id,
+      parentId: r.parentId || null,
+      itemType: (r.itemType as "GROUP" | "PAGE" | "LINK") || "PAGE",
+      pageKey: r.pageKey || null,
+      externalUrl: r.externalUrl || null,
+      openInNewTab: Boolean(r.openInNewTab),
+      customLabel: r.customLabel || null,
+      customIcon: r.customIcon || null,
+      sortOrder: r.sortOrder ?? 0,
+      isVisible: r.isVisible !== false,
+      children: [],
+    });
+  }
+
+  for (const r of records) {
+    const node = nodeMap.get(r.id)!;
+    if (r.parentId && nodeMap.has(r.parentId)) {
+      nodeMap.get(r.parentId)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+
+  // 递归对每一层的 children 按 sortOrder 升序排序
+  function sortNodes(nodes: MutableMenuNode[]): TenantMenuNode[] {
+    nodes.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    for (const n of nodes) {
+      if (n.children && n.children.length > 0) {
+        sortNodes(n.children as MutableMenuNode[]);
+      }
+    }
+    return nodes;
+  }
+
+  return sortNodes(roots);
+}
+
+/**
+ * 依据 CASL Ability 对租户自定义菜单树执行服务端递归安全剪枝 (Server-side Pruning)
+ * 支持 1 级、2 级、3 级及以上无限层级递归，自动物理折叠无权空目录，转换输出为 @base/ui Sidebar 所需的 FeatureNavSection[]
+ */
+export function pruneDynamicMenuTree(
+  tree: readonly TenantMenuNode[],
+  pageMap:
+    | Map<string, StandardPageDescriptor>
+    | ReadonlyMap<string, StandardPageDescriptor>,
+  can: (action: string, subject: string) => boolean,
+): FeatureNavSection[] {
+  function pruneNode(
+    node: TenantMenuNode,
+  ): (FeatureNavItem | FeatureNavGroup) | null {
+    if (node.isVisible === false) return null;
+
+    if (node.itemType === "LINK") {
+      return {
+        id: node.id,
+        label: node.customLabel || "外部链接",
+        href: node.externalUrl || "#",
+        icon: node.customIcon || "ExternalLink",
+        target: node.openInNewTab ? "_blank" : undefined,
+        isExternal: true,
+      };
+    }
+
+    if (node.itemType === "GROUP") {
+      const sortedChildren = [...(node.children || [])]
+        .filter((c) => c.isVisible !== false)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+      const allowedChildren: (FeatureNavItem | FeatureNavGroup)[] = [];
+      for (const child of sortedChildren) {
+        const pruned = pruneNode(child);
+        if (pruned) {
+          allowedChildren.push(pruned);
+        }
+      }
+
+      // 若当前目录下的所有后代子项均被裁切，整组自动物理隐藏，消除空抽屉
+      if (allowedChildren.length === 0) {
+        return null;
+      }
+
+      return {
+        id: node.id,
+        label: node.customLabel || "未命名分组",
+        icon: node.customIcon || undefined,
+        items: allowedChildren as readonly FeatureNavItem[],
+      };
+    }
+
+    // PAGE 功能页面
+    if (!node.pageKey) return null;
+    const pageMeta = pageMap.get(node.pageKey);
+    if (!pageMeta) return null;
+
+    // 安全权限校验：只认底座受控 Subject & Action，不受菜单层级与重命名影响
+    if (
+      pageMeta.requiredSubject &&
+      pageMeta.requiredAction &&
+      !can(pageMeta.requiredAction, pageMeta.requiredSubject)
+    ) {
+      return null;
+    }
+
+    return {
+      id: node.id,
+      label: node.customLabel || pageMeta.defaultLabel,
+      href: pageMeta.href,
+      icon: node.customIcon || pageMeta.defaultIcon || undefined,
+      badge: pageMeta.badge,
+      requiredAction: pageMeta.requiredAction,
+      requiredSubject: pageMeta.requiredSubject,
+    };
+  }
+
+  const visibleNodes = [...tree]
+    .filter((n) => n.isVisible !== false)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+  const items: (FeatureNavItem | FeatureNavGroup)[] = [];
+
+  for (const node of visibleNodes) {
+    const pruned = pruneNode(node);
+    if (pruned) {
+      items.push(pruned);
+    }
+  }
+
+  if (items.length === 0) {
+    return [];
+  }
+
+  return [
+    {
+      id: "dynamic-nav",
+      order: 0,
+      items,
+    },
+  ];
 }

@@ -1,0 +1,12 @@
+{
+  "formatVersion": 1,
+  "scope": "tenant",
+  "version": "20260915035330",
+  "name": "add_tenant_menu_item",
+  "previousVersion": "20260913144525",
+  "checksum": "1caf411f3eefb70592d55ca34377f333c3f859faeaa5f9d7c972dfdfca6ea6ae",
+  "schemaChecksum": "3d8c60344483145f42a1f4dd7168c699a7f7d229a2d253c86faa5d3d44a133b2",
+  "createdAt": "2026-09-15T03:53:30.057Z",
+  "risks": [],
+  "rollbackSupported": true
+}

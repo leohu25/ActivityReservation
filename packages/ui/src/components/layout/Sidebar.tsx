@@ -44,8 +44,9 @@ import {
 } from "../shadcn/sidebar";
 import { cn } from "../../lib/utils";
 import { ThemeToggle } from "../ThemeToggle";
+import { DynamicNavIcon } from "../composite/icon";
 
-/** 单个导航项模型（支持普通叶子链接或带子项的折叠分组） */
+/** 单个导航项模型（支持普通叶子链接、外链或带子项的折叠分组） */
 export interface NavItem {
   readonly id: string;
   readonly label: string;
@@ -53,31 +54,35 @@ export interface NavItem {
   readonly href?: string;
   readonly category?: string;
   readonly badge?: string;
+  /** 链接打开方式，例如 '_blank' 在新标签页打开 */
+  readonly target?: "_blank" | "_self" | string;
+  /** 是否为外部链接 */
+  readonly isExternal?: boolean;
   readonly requiredAction?: string;
   readonly requiredSubject?: string;
   readonly items?: readonly NavItem[];
   readonly children?: readonly NavItem[];
 }
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  LayoutDashboard,
-  PackageCheck,
-  UserCheck,
-  Users,
-  ShieldCheck,
-  Settings,
-  FileText,
-  KeyRound,
-  Layers,
-};
+function isLinkExternal(item: {
+  readonly href?: string;
+  readonly target?: string;
+  readonly isExternal?: boolean;
+}): boolean {
+  if (item.target === "_blank" || item.isExternal) return true;
+  if (item.href && /^https?:\/\//i.test(item.href)) return true;
+  return false;
+}
 
-function renderNavIcon(icon: ReactNode | string | undefined): ReactNode {
+function renderNavIcon(
+  icon: ReactNode | string | undefined,
+  fallbackType: "group" | "page" | "external" = "page",
+): ReactNode {
   if (!icon) {
-    return <LayoutDashboard />;
+    return <DynamicNavIcon fallbackType={fallbackType} />;
   }
   if (typeof icon === "string") {
-    const IconComponent = ICON_MAP[icon] || LayoutDashboard;
-    return <IconComponent />;
+    return <DynamicNavIcon name={icon} fallbackType={fallbackType} />;
   }
   return icon;
 }
@@ -193,7 +198,26 @@ function FlyoutMenuLinks({
     <>
       {subItems.map((child) => {
         const active = isPathActive(currentPath, child.href);
-        return (
+        const external = isLinkExternal(child);
+        return external ? (
+          <a
+            key={child.id}
+            href={child.href ?? "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              "flex h-8 min-w-0 items-center gap-2 rounded-md px-2 text-sm transition-colors",
+              "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sidebar-foreground",
+            )}
+          >
+            <span className="truncate">{child.label}</span>
+            {child.badge ? (
+              <span className="ml-auto text-[10px] font-normal text-muted-foreground">
+                {child.badge}
+              </span>
+            ) : null}
+          </a>
+        ) : (
           <Link
             key={child.id}
             href={child.href ?? "#"}
@@ -240,7 +264,7 @@ function NavGroupItem({
         <HoverCard openDelay={50} closeDelay={150}>
           <HoverCardTrigger asChild>
             <SidebarMenuButton isActive={childActive}>
-              {renderNavIcon(item.icon)}
+              {renderNavIcon(item.icon, "group")}
               <span className="group-data-[collapsible=icon]:hidden">
                 {item.label}
               </span>
@@ -275,7 +299,7 @@ function NavGroupItem({
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
           <SidebarMenuButton isActive={childActive} tooltip={item.label}>
-            {renderNavIcon(item.icon)}
+            {renderNavIcon(item.icon, "group")}
             <span>{item.label}</span>
             <ChevronDown className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
           </SidebarMenuButton>
@@ -283,23 +307,41 @@ function NavGroupItem({
         {item.badge ? <SidebarMenuBadge>{item.badge}</SidebarMenuBadge> : null}
         <CollapsibleContent>
           <SidebarMenuSub>
-            {subItems.map((child) => (
-              <SidebarMenuSubItem key={child.id}>
-                <SidebarMenuSubButton
-                  asChild
-                  isActive={isPathActive(currentPath, child.href)}
-                >
-                  <Link href={child.href ?? "#"}>
-                    <span>{child.label}</span>
-                    {child.badge ? (
-                      <span className="ml-auto text-[10px] font-normal text-muted-foreground">
-                        {child.badge}
-                      </span>
-                    ) : null}
-                  </Link>
-                </SidebarMenuSubButton>
-              </SidebarMenuSubItem>
-            ))}
+            {subItems.map((child) => {
+              const external = isLinkExternal(child);
+              return (
+                <SidebarMenuSubItem key={child.id}>
+                  <SidebarMenuSubButton
+                    asChild
+                    isActive={isPathActive(currentPath, child.href)}
+                  >
+                    {external ? (
+                      <a
+                        href={child.href ?? "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <span>{child.label}</span>
+                        {child.badge ? (
+                          <span className="ml-auto text-[10px] font-normal text-muted-foreground">
+                            {child.badge}
+                          </span>
+                        ) : null}
+                      </a>
+                    ) : (
+                      <Link href={child.href ?? "#"}>
+                        <span>{child.label}</span>
+                        {child.badge ? (
+                          <span className="ml-auto text-[10px] font-normal text-muted-foreground">
+                            {child.badge}
+                          </span>
+                        ) : null}
+                      </Link>
+                    )}
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              );
+            })}
           </SidebarMenuSub>
         </CollapsibleContent>
       </SidebarMenuItem>
@@ -371,14 +413,26 @@ export function Sidebar({
     }
 
     const isActive = isPathActive(currentPath, item.href);
+    const external = isLinkExternal(item);
 
     return (
       <SidebarMenuItem key={item.id}>
         <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
-          <Link href={item.href ?? "#"}>
-            {renderNavIcon(item.icon)}
-            <span>{item.label}</span>
-          </Link>
+          {external ? (
+            <a
+              href={item.href ?? "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {renderNavIcon(item.icon, "external")}
+              <span>{item.label}</span>
+            </a>
+          ) : (
+            <Link href={item.href ?? "#"}>
+              {renderNavIcon(item.icon, "page")}
+              <span>{item.label}</span>
+            </Link>
+          )}
         </SidebarMenuButton>
         {item.badge ? <SidebarMenuBadge>{item.badge}</SidebarMenuBadge> : null}
       </SidebarMenuItem>

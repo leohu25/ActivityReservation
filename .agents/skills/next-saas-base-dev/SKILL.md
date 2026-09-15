@@ -51,12 +51,12 @@ agent_created: true
 - **(c) 组件组装零冗余 (Zero Glue, Zero Redundancy)**：同一类交互形态在系统内有且仅有一套标准实现与统一导出，彻底废除多余别名与历史胶水包装，保持命名清晰、直观、主流；
 - **(d) 复杂超大表单演进标准 (Complex Form Standard)**：当前轻量表单采用受控 React 状态与 Zod 校验；后续若出现超大、深层嵌套联动或频繁动态字段的复杂单据表单，底层驱动引擎统一切换为业界标准 **React Hook Form (`react-hook-form` + `@hookform/resolvers/zod`)**，保持对外暴露的 `FormModal` 声明式 API 完全不变，以获得非受控高性能与脏检查能力。
 
- 1. **测试同级就近共存 (Colocation)**：遵循 Next.js 官方最佳实践，单元测试文件必须与被测试的目标组件/服务处于同一目录下（如 `CustomerView.tsx` 与 `CustomerView.test.tsx` 同级），严禁在模块根目录平铺孤儿测试文件；
- 2. **业务实体必须包含基础审计与软删除字段**：所有业务主数据和单据表必须强制具备 `createdById`、`deptId`、`updatedById`、`isDeleted`、`deletedAt`、`deletedById`、`createdAt`、`updatedAt` 8 个基准字段，静态门禁脚本 `scripts/check/check-entity-baseline.mjs` 在 `pnpm verify` 与 `git commit` 时硬拦截违规模型（详见 `references/2-schema-migrate.md`）；
- 3. **提交前必须审阅确认 (Human Review Before Commit)**：在执行 `git commit` 前，智能体必须主动向用户呈现本次修改清单与核心变更说明，**获得用户明确确认审阅通过后方可执行提交**，严禁擅自静默提交；
- 4. **提交信息必须强制使用中文 (Chinese Commit Message)**：Git 提交信息必须严格遵循 Conventional Commits 规范，且 Header 描述与 Body 详细要点**必须强制使用中文书写**（如 `feat(material): 实现物料与工艺BOM中心及全仓权限四维契约标准化`），严禁使用全英文提交信息；
- 5. **严禁手写裸 DOM 与原生非受控控件**：界面必须 100% 使用 `@base/ui` (shadcn) 原子与复合套件搭建（如 `Table`, `DatePicker`, `Select`, `Dialog`, `Button`, `DataTable.Workspace`, `FormModal` 等），严禁在业务切片内手写原生 `<table>`、原生 `<input type="date">` 或手写零散裸 `div` 布局；
- 6. **严禁破坏运行时与序列化防线（严禁 RSC 跨端透传函数）**：RSC 通过 server-only Query 读取，禁止内部 HTTP 伪接口绕调；RSC 向 Client 组件仅允许传递经序列化的纯数据，**严禁将未标 `"use server"` 的 query 函数或普通服务端函数作为 prop 直接传递给 Client 组件**；Server Action 必须使用 `defineServerAction` 包装并通过 `toPlainData` 彻底消除 Date/Decimal 跨端序列化异常。
+1.  **测试同级就近共存 (Colocation)**：遵循 Next.js 官方最佳实践，单元测试文件必须与被测试的目标组件/服务处于同一目录下（如 `CustomerView.tsx` 与 `CustomerView.test.tsx` 同级），严禁在模块根目录平铺孤儿测试文件；
+2.  **业务实体必须包含基础审计与软删除字段**：所有业务主数据和单据表必须强制具备 `createdById`、`deptId`、`updatedById`、`isDeleted`、`deletedAt`、`deletedById`、`createdAt`、`updatedAt` 8 个基准字段，静态门禁脚本 `scripts/check/check-entity-baseline.mjs` 在 `pnpm verify` 与 `git commit` 时硬拦截违规模型（详见 `references/2-schema-migrate.md`）；
+3.  **提交前必须审阅确认 (Human Review Before Commit)**：在执行 `git commit` 前，智能体必须主动向用户呈现本次修改清单与核心变更说明，**获得用户明确确认审阅通过后方可执行提交**，严禁擅自静默提交；
+4.  **提交信息必须强制使用中文 (Chinese Commit Message)**：Git 提交信息必须严格遵循 Conventional Commits 规范，且 Header 描述与 Body 详细要点**必须强制使用中文书写**（如 `feat(material): 实现物料与工艺BOM中心及全仓权限四维契约标准化`），严禁使用全英文提交信息；
+5.  **严禁手写裸 DOM 与原生非受控控件**：界面必须 100% 使用 `@base/ui` (shadcn) 原子与复合套件搭建（如 `Table`, `DatePicker`, `Select`, `Dialog`, `Button`, `DataTable.Workspace`, `FormModal` 等），严禁在业务切片内手写原生 `<table>`、原生 `<input type="date">` 或手写零散裸 `div` 布局；
+6.  **严禁破坏运行时与序列化防线（严禁 RSC 跨端透传函数）**：RSC 通过 server-only Query 读取，禁止内部 HTTP 伪接口绕调；RSC 向 Client 组件仅允许传递经序列化的纯数据，**严禁将未标 `"use server"` 的 query 函数或普通服务端函数作为 prop 直接传递给 Client 组件**；Server Action 必须使用 `defineServerAction` 包装并通过 `toPlainData` 彻底消除 Date/Decimal 跨端序列化异常。
 
 ---
 
@@ -84,16 +84,16 @@ Phase 7: 契约对齐单测与全栈门禁验证
 
 ### 业务切片阶段排期表与调阅索引
 
-| 阶段 | 核心任务 | 交付物与验证指标 | 深入阅读文档 |
-| :--- | :--- | :--- | :--- |
-| **Phase 0<br>架构拓扑** | 建立 `src/features/<feature>/` 垂直切片骨架，配置 `package.json#exports` 语义子路径，杜绝根平铺。 | • 标准 7~8 件套目录骨架<br>• Client/Server 双语义出口 | `references/0-architecture-topology.md` |
-| **Phase 1<br>数据建模** | 切片内定义模型（强制包含审计与软删除 8 基线字段），由 `@base/db-tenant` 聚合生成 Client，运行基线迁移。 | • `prisma/schema.prisma`<br>• `pnpm run db:migrate:generate` | `references/2-schema-migrate.md` |
-| **Phase 2<br>纯数据契约** | 编写无 JSX、无 DOM 的纯数据契约，定义实体标识、受控字段枚举与页面操作契约。 | • Feature `contract.ts`<br>• 字段与动作单一事实源 (SSoT) | `references/1-contracts.md` |
-| **Phase 3<br>服务与 Query** | 封装领域业务逻辑、软删除安全校验；建立 RSC server-only 读取与数据范围 SQL 物理下推入口。 | • Feature `service.ts` / `queries.ts`<br>• 业务单元测试同级通过 | `references/3-services.md` |
-| **Phase 4<br>安全 Actions** | mutation 使用 `defineServerAction`，执行认证、CASL 守卫、操作人审计落库与跨端序列化防错。 | • Feature `actions.ts`<br>• 读取不绕 Server Action | `references/4-server-actions.md` |
-| **Phase 5<br>高密度 UI** | 基于 `@base/ui` 构建；官方 CASL Provider（layout 注入）+ `useAbility`/积木；单次确认、Toast、零白屏。 | • Feature `ui/<Page>View.tsx`<br>• 无 permissions props，零全页刷新 | `references/5-ui-components.md`<br>`references/7-casl-ability-provider.md` |
-| **Phase 6<br>路由与清单** | 租户端 `layout.tsx` 挂 `*AbilityBoundary`；page 纯只读拉取；`manifest.ts` 暴露受控页面与导航。 | • `apps/tenant/.../layout.tsx`<br>• `src/manifest.ts` + 静态清单更新 | `references/6-tenant-routing.md`<br>`references/7-casl-ability-provider.md` |
-| **Phase 7<br>对齐单测** | 编写页面视图与契约 100% 对齐自动化单测，执行全栈门禁验证。 | • `<Page>View.test.tsx`<br>• `pnpm check` & `pnpm test` 全绿 | `references/6-tenant-routing.md` |
+| 阶段                        | 核心任务                                                                                                | 交付物与验证指标                                                     | 深入阅读文档                                                                |
+| :-------------------------- | :------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------- | :-------------------------------------------------------------------------- |
+| **Phase 0<br>架构拓扑**     | 建立 `src/features/<feature>/` 垂直切片骨架，配置 `package.json#exports` 语义子路径，杜绝根平铺。       | • 标准 7~8 件套目录骨架<br>• Client/Server 双语义出口                | `references/0-architecture-topology.md`                                     |
+| **Phase 1<br>数据建模**     | 切片内定义模型（强制包含审计与软删除 8 基线字段），由 `@base/db-tenant` 聚合生成 Client，运行基线迁移。 | • `prisma/schema.prisma`<br>• `pnpm run db:migrate:generate`         | `references/2-schema-migrate.md`                                            |
+| **Phase 2<br>纯数据契约**   | 编写无 JSX、无 DOM 的纯数据契约，定义实体标识、受控字段枚举与页面操作契约。                             | • Feature `contract.ts`<br>• 字段与动作单一事实源 (SSoT)             | `references/1-contracts.md`                                                 |
+| **Phase 3<br>服务与 Query** | 封装领域业务逻辑、软删除安全校验；建立 RSC server-only 读取与数据范围 SQL 物理下推入口。                | • Feature `service.ts` / `queries.ts`<br>• 业务单元测试同级通过      | `references/3-services.md`                                                  |
+| **Phase 4<br>安全 Actions** | mutation 使用 `defineServerAction`，执行认证、CASL 守卫、操作人审计落库与跨端序列化防错。               | • Feature `actions.ts`<br>• 读取不绕 Server Action                   | `references/4-server-actions.md`                                            |
+| **Phase 5<br>高密度 UI**    | 基于 `@base/ui` 构建；官方 CASL Provider（layout 注入）+ `useAbility`/积木；单次确认、Toast、零白屏。   | • Feature `ui/<Page>View.tsx`<br>• 无 permissions props，零全页刷新  | `references/5-ui-components.md`<br>`references/7-casl-ability-provider.md`  |
+| **Phase 6<br>路由与清单**   | 租户端 `layout.tsx` 挂 `*AbilityBoundary`；page 纯只读拉取；`manifest.ts` 暴露受控页面与导航。          | • `apps/tenant/.../layout.tsx`<br>• `src/manifest.ts` + 静态清单更新 | `references/6-tenant-routing.md`<br>`references/7-casl-ability-provider.md` |
+| **Phase 7<br>对齐单测**     | 编写页面视图与契约 100% 对齐自动化单测，执行全栈门禁验证。                                              | • `<Page>View.test.tsx`<br>• `pnpm check` & `pnpm test` 全绿         | `references/6-tenant-routing.md`                                            |
 
 ---
 
@@ -104,8 +104,8 @@ Phase 7: 契约对齐单测与全栈门禁验证
 ### 1. 基础设施核心模块职责拓扑
 
 - **`@base/auth` (双端身份认证)**：基于 Better Auth + Organization 插件，负责登录凭据、Cookie 会话管理与租户组织成员资格维护；
-- **`@base/authorization` (四层权限闭环)**：CASL 驱动准入门禁 (Gate)、功能操作 (Statement)、数据范围 SQL 物理下推 (Data Scope) 与字段三态策略 (Field Policy)，通过纯 JSON `AbilitySnapshot` 安全跨端并在客户端使用官方 `TenantAbilityProvider` 重建；
-- **`@base/db-tenant` (动态多租户物理分库连接池)**：PostgreSQL Database-per-tenant 治理，`globalThis` 全局单例杜绝 HMR 句柄泄漏，`initializing` 互斥锁防止高并发初次连接击穿，`secretRef` 环境变量安全凭据解耦；
+- **`@base/authorization` (四层权限闭环)**：CASL 驱动准入门禁 (Gate)、功能操作 (Statement)、数据范围 SQL 物理下推 (Data Scope) 与字段三态策略 (Field Policy)，通过纯 JSON `AbilitySnapshot` 安全跨端并在客户端使用官方 `TenantAbilityProvider` 重建；提供动态菜单树构建 (`buildMenuTree`)、服务端递归安全剪枝 (`pruneDynamicMenuTree`) 与菜单对齐权限树派生 (`deriveMenuAlignedPermissionTree`)；
+- **`@base/db-tenant` (动态多租户物理分库连接池)**：PostgreSQL Database-per-tenant 治理，`globalThis` 全局单例杜绝 HMR 句柄泄漏，`initializing` 互斥锁防止高并发初次连接击穿，`secretRef` 环境变量安全凭据解耦；包含 `TenantMenuItem` 租户自定义菜单物理模型（纯标量 parentId 零死锁设计）；
 - **`@base/db-control` (总控库客户端)**：管理平台集中控制库 `saas_control`，服务于租户开辟、状态机管控与全局审计；
 - **`tooling/db-migrate` (12-Factor 无状态预编译迁移引擎)**：构建期静态化预编译 `runtime-catalog.ts`，运行期 0 CLI 子进程；`@db-migrate-extension` 切片 Schema 动态聚合；Day 0 状态机自愈与 `pg_advisory_xact_lock` 事务咨询锁保障；
 - **`@base/ui` (技术中立设计系统与组件库)**：技术基础设施保持完全中立，不硬编码具体视觉风格。原子层严格由 `npx shadcn@latest add` 维护，组合层沉淀 `DataTable` 企业级积木套件、`CrudFormModal` 三态表单、`EditableDetailTable` 明细表与声明式 `AuthGuard`；项目的具体视觉语言（如 Chenrun Digital ERP 风格）作为外部 Theme 资产在 `design-system/` 与 CSS 语义变量中配置注入；
@@ -126,18 +126,18 @@ Phase 7: 契约对齐单测与全栈门禁验证
 
 ## 渐进式深度阅读导航索引 (Progressive Disclosure Map)
 
-| 阶段/领域 | 核心内容与适用场景 | 指南文档路径 |
-| :--- | :--- | :--- |
-| **切片架构骨架** | FDD 垂直切片规范、7~8 件套目录拓扑、exports 声明与平铺改造 SOP | `references/0-architecture-topology.md` |
-| **纯数据契约** | 契约单一事实源、受控字段枚举、操作动作声明与 AbilityProvider 对接 | `references/1-contracts.md` |
-| **数据建模与迁移** | 多租户物理分库、8 大审计与软删除基线字段 (ADR-009)、db-migrate 演进 | `references/2-schema-migrate.md` |
-| **领域服务与 Query** | 领域业务封装、软删除过滤、RSC server-only Queries 读取与 SQL 范围下推 | `references/3-services.md` |
-| **安全 Actions** | defineServerAction 包装、CASL 写路径守卫、落库操作人审计与序列化防错 | `references/4-server-actions.md` |
-| **高密度工业风 UI** | DataTable 组合套件、CrudFormModal 三态表单、单次确认对话框、Toast 反馈 | `references/5-ui-components.md` |
-| **路由与 Manifest** | 租户端/管控端路由、AbilityBoundary 注入、特性清单自发现与对齐单测 | `references/6-tenant-routing.md` |
-| **官方 CASL 范式** | AbilitySnapshot 服务端生成、TenantAbilityProvider 注入与 useAbility 消费 | `references/7-casl-ability-provider.md` |
-| **平台基座与基建** | @base/* 核心基础设施包迭代、TenantDbManager 治理、db-migrate 引擎演进 | `references/8-base-infrastructure.md` |
-| **整体架构白皮书** | 系统全景设计、双平面运行模型、四大架构支柱与 ADR 权威总索引 | `docs/ARCHITECTURE.md` |
-| **多租户分库深度解析** | Database-per-tenant 物理隔离、凭据解耦、并发防击穿与租户全生命周期 | `docs/architecture/saas-multitenant-architecture.md` |
-| **权限系统全链路** | 四层权限闭环编译、SQL 自动下推、字段物理剥离与端到端交互时序 | `docs/permissions/permission-architecture-deep-dive.md` |
-| **迁移引擎深度解析** | 12-Factor 原则、预编译 Catalog、Schema 聚合器与咨询锁机制 | `docs/architecture/database-migration-engine.md` |
+| 阶段/领域              | 核心内容与适用场景                                                       | 指南文档路径                                            |
+| :--------------------- | :----------------------------------------------------------------------- | :------------------------------------------------------ |
+| **切片架构骨架**       | FDD 垂直切片规范、7~8 件套目录拓扑、exports 声明与平铺改造 SOP           | `references/0-architecture-topology.md`                 |
+| **纯数据契约**         | 契约单一事实源、受控字段枚举、操作动作声明与 AbilityProvider 对接        | `references/1-contracts.md`                             |
+| **数据建模与迁移**     | 多租户物理分库、8 大审计与软删除基线字段 (ADR-009)、db-migrate 演进      | `references/2-schema-migrate.md`                        |
+| **领域服务与 Query**   | 领域业务封装、软删除过滤、RSC server-only Queries 读取与 SQL 范围下推    | `references/3-services.md`                              |
+| **安全 Actions**       | defineServerAction 包装、CASL 写路径守卫、落库操作人审计与序列化防错     | `references/4-server-actions.md`                        |
+| **高密度工业风 UI**    | DataTable 组合套件、CrudFormModal 三态表单、单次确认对话框、Toast 反馈   | `references/5-ui-components.md`                         |
+| **路由与 Manifest**    | 租户端/管控端路由、AbilityBoundary 注入、特性清单自发现与对齐单测        | `references/6-tenant-routing.md`                        |
+| **官方 CASL 范式**     | AbilitySnapshot 服务端生成、TenantAbilityProvider 注入与 useAbility 消费 | `references/7-casl-ability-provider.md`                 |
+| **平台基座与基建**     | @base/* 核心基础设施包迭代、TenantDbManager 治理、db-migrate 引擎演进    | `references/8-base-infrastructure.md`                   |
+| **整体架构白皮书**     | 系统全景设计、双平面运行模型、四大架构支柱与 ADR 权威总索引              | `docs/ARCHITECTURE.md`                                  |
+| **多租户分库深度解析** | Database-per-tenant 物理隔离、凭据解耦、并发防击穿与租户全生命周期       | `docs/architecture/saas-multitenant-architecture.md`    |
+| **权限系统全链路**     | 四层权限闭环编译、SQL 自动下推、字段物理剥离与端到端交互时序             | `docs/permissions/permission-architecture-deep-dive.md` |
+| **迁移引擎深度解析**   | 12-Factor 原则、预编译 Catalog、Schema 聚合器与咨询锁机制                | `docs/architecture/database-migration-engine.md`        |

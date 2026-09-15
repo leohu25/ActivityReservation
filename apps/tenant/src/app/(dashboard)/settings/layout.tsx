@@ -9,9 +9,10 @@ export default async function SettingsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [companyProfile, roleManagement] = await Promise.all([
+  const [companyProfile, roleManagement, tenantMenuItem] = await Promise.all([
     getTenantSubjectPermissions("CompanyProfile"),
     getTenantSubjectPermissions("RoleManagement"),
+    getTenantSubjectPermissions("TenantMenuItem"),
   ]);
 
   return (
@@ -20,6 +21,7 @@ export default async function SettingsLayout({
         subjects: {
           CompanyProfile: companyProfile,
           RoleManagement: roleManagement,
+          TenantMenuItem: tenantMenuItem,
         },
       }}
     >

@@ -13,6 +13,8 @@
     "./role-management/server": "./src/features/role-management/public.server.ts",
     "./tenant-settings": "./src/features/tenant-settings/public.ts",
     "./tenant-settings/server": "./src/features/tenant-settings/public.server.ts",
+    "./nav-management": "./src/features/nav-management/public.ts",
+    "./nav-management/server": "./src/features/nav-management/public.server.ts",
     "./audit-log": "./src/features/audit-log/public.ts",
     "./shared": "./src/shared/public.ts",
     "./shared/server": "./src/shared/server/context.ts"

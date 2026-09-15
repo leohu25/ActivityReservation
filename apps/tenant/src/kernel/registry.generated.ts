@@ -3,12 +3,17 @@
  * 全局租户自描述特性注册表（编译期自动发现生成）
  * 遵循 ADR-006：集中在应用内核装配层，消除切片间横向依赖。
  */
-import type { TenantFeatureManifest } from "@base/authorization";
+import type {
+ TenantFeatureManifest,
+ StandardPageDescriptor,
+} from "@base/authorization";
 import {
-  deriveCatalogDefinitions,
-  derivePermissionCatalog,
-  deriveNavSections,
-  derivePermissionTree,
+ deriveCatalogDefinitions,
+ derivePermissionCatalog,
+ deriveNavSections,
+ derivePermissionTree,
+ derivePageList,
+ derivePageCatalog,
 } from "@base/authorization";
 import { tenantAdminManifest } from "@base/feature-tenant-admin/manifest";
 import { customerManifest } from "@base/feature-customer-center/manifest";
@@ -17,23 +22,46 @@ import { orderManifest } from "@base/feature-order-center/manifest";
 import { procurementManifest } from "@base/feature-procurement-center";
 
 export const ALL_TENANT_MANIFESTS: readonly TenantFeatureManifest[] = [
-  tenantAdminManifest,
-  customerManifest,
-  materialManifest,
-  orderManifest,
-  procurementManifest,
+ tenantAdminManifest,
+ customerManifest,
+ materialManifest,
+ orderManifest,
+ procurementManifest,
+] as const;
+
+/** 纯业务切片清单 (排除系统管理，供业务自定义菜单选用) */
+export const BUSINESS_TENANT_MANIFESTS: readonly TenantFeatureManifest[] = [
+ customerManifest,
+ materialManifest,
+ orderManifest,
+ procurementManifest,
 ] as const;
 
 /** 全局租户权限清单定义数组 (无伪模块，纯业务实体) */
-export const globalTenantCatalogDefinitions = deriveCatalogDefinitions(
-  ALL_TENANT_MANIFESTS,
-);
+export const globalTenantCatalogDefinitions =
+ deriveCatalogDefinitions(ALL_TENANT_MANIFESTS);
 
 /** 全局租户 CASL PermissionCatalog 实例 (供全局 Ability 工厂编译使用) */
-export const globalTenantCatalog = derivePermissionCatalog(ALL_TENANT_MANIFESTS);
+export const globalTenantCatalog =
+ derivePermissionCatalog(ALL_TENANT_MANIFESTS);
 
-/** 全局租户侧边栏导航区块定义 (含工作台、客户中心、业务中心、系统管理) */
+/** 全局租户侧边栏导航区块定义 (出厂默认预设，含工作台、客户中心、业务中心、系统管理) */
 export const globalTenantNavSections = deriveNavSections(ALL_TENANT_MANIFESTS);
 
 /** 全局租户角色权限管理树 (供系统管理 / 角色权限配置界面直接消费) */
-export const globalTenantPermissionTree = derivePermissionTree(ALL_TENANT_MANIFESTS);
+export const globalTenantPermissionTree =
+ derivePermissionTree(ALL_TENANT_MANIFESTS);
+
+/** 全局租户可用标准功能页面池清单 (纯数据数组，全量页面) */
+export const globalTenantPageList: readonly StandardPageDescriptor[] =
+ derivePageList(ALL_TENANT_MANIFESTS);
+
+/** 纯业务功能页面池清单 (排除工作台与系统管理，专供租户业务菜单配置选用) */
+export const globalBusinessPageList: readonly StandardPageDescriptor[] =
+ derivePageList(BUSINESS_TENANT_MANIFESTS);
+
+/** 全局租户可用标准功能页面池 Map 索引 (供服务端运行时高频快速定位权限与路由) */
+export const globalTenantPageCatalog: ReadonlyMap<
+ string,
+ StandardPageDescriptor
+> = derivePageCatalog(ALL_TENANT_MANIFESTS);

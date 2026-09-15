@@ -1,0 +1,25 @@
+# 构建产物与缓存
+node_modules
+.next
+out
+build
+dist
+.turbo
+
+# 纯原子组件（保持官方原汁原味，避免格式化产生海量 diff）
+packages/ui/src/components/shadcn/**
+
+# 数据库迁移与生成产物
+*.generated.*
+packages/db-tenant/prisma/schema.generated.prisma
+packages/db-control/prisma/schema.generated.prisma
+tooling/db-migrate/generated
+pnpm-lock.yaml
+
+# 环境变量与日志
+.env
+.env.*
+*.log
+
+# Git
+.git

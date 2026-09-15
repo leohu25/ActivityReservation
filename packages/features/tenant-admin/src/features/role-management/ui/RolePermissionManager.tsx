@@ -45,11 +45,7 @@ import {
 } from "@base/authorization";
 import type { TenantRoleItem } from "../types";
 import { CreateRoleModal } from "./CreateRoleModal";
-import {
-  saveRolePermissionsAction,
-  deleteRoleAction,
-  getSystemRoleDefaultsAction,
-} from "../actions";
+import { saveRolePermissionsAction, deleteRoleAction } from "../actions";
 import {
   DATA_SCOPE_SELECT_OPTIONS,
   type ModulePermissionDescriptor,
@@ -152,7 +148,7 @@ export function RolePermissionManager({
 
   // --- 交互处理函数 ---
 
-  // 1. 切换单个页面的指定操作 Action
+  // 1. 切换单个页面的指定操作 Action (联动：取消 read 则自动清理写权限与字段，勾选写权限自动补齐 read)
   const handleTogglePageAction = (
     page: PagePermissionDescriptor,
     action: string,
@@ -161,9 +157,24 @@ export function RolePermissionManager({
     const currentActions =
       selectedRole.permissions.statement[page.resource] ?? [];
     const exists = currentActions.includes(action);
-    const nextActions = exists
-      ? currentActions.filter((a) => a !== action)
-      : [...currentActions, action];
+
+    let nextActions: string[];
+    if (exists) {
+      if (action === StandardAction.READ) {
+        // 取消查看权限时，联动清空该页面的所有后续操作权限（皮之不存毛将焉附）
+        nextActions = [];
+      } else {
+        nextActions = currentActions.filter((a) => a !== action);
+      }
+    } else if (
+      action !== StandardAction.READ &&
+      !currentActions.includes(StandardAction.READ)
+    ) {
+      // 勾选任意非读操作时，自动补齐底层 read 查看权限
+      nextActions = [...currentActions, StandardAction.READ, action];
+    } else {
+      nextActions = [...currentActions, action];
+    }
 
     const nextStatement = {
       ...selectedRole.permissions.statement,
@@ -340,27 +351,6 @@ export function RolePermissionManager({
         setNotification({
           type: "error",
           message: res.error || "保存失败",
-        });
-      }
-    });
-  };
-
-  // 7. 载入系统内置角色推荐权限模板 (需保存后生效)
-  const handleLoadSystemDefaults = () => {
-    if (!selectedRole || !selectedRole.isSystem) return;
-    setNotification(null);
-    startTransition(async () => {
-      const res = await getSystemRoleDefaultsAction(selectedRole.role);
-      if (res.success) {
-        updateSelectedRolePermissions(res.data);
-        setNotification({
-          type: "success",
-          message: `已载入 [${selectedRole.name}] 推荐权限模板。请确认配置并点击【保存权限】写入数据库生效。`,
-        });
-      } else {
-        setNotification({
-          type: "error",
-          message: res.error || "获取推荐模板失败",
         });
       }
     });
@@ -556,21 +546,6 @@ export function RolePermissionManager({
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                {isSystemRole && canUpdate && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    type="button"
-                    onClick={handleLoadSystemDefaults}
-                    disabled={isPending}
-                    className="text-xs text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/40"
-                    title="根据系统切片契约快速填充推荐权限模板，需保存后生效"
-                  >
-                    <Sparkles className="size-3.5" />
-                    <span className="hidden md:inline">载入推荐模板</span>
-                  </Button>
-                )}
-
                 {canUpdate && (
                   <Button
                     variant="default"
@@ -609,16 +584,26 @@ export function RolePermissionManager({
                 <TableBody className="divide-y divide-border/60">
                   {permissionTree.map((mod) => {
                     const isExpanded = expandedModules[mod.moduleKey] ?? true;
-                    // 只要模块下有任意一个页面拥有 read 权限，侧边栏自动点亮
-                    const hasAnyPageVisible = mod.pages.some((p) => {
+                    // 统计当前模块下已授权页面数与总页面数
+                    const authorizedPagesCount = mod.pages.filter((p) => {
                       const actions =
                         selectedRole?.permissions.statement[p.resource] ?? [];
                       return actions.includes(StandardAction.READ);
-                    });
+                    }).length;
+
+                    // 统计总操作权限数
+                    const authorizedActionsCount = mod.pages.reduce(
+                      (sum, p) => {
+                        const actions =
+                          selectedRole?.permissions.statement[p.resource] ?? [];
+                        return sum + actions.length;
+                      },
+                      0,
+                    );
 
                     return (
                       <React.Fragment key={mod.moduleKey}>
-                        {/* 顶级模块分类行 */}
+                        {/* 顶级模块分类行 (对齐菜单目录结构) */}
                         <tr className="bg-slate-50/70 dark:bg-slate-800/30 font-semibold border-t border-slate-200/60 dark:border-slate-800">
                           <td className="py-2.5 px-3">
                             <div className="flex items-center gap-2">
@@ -648,7 +633,7 @@ export function RolePermissionManager({
                                       : "text-slate-300 dark:text-slate-600 cursor-not-allowed"
                                   }`}
                                 >
-                                  全模块切换
+                                  全选本目录
                                 </button>
                               </div>
                             </div>
@@ -658,15 +643,21 @@ export function RolePermissionManager({
                             className="py-2.5 px-3 text-slate-400 text-[11px]"
                             colSpan={3}
                           >
-                            {hasAnyPageVisible ? (
-                              <span className="text-emerald-600 font-medium">
-                                ● 侧边栏已激活展示（已勾选该模块下页面）
-                              </span>
-                            ) : (
-                              <span className="text-slate-400">
-                                ○ 侧边栏自动收起（该模块下无任何可访问页面）
-                              </span>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {authorizedPagesCount > 0 ? (
+                                <span className="text-emerald-600 dark:text-emerald-400 font-medium inline-flex items-center gap-1">
+                                  <span className="size-1.5 rounded-full bg-emerald-500 inline-block" />
+                                  已授权 {authorizedPagesCount}/
+                                  {mod.pages.length} 个功能页面 · 共生效{" "}
+                                  {authorizedActionsCount} 项操作
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 dark:text-slate-500 inline-flex items-center gap-1">
+                                  <span className="size-1.5 rounded-full bg-slate-300 dark:bg-slate-600 inline-block" />
+                                  未授权（该角色无权访问此目录下任何功能）
+                                </span>
+                              )}
+                            </div>
                           </td>
                         </tr>
 
@@ -700,26 +691,32 @@ export function RolePermissionManager({
                                 <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
                                   {/* 页面名称与全选操作 */}
                                   <td className="py-2.5 px-3 pl-8">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-slate-300 dark:text-slate-600 font-mono">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <span className="text-slate-300 dark:text-slate-600 font-mono shrink-0">
                                         └─
                                       </span>
                                       <span
-                                        className={`font-medium ${
+                                        className={`truncate ${
                                           hasRead
                                             ? "text-slate-900 dark:text-slate-100 font-bold"
-                                            : "text-slate-500 dark:text-slate-400"
+                                            : "text-slate-500 dark:text-slate-400 font-normal"
                                         }`}
+                                        title={page.label}
                                       >
                                         {page.label}
                                       </span>
+                                      {page.path && (
+                                        <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 shrink-0 hidden sm:inline">
+                                          {page.path}
+                                        </span>
+                                      )}
                                       <button
                                         type="button"
                                         disabled={!canUpdate}
                                         onClick={() =>
                                           handleTogglePageAll(page)
                                         }
-                                        className={`text-[10px] underline font-normal ml-1 ${
+                                        className={`text-[10px] underline font-normal ml-1 shrink-0 ${
                                           canUpdate
                                             ? "text-slate-400 hover:text-blue-600"
                                             : "text-slate-300 dark:text-slate-600 cursor-not-allowed"
@@ -738,16 +735,25 @@ export function RolePermissionManager({
                                           page.resource,
                                           act.action,
                                         );
+                                        const isRead =
+                                          act.action === StandardAction.READ;
                                         return (
                                           <label
                                             key={act.action}
                                             className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-[11px] transition-colors ${
                                               canUpdate
                                                 ? checked
-                                                  ? "border-blue-300 bg-blue-50/60 text-blue-800 dark:bg-blue-950/40 dark:border-blue-700 dark:text-blue-200 font-medium cursor-pointer"
+                                                  ? isRead
+                                                    ? "border-blue-500 bg-blue-50 text-blue-900 dark:bg-blue-950 dark:border-blue-600 dark:text-blue-100 font-bold cursor-pointer"
+                                                    : "border-blue-300 bg-blue-50/60 text-blue-800 dark:bg-blue-950/40 dark:border-blue-700 dark:text-blue-200 font-medium cursor-pointer"
                                                   : "border-slate-200 bg-transparent text-slate-500 dark:border-slate-700 dark:text-slate-400 cursor-pointer"
                                                 : "opacity-60 cursor-not-allowed border-slate-200 text-slate-400 dark:border-slate-800"
                                             }`}
+                                            title={
+                                              isRead
+                                                ? "【查看】是基础访问权限，勾选后对应菜单自动对该角色可见"
+                                                : undefined
+                                            }
                                           >
                                             <input
                                               type="checkbox"

@@ -84,44 +84,89 @@ export default async function CustomersPage({
 
 ## 2. 切片自描述清单 (`src/manifest.ts`)
 
-切片根目录必须暴露 `manifest.ts`，声明导航菜单结构与挂载的页面契约：
+切片根目录必须暴露 `manifest.ts`，声明切片基本信息、默认导航推荐树、权限受控模块，以及**供动态菜单选用挂载的 `StandardPageDescriptor` 标准页面功能池**：
 
 ```ts
-import type { FeatureManifest } from "@base/authorization";
-import { customerPageContract } from "./features/customer-management/contract";
-import { storePageContract } from "./features/store-management/contract";
+import {
+  StandardAction,
+  type TenantFeatureManifest,
+} from "@base/authorization";
+import {
+  CustomerSubject,
+  customerPageContract,
+} from "./features/customer-management/contract";
+import {
+  CustomerStoreSubject,
+  storePageContract,
+} from "./features/store-management/contract";
 
-export const customerCenterManifest: FeatureManifest = {
+export const customerManifest: TenantFeatureManifest = {
   id: "customer-center",
   name: "客户中心",
-  version: "1.0.0",
-  description: "企业客户主数据、多门店履约、阶梯报价与业务分类标签管理中心",
+  order: 10,
+  /** 切片贡献的标准功能页面池（供租户业务导航菜单配置器自由选用与跨切片挂载） */
+  pages: [
+    {
+      pageKey: "customer.customer",
+      defaultLabel: "客户档案",
+      href: "/customer/customers",
+      defaultIcon: "Users",
+      requiredAction: StandardAction.READ,
+      requiredSubject: CustomerSubject,
+      featureId: "customer-center",
+      featureName: "客户中心",
+    },
+    {
+      pageKey: "customer.store",
+      defaultLabel: "门店档案",
+      href: "/customer/stores",
+      defaultIcon: "Store",
+      requiredAction: StandardAction.READ,
+      requiredSubject: CustomerStoreSubject,
+      featureId: "customer-center",
+      featureName: "客户中心",
+    },
+  ],
+  /** 出厂默认预设推荐树（当切片未配置显式 pages 时，构建期引擎亦会自动从 navSections 递归提取） */
   navSections: [
     {
-      id: "customer-center",
-      title: "客户中心",
-      icon: "Users",
-      sort: 20,
+      id: "customer",
+      order: 10,
       items: [
         {
-          id: "customer-management",
-          title: "客户档案",
-          path: "/customer/customers",
-          requiredAction: "read",
-          subject: customerPageContract.subject,
+          id: "group-customer-center",
+          label: "客户中心",
+          icon: "UserCheck",
+          items: [
+            {
+              id: "customer-customers",
+              label: "客户档案",
+              href: "/customer/customers",
+              requiredAction: StandardAction.READ,
+              requiredSubject: CustomerSubject,
+            },
+          ],
         },
       ],
     },
   ],
   permissionModules: [
     {
-      id: "customer-mgmt",
-      name: "客户档案管理",
+      moduleKey: "customer",
+      label: "客户中心",
+      iconName: "UserCheck",
+      order: 10,
       pages: [customerPageContract, storePageContract],
     },
   ],
 };
 ```
+
+> **核心设计规范（解耦与对齐）**：
+>
+> 1. **纯业务功能池解耦**：切片通过 `pages` 贡献标准功能页面（包含底层路由 `href` 与权限主体 `requiredSubject`）。业务菜单配置器只能选用纯业务页面，系统管理基座被刚性隔离；
+> 2. **动态多级菜单与权限解耦**：租户在界面上无论是创建 2 级还是 3 级目录、对菜单项重命名、还是挂载外部链接，都不会破坏底层 CASL 权限；
+> 3. **角色权限自动对齐**：角色权限管理界面自动调用 `deriveMenuAlignedPermissionTree`，100% 按照租户当前生效的业务菜单树展示大纲，并以【查看 (read)】权限作为页面访问与菜单点亮的联动开关。
 
 ---
 
@@ -142,7 +187,11 @@ test("CustomerView 与 customerPageContract 契约 100% 对齐", () => {
         fieldPolicies: {},
       }}
     >
-      <CustomerView initialCustomers={mockCustomers} categories={[]} tags={[]} />
+      <CustomerView
+        initialCustomers={mockCustomers}
+        categories={[]}
+        tags={[]}
+      />
     </TenantAbilityProvider>,
   );
 

@@ -132,6 +132,7 @@ export interface AbilitySnapshot {
   ```
 
   若未显式指定 `subject`，`AuthGuard` 自动从外层 `DataTableContext` 向上回溯继承当前页面的默认 Subject。
+
 - **`Can` (`packages/authorization/src/adapters/react.tsx`)**：
   直接提供强类型 Catalog 的 `<Can I="export" a="Customer">...</Can>` 语法糖。
 
@@ -162,13 +163,21 @@ export interface AbilitySnapshot {
 - **`DataTableRowActions`**：
   针对每行数据的操作列（编辑、查看、删除、自定义动作），在渲染前遍历每个操作项执行 `ability.can(action, subject)`，无权动作自动从行操作按钮与更多操作下拉浮层中剔除。
 
-### 5. Layout 层服务端路由门禁与导航菜单动态裁剪
+### 5. Layout 层服务端路由门禁与动态菜单双轨裁剪引擎
 
-在 `apps/tenant/src/app/(dashboard)/layout.tsx` 中：
+在 `apps/tenant/src/app/(dashboard)/layout.tsx` 与 `apps/tenant/src/kernel/navigation.ts` 中，升级为**“系统底座刚性隔离 + 租户业务菜单动态裁切”**的双轨引擎：
 
-1. **服务端会话校验**：调用 `runtime.auth.api.getSession` 校验会话，未登录跳转 `/login`。
-2. **导航菜单服务端裁剪 (`filterNavSections`)**：
-   从系统注册表拉取所有已挂载特性的导航项，针对每一项调用 `ability.can("read", item.subject)`。若用户对某页面无 `read` 权限，该菜单项在服务端组装 HTML 时即被剔除；若某一导航分组下的所有子页面均无权限，整组自动隐去，杜绝出现空白侧边栏。
+1. **服务端会话与组织校验**：调用 `runtime.auth.api.getSession` 校验会话，未登录跳转 `/login`。
+2. **系统底座菜单判定**：工作台与系统管理（组织架构、角色权限、企业设置）作为系统核心底座，永远存在，直接依据 `ability.can("read", item.subject)` 进行状态显隐，不受租户业务菜单增删影响。
+3. **租户业务动态菜单递归裁剪 (`pruneDynamicMenuTree`)**：
+   - 从租户独立物理库查询 `tenant_menu_item` 自定义树；
+   - 调用 `buildMenuTree` 组装多级拓扑，再调用 `pruneDynamicMenuTree` 进行**深度优先递归裁剪**：
+     - 若用户对某业务页面无 `read` 权限，该项服务端剔除；
+     - 若某一目录下的所有后代页面均无权限，整组物理折叠隐藏；
+     - 零静默回退：若租户未配置业务菜单，业务动态区严格为空，杜绝越权展示。
+4. **角色权限配置中心联动 (`RolePermissionManager`)**：
+   - 角色权限矩阵调用 `deriveMenuAlignedPermissionTree`，100% 按照租户当前生效的菜单目录组织展示；
+   - 强化【查看 (read)】权限核心地位：取消查看权限时，连带清空该页面所有的写操作权限（新建/修改/删除），形成前后端严密一致的闭环。
 
 ---
 
@@ -265,7 +274,10 @@ export interface AbilitySnapshot {
   1. 拦截未捕获的 `ForbiddenError` 并映射为结构化安全响应：
 
      ```json
-     { "success": false, "error": "没有执行当前操作的权限: Cannot execute update on Customer" }
+     {
+       "success": false,
+       "error": "没有执行当前操作的权限: Cannot execute update on Customer"
+     }
      ```
 
   2. 自动集成 `toPlainData`，解决 Prisma `Decimal`、`Date` 和 `BigInt` 在 React Server Components 跨端网络传输时的非序列化崩溃问题。
@@ -335,17 +347,17 @@ sequenceDiagram
 
 ## 六、 核心源码地图索引与指引
 
-| 模块类别 | 权威文件路径 | 核心导出 / 关键符号 | 职责说明 |
-| :--- | :--- | :--- | :--- |
-| **租户门禁** | `packages/auth/src/context/tenant-context.ts` | `assertTenantAccessGate`, `resolveTenantContext` | 解析租户会话上下文，执行第 4 层离职/停职硬阻断 |
-| **规则编译** | `packages/authorization/src/ability/ability-factory.ts` | `CaslAbilityFactory`, `serializeRolePermissions` | CASL 权限规则总编译工厂，处理四层模型合并 |
-| **SQL 下推** | `packages/authorization/src/ability/prisma-access.ts` | `getAccessibleWhere` | 桥接 `@casl/prisma`，将数据范围无缝编译为 SQL Where 条件 |
-| **数据范围** | `packages/authorization/src/scopes/data-scope.ts` | `DataScope`, `resolveDataScopeConditions` | 解析五类数据范围并生成防穿透部门树过滤条件 |
-| **字段策略** | `packages/authorization/src/fields/field-policy.ts` | `pickReadableFields`, `assertEditableFields` | 字段读写控制：读取时物理剥离脱敏、写入时白名单校验 |
-| **快照序列化** | `packages/authorization/src/adapters/client-ability.ts` | `AbilitySnapshot`, `createAbilityFromSnapshot` | RSC 纯数据快照与客户端 CASL 实例双向转换 |
-| **前端 Provider** | `packages/authorization/src/adapters/ability-provider.tsx` | `TenantAbilityProvider`, `useOptionalAbility` | 前端 React 上下文挂载与无白屏安全取值钩子 |
-| **字段三态 UI** | `packages/ui/src/components/composite/auth/AuthField.tsx` | `AuthField`, `deriveFieldMode` | 受控表单输入三态渲染（编辑 / 只读 Badge / 物理隐藏） |
-| **操作列门禁** | `packages/ui/src/components/composite/data-table/` | `DataTableActionButton`, `DataTableRowActions` | 表格动作按钮、行操作列与批量操作栏动态鉴权 |
-| **导航裁剪** | `apps/tenant/src/kernel/navigation.ts` | `getAuthorizedTenantNavSections` | 服务端依据 Ability 动态计算并裁剪侧边栏菜单 |
-| **安全 Action** | `packages/shared/src/api/action.ts` | `defineServerAction` | Server Action 包装闭包，捕获鉴权异常并规范化序列化 |
-| **切片契约** | `packages/features/*/src/contracts/*.contract.ts` | `FeaturePagePermissionDescriptor` | 特性切片受控字段清单与权限动作单一事实源 (SSoT) |
+| 模块类别          | 权威文件路径                                               | 核心导出 / 关键符号                              | 职责说明                                                 |
+| :---------------- | :--------------------------------------------------------- | :----------------------------------------------- | :------------------------------------------------------- |
+| **租户门禁**      | `packages/auth/src/context/tenant-context.ts`              | `assertTenantAccessGate`, `resolveTenantContext` | 解析租户会话上下文，执行第 4 层离职/停职硬阻断           |
+| **规则编译**      | `packages/authorization/src/ability/ability-factory.ts`    | `CaslAbilityFactory`, `serializeRolePermissions` | CASL 权限规则总编译工厂，处理四层模型合并                |
+| **SQL 下推**      | `packages/authorization/src/ability/prisma-access.ts`      | `getAccessibleWhere`                             | 桥接 `@casl/prisma`，将数据范围无缝编译为 SQL Where 条件 |
+| **数据范围**      | `packages/authorization/src/scopes/data-scope.ts`          | `DataScope`, `resolveDataScopeConditions`        | 解析五类数据范围并生成防穿透部门树过滤条件               |
+| **字段策略**      | `packages/authorization/src/fields/field-policy.ts`        | `pickReadableFields`, `assertEditableFields`     | 字段读写控制：读取时物理剥离脱敏、写入时白名单校验       |
+| **快照序列化**    | `packages/authorization/src/adapters/client-ability.ts`    | `AbilitySnapshot`, `createAbilityFromSnapshot`   | RSC 纯数据快照与客户端 CASL 实例双向转换                 |
+| **前端 Provider** | `packages/authorization/src/adapters/ability-provider.tsx` | `TenantAbilityProvider`, `useOptionalAbility`    | 前端 React 上下文挂载与无白屏安全取值钩子                |
+| **字段三态 UI**   | `packages/ui/src/components/composite/auth/AuthField.tsx`  | `AuthField`, `deriveFieldMode`                   | 受控表单输入三态渲染（编辑 / 只读 Badge / 物理隐藏）     |
+| **操作列门禁**    | `packages/ui/src/components/composite/data-table/`         | `DataTableActionButton`, `DataTableRowActions`   | 表格动作按钮、行操作列与批量操作栏动态鉴权               |
+| **导航裁剪**      | `apps/tenant/src/kernel/navigation.ts`                     | `getAuthorizedTenantNavSections`                 | 服务端依据 Ability 动态计算并裁剪侧边栏菜单              |
+| **安全 Action**   | `packages/shared/src/api/action.ts`                        | `defineServerAction`                             | Server Action 包装闭包，捕获鉴权异常并规范化序列化       |
+| **切片契约**      | `packages/features/*/src/contracts/*.contract.ts`          | `FeaturePagePermissionDescriptor`                | 特性切片受控字段清单与权限动作单一事实源 (SSoT)          |

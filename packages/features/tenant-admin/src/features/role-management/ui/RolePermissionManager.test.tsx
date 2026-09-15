@@ -308,5 +308,4 @@ test("RolePermissionManager 在未授权 update 时隐藏新建/保存按钮并�
 
     assert.match(writableHtml, /新建角色/);
     assert.match(writableHtml, /保存权限/);
-    assert.match(writableHtml, /载入推荐模板/);
 });

@@ -20,7 +20,13 @@ export {
   derivePermissionCatalog,
   deriveNavSections,
   derivePermissionTree,
+  deriveMenuAlignedPermissionTree,
+  buildMenuTree,
   filterNavSections,
+  derivePageList,
+  derivePageCatalog,
+  pruneDynamicMenuTree,
+  type FlatTenantMenuItemRecord,
   type FeatureNavItem,
   type FeatureNavGroup,
   type FeatureNavSection,
@@ -29,6 +35,8 @@ export {
   type FeaturePagePermissionDescriptor,
   type FeatureModulePermissionDescriptor,
   type TenantFeatureManifest,
+  type StandardPageDescriptor,
+  type TenantMenuNode,
 } from "./core/manifest";
 
 export {

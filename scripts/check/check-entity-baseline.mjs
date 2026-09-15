@@ -50,6 +50,7 @@ export const EXEMPT_MODELS = new Set([
   "Position",
   "EmployeeProfile",
   "CompanyProfile",
+  "TenantMenuItem",
   // 纯多对多中间关联表 / 只读配置字典表
   "CustomerTagAssignment",
   "CustomerTag",

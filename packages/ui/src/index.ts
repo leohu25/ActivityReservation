@@ -19,6 +19,7 @@ export * from "./components/composite/table";
 export * from "./components/composite/tree";
 export * from "./components/composite/auth";
 export * from "./components/composite/form";
+export * from "./components/composite/icon";
 export * from "./components/layout/TopHeader";
 // 业务侧边栏覆盖 shadcn 同名 Sidebar 导出（保留既有 @base/ui API）
 export {
