@@ -36,9 +36,9 @@ pnpm install
 执行自动化环境基线自检脚本：
 
 ```bash
-./init.sh
+pnpm init
 # 或
-pnpm run init
+node scripts/init.mjs
 ```
 
 脚本将自动执行以下检查与配置：

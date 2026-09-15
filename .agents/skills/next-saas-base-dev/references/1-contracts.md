@@ -65,7 +65,7 @@ export const itemMasterPageContract: FeaturePagePermissionDescriptor = {
 node scripts/check/check-permission-contracts.mjs
 ```
 
-该门禁在 `./scripts/verify.sh` 中硬阻断，检查命名格式、Prisma Subject/Field 对齐、Resource 唯一性、Descriptor 常量引用、Manifest Descriptor 消费，以及 `assert*Ability`/`ability.can`/guard 的 Action 与 Subject 魔法字符串。静态检查无法证明任意动态路由到 Query 的完整调用图，因此代码评审仍需确认页面调用的所有 Query Descriptor 已在 Manifest 注册。
+该门禁在 `pnpm verify`（`scripts/verify.mjs`）中硬阻断，检查命名格式、Prisma Subject/Field 对齐、Resource 唯一性、Descriptor 常量引用、Manifest Descriptor 消费，以及 `assert*Ability`/`ability.can`/guard 的 Action 与 Subject 魔法字符串。静态检查无法证明任意动态路由到 Query 的完整调用图，因此代码评审仍需确认页面调用的所有 Query Descriptor 已在 Manifest 注册。
 
 ## 核心工程红线
 

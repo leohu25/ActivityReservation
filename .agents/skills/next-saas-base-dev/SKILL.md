@@ -25,7 +25,7 @@ agent_created: true
 
 ## 核心工程红线 (Zero-Tolerance Rules)
 
-1. **权限四维契约即唯一事实源**：每个受控 Feature/Sub-Feature 在自身 `contract.ts` 显式绑定 Resource、Subject、Action、Field；Resource 统一 `<domain>.<singular_resource>`，Subject 对齐 Prisma PascalCase 模型（非实体能力仅允许有界例外），Action 只引用共享/领域 `as const` 动作对象，Field 只引用对齐 Prisma camelCase 字段字典；严禁权限魔法字符串。`node scripts/check/check-permission-contracts.mjs` 与 `verify.sh` 对全仓违规硬阻断（详见 `references/1-contracts.md`）；
+1. **权限四维契约即唯一事实源**：每个受控 Feature/Sub-Feature 在自身 `contract.ts` 显式绑定 Resource、Subject、Action、Field；Resource 统一 `<domain>.<singular_resource>`，Subject 对齐 Prisma PascalCase 模型（非实体能力仅允许有界例外），Action 只引用共享/领域 `as const` 动作对象，Field 只引用对齐 Prisma camelCase 字段字典；严禁权限魔法字符串。`node scripts/check/check-permission-contracts.mjs` 与 `pnpm verify`（或 `node scripts/verify.mjs`）对全仓违规硬阻断（详见 `references/1-contracts.md`）；
 2. **底层机制消灭序列化异常**：所有 Server Actions 必须由 `defineServerAction` 包装，返回数据经 `toPlainData` 序列化，严禁原始 Prisma 实体（带 Decimal/Date）直出；
 3. **交互单次确认**：破坏性操作统一由 `DataTableRowActions` 的 `ConfirmDialog` 提示一次，严禁调用浏览器原生 `confirm(...)`；
 4. **消息通知右上角 Toast 弹出**：严禁在页面顶部塞入静态红色大横幅挤压变形表格布局，所有操作反馈统一使用右上角 `toast`；
@@ -52,7 +52,7 @@ agent_created: true
 - **(d) 复杂超大表单演进标准 (Complex Form Standard)**：当前轻量表单采用受控 React 状态与 Zod 校验；后续若出现超大、深层嵌套联动或频繁动态字段的复杂单据表单，底层驱动引擎统一切换为业界标准 **React Hook Form (`react-hook-form` + `@hookform/resolvers/zod`)**，保持对外暴露的 `FormModal` 声明式 API 完全不变，以获得非受控高性能与脏检查能力。
 
  1. **测试同级就近共存 (Colocation)**：遵循 Next.js 官方最佳实践，单元测试文件必须与被测试的目标组件/服务处于同一目录下（如 `CustomerView.tsx` 与 `CustomerView.test.tsx` 同级），严禁在模块根目录平铺孤儿测试文件；
- 2. **业务实体必须包含基础审计与软删除字段**：所有业务主数据和单据表必须强制具备 `createdById`、`deptId`、`updatedById`、`isDeleted`、`deletedAt`、`deletedById`、`createdAt`、`updatedAt` 8 个基准字段，静态门禁脚本 `scripts/check/check-entity-baseline.mjs` 在 `verify.sh` 与 `git commit` 时硬拦截违规模型（详见 `references/2-schema-migrate.md`）；
+ 2. **业务实体必须包含基础审计与软删除字段**：所有业务主数据和单据表必须强制具备 `createdById`、`deptId`、`updatedById`、`isDeleted`、`deletedAt`、`deletedById`、`createdAt`、`updatedAt` 8 个基准字段，静态门禁脚本 `scripts/check/check-entity-baseline.mjs` 在 `pnpm verify` 与 `git commit` 时硬拦截违规模型（详见 `references/2-schema-migrate.md`）；
  3. **提交前必须审阅确认 (Human Review Before Commit)**：在执行 `git commit` 前，智能体必须主动向用户呈现本次修改清单与核心变更说明，**获得用户明确确认审阅通过后方可执行提交**，严禁擅自静默提交；
  4. **提交信息必须强制使用中文 (Chinese Commit Message)**：Git 提交信息必须严格遵循 Conventional Commits 规范，且 Header 描述与 Body 详细要点**必须强制使用中文书写**（如 `feat(material): 实现物料与工艺BOM中心及全仓权限四维契约标准化`），严禁使用全英文提交信息；
  5. **严禁手写裸 DOM 与原生非受控控件**：界面必须 100% 使用 `@base/ui` (shadcn) 原子与复合套件搭建（如 `Table`, `DatePicker`, `Select`, `Dialog`, `Button`, `DataTable.Workspace`, `FormModal` 等），严禁在业务切片内手写原生 `<table>`、原生 `<input type="date">` 或手写零散裸 `div` 布局；

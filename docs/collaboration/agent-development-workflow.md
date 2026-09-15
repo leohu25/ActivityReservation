@@ -32,7 +32,7 @@
 
 ```mermaid
 flowchart TD
-    Step1["Step 1: 环境探测与启动自检<br>(./init.sh)"] --> Step2["Step 2: 任务认领与沙盒锚定<br>(Git 分支 / member.local.md)"]
+    Step1["Step 1: 环境探测与启动自检<br>(pnpm init / scripts/init.mjs)"] --> Step2["Step 2: 任务认领与沙盒锚定<br>(Git 分支 / member.local.md)"]
     Step2 --> Step3["Step 3: 限域实施与规范编码<br>(加载 next-saas-base-dev 规范)"]
     Step3 --> Step4["Step 4: 即时验证与门禁拦截<br>(同级单测 + Git pre-commit 钩子)"]
     Step4 --> Step5["Step 5: 会话收尾、归档与换手<br>(feature_list.json 证据 + progress.md)"]
@@ -53,10 +53,10 @@ flowchart TD
 2. **执行一键自检启动脚本**：
 
    ```bash
-   ./init.sh
+   pnpm init # 或 node scripts/init.mjs
    ```
 
-   `./init.sh` 将自动完成以下关键校验：
+   `pnpm init` 将自动完成以下关键校验：
    - 检查核心规范底座与治理文件完整性（`bootstrap.mjs`）；
    - 检测 Node.js (>= 22)、pnpm (>= 10) 与 Git 环境；
    - **自动装载 Git `pre-commit` 物理门禁钩子**；
@@ -165,7 +165,7 @@ pnpm --filter <target-package> check
 4. **提交代码与收尾自检**：
    - 提交代码触发 pre-commit 验证；
    - 可选运行 `node .harness/lifecycle/session-end.mjs` 确认工作区无孤儿文件且交付状态完备；
-   - 保证工作区干净整洁，随时可重新执行 `./init.sh`。
+   - 保证工作区干净整洁，随时可重新执行 `pnpm init`。
 
 ---
 
@@ -205,4 +205,4 @@ pnpm --filter <target-package> check
 1. **架构决策冲突**：涉及多租户分库路由策略、鉴权协议、或跨包反向依赖冲突；
 2. **需求与白名单冲突**：实现目标需求必须修改超出当前特性 `scope.md` 白名单以外的文件；
 3. **反复测试/类型失败**：连续排查 2 轮仍未定位的底层框架或依赖兼容性报错；
-4. **环境基线损坏**：运行 `./init.sh` 失败，且根因不在当前任务改动范围内。
+4. **环境基线损坏**：运行 `pnpm init` 失败，且根因不在当前任务改动范围内。

@@ -21,10 +21,11 @@ scripts/
 │   └── fail-only-reporter.mjs      # 仅报告失败异常与简洁 ok N/N 的 Node Test Reporter
 │
 ├── tools/                          # 日常开发与协同辅助工具
-│   ├── status.sh                   # 协同会话上下文与 Git 状态查看
-│   └── save-patch.sh               # 越界改动提取为补丁并归档至 .harness/patches/
+│   ├── status.mjs                  # 协同会话上下文与 Git 状态查看
+│   └── save-patch.mjs              # 越界改动提取为补丁并归档至 .harness/patches/
 │
-├── verify.sh                       # 全栈门禁总装入口 (由 .git/hooks/pre-commit 驱动)
+├── init.mjs                        # 启动自检与环境/门禁初始化
+├── verify.mjs                      # 全栈门禁总装入口 (由 .git/hooks/pre-commit 驱动)
 └── README.md                       # 目录规范与职责说明说明文档
 ```
 
@@ -32,11 +33,12 @@ scripts/
 
 | 目录/文件 | 核心职责 | 调用方式 / 场景 |
 | --- | --- | --- |
-| `scripts/check/` | 质量与架构安全静态门禁 | `./scripts/verify.sh` 或 CI/Commit 阶段执行 |
+| `scripts/check/` | 质量与架构安全静态门禁 | `pnpm verify` 或 CI/Commit 阶段执行 |
 | `scripts/sync/` | 编译期静态代码与 Schema 自动生成 | `pnpm sync:features` / `pnpm build` 前置执行 |
 | `scripts/reporter/` | 精简测试日志输出，抑制无关噪音 | 各 package `package.json` 中的 `test` 脚本挂载 |
-| `scripts/tools/` | 开发者与智能体日常辅助运维 | `./scripts/tools/status.sh` 等手动按需调用 |
-| `scripts/verify.sh` | 集中汇聚所有门禁自检的统一入口 | `git commit` 时由 `.git/hooks/pre-commit` 自动触发 |
+| `scripts/tools/` | 开发者与智能体日常辅助运维 | `pnpm status` 等手动按需调用 |
+| `scripts/init.mjs` | 启动自检与环境/门禁初始化统一入口 | `pnpm init` 或环境初始化时调用 |
+| `scripts/verify.mjs` | 集中汇聚所有门禁自检的统一入口 | `git commit` 时由 `.git/hooks/pre-commit` 自动触发 |
 
 ## 垂直切片架构门禁检查规则 (check-vertical-slices)
 
@@ -64,10 +66,10 @@ scripts/
 
 ```bash
 # 执行全量质量与架构门禁
-./scripts/verify.sh
+pnpm verify # 或 node scripts/verify.mjs
 
 # 查看当前开发者协同状态与激活特性
-./scripts/tools/status.sh
+pnpm status # 或 node scripts/tools/status.mjs
 
 # 手动触发特性注册表与 Schema 自动同步
 pnpm sync:features

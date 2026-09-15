@@ -69,7 +69,7 @@ model Customer {
 ## 3. 业务实体基础审计与软删除强制基线 (ADR-009)
 
 > ⚠️ **红线门禁提示**：
-> 凡是业务实体（主数据、单据等），必须强制包含以下 8 个字段，门禁脚本 `scripts/check/check-entity-baseline.mjs` 在 `verify.sh` 与 `git commit` 时进行机械化拦截：
+> 凡是业务实体（主数据、单据等），必须强制包含以下 8 个字段，门禁脚本 `scripts/check/check-entity-baseline.mjs` 在 `pnpm verify` 与 `git commit` 时进行机械化拦截：
 >
 > 1. `createdById: String`: 创建人用户 ID（数据范围 `SELF` 过滤下推物理列）
 > 2. `deptId: String?`: 归属部门 ID（数据范围 `DEPT` / `DEPT_TREE` 过滤下推物理列）

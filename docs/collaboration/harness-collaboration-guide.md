@@ -25,7 +25,7 @@
 ```text
 根目录/
 ├── AGENTS.md / CLAUDE.md          # 智能体最高宪法（五大工程红线与自检协议）
-├── init.sh                        # 会话启动第一步：环境探测与合法性自检
+├── scripts/init.mjs               # 会话启动第一步：环境探测与合法性自检
 ├── feature_list.json              # 全局特性总账（唯一的 Feature 状态与依赖事实表）
 ├── member.local.md                # 个人/智能体当前会话锚点（.gitignore 保护，永不提交）
 │
@@ -55,9 +55,9 @@
 
 无论人类开发者还是 AI 智能体，每个开发会话必须严格执行以下 **5 步闭环标准流程**：
 
-### 1. 启动自检 (`./init.sh`)
+### 1. 启动自检 (`pnpm init` / `scripts/init.mjs`)
 
-- 必须先运行 `./init.sh`；
+- 必须先运行 `pnpm init`（或 `node scripts/init.mjs`）；
 - 检查本地依赖、环境健全性；
 - 严禁“带病开工”，自检不通过直接阻塞。
 
@@ -115,7 +115,7 @@
 
 请遵循以下核心要求：
 1. 代码架构：Modular Monorepo + Feature-based Vertical Slice；业务分析与任务拆解采用 Feature-Driven Development（FDD）思想；
-2. 初始化根目录最高宪法：AGENTS.md、CLAUDE.md、init.sh、feature_list.json、member.local.example.md；
+2. 初始化根目录最高宪法：AGENTS.md、CLAUDE.md、scripts/init.mjs、feature_list.json、member.local.example.md；
 3. 初始化 .harness/ 基础设施：agents/、context/、docs/、lifecycle/、memory/ (含 ADR 模板)、features/ 目录；
 4. 建立 ./scripts/verify.sh 门禁脚本，包含类型检查与测试验证；
 5. 建立基于 member.local.md 的单特性锁定与沙盒边界保护机制。

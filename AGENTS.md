@@ -14,7 +14,7 @@
 开工写代码前，按顺序执行以下 4 步：
 
 1. **确认工作区**：执行 `pwd` 确认处于仓库根目录；
-2. **运行自检基线**：执行 `./init.sh` 确保环境就绪并挂载 Git pre-commit 物理门禁；
+2. **运行自检基线**：执行 `pnpm init`（或 `node scripts/init.mjs`）确保环境就绪并挂载 Git pre-commit 物理门禁；
 3. **锁定目标范围**：查阅 `feature_list.json` 确认目标特性状态与前置依赖（或遵循用户明确指定的任务边界）；
 4. **加载开发规范**：涉及业务切片开发或基座改造时，加载 `.agents/skills/next-saas-base-dev/` 规范执行。
 
@@ -27,7 +27,7 @@
 - **提交信息必须使用中文 (Chinese Commit Message)**：Git 提交信息必须严格遵循 Conventional Commits 规范，且 Header 说明与 Body 详细要点**必须使用中文书写**（例如 `feat(material): 实现物料与工艺BOM中心及全仓权限四维契约标准化`），严禁使用全英文提交信息；
 - **门禁由钩子兜底 (No manual gate runs)**：日常开发**不要**手动全量运行 `./scripts/verify.sh`（耗时且由 Git `pre-commit` 自动兜底）；即时反馈仅对改动文件执行同级单测或类型检查；
 - **单源状态收敛**：特性开发进度与真实交付证据严格记录至 `feature_list.json` 与沙盒 `progress.md`；
-- **保持整洁可重启**：结束时工作区随时可重新无损运行 `./init.sh`。
+- **保持整洁可重启**：结束时工作区随时可重新无损运行 `pnpm init`（或 `node scripts/init.mjs`）。
 
 ---
 
@@ -51,7 +51,7 @@
 - [ ] 目标功能、接口或修复逻辑全部实现完毕；
 - [ ] 对应单元测试通过（遵循 Colocation 同级就近共存）；
 - [ ] 真实交付证据记录至 `feature_list.json` 或特性沙盒 `progress.md`；
-- [ ] 代码通过 Git pre-commit 门禁并成功提交，仓库保持干净且随时可无缝重启（`./init.sh` 正常）。
+- [ ] 代码通过 Git pre-commit 门禁并成功提交，仓库保持干净且随时可无缝重启（`pnpm init` 正常）。
 
 ---
 
@@ -68,13 +68,13 @@
 
 ```bash
 # 启动环境健康自检与钩子装载
-./init.sh
+pnpm init # 或 node scripts/init.mjs
 
 # 查看当前会话与特性进度
-./scripts/status.sh
+pnpm status # 或 node scripts/tools/status.mjs
 
 # 全栈门禁自检 (平时无需手动执行，git commit 时由 pre-commit 自动触发)
-./scripts/verify.sh
+pnpm verify # 或 node scripts/verify.mjs
 
 # 会话收尾完整性校验 (可选)
 node .harness/lifecycle/session-end.mjs
@@ -89,7 +89,7 @@ node .harness/lifecycle/session-end.mjs
 - **架构决策冲突**：多租户分库隔离策略、鉴权协议或跨包依赖倒置分歧；
 - **需求范围模糊**：`feature_list.json` 验收标准与实际代码诉求冲突；
 - **反复测试/类型失败**：连续排查 2 轮仍未定位的底层框架或依赖兼容问题；
-- **环境或基线损坏**：运行 `./init.sh` 报错退出且根因不在当前改动范围。
+- **环境或基线损坏**：运行 `pnpm init`（或 `node scripts/init.mjs`）报错退出且根因不在当前改动范围。
 
 ---
 
@@ -105,6 +105,7 @@ node .harness/lifecycle/session-end.mjs
 | **多租户分库深度解析** | `docs/architecture/saas-multitenant-architecture.md` | 物理分库连接池治理、并发防击穿、TenantDbManager 与全生命周期 |
 | **权限系统全链路** | `docs/permissions/permission-architecture-deep-dive.md` | CASL 四层权限闭环、SQL 自动下推、字段物理剥离与端到端时序 |
 | **自愈数据迁移引擎** | `docs/architecture/database-migration-engine.md` | 12-Factor 原则、预编译 Catalog、Schema 聚合与咨询锁机制 |
+| **Turborepo 拓扑与缓存** | `docs/architecture/turborepo-pipeline-and-cache-specification.md` | turbo.json 完整拓扑规范、依赖流向、增量缓存策略与任务机制 |
 | **工程命令技术手册** | `docs/collaboration/scripts-reference.md` | 根 package.json 全量命令参考、Turborepo 任务拓扑与 Next.js 运行时自愈机制 |
 | **团队架构决策 (ADR)** | `.harness/memory/adr/` | 核心决策记录（ADR-001 ~ ADR-009 分层、分库、权限、审计基线） |
 | **团队持久记忆** | `.harness/memory/` | 避坑经验 (`learnings.md`) 与技术债台账 (`technical-debt.md`) |

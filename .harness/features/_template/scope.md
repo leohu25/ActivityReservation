@@ -18,4 +18,4 @@
 ## 严禁修改的内容 (受保护区域)
 
 - 严禁擅自破坏既有包的向后兼容公开导出。
-- 严禁修改其他非关联 Feature 业务切片（若发现缺陷，使用 `./scripts/save-patch.sh` 归档补丁并登记至技术债）。
+- 严禁修改其他非关联 Feature 业务切片（若发现缺陷，使用 `node scripts/tools/save-patch.mjs` 归档补丁并登记至技术债）。

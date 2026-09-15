@@ -4,9 +4,9 @@
   "packageManager": "pnpm@11.1.2",
   "scripts": {
     "// 1. 工程协同与门禁 (Harness & Gates)": "",
-    "init": "./init.sh",
-    "status": "./scripts/tools/status.sh",
-    "verify": "./scripts/verify.sh",
+    "init": "node scripts/init.mjs",
+    "status": "node scripts/tools/status.mjs",
+    "verify": "node scripts/verify.mjs",
     "session:end": "node .harness/lifecycle/session-end.mjs",
     "ui:add": "npx shadcn@latest add -y --overwrite -c packages/ui",
 
@@ -34,7 +34,7 @@
     "db:tenant:diff:sql": "pnpm --filter @base/db-migrate exec tsx src/cli.ts diff:sql --scope tenant",
 
     "// 5. 辅助与缓存清理": "",
-    "clean:cache": "rm -rf .turbo apps/*/.next"
+    "clean:cache": "node scripts/clean.mjs"
   },
   "devDependencies": {
     "eslint": "^9.39.5",
