@@ -4,7 +4,17 @@ import path from "node:path";
 import process from "node:process";
 
 const root = path.resolve(import.meta.dirname, "..");
-const featureRoot = path.join(root, "packages/features");
+const scanRoots = [
+  path.join(root, "packages/domains"),
+  path.join(root, "packages/platform"),
+];
+const contractPattern = /contract\.ts$/;
+const tsPattern = /\.(?:ts|tsx)$/;
+const manifestPattern = /\/manifest\.ts$/;
+
+function filesUnderRoots(predicate) {
+  return scanRoots.flatMap((r) => filesUnder(r, predicate));
+}
 const resourcePattern = /^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/;
 const subjectPattern = /^[A-Z][A-Za-z0-9]*$/;
 const actionPattern = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/;
@@ -62,8 +72,8 @@ function prismaModels() {
 }
 
 const models = prismaModels();
-const contractFiles = filesUnder(featureRoot, (f) => /contract\.ts$/.test(f));
-const allTsFiles = filesUnder(featureRoot, (f) => /\.(?:ts|tsx)$/.test(f));
+const contractFiles = filesUnderRoots((f) => /contract\.ts$/.test(f));
+const allTsFiles = filesUnderRoots((f) => /\.(?:ts|tsx)$/.test(f));
 const subjects = new Map();
 const resources = new Map();
 const fieldsByName = new Map();
@@ -259,7 +269,7 @@ for (const [fieldName, item] of fieldsByName) {
   }
 }
 
-for (const file of filesUnder(featureRoot, (f) => f.endsWith("/manifest.ts"))) {
+for (const file of filesUnderRoots((f) => f.endsWith("/manifest.ts"))) {
   const source = fs.readFileSync(file, "utf8");
   for (const match of source.matchAll(/pageKey:\s*"([^"]+)"/g)) {
     const value = match[1];

@@ -16,16 +16,19 @@ WORKDIR /app
 
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
 COPY apps/tenant/package.json ./apps/tenant/
-COPY packages/auth/package.json ./packages/auth/
-COPY packages/authorization/package.json ./packages/authorization/
-COPY packages/db-control/package.json ./packages/db-control/
-COPY packages/db-tenant/package.json ./packages/db-tenant/
-COPY packages/shared/package.json ./packages/shared/
-COPY packages/ui/package.json ./packages/ui/
-COPY packages/features/control-admin/package.json ./packages/features/control-admin/
-COPY packages/features/tenant-admin/package.json ./packages/features/tenant-admin/
-COPY packages/features/procurement-center/package.json ./packages/features/procurement-center/
-COPY packages/features/customer-center/package.json ./packages/features/customer-center/
+COPY packages/base/auth/package.json ./packages/base/auth/
+COPY packages/base/authorization/package.json ./packages/base/authorization/
+COPY packages/base/db-control/package.json ./packages/base/db-control/
+COPY packages/base/db-tenant/package.json ./packages/base/db-tenant/
+COPY packages/base/shared/package.json ./packages/base/shared/
+COPY packages/base/ui/package.json ./packages/base/ui/
+COPY packages/base/biz-shared/package.json ./packages/base/biz-shared/
+COPY packages/platform/control-admin/package.json ./packages/platform/control-admin/
+COPY packages/platform/tenant-admin/package.json ./packages/platform/tenant-admin/
+COPY packages/domains/procurement-center/package.json ./packages/domains/procurement-center/
+COPY packages/domains/customer-center/package.json ./packages/domains/customer-center/
+COPY packages/domains/material-center/package.json ./packages/domains/material-center/
+COPY packages/domains/order-center/package.json ./packages/domains/order-center/
 COPY tooling/db-migrate/package.json ./tooling/db-migrate/
 
 RUN pnpm install --frozen-lockfile

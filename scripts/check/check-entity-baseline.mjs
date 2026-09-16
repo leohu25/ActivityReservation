@@ -164,16 +164,21 @@ export function runBaselineCheck(rootDir = workspaceRoot) {
   const schemaFiles = [];
   const tenantSchema = path.join(
     rootDir,
-    "packages/db-tenant/prisma/schema.prisma",
+    "packages/base/db-tenant/prisma/schema.prisma",
   );
   if (fs.existsSync(tenantSchema)) schemaFiles.push(tenantSchema);
 
-  const featuresDir = path.join(rootDir, "packages/features");
-  if (fs.existsSync(featuresDir)) {
-    for (const feat of fs.readdirSync(featuresDir)) {
-      const featSchema = path.join(featuresDir, feat, "prisma/schema.prisma");
-      if (fs.existsSync(featSchema)) {
-        schemaFiles.push(featSchema);
+  const scanDirs = [
+    path.join(rootDir, "packages/domains"),
+    path.join(rootDir, "packages/platform"),
+  ];
+  for (const dir of scanDirs) {
+    if (fs.existsSync(dir)) {
+      for (const feat of fs.readdirSync(dir)) {
+        const featSchema = path.join(dir, feat, "prisma/schema.prisma");
+        if (fs.existsSync(featSchema)) {
+          schemaFiles.push(featSchema);
+        }
       }
     }
   }
@@ -208,7 +213,7 @@ export function runBaselineCheck(rootDir = workspaceRoot) {
 // 仅在直接执行 CLI 时输出并决定退出码
 const isMainScript = Boolean(
   process.argv[1] &&
-    path.resolve(process.argv[1]) === path.resolve(currentFilePath),
+  path.resolve(process.argv[1]) === path.resolve(currentFilePath),
 );
 
 if (isMainScript) {

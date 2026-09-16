@@ -25,50 +25,81 @@ function findWorkspaceRoot(startDir = __dirname) {
 }
 
 const rootDir = findWorkspaceRoot(__dirname);
-const featuresDir = path.resolve(rootDir, "packages/features");
+const domainsDir = path.resolve(rootDir, "packages/domains");
+const platformTenantAdminDir = path.resolve(
+  rootDir,
+  "packages/platform/tenant-admin",
+);
 const targetDir = path.resolve(rootDir, "apps/tenant/src/kernel");
 const targetFile = path.resolve(targetDir, "registry.generated.ts");
 
 function discoverFeatureManifests() {
-  if (!fs.existsSync(featuresDir)) {
-    return [];
-  }
-
-  const entries = fs.readdirSync(featuresDir, { withFileTypes: true });
   const discovered = [];
 
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    // 跳过平台总控切片 (control-admin)，仅聚合租户端业务切片
-    if (entry.name === "control-admin") continue;
-
+  // 1. 发现租户平台基座套件 (tenant-admin)
+  if (fs.existsSync(platformTenantAdminDir)) {
     const manifestPath = path.resolve(
-      featuresDir,
-      entry.name,
+      platformTenantAdminDir,
       "src/manifest.ts",
     );
-    const pkgJsonPath = path.resolve(featuresDir, entry.name, "package.json");
-
+    const pkgJsonPath = path.resolve(platformTenantAdminDir, "package.json");
     if (fs.existsSync(manifestPath) && fs.existsSync(pkgJsonPath)) {
       try {
         const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, "utf-8"));
         const manifestCode = fs.readFileSync(manifestPath, "utf-8");
-
-        // 匹配 export const xxxManifest；优先使用显式 manifest subpath。
         const match = manifestCode.match(/export\s+const\s+(\w+Manifest)\s*:/);
         if (match) {
           const manifestSubpath = pkg.exports?.["./manifest"]
             ? `${pkg.name}/manifest`
             : pkg.name;
           discovered.push({
-            dirName: entry.name,
+            dirName: "tenant-admin",
             packageName: manifestSubpath,
             exportName: match[1],
-            isTenantAdmin: entry.name === "tenant-admin",
+            isTenantAdmin: true,
           });
         }
       } catch (err) {
-        console.warn(`[sync-features] 跳过解析 ${entry.name}:`, err.message);
+        console.warn("[sync-features] 跳过解析 tenant-admin:", err.message);
+      }
+    }
+  }
+
+  // 2. 纯粹发现业务领域切片 (packages/domains/*)
+  if (fs.existsSync(domainsDir)) {
+    const entries = fs.readdirSync(domainsDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+
+      const manifestPath = path.resolve(
+        domainsDir,
+        entry.name,
+        "src/manifest.ts",
+      );
+      const pkgJsonPath = path.resolve(domainsDir, entry.name, "package.json");
+
+      if (fs.existsSync(manifestPath) && fs.existsSync(pkgJsonPath)) {
+        try {
+          const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, "utf-8"));
+          const manifestCode = fs.readFileSync(manifestPath, "utf-8");
+
+          const match = manifestCode.match(
+            /export\s+const\s+(\w+Manifest)\s*:/,
+          );
+          if (match) {
+            const manifestSubpath = pkg.exports?.["./manifest"]
+              ? `${pkg.name}/manifest`
+              : pkg.name;
+            discovered.push({
+              dirName: entry.name,
+              packageName: manifestSubpath,
+              exportName: match[1],
+              isTenantAdmin: false,
+            });
+          }
+        } catch (err) {
+          console.warn(`[sync-features] 跳过解析 ${entry.name}:`, err.message);
+        }
       }
     }
   }

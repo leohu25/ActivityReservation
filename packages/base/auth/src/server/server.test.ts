@@ -3,7 +3,7 @@ import test from "node:test";
 import {
   GET,
   POST,
-} from "../../../../apps/tenant/src/app/api/auth/[...all]/route";
+} from "../../../../../apps/tenant/src/app/api/auth/[...all]/route";
 import {
   createServerAuth,
   getCurrentTenantContext,

@@ -6,9 +6,11 @@
   "tasks": {
     "//#codegen": {
       "inputs": [
-        "packages/features/**/src/manifest.ts",
-        "packages/features/**/prisma/schema.prisma",
-        "packages/features/**/package.json",
+        "packages/platform/**/src/manifest.ts",
+        "packages/domains/**/src/manifest.ts",
+        "packages/domains/**/prisma/schema.prisma",
+        "packages/platform/**/package.json",
+        "packages/domains/**/package.json",
         "packages/db-tenant/prisma/schema.prisma",
         "scripts/sync/**"
       ],

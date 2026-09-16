@@ -1,11 +1,12 @@
 packages:
   - "apps/*"
-  - "packages/*"
-  - "packages/features/*"
+  - "packages/base/*"
+  - "packages/platform/*"
+  - "packages/domains/*"
   - "tooling/*"
 
 allowBuilds:
-  '@prisma/engines': true
+  "@prisma/engines": true
   esbuild: true
   prisma: true
   sharp: false

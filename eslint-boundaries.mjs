@@ -2,7 +2,7 @@
  * @fileoverview Monorepo 模块架构拓扑与单向流依赖防御规则 (eslint-plugin-boundaries)
  *
  * 遵循架构分层规范：
- * apps/* -> packages/features/* -> packages/* (platform-core / ui)
+ * apps/* -> packages/platform/* + packages/domains/* -> packages/base/* (platform-core / ui)
  */
 
 import boundaries from "eslint-plugin-boundaries";
@@ -19,19 +19,24 @@ export const boundariesConfig = {
         mode: "folder",
       },
       {
-        type: "feature",
-        pattern: "packages/features/*",
+        type: "platform-suite",
+        pattern: "packages/platform/*",
+        mode: "folder",
+      },
+      {
+        type: "domain",
+        pattern: "packages/domains/*",
         mode: "folder",
       },
       {
         type: "platform-ui",
-        pattern: "packages/ui",
+        pattern: "packages/base/ui",
         mode: "folder",
       },
       {
         type: "platform-core",
         pattern:
-          "packages/(auth|authorization|biz-shared|db-control|db-tenant|shared)",
+          "packages/base/(auth|authorization|biz-shared|db-control|db-tenant|shared)",
         mode: "folder",
       },
       {
@@ -55,32 +60,49 @@ export const boundariesConfig = {
           // 1. 应用装配层 (apps/*) 拥有最高装配权限
           {
             from: "app",
-            allow: ["feature", "platform-ui", "platform-core", "tooling"],
+            allow: [
+              "platform-suite",
+              "domain",
+              "platform-ui",
+              "platform-core",
+              "tooling",
+            ],
           },
-          // 2. 业务切片 (packages/features/*) 允许消费平台基建，严禁切片间横向依赖与应用反向依赖
+          // 2. 平台基础设施套件 (packages/platform/*)
           {
-            from: "feature",
+            from: "platform-suite",
             allow: ["platform-ui", "platform-core"],
           },
-          // 3. UI 库 (@base/ui) 纯无头中立，严禁依赖业务切片、认证授权等具体逻辑
+          // 3. 业务领域切片 (packages/domains/*) 允许消费平台基建，严禁领域切片间横向依赖与应用反向依赖
+          {
+            from: "domain",
+            allow: ["platform-ui", "platform-core"],
+          },
+          // 4. UI 库 (@base/ui) 纯无头中立，严禁依赖业务领域、认证授权等具体逻辑
           {
             from: "platform-ui",
             allow: ["platform-core"],
           },
-          // 4. 平台核心基建 (auth, db 等)
+          // 5. 平台核心基建 (auth, db 等)
           {
             from: "platform-core",
             allow: ["platform-core", "tooling"],
           },
-          // 5. 迁移与工程工具
+          // 6. 迁移与工程工具
           {
             from: "tooling",
             allow: ["platform-core"],
           },
-          // 6. 治理脚本
+          // 7. 治理脚本
           {
             from: "scripts",
-            allow: ["platform-core", "tooling", "feature", "app"],
+            allow: [
+              "platform-core",
+              "tooling",
+              "platform-suite",
+              "domain",
+              "app",
+            ],
           },
         ],
       },

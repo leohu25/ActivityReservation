@@ -63,7 +63,7 @@ if (allFiles.length === 0) {
 
 const violations = [];
 
-// 规则 1：严禁直接引用 process.env.DATABASE_URL (除 packages/db-control 允许连接 Control DB)
+// 规则 1：严禁直接引用 process.env.DATABASE_URL (除 packages/base/db-control 允许连接 Control DB)
 const databaseUrlRegex = /process\.env\.DATABASE_URL/;
 
 // 规则 2：严禁手写旧版魔术权限字符串或绕过授权体系，例如 hasPermission("..."), <Can permission="..."
@@ -83,7 +83,7 @@ for (const filePath of allFiles) {
   const lines = content.split("\n");
 
   // 1. 检查 DATABASE_URL 泄露
-  if (!relPath.startsWith("packages/db-control/")) {
+  if (!relPath.startsWith("packages/base/db-control/")) {
     lines.forEach((line, idx) => {
       if (databaseUrlRegex.test(line) && !line.includes("// redline-ignore")) {
         violations.push({
@@ -174,7 +174,7 @@ for (const filePath of allFiles) {
 
   // 4.1 检查原生 confirm / window.confirm 弹窗调用
   // 规则红线 8 / 20：交互单次确认，破坏性操作统一由 ConfirmDialog 提示一次，严禁原生 confirm(...)
-  if (!isTestFile && !relPath.startsWith("packages/ui/")) {
+  if (!isTestFile && !relPath.startsWith("packages/base/ui/")) {
     lines.forEach((line, idx) => {
       if (/\b(?:window\.)?confirm\s*\(/.test(line)) {
         violations.push({
@@ -189,7 +189,11 @@ for (const filePath of allFiles) {
 
   // 4.2 检查业务切片内手写裸 DOM 标签 (table / select 等)
   // 规则红线 3：严禁手写裸 DOM 与原生非受控控件，切片界面必须 100% 使用 @base/ui (Table / DataTable / DetailTable / Select / FormModal)
-  if (!isTestFile && relPath.startsWith("packages/features/")) {
+  if (
+    !isTestFile &&
+    (relPath.startsWith("packages/domains/") ||
+      relPath.startsWith("packages/platform/"))
+  ) {
     lines.forEach((line, idx) => {
       if (/<table[\s>]/.test(line) && !line.includes("// redline-ignore")) {
         violations.push({
@@ -214,7 +218,8 @@ for (const filePath of allFiles) {
   // 规则红线：禁止使用裸字符串魔法值，必须使用 MasterDataStatus 常量对象 (as const 契约)
   if (
     !isTestFile &&
-    (relPath.startsWith("packages/features/") ||
+    (relPath.startsWith("packages/domains/") ||
+      relPath.startsWith("packages/platform/") ||
       relPath.startsWith("apps/tenant/"))
   ) {
     const rawActiveDisabledRegex =
@@ -237,12 +242,12 @@ for (const filePath of allFiles) {
   // 5. 检查 UI 组件单元测试文件是否就近放置 (Colocation)
   // 规则：禁止在 UI 包 src 根目录下平铺 *.test.ts / *.test.tsx，组件测试必须与组件同级放置
   const isDirectlyUnderUiSrc =
-    /^packages\/ui\/src\/[^/]+\.test\.(ts|tsx)$/.test(relPath);
+    /^packages\/base\/ui\/src\/[^/]+\.test\.(ts|tsx)$/.test(relPath);
   if (isDirectlyUnderUiSrc) {
     violations.push({
       file: relPath,
       line: 1,
-      rule: "严禁在 packages/ui/src 根目录平铺孤儿测试文件 (必须与被测组件同级放置 Colocation，如 components/layout/Sidebar.test.ts)",
+      rule: "严禁在 packages/base/ui/src 根目录平铺孤儿测试文件 (必须与被测组件同级放置 Colocation，如 components/layout/Sidebar.test.ts)",
       code: relPath,
     });
   }

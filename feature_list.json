@@ -337,9 +337,9 @@
       "name": "【架构分层与命名拓扑治理】建立packages/platform与packages/domains物理隔离并净化门禁",
       "description": "彻底分离平台系统套件与业务领域切片：1. 将 tenant-admin 与 control-admin 下沉至 packages/platform/，建立系统框架专属边界；2. 将 customer-center, material-center, order-center, procurement-center 归位至 packages/domains/；3. 更新 pnpm-workspace.yaml、turbo.json、package.json 语义化子路径及 tsconfig 路径别名；4. 净化 check-vertical-slices.mjs 与 sync-features.mjs，彻底移除所有针对 control-admin 等的静态硬编码白名单与免死金牌。",
       "dependencies": ["arch-quality-eslint-and-type-hardening"],
-      "status": "pending",
+      "status": "completed",
       "owner": "coordinator",
-      "evidence": ""
+      "evidence": "1. 将 auth, authorization, biz-shared, db-control, db-tenant, shared, ui 物理归位至 packages/base/；2. 将 tenant-admin 与 control-admin 平移至 packages/platform/；3. 将 customer/material/order/procurement 业务切片平移至 packages/domains/，彻底废除 packages/features/；4. 更新 pnpm-workspace.yaml, turbo.json, tsconfig.base.json, Dockerfile, eslint-boundaries.mjs 与 package.json 脚本；5. 净化 check-vertical-slices.mjs 与 sync-features.mjs，彻底移除针对 control-admin 等的静态硬编码白名单；6. 全仓 pnpm check/test/lint 16/16 全部绿灯，node scripts/verify.mjs 9 项门禁全过。"
     },
     {
       "id": "arch-ui-three-tier-and-monolith-breakdown",

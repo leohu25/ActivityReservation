@@ -8,7 +8,7 @@
     "status": "node scripts/tools/status.mjs",
     "verify": "node scripts/verify.mjs",
     "session:end": "node .harness/lifecycle/session-end.mjs",
-    "ui:add": "npx shadcn@latest add -y --overwrite -c packages/ui",
+    "ui:add": "npx shadcn@latest add -y --overwrite -c packages/base/ui",
     "// 2. Turborepo 核心拓扑 (全自动化调度)": "",
     "dev": "turbo run dev",
     "dev:control": "turbo run dev --filter=control",

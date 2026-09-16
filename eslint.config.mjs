@@ -27,7 +27,7 @@ const eslintConfig = defineConfig([
   },
   // Control 数据库客户端与平台管控免除 DATABASE_URL 限制
   {
-    files: ["packages/db-control/**", "tooling/db-migrate/**"],
+    files: ["packages/base/db-control/**", "tooling/db-migrate/**"],
     rules: {
       "no-restricted-syntax": "off",
     },
@@ -62,7 +62,12 @@ const eslintConfig = defineConfig([
   },
   // UI 库底层通用泛型组件豁免局部 any
   {
-    files: ["packages/ui/**", "packages/shared/**"],
+    files: [
+      "packages/base/ui/**",
+      "packages/base/shared/**",
+      "packages/ui/**",
+      "packages/shared/**",
+    ],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-empty-object-type": "off",

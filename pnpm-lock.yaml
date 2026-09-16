@@ -31,25 +31,25 @@ importers:
     dependencies:
       '@base/auth':
         specifier: workspace:*
-        version: link:../../packages/auth
+        version: link:../../packages/base/auth
       '@base/db-control':
         specifier: workspace:*
-        version: link:../../packages/db-control
+        version: link:../../packages/base/db-control
       '@base/db-migrate':
         specifier: workspace:*
         version: link:../../tooling/db-migrate
       '@base/db-tenant':
         specifier: workspace:*
-        version: link:../../packages/db-tenant
+        version: link:../../packages/base/db-tenant
       '@base/feature-control-admin':
         specifier: workspace:*
-        version: link:../../packages/features/control-admin
+        version: link:../../packages/platform/control-admin
       '@base/shared':
         specifier: workspace:*
-        version: link:../../packages/shared
+        version: link:../../packages/base/shared
       '@base/ui':
         specifier: workspace:*
-        version: link:../../packages/ui
+        version: link:../../packages/base/ui
       better-auth:
         specifier: 1.7.3
         version: 1.7.3(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))(mysql2@3.15.3)(next@16.3.4(@babel/core@7.29.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -98,37 +98,37 @@ importers:
     dependencies:
       '@base/auth':
         specifier: workspace:*
-        version: link:../../packages/auth
+        version: link:../../packages/base/auth
       '@base/authorization':
         specifier: workspace:*
-        version: link:../../packages/authorization
+        version: link:../../packages/base/authorization
       '@base/db-control':
         specifier: workspace:*
-        version: link:../../packages/db-control
+        version: link:../../packages/base/db-control
       '@base/db-tenant':
         specifier: workspace:*
-        version: link:../../packages/db-tenant
+        version: link:../../packages/base/db-tenant
       '@base/feature-customer-center':
         specifier: workspace:*
-        version: link:../../packages/features/customer-center
+        version: link:../../packages/domains/customer-center
       '@base/feature-material-center':
         specifier: workspace:*
-        version: link:../../packages/features/material-center
+        version: link:../../packages/domains/material-center
       '@base/feature-order-center':
         specifier: workspace:*
-        version: link:../../packages/features/order-center
+        version: link:../../packages/domains/order-center
       '@base/feature-procurement-center':
         specifier: workspace:*
-        version: link:../../packages/features/procurement-center
+        version: link:../../packages/domains/procurement-center
       '@base/feature-tenant-admin':
         specifier: workspace:*
-        version: link:../../packages/features/tenant-admin
+        version: link:../../packages/platform/tenant-admin
       '@base/shared':
         specifier: workspace:*
-        version: link:../../packages/shared
+        version: link:../../packages/base/shared
       '@base/ui':
         specifier: workspace:*
-        version: link:../../packages/ui
+        version: link:../../packages/base/ui
       better-auth:
         specifier: 1.7.3
         version: 1.7.3(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))(mysql2@3.15.3)(next@16.3.4(@babel/core@7.29.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -176,14 +176,14 @@ importers:
         specifier: ^5
         version: 5.8.2
 
-  packages/auth:
+  packages/base/auth:
     dependencies:
       '@base/db-control':
         specifier: workspace:*
         version: link:../db-control
       '@base/db-migrate':
         specifier: workspace:*
-        version: link:../../tooling/db-migrate
+        version: link:../../../tooling/db-migrate
       better-auth:
         specifier: 1.7.3
         version: 1.7.3(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))(mysql2@3.15.3)(next@16.3.4(@babel/core@7.29.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -207,7 +207,7 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
 
-  packages/authorization:
+  packages/base/authorization:
     dependencies:
       '@base/auth':
         specifier: workspace:*
@@ -247,7 +247,7 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
 
-  packages/biz-shared:
+  packages/base/biz-shared:
     dependencies:
       '@base/authorization':
         specifier: workspace:*
@@ -287,7 +287,7 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
 
-  packages/db-control:
+  packages/base/db-control:
     dependencies:
       '@prisma/adapter-pg':
         specifier: 7.10.0
@@ -306,7 +306,7 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
 
-  packages/db-tenant:
+  packages/base/db-tenant:
     dependencies:
       '@base/db-control':
         specifier: workspace:*
@@ -337,355 +337,7 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
 
-  packages/features/control-admin:
-    dependencies:
-      '@base/auth':
-        specifier: workspace:*
-        version: link:../../auth
-      '@base/authorization':
-        specifier: workspace:*
-        version: link:../../authorization
-      '@base/db-control':
-        specifier: workspace:*
-        version: link:../../db-control
-      '@base/db-migrate':
-        specifier: workspace:*
-        version: link:../../../tooling/db-migrate
-      '@base/db-tenant':
-        specifier: workspace:*
-        version: link:../../db-tenant
-      '@base/shared':
-        specifier: workspace:*
-        version: link:../../shared
-      '@base/ui':
-        specifier: workspace:*
-        version: link:../../ui
-      better-auth:
-        specifier: 1.7.3
-        version: 1.7.3(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))(mysql2@3.15.3)(next@16.3.4(@babel/core@7.29.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      lucide-react:
-        specifier: ^1.41.0
-        version: 1.41.0(react@19.2.8)
-      next:
-        specifier: 16.3.4
-        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-    devDependencies:
-      '@types/node':
-        specifier: ^20.17.24
-        version: 20.19.43
-      '@types/react':
-        specifier: ^19.2.18
-        version: 19.2.18
-      '@types/react-dom':
-        specifier: ^19.2.7
-        version: 19.2.7(@types/react@19.2.18)
-      react:
-        specifier: 19.2.8
-        version: 19.2.8
-      react-dom:
-        specifier: 19.2.8
-        version: 19.2.8(react@19.2.8)
-      tsx:
-        specifier: ^4.20.6
-        version: 4.23.13
-      typescript:
-        specifier: ^5.8.2
-        version: 5.8.2
-
-  packages/features/customer-center:
-    dependencies:
-      '@base/auth':
-        specifier: workspace:*
-        version: link:../../auth
-      '@base/authorization':
-        specifier: workspace:*
-        version: link:../../authorization
-      '@base/db-tenant':
-        specifier: workspace:*
-        version: link:../../db-tenant
-      '@base/shared':
-        specifier: workspace:*
-        version: link:../../shared
-      '@base/ui':
-        specifier: workspace:*
-        version: link:../../ui
-      '@casl/ability':
-        specifier: 7.0.1
-        version: 7.0.1
-      '@casl/prisma':
-        specifier: ^2.0.2
-        version: 2.0.2(@casl/ability@7.0.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))
-      lucide-react:
-        specifier: ^1.41.0
-        version: 1.41.0(react@19.2.8)
-      next:
-        specifier: 16.3.4
-        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      server-only:
-        specifier: 0.0.1
-        version: 0.0.1
-    devDependencies:
-      '@types/node':
-        specifier: ^20.17.24
-        version: 20.19.43
-      '@types/react':
-        specifier: ^19.2.18
-        version: 19.2.18
-      '@types/react-dom':
-        specifier: ^19.2.7
-        version: 19.2.7(@types/react@19.2.18)
-      react:
-        specifier: 19.2.8
-        version: 19.2.8
-      react-dom:
-        specifier: 19.2.8
-        version: 19.2.8(react@19.2.8)
-      tsx:
-        specifier: ^4.20.6
-        version: 4.23.13
-      typescript:
-        specifier: ^5.8.2
-        version: 5.8.2
-
-  packages/features/material-center:
-    dependencies:
-      '@base/auth':
-        specifier: workspace:*
-        version: link:../../auth
-      '@base/authorization':
-        specifier: workspace:*
-        version: link:../../authorization
-      '@base/biz-shared':
-        specifier: workspace:*
-        version: link:../../biz-shared
-      '@base/db-tenant':
-        specifier: workspace:*
-        version: link:../../db-tenant
-      '@base/shared':
-        specifier: workspace:*
-        version: link:../../shared
-      '@base/ui':
-        specifier: workspace:*
-        version: link:../../ui
-      '@casl/ability':
-        specifier: 7.0.1
-        version: 7.0.1
-      '@casl/prisma':
-        specifier: ^2.0.2
-        version: 2.0.2(@casl/ability@7.0.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))
-      decimal.js:
-        specifier: ^10.5.0
-        version: 10.6.0
-      lucide-react:
-        specifier: ^1.41.0
-        version: 1.41.0(react@19.2.8)
-      next:
-        specifier: 16.3.4
-        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      server-only:
-        specifier: 0.0.1
-        version: 0.0.1
-      zod:
-        specifier: ^3.24.2
-        version: 3.24.2
-    devDependencies:
-      '@types/node':
-        specifier: ^20.17.24
-        version: 20.19.43
-      '@types/react':
-        specifier: ^19.2.18
-        version: 19.2.18
-      '@types/react-dom':
-        specifier: ^19.2.7
-        version: 19.2.7(@types/react@19.2.18)
-      prisma:
-        specifier: 7.10.0
-        version: 7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2)
-      react:
-        specifier: 19.2.8
-        version: 19.2.8
-      react-dom:
-        specifier: 19.2.8
-        version: 19.2.8(react@19.2.8)
-      tsx:
-        specifier: ^4.20.6
-        version: 4.23.13
-      typescript:
-        specifier: ^5.8.2
-        version: 5.8.2
-
-  packages/features/order-center:
-    dependencies:
-      '@base/auth':
-        specifier: workspace:*
-        version: link:../../auth
-      '@base/authorization':
-        specifier: workspace:*
-        version: link:../../authorization
-      '@base/biz-shared':
-        specifier: workspace:*
-        version: link:../../biz-shared
-      '@base/db-tenant':
-        specifier: workspace:*
-        version: link:../../db-tenant
-      '@base/shared':
-        specifier: workspace:*
-        version: link:../../shared
-      '@base/ui':
-        specifier: workspace:*
-        version: link:../../ui
-      '@casl/ability':
-        specifier: 7.0.1
-        version: 7.0.1
-      '@casl/prisma':
-        specifier: ^2.0.2
-        version: 2.0.2(@casl/ability@7.0.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))
-      lucide-react:
-        specifier: ^1.41.0
-        version: 1.41.0(react@19.2.8)
-      next:
-        specifier: 16.3.4
-        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      server-only:
-        specifier: 0.0.1
-        version: 0.0.1
-    devDependencies:
-      '@types/node':
-        specifier: ^20.17.24
-        version: 20.19.43
-      '@types/react':
-        specifier: ^19.2.18
-        version: 19.2.18
-      '@types/react-dom':
-        specifier: ^19.2.7
-        version: 19.2.7(@types/react@19.2.18)
-      react:
-        specifier: 19.2.8
-        version: 19.2.8
-      react-dom:
-        specifier: 19.2.8
-        version: 19.2.8(react@19.2.8)
-      tsx:
-        specifier: ^4.20.6
-        version: 4.23.13
-      typescript:
-        specifier: ^5.8.2
-        version: 5.8.2
-
-  packages/features/procurement-center:
-    dependencies:
-      '@base/auth':
-        specifier: workspace:*
-        version: link:../../auth
-      '@base/authorization':
-        specifier: workspace:*
-        version: link:../../authorization
-      '@base/db-tenant':
-        specifier: workspace:*
-        version: link:../../db-tenant
-      '@base/shared':
-        specifier: workspace:*
-        version: link:../../shared
-      '@base/ui':
-        specifier: workspace:*
-        version: link:../../ui
-      '@casl/ability':
-        specifier: 7.0.1
-        version: 7.0.1
-      '@casl/prisma':
-        specifier: ^2.0.2
-        version: 2.0.2(@casl/ability@7.0.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))
-      lucide-react:
-        specifier: ^1.41.0
-        version: 1.41.0(react@19.2.8)
-      next:
-        specifier: 16.3.4
-        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-    devDependencies:
-      '@types/node':
-        specifier: ^20.17.24
-        version: 20.19.43
-      '@types/react':
-        specifier: ^19.2.18
-        version: 19.2.18
-      '@types/react-dom':
-        specifier: ^19.2.7
-        version: 19.2.7(@types/react@19.2.18)
-      react:
-        specifier: 19.2.8
-        version: 19.2.8
-      react-dom:
-        specifier: 19.2.8
-        version: 19.2.8(react@19.2.8)
-      tsx:
-        specifier: ^4.20.6
-        version: 4.23.13
-      typescript:
-        specifier: ^5.8.2
-        version: 5.8.2
-
-  packages/features/tenant-admin:
-    dependencies:
-      '@base/auth':
-        specifier: workspace:*
-        version: link:../../auth
-      '@base/authorization':
-        specifier: workspace:*
-        version: link:../../authorization
-      '@base/db-control':
-        specifier: workspace:*
-        version: link:../../db-control
-      '@base/db-tenant':
-        specifier: workspace:*
-        version: link:../../db-tenant
-      '@base/shared':
-        specifier: workspace:*
-        version: link:../../shared
-      '@base/ui':
-        specifier: workspace:*
-        version: link:../../ui
-      '@casl/ability':
-        specifier: 7.0.1
-        version: 7.0.1
-      '@casl/prisma':
-        specifier: ^2.0.2
-        version: 2.0.2(@casl/ability@7.0.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))
-      better-auth:
-        specifier: 1.7.3
-        version: 1.7.3(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))(mysql2@3.15.3)(next@16.3.4(@babel/core@7.29.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      lucide-react:
-        specifier: ^1.41.0
-        version: 1.41.0(react@19.2.8)
-      next:
-        specifier: 16.3.4
-        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      server-only:
-        specifier: 0.0.1
-        version: 0.0.1
-    devDependencies:
-      '@types/node':
-        specifier: ^20.17.24
-        version: 20.19.43
-      '@types/react':
-        specifier: ^19.2.18
-        version: 19.2.18
-      '@types/react-dom':
-        specifier: ^19.2.7
-        version: 19.2.7(@types/react@19.2.18)
-      react:
-        specifier: 19.2.8
-        version: 19.2.8
-      react-dom:
-        specifier: 19.2.8
-        version: 19.2.8(react@19.2.8)
-      tsx:
-        specifier: ^4.20.6
-        version: 4.23.13
-      typescript:
-        specifier: ^5.8.2
-        version: 5.8.2
-
-  packages/shared:
+  packages/base/shared:
     dependencies:
       dayjs:
         specifier: ^1.11.23
@@ -710,7 +362,7 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
 
-  packages/ui:
+  packages/base/ui:
     dependencies:
       '@base/shared':
         specifier: workspace:*
@@ -789,17 +441,365 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
 
+  packages/domains/customer-center:
+    dependencies:
+      '@base/auth':
+        specifier: workspace:*
+        version: link:../../base/auth
+      '@base/authorization':
+        specifier: workspace:*
+        version: link:../../base/authorization
+      '@base/db-tenant':
+        specifier: workspace:*
+        version: link:../../base/db-tenant
+      '@base/shared':
+        specifier: workspace:*
+        version: link:../../base/shared
+      '@base/ui':
+        specifier: workspace:*
+        version: link:../../base/ui
+      '@casl/ability':
+        specifier: 7.0.1
+        version: 7.0.1
+      '@casl/prisma':
+        specifier: ^2.0.2
+        version: 2.0.2(@casl/ability@7.0.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))
+      lucide-react:
+        specifier: ^1.41.0
+        version: 1.41.0(react@19.2.8)
+      next:
+        specifier: 16.3.4
+        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      server-only:
+        specifier: 0.0.1
+        version: 0.0.1
+    devDependencies:
+      '@types/node':
+        specifier: ^20.17.24
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19.2.18
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.7
+        version: 19.2.7(@types/react@19.2.18)
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: 19.2.8
+        version: 19.2.8(react@19.2.8)
+      tsx:
+        specifier: ^4.20.6
+        version: 4.23.13
+      typescript:
+        specifier: ^5.8.2
+        version: 5.8.2
+
+  packages/domains/material-center:
+    dependencies:
+      '@base/auth':
+        specifier: workspace:*
+        version: link:../../base/auth
+      '@base/authorization':
+        specifier: workspace:*
+        version: link:../../base/authorization
+      '@base/biz-shared':
+        specifier: workspace:*
+        version: link:../../base/biz-shared
+      '@base/db-tenant':
+        specifier: workspace:*
+        version: link:../../base/db-tenant
+      '@base/shared':
+        specifier: workspace:*
+        version: link:../../base/shared
+      '@base/ui':
+        specifier: workspace:*
+        version: link:../../base/ui
+      '@casl/ability':
+        specifier: 7.0.1
+        version: 7.0.1
+      '@casl/prisma':
+        specifier: ^2.0.2
+        version: 2.0.2(@casl/ability@7.0.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))
+      decimal.js:
+        specifier: ^10.5.0
+        version: 10.6.0
+      lucide-react:
+        specifier: ^1.41.0
+        version: 1.41.0(react@19.2.8)
+      next:
+        specifier: 16.3.4
+        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      server-only:
+        specifier: 0.0.1
+        version: 0.0.1
+      zod:
+        specifier: ^3.24.2
+        version: 3.24.2
+    devDependencies:
+      '@types/node':
+        specifier: ^20.17.24
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19.2.18
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.7
+        version: 19.2.7(@types/react@19.2.18)
+      prisma:
+        specifier: 7.10.0
+        version: 7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2)
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: 19.2.8
+        version: 19.2.8(react@19.2.8)
+      tsx:
+        specifier: ^4.20.6
+        version: 4.23.13
+      typescript:
+        specifier: ^5.8.2
+        version: 5.8.2
+
+  packages/domains/order-center:
+    dependencies:
+      '@base/auth':
+        specifier: workspace:*
+        version: link:../../base/auth
+      '@base/authorization':
+        specifier: workspace:*
+        version: link:../../base/authorization
+      '@base/biz-shared':
+        specifier: workspace:*
+        version: link:../../base/biz-shared
+      '@base/db-tenant':
+        specifier: workspace:*
+        version: link:../../base/db-tenant
+      '@base/shared':
+        specifier: workspace:*
+        version: link:../../base/shared
+      '@base/ui':
+        specifier: workspace:*
+        version: link:../../base/ui
+      '@casl/ability':
+        specifier: 7.0.1
+        version: 7.0.1
+      '@casl/prisma':
+        specifier: ^2.0.2
+        version: 2.0.2(@casl/ability@7.0.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))
+      lucide-react:
+        specifier: ^1.41.0
+        version: 1.41.0(react@19.2.8)
+      next:
+        specifier: 16.3.4
+        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      server-only:
+        specifier: 0.0.1
+        version: 0.0.1
+    devDependencies:
+      '@types/node':
+        specifier: ^20.17.24
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19.2.18
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.7
+        version: 19.2.7(@types/react@19.2.18)
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: 19.2.8
+        version: 19.2.8(react@19.2.8)
+      tsx:
+        specifier: ^4.20.6
+        version: 4.23.13
+      typescript:
+        specifier: ^5.8.2
+        version: 5.8.2
+
+  packages/domains/procurement-center:
+    dependencies:
+      '@base/auth':
+        specifier: workspace:*
+        version: link:../../base/auth
+      '@base/authorization':
+        specifier: workspace:*
+        version: link:../../base/authorization
+      '@base/db-tenant':
+        specifier: workspace:*
+        version: link:../../base/db-tenant
+      '@base/shared':
+        specifier: workspace:*
+        version: link:../../base/shared
+      '@base/ui':
+        specifier: workspace:*
+        version: link:../../base/ui
+      '@casl/ability':
+        specifier: 7.0.1
+        version: 7.0.1
+      '@casl/prisma':
+        specifier: ^2.0.2
+        version: 2.0.2(@casl/ability@7.0.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))
+      lucide-react:
+        specifier: ^1.41.0
+        version: 1.41.0(react@19.2.8)
+      next:
+        specifier: 16.3.4
+        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+    devDependencies:
+      '@types/node':
+        specifier: ^20.17.24
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19.2.18
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.7
+        version: 19.2.7(@types/react@19.2.18)
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: 19.2.8
+        version: 19.2.8(react@19.2.8)
+      tsx:
+        specifier: ^4.20.6
+        version: 4.23.13
+      typescript:
+        specifier: ^5.8.2
+        version: 5.8.2
+
+  packages/platform/control-admin:
+    dependencies:
+      '@base/auth':
+        specifier: workspace:*
+        version: link:../../base/auth
+      '@base/authorization':
+        specifier: workspace:*
+        version: link:../../base/authorization
+      '@base/db-control':
+        specifier: workspace:*
+        version: link:../../base/db-control
+      '@base/db-migrate':
+        specifier: workspace:*
+        version: link:../../../tooling/db-migrate
+      '@base/db-tenant':
+        specifier: workspace:*
+        version: link:../../base/db-tenant
+      '@base/shared':
+        specifier: workspace:*
+        version: link:../../base/shared
+      '@base/ui':
+        specifier: workspace:*
+        version: link:../../base/ui
+      better-auth:
+        specifier: 1.7.3
+        version: 1.7.3(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))(mysql2@3.15.3)(next@16.3.4(@babel/core@7.29.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      lucide-react:
+        specifier: ^1.41.0
+        version: 1.41.0(react@19.2.8)
+      next:
+        specifier: 16.3.4
+        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+    devDependencies:
+      '@types/node':
+        specifier: ^20.17.24
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19.2.18
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.7
+        version: 19.2.7(@types/react@19.2.18)
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: 19.2.8
+        version: 19.2.8(react@19.2.8)
+      tsx:
+        specifier: ^4.20.6
+        version: 4.23.13
+      typescript:
+        specifier: ^5.8.2
+        version: 5.8.2
+
+  packages/platform/tenant-admin:
+    dependencies:
+      '@base/auth':
+        specifier: workspace:*
+        version: link:../../base/auth
+      '@base/authorization':
+        specifier: workspace:*
+        version: link:../../base/authorization
+      '@base/db-control':
+        specifier: workspace:*
+        version: link:../../base/db-control
+      '@base/db-tenant':
+        specifier: workspace:*
+        version: link:../../base/db-tenant
+      '@base/shared':
+        specifier: workspace:*
+        version: link:../../base/shared
+      '@base/ui':
+        specifier: workspace:*
+        version: link:../../base/ui
+      '@casl/ability':
+        specifier: 7.0.1
+        version: 7.0.1
+      '@casl/prisma':
+        specifier: ^2.0.2
+        version: 2.0.2(@casl/ability@7.0.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))
+      better-auth:
+        specifier: 1.7.3
+        version: 1.7.3(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))(mysql2@3.15.3)(next@16.3.4(@babel/core@7.29.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      lucide-react:
+        specifier: ^1.41.0
+        version: 1.41.0(react@19.2.8)
+      next:
+        specifier: 16.3.4
+        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      server-only:
+        specifier: 0.0.1
+        version: 0.0.1
+    devDependencies:
+      '@types/node':
+        specifier: ^20.17.24
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19.2.18
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.7
+        version: 19.2.7(@types/react@19.2.18)
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: 19.2.8
+        version: 19.2.8(react@19.2.8)
+      tsx:
+        specifier: ^4.20.6
+        version: 4.23.13
+      typescript:
+        specifier: ^5.8.2
+        version: 5.8.2
+
   tooling/db-migrate:
     dependencies:
       '@base/db-control':
         specifier: workspace:*
-        version: link:../../packages/db-control
+        version: link:../../packages/base/db-control
       '@base/db-tenant':
         specifier: workspace:*
-        version: link:../../packages/db-tenant
+        version: link:../../packages/base/db-tenant
       '@base/shared':
         specifier: workspace:*
-        version: link:../../packages/shared
+        version: link:../../packages/base/shared
       better-auth:
         specifier: 1.7.3
         version: 1.7.3(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))(mysql2@3.15.3)(next@16.3.4(@babel/core@7.29.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)

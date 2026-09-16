@@ -137,10 +137,10 @@ test("redline rejects internal /src/ path penetration", async () => {
 
 test("redline rejects raw select DOM in features package", async () => {
   const result = await runFixture({
-    "packages/features/demo/package.json": JSON.stringify({
+    "packages/domains/demo/package.json": JSON.stringify({
       name: "@base/feature-demo",
     }),
-    "packages/features/demo/src/DemoView.tsx":
+    "packages/domains/demo/src/DemoView.tsx":
       'export function Demo() { return <select><option value="1">1</option></select>; }\n',
   });
 
@@ -150,10 +150,10 @@ test("redline rejects raw select DOM in features package", async () => {
 
 test("redline rejects raw active/disabled status magic strings in business code", async () => {
   const result = await runFixture({
-    "packages/features/demo/package.json": JSON.stringify({
+    "packages/domains/demo/package.json": JSON.stringify({
       name: "@base/feature-demo",
     }),
-    "packages/features/demo/src/DemoView.tsx":
+    "packages/domains/demo/src/DemoView.tsx":
       'export function isLive(s: string) { return s.status === "ACTIVE"; }\n',
   });
 

@@ -18,7 +18,7 @@
     "db:diff": "tsx src/cli.ts diff",
     "db:diff:sql": "tsx src/cli.ts diff:sql",
     "prisma:validate": "prisma validate --config prisma.config.ts",
-    "test": "tsx --test --test-reporter=../../scripts/reporter/fail-only-reporter.mjs src/*.test.ts",
+    "test": "tsx --test --test-reporter=../../../scripts/reporter/fail-only-reporter.mjs src/*.test.ts",
     "lint": "eslint ."
   },
   "dependencies": {

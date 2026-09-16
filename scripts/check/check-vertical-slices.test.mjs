@@ -19,7 +19,7 @@ async function createFixture(files) {
   return root;
 }
 
-function createValidFeatureFiles(pkgDir = "packages/features/demo-feature") {
+function createValidFeatureFiles(pkgDir = "packages/domains/demo-feature") {
   return {
     [`${pkgDir}/package.json`]: JSON.stringify({
       name: "@base/feature-demo",
@@ -69,9 +69,9 @@ test("checkVerticalSlices: valid vertical slice package passes with zero violati
 
 test("checkVerticalSlices: rejects missing base contracts (manifest.ts, catalog.ts, shared/server)", async () => {
   const files = createValidFeatureFiles();
-  delete files["packages/features/demo-feature/src/manifest.ts"];
-  delete files["packages/features/demo-feature/src/catalog.ts"];
-  delete files["packages/features/demo-feature/src/shared/server/context.ts"];
+  delete files["packages/domains/demo-feature/src/manifest.ts"];
+  delete files["packages/domains/demo-feature/src/catalog.ts"];
+  delete files["packages/domains/demo-feature/src/shared/server/context.ts"];
 
   const root = await createFixture(files);
   try {
@@ -87,9 +87,9 @@ test("checkVerticalSlices: rejects missing base contracts (manifest.ts, catalog.
 
 test("checkVerticalSlices: rejects package.json with root barrel export '.'", async () => {
   const files = createValidFeatureFiles();
-  const pkg = JSON.parse(files["packages/features/demo-feature/package.json"]);
+  const pkg = JSON.parse(files["packages/domains/demo-feature/package.json"]);
   pkg.exports["."] = "./src/index.ts";
-  files["packages/features/demo-feature/package.json"] = JSON.stringify(pkg);
+  files["packages/domains/demo-feature/package.json"] = JSON.stringify(pkg);
 
   const root = await createFixture(files);
   try {
@@ -103,10 +103,10 @@ test("checkVerticalSlices: rejects package.json with root barrel export '.'", as
 test("checkVerticalSlices: rejects residual retired flat files in src root", async () => {
   const files = {
     ...createValidFeatureFiles(),
-    "packages/features/demo-feature/src/index.ts":
+    "packages/domains/demo-feature/src/index.ts":
       "export * from './manifest';\n",
-    "packages/features/demo-feature/src/actions.ts": "export const a = 1;\n",
-    "packages/features/demo-feature/src/services/foo.ts":
+    "packages/domains/demo-feature/src/actions.ts": "export const a = 1;\n",
+    "packages/domains/demo-feature/src/services/foo.ts":
       "export class Foo {}\n",
   };
 
@@ -124,10 +124,10 @@ test("checkVerticalSlices: rejects residual retired flat files in src root", asy
 test("checkVerticalSlices: rejects slice missing public.ts or contract.ts", async () => {
   const files = createValidFeatureFiles();
   delete files[
-    "packages/features/demo-feature/src/features/order-management/contract.ts"
+    "packages/domains/demo-feature/src/features/order-management/contract.ts"
   ];
   delete files[
-    "packages/features/demo-feature/src/features/order-management/public.ts"
+    "packages/domains/demo-feature/src/features/order-management/public.ts"
   ];
 
   const root = await createFixture(files);
@@ -143,10 +143,10 @@ test("checkVerticalSlices: rejects slice missing public.ts or contract.ts", asyn
 test("checkVerticalSlices: rejects queries.ts without server-only or actions.ts without use server", async () => {
   const files = createValidFeatureFiles();
   files[
-    "packages/features/demo-feature/src/features/order-management/queries.ts"
+    "packages/domains/demo-feature/src/features/order-management/queries.ts"
   ] = "export async function listOrders() {}\n";
   files[
-    "packages/features/demo-feature/src/features/order-management/actions.ts"
+    "packages/domains/demo-feature/src/features/order-management/actions.ts"
   ] = "export async function createOrder() {}\n";
 
   const root = await createFixture(files);
@@ -162,10 +162,10 @@ test("checkVerticalSlices: rejects queries.ts without server-only or actions.ts 
 test("checkVerticalSlices: rejects Client-Safe public.ts or ui/ importing db-tenant or next/headers", async () => {
   const files = createValidFeatureFiles();
   files[
-    "packages/features/demo-feature/src/features/order-management/public.ts"
+    "packages/domains/demo-feature/src/features/order-management/public.ts"
   ] = 'import { headers } from "next/headers";\nexport * from "./contract";\n';
   files[
-    "packages/features/demo-feature/src/features/order-management/ui/OrderView.tsx"
+    "packages/domains/demo-feature/src/features/order-management/ui/OrderView.tsx"
   ] =
     'import { TenantPrismaClient } from "@base/db-tenant";\nexport const OrderView = () => null;\n';
 
@@ -193,7 +193,7 @@ test("checkVerticalSlices: rejects Client-Safe public.ts or ui/ importing db-ten
 test("checkVerticalSlices: rejects slice directly importing sibling slice private service", async () => {
   const files = {
     ...createValidFeatureFiles(),
-    "packages/features/demo-feature/package.json": JSON.stringify({
+    "packages/domains/demo-feature/package.json": JSON.stringify({
       name: "@base/feature-demo",
       exports: {
         "./manifest": "./src/manifest.ts",
@@ -207,21 +207,21 @@ test("checkVerticalSlices: rejects slice directly importing sibling slice privat
         "./shared": "./src/shared/public.ts",
       },
     }),
-    "packages/features/demo-feature/src/features/payment-management/contract.ts":
+    "packages/domains/demo-feature/src/features/payment-management/contract.ts":
       "export const PaymentSubject = 'Payment';\n",
-    "packages/features/demo-feature/src/features/payment-management/types.ts":
+    "packages/domains/demo-feature/src/features/payment-management/types.ts":
       "export interface PaymentItem {}\n",
-    "packages/features/demo-feature/src/features/payment-management/service.ts":
+    "packages/domains/demo-feature/src/features/payment-management/service.ts":
       "export class PaymentService {}\n",
-    "packages/features/demo-feature/src/features/payment-management/queries.ts":
+    "packages/domains/demo-feature/src/features/payment-management/queries.ts":
       'import "server-only";\nexport async function getPayment() {}\n',
-    "packages/features/demo-feature/src/features/payment-management/actions.ts":
+    "packages/domains/demo-feature/src/features/payment-management/actions.ts":
       '"use server";\nexport async function pay() {}\n',
-    "packages/features/demo-feature/src/features/payment-management/public.ts":
+    "packages/domains/demo-feature/src/features/payment-management/public.ts":
       "export * from './contract';\n",
-    "packages/features/demo-feature/src/features/payment-management/public.server.ts":
+    "packages/domains/demo-feature/src/features/payment-management/public.server.ts":
       'import "server-only";\nexport * from "./queries";\n',
-    "packages/features/demo-feature/src/features/payment-management/actions.ts":
+    "packages/domains/demo-feature/src/features/payment-management/actions.ts":
       '"use server";\nimport { OrderService } from "../order-management/service";\nexport async function pay() {}\n',
   };
 
@@ -241,7 +241,7 @@ test("checkVerticalSlices: rejects slice directly importing sibling slice privat
 test("checkVerticalSlices: rejects AbilityBoundary missing 'use client' or invalid export name", async () => {
   const filesMissingClient = createValidFeatureFiles();
   filesMissingClient[
-    "packages/features/demo-feature/src/shared/ui/DemoAbilityBoundary.tsx"
+    "packages/domains/demo-feature/src/shared/ui/DemoAbilityBoundary.tsx"
   ] = "export function DemoAbilityBoundary() { return null; }\n";
 
   const root1 = await createFixture(filesMissingClient);
@@ -260,7 +260,7 @@ test("checkVerticalSlices: rejects AbilityBoundary missing 'use client' or inval
 
   const filesBadName = createValidFeatureFiles();
   filesBadName[
-    "packages/features/demo-feature/src/shared/ui/DemoAbilityBoundary.tsx"
+    "packages/domains/demo-feature/src/shared/ui/DemoAbilityBoundary.tsx"
   ] = '"use client";\nexport function WrongBoundaryName() { return null; }\n';
 
   const root2 = await createFixture(filesBadName);

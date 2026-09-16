@@ -16,30 +16,82 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@base/shared": ["packages/shared/src/index.ts"],
-      "@base/auth": ["packages/auth/src/index.ts"],
-      "@base/authorization": ["packages/authorization/src/index.ts"],
-      "@base/db-control": ["packages/db-control/src/index.ts"],
-      "@base/db-tenant": ["packages/db-tenant/src/index.ts"],
-      "@base/ui": ["packages/ui/src/index.ts"],
-      "@base/feature-control-admin": ["packages/features/control-admin/src/index.ts"],
-      "@base/feature-control-admin/*": ["packages/features/control-admin/src/*"],
-      "@base/feature-procurement-center": ["packages/features/procurement-center/src/index.ts"],
-      "@base/feature-procurement-center/*": ["packages/features/procurement-center/src/*"],
-      "@base/feature-tenant-admin/manifest": ["packages/features/tenant-admin/src/manifest.ts"],
-      "@base/feature-tenant-admin/catalog": ["packages/features/tenant-admin/src/catalog.ts"],
-      "@base/feature-tenant-admin/workbench": ["packages/features/tenant-admin/src/features/workbench/public.ts"],
-      "@base/feature-tenant-admin/org-management": ["packages/features/tenant-admin/src/features/org-management/public.ts"],
-      "@base/feature-tenant-admin/org-management/server": ["packages/features/tenant-admin/src/features/org-management/public.server.ts"],
-      "@base/feature-tenant-admin/role-management": ["packages/features/tenant-admin/src/features/role-management/public.ts"],
-      "@base/feature-tenant-admin/role-management/server": ["packages/features/tenant-admin/src/features/role-management/public.server.ts"],
-      "@base/feature-tenant-admin/tenant-settings": ["packages/features/tenant-admin/src/features/tenant-settings/public.ts"],
-      "@base/feature-tenant-admin/tenant-settings/server": ["packages/features/tenant-admin/src/features/tenant-settings/public.server.ts"],
-      "@base/feature-tenant-admin/audit-log": ["packages/features/tenant-admin/src/features/audit-log/public.ts"],
-      "@base/feature-tenant-admin/shared": ["packages/features/tenant-admin/src/shared/public.ts"],
-      "@base/feature-tenant-admin/shared/server": ["packages/features/tenant-admin/src/shared/server/context.ts"],
-      "@base/feature-customer-center": ["packages/features/customer-center/src/index.ts"],
-      "@base/feature-customer-center/*": ["packages/features/customer-center/src/*"],
+      "@base/shared": ["packages/base/shared/src/index.ts"],
+      "@base/auth": ["packages/base/auth/src/index.ts"],
+      "@base/authorization": ["packages/base/authorization/src/index.ts"],
+      "@base/db-control": ["packages/base/db-control/src/index.ts"],
+      "@base/db-tenant": ["packages/base/db-tenant/src/index.ts"],
+      "@base/ui": ["packages/base/ui/src/index.ts"],
+      "@base/feature-control-admin": [
+        "packages/platform/control-admin/src/index.ts"
+      ],
+      "@base/feature-control-admin/*": [
+        "packages/platform/control-admin/src/*"
+      ],
+      "@base/feature-procurement-center": [
+        "packages/domains/procurement-center/src/index.ts"
+      ],
+      "@base/feature-procurement-center/*": [
+        "packages/domains/procurement-center/src/*"
+      ],
+      "@base/feature-tenant-admin/manifest": [
+        "packages/platform/tenant-admin/src/manifest.ts"
+      ],
+      "@base/feature-tenant-admin/catalog": [
+        "packages/platform/tenant-admin/src/catalog.ts"
+      ],
+      "@base/feature-tenant-admin/workbench": [
+        "packages/platform/tenant-admin/src/features/workbench/public.ts"
+      ],
+      "@base/feature-tenant-admin/org-management": [
+        "packages/platform/tenant-admin/src/features/org-management/public.ts"
+      ],
+      "@base/feature-tenant-admin/org-management/server": [
+        "packages/platform/tenant-admin/src/features/org-management/public.server.ts"
+      ],
+      "@base/feature-tenant-admin/role-management": [
+        "packages/platform/tenant-admin/src/features/role-management/public.ts"
+      ],
+      "@base/feature-tenant-admin/role-management/server": [
+        "packages/platform/tenant-admin/src/features/role-management/public.server.ts"
+      ],
+      "@base/feature-tenant-admin/tenant-settings": [
+        "packages/platform/tenant-admin/src/features/tenant-settings/public.ts"
+      ],
+      "@base/feature-tenant-admin/tenant-settings/server": [
+        "packages/platform/tenant-admin/src/features/tenant-settings/public.server.ts"
+      ],
+      "@base/feature-tenant-admin/nav-management": [
+        "packages/platform/tenant-admin/src/features/nav-management/public.ts"
+      ],
+      "@base/feature-tenant-admin/nav-management/server": [
+        "packages/platform/tenant-admin/src/features/nav-management/public.server.ts"
+      ],
+      "@base/feature-tenant-admin/audit-log": [
+        "packages/platform/tenant-admin/src/features/audit-log/public.ts"
+      ],
+      "@base/feature-tenant-admin/shared": [
+        "packages/platform/tenant-admin/src/shared/public.ts"
+      ],
+      "@base/feature-tenant-admin/shared/server": [
+        "packages/platform/tenant-admin/src/shared/server/context.ts"
+      ],
+      "@base/feature-customer-center": [
+        "packages/domains/customer-center/src/index.ts"
+      ],
+      "@base/feature-customer-center/*": [
+        "packages/domains/customer-center/src/*"
+      ],
+      "@base/feature-material-center": [
+        "packages/domains/material-center/src/index.ts"
+      ],
+      "@base/feature-material-center/*": [
+        "packages/domains/material-center/src/*"
+      ],
+      "@base/feature-order-center": [
+        "packages/domains/order-center/src/index.ts"
+      ],
+      "@base/feature-order-center/*": ["packages/domains/order-center/src/*"],
       "@base/db-migrate": ["tooling/db-migrate/src/index.ts"]
     }
   },

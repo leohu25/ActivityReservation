@@ -25,20 +25,21 @@ const TENANT_EXTENSION_PATTERN =
 
 function findTenantSchemaFiles(workspaceRoot) {
   const files = [
-    path.join(workspaceRoot, "packages/db-tenant/prisma/schema.prisma"),
+    path.join(workspaceRoot, "packages/base/db-tenant/prisma/schema.prisma"),
   ];
-  const featuresDir = path.join(workspaceRoot, "packages/features");
-  if (fs.existsSync(featuresDir)) {
-    for (const entry of fs
-      .readdirSync(featuresDir, { withFileTypes: true })
-      .sort((a, b) => a.name.localeCompare(b.name))) {
-      if (!entry.isDirectory()) continue;
-      const schemaPath = path.join(
-        featuresDir,
-        entry.name,
-        "prisma/schema.prisma",
-      );
-      if (fs.existsSync(schemaPath)) files.push(schemaPath);
+  const scanDirs = [
+    path.join(workspaceRoot, "packages/domains"),
+    path.join(workspaceRoot, "packages/platform"),
+  ];
+  for (const dir of scanDirs) {
+    if (fs.existsSync(dir)) {
+      for (const entry of fs
+        .readdirSync(dir, { withFileTypes: true })
+        .sort((a, b) => a.name.localeCompare(b.name))) {
+        if (!entry.isDirectory()) continue;
+        const schemaPath = path.join(dir, entry.name, "prisma/schema.prisma");
+        if (fs.existsSync(schemaPath)) files.push(schemaPath);
+      }
     }
   }
   return files;
@@ -183,7 +184,7 @@ export function buildAndWriteTenantGeneratedSchema(workspaceRoot = rootDir) {
 
   const targetPath = path.join(
     workspaceRoot,
-    "packages/db-tenant/prisma/schema.generated.prisma",
+    "packages/base/db-tenant/prisma/schema.generated.prisma",
   );
   fs.writeFileSync(targetPath, `${content}\n`, "utf-8");
   console.log(
