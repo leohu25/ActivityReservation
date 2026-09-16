@@ -208,3 +208,40 @@ export async function getProcessTemplatesQuery(): Promise<
     })),
   }));
 }
+
+export interface BomManagementPageData {
+  readonly boms: BomListItem[] | null;
+  readonly productionLines: Awaited<
+    ReturnType<typeof getProductionLinesQuery>
+  > | null;
+  readonly processTemplates: ProcessTemplateItem[] | null;
+  readonly canReadBom: boolean;
+  readonly canReadLine: boolean;
+  readonly canReadProcess: boolean;
+}
+
+export async function getBomManagementPageDataQuery(): Promise<BomManagementPageData> {
+  const { ability } = await getTenantMaterialContext();
+  const canReadBom = ability.can(StandardAction.READ, BomHeaderSubject);
+  const canReadLine = ability.can(StandardAction.READ, ProductionLineSubject);
+  const canReadProcess = ability.can(StandardAction.READ, ProcessMasterSubject);
+
+  if (!canReadBom && !canReadLine && !canReadProcess) {
+    assertMaterialAbility(ability, StandardAction.READ, BomHeaderSubject);
+  }
+
+  const [boms, productionLines, processTemplates] = await Promise.all([
+    canReadBom ? getBomsQuery() : Promise.resolve(null),
+    canReadLine ? getProductionLinesQuery() : Promise.resolve(null),
+    canReadProcess ? getProcessTemplatesQuery() : Promise.resolve(null),
+  ]);
+
+  return {
+    boms,
+    productionLines,
+    processTemplates,
+    canReadBom,
+    canReadLine,
+    canReadProcess,
+  };
+}

@@ -4,12 +4,15 @@ import {
 } from "@base/authorization";
 import {
   ItemCategorySubject,
+  ItemVarietySubject,
+  ItemGradeSubject,
   itemCategoryPageContract,
   itemVarietyPageContract,
   itemGradePageContract,
 } from "./features/classification/contract";
 import {
   UnitOfMeasureSubject,
+  UnitConversionSubject,
   unitManagementPageContract,
   unitConversionPageContract,
 } from "./features/unit-management/contract";
@@ -19,6 +22,8 @@ import {
 } from "./features/item-master/contract";
 import {
   BomHeaderSubject,
+  ProcessMasterSubject,
+  ProductionLineSubject,
   bomManagementPageContract,
   processMasterPageContract,
   productionLinePageContract,
@@ -35,6 +40,7 @@ export const materialManifest: TenantFeatureManifest = {
       defaultIcon: "Layers",
       requiredAction: StandardAction.READ,
       requiredSubject: ItemCategorySubject,
+      subjects: [ItemCategorySubject, ItemVarietySubject, ItemGradeSubject],
     },
     {
       pageKey: "material-units",
@@ -43,6 +49,7 @@ export const materialManifest: TenantFeatureManifest = {
       defaultIcon: "Scale",
       requiredAction: StandardAction.READ,
       requiredSubject: UnitOfMeasureSubject,
+      subjects: [UnitOfMeasureSubject, UnitConversionSubject],
     },
     {
       pageKey: "material-items",
@@ -51,6 +58,7 @@ export const materialManifest: TenantFeatureManifest = {
       defaultIcon: "Boxes",
       requiredAction: StandardAction.READ,
       requiredSubject: ItemMasterSubject,
+      subjects: [ItemMasterSubject],
     },
     {
       pageKey: "material-boms",
@@ -59,6 +67,7 @@ export const materialManifest: TenantFeatureManifest = {
       defaultIcon: "FileSpreadsheet",
       requiredAction: StandardAction.READ,
       requiredSubject: BomHeaderSubject,
+      subjects: [BomHeaderSubject, ProcessMasterSubject, ProductionLineSubject],
     },
   ],
   permissionModules: [

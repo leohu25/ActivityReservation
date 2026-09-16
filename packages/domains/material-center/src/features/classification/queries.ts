@@ -76,3 +76,32 @@ export async function getVarietiesQuery(): Promise<VarietyListItem[]> {
     updatedAt: v.updatedAt.toISOString(),
   }));
 }
+
+export interface ClassificationPageData {
+  readonly categories: CategoryListItem[] | null;
+  readonly varieties: VarietyListItem[] | null;
+  readonly canReadCategory: boolean;
+  readonly canReadVariety: boolean;
+}
+
+export async function getClassificationPageDataQuery(): Promise<ClassificationPageData> {
+  const { ability } = await getTenantMaterialContext();
+  const canReadCategory = ability.can(StandardAction.READ, ItemCategorySubject);
+  const canReadVariety = ability.can(StandardAction.READ, ItemVarietySubject);
+
+  if (!canReadCategory && !canReadVariety) {
+    assertMaterialAbility(ability, StandardAction.READ, ItemCategorySubject);
+  }
+
+  const [categories, varieties] = await Promise.all([
+    canReadCategory ? getCategoriesQuery() : Promise.resolve(null),
+    canReadVariety ? getVarietiesQuery() : Promise.resolve(null),
+  ]);
+
+  return {
+    categories,
+    varieties,
+    canReadCategory,
+    canReadVariety,
+  };
+}

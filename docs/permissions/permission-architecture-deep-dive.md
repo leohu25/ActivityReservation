@@ -1,363 +1,757 @@
-# 系统 ERP 权限系统全链路架构与原理解析 (Permission Architecture Deep-Dive)
+# 系统数智 ERP 权限系统全链路架构与原理解析 (Permission Architecture Deep-Dive)
 
-> **文档定位**：本文档为系统数智 ERP 权限系统的专项深度技术设计与实现原理解析文档，涵盖前端声明式门禁、后端四层权限模型、CASL 规则编译、SQL 自动下推、字段物理剥离以及从登录到查询的全链路端到端时序。
-> **关联架构索引**：[《系统整体架构白皮书》](../ARCHITECTURE.md) | [《字段级权限设计资产》](./Field_Level_Permission_Architecture_and_Implementation.md) | [ADR-003: Better Auth 与 CASL 四层权限闭环](../../.harness/memory/adr/ADR-003-four-tier-permissions.md)
+> **文档定位**：本文档为系统数智 ERP（Next.js 16 + React 19 + TypeScript + CASL + PostgreSQL）权限系统的权威技术白皮书与原理解析手册。全面覆盖**动态导航菜单控制、四层权限模型、前端交互效果呈现、后端物理级防线拦截、行级数据范围 SQL 自动下推、敏感字段物理脱敏、复合页面多实体优雅降级**，以及从数据持久化、规则编译到端到端拦截的完整流转链路。
+>
+> **关联架构索引**：[《系统整体架构白皮书》](../ARCHITECTURE.md) | [《字段级权限设计资产》](./Field_Level_Permission_Architecture_and_Implementation.md) | [ADR-003: Better Auth 与 CASL 四层权限闭环](../../.harness/memory/adr/ADR-003-four-tier-permissions.md) | [全栈开发规范 Skill](../../.agents/skills/next-saas-base-dev/SKILL.md)
 
 ---
 
 ## 一、 权限系统总体设计理念
 
-系统 ERP 面向现代化工业制造与供应链，业务涵盖多层级组织、复杂审批流与高敏感商业机密（采购成本价、客户阶梯报价、供应商授信额度等）。权限系统的设计严格确立三大工程哲学：
+在现代化多租户供应链与制造 ERP 系统中，业务涵盖复杂的跨部门协同、高敏感商业机密（如配方 BOM、采购成本价、阶梯客户报价、授信额度）与多层级组织。系统的权限架构确立了以下四大核心工程哲学：
 
 1. **Fail-Closed（默认关闭与绝对拒绝）**：
-   任何未经显式授权的路由、操作动作（Action）、数据行（Row）或数据字段（Field），一律默认为“拒绝访问/不可见”。
+   任何未经显式授权的路由菜单、操作动作（Action）、数据行（Row）或敏感字段（Field），一律默认为“拒绝访问 / 物理不可见”。
 2. **前后端双向闭环阻断 (Double-Gated Enforcement)**：
-   前端的权限拦截（按钮禁用、页面重定向、字段隐藏）仅作为**用户体验交互层**；后端（Server Action、服务层、SQL 下推层）必须建立**坚不可摧的物理阻断防线**，杜绝“仅靠前端隐藏绕过 API 抓包”的安全隐患。
+   - **前端交互防线**：控制菜单显隐、按钮禁用/隐藏、表格列剔除、表单控件只读锁定，保障极致的用户体验（所见即所得）；
+   - **后端物理防线**：在 Server Action、RSC Server Query、数据服务层与 SQL 下推层建立坚不可摧的阻断机制，严禁仅依靠前端判断，彻底杜绝直接抓包或伪造 HTTP 请求的越权攻击。
 3. **职责分离与单一事实源 (SSoT)**：
-   - **认证与会话 (Authentication & Identity)**：由 **Better Auth** 统一管理，负责多租户上下文 `organizationId`、用户会话凭证与基础角色。
-   - **授权与决策 (Authorization & Rule Engine)**：由 **CASL (`@casl/ability` & `@casl/prisma`)** 统一管理，负责功能操作、行级数据范围与敏感字段三态策略的编译与决策。
-   - **页面契约 (Contracts)**：各业务切片的受控字段字典与权限动词收敛在 `contracts/` 中，作为前端组件渲染、管理后台权限树配置与后端校验的唯一事实源。
+   - **认证与会话 (Authentication & Identity)**：由 `@base/auth`（Better Auth）统一管理，负责跨租户隔离、会话凭据、租户上下文（`organizationId`）与底层角色标识。
+   - **授权与决策 (Authorization & Rule Engine)**：由 `@base/authorization`（CASL 规则编译引擎）统一管理，负责四层细粒度权限的定义、编译、决策与 SQL 下推。
+   - **业务切片契约 (Contracts)**：各业务切片在 `packages/domains/<domain>/src/features/<feature>/contract.ts` 中自包含维护自己的实体名（Subject）、资源名（Resource）、受控字段枚举与页面权限契约，杜绝硬编码魔法字符串。
+4. **页面认知容器与受控数据模型解耦 (Page-Container & Entity-Subject Decoupling)**：
+   - **导航页面（Page / Route）**：是用户日常操作的认知与导航入口，支持动态菜单自由编排；
+   - **受控数据模型（Subject / Entity）**：是真正承载操作权限、数据范围与字段策略的安全控制单元。一个复合页面（如“分类与标签”、“工艺BOM”）可内聚挂载多个数据实体模型。
 
 ---
 
 ## 二、 核心架构：四层细粒度权限模型 (Four-Tier Access Control)
 
-系统将权限划分为四个严格递进的防线层次：
+系统将安全控制划分为四个严格递进的防线层次：
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                    第 4 层：租户准入门禁 (Tenant Access Gate)               │
-│  - 校验当前租户物理库中的员工档案 EmployeeProfile                           │
-│  - 状态为 ACTIVE 允许；状态为 SUSPENDED 或 TERMINATED (离职) 立即硬阻断       │
+│  - 校验目标租户物理库中的员工档案 EmployeeProfile                           │
+│  - 状态为 ACTIVE 允许进入；SUSPENDED 或 TERMINATED (离职) 立即硬阻断         │
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                    第 1 层：功能操作权限 (Functional Action)                │
-│  - 基于 CASL Statement: resource:action (例如 Customer.read, Order.audit)   │
-│  - 驱动前端按钮显隐 (AuthGuard / Can) 与 Server Action 动作拦截             │
+│  - 基于 CASL Statement: resource -> actions[] (如 Customer: [read, update])  │
+│  - 驱动前端按钮显隐 (DataTable / useSubjectCan) 与 Server Action 动作拦截   │
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                    第 2 层：行级数据范围权限 (Data Scope)                   │
 │  - 范围枚举: ALL (全量) / DEPT_TREE (本部门及下级) / DEPT / SELF / CUSTOM   │
-│  - 结合部门树拓扑，由 CaslAbilityFactory 编译为 CASL 条件，通过            │
-│    accessibleBy(ability, "read") 直接下推为 Prisma Where SQL 索引查询       │
+│  - 结合用户部门树拓扑，由 CaslAbilityFactory 编译为 CASL Prisma 规则，通过  │
+│    getAccessibleWhere 自动下推为 PostgreSQL WHERE 条件执行索引过滤          │
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                    第 3 层：敏感字段三态策略 (Field Policy)                 │
-│  - 字段策略: EDITABLE (可编辑) / READONLY (只读) / HIDDEN (隐藏不可见)       │
-│  - 读取时：后端 pickReadableFields 物理剔除，前端 AuthField 不渲染 DOM      │
-│  - 写入时：后端 assertEditableFields 拦截非法篡改，前端表单控件锁定只读     │
+│  - 字段三态: EDITABLE (读写) / READONLY (只读) / HIDDEN (隐藏不可见)         │
+│  - 读取时：后端 pickReadableFields 物理剔除，前端 DataTable 物理剔除该列     │
+│  - 写入时：后端 assertEditableFields 拦截非法篡改，前端 AuthField 锁定只读   │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 1. 第 4 层：租户准入门禁 (`Tenant Access Gate`)
-
-- **源码实现**：`packages/auth/src/context/tenant-context.ts` -> `assertTenantAccessGate()`
-- **原理**：虽然用户在平台库（Control DB）可能拥有全局合法的账户和有效 Session，但在具体企业租户的物理库中，该员工可能处于“待入职”、“停职审查（`SUSPENDED`）”或“已离职（`TERMINATED`）”状态。
-- **执行机制**：任何租户业务请求在进入前，必须通过 `assertTenantAccessGate` 查询目标物理库的 `employee_profile` 表。非 `ACTIVE` 状态直接抛出 `TenantAccessGateError`，全链路阻断后续数据查询。
-
-### 2. 第 1 层：功能操作权限 (`Statement`)
-
-- **源码实现**：`packages/authorization/src/core/actions.ts` 与 `ability-factory.ts`
-- **标准化动词**：`StandardAction.READ`、`StandardAction.CREATE`、`StandardAction.UPDATE`、`StandardAction.DELETE`、`StandardAction.AUDIT`、`StandardAction.EXPORT`、`StandardAction.MANAGE`。
-- **自定义动词支持**：业务切片可按需拓展特有动作（如采购单的 `submit`、`cancel`；客户的 `toggle_status`）。
-- **执行机制**：通过 `ability.can(action, subject)` 进行原子布尔判定。
-
-### 3. 第 2 层：行级数据范围权限 (`Data Scope`)
-
-- **源码实现**：`packages/authorization/src/scopes/data-scope.ts`
-- **五种标准范围枚举**：
-  - `ALL`：全公司所有数据（通常面向企业 Owner、总经理）。
-  - `DEPT_TREE`：本部门及所有下级子部门的数据（面向部门总监、区域经理）。
-  - `DEPT`：仅本部门的数据（面向车间班组长、基层主管）。
-  - `SELF`：仅当前用户创建或归属的数据（面向一线业务员、采购员）。
-  - `CUSTOM`：自定义选定部门列表。
-- **部门树拓扑解析与防穿透保护**：
-  - `resolveDataScopeConditions` 接收当前员工的 `UserDepartmentTopology`（当前部门 ID 及递归算出的子部门 ID 集合 `departmentTreeIds`）。
-  - **Fail-Closed 异常防护**：如果用户角色配置了 `DEPT` 范围，但该员工在人事系统中暂未分配部门（`departmentId` 为空），系统**绝不**返回空条件（避免 Prisma 忽略 `undefined` 字段退化为全表查询），而是自动注入：
-
-    ```typescript
-    { [mapping.departmentField]: "__NO_DEPARTMENT_FAIL_CLOSED__" }
-    ```
-
-    强制使 SQL 查询结果为空，杜绝无部门员工误读全企业数据的重大漏洞。
-
-### 4. 第 3 层：敏感字段三态控制 (`Field Policy`)
-
-- **源码实现**：`packages/authorization/src/fields/field-policy.ts`
-- **三态定义**：
-  - `EDITABLE`：具备读写完整权限。
-  - `READONLY`：仅允许查看，禁止在表单中提交或修改。
-  - `HIDDEN`：彻底不可见，不可读且不可写。
-- **CASL 反向规则绑定**：
-  在 `snapshotToRawRules` 中，`HIDDEN` 字段被映射为对 `read`、`create`、`update` 的反向规则（`inverted: true`）；`READONLY` 字段被映射为对 `create`、`update` 的反向规则。
-
 ---
 
-## 三、 前端权限体系与交互实现
+## 三、 菜单权限控制（显隐与动态安全剪枝）
 
-前端权限体系旨在实现**“极薄装配线、零白屏体验、无状态序列化与声明式组件消费”**。
+### 1. 前端效果体现
 
-### 1. RSC 跨端序列化防线与 `AbilitySnapshot`
+- **页面级显隐**：用户登录后，左侧导航栏（Sidebar）只呈现当前角色被授予查看权限的页面；无权页面在 DOM 中彻底不存在。
+- **目录级防空抽屉**：如果某个折叠分组（如“客户中心”或“物料与工艺中心”）下的所有子页面均被判定为无权访问，**整个目录大项会在侧边栏中自动物理隐藏**，绝不会残留一个空荡荡的分组标题。
+- **复合页面按权准入**：对于聚合了多个实体的页面（如“分类与标签”），如果用户只有“标签”权限没有“分类”权限，菜单依然正常展示，进入页面后标签功能正常使用，无权区域安全占位，不崩溃白屏。
 
-由于 Next.js App Router 架构下 Server Components (RSC) 与 Client Components 之间只能通过 JSON 序列化传递数据，带有类方法与不可序列化函数的 CASL `Ability` 实例**严禁直接跨端传输**。
+### 2. 数据流转全链路
 
-架构设计了轻量级纯数据快照契约 `AbilitySnapshot`：
+1. 租户管理员在 `/settings/navigation` 编排菜单树，持久化于租户物理库的 `tenant_menu_item` 表；
+2. 用户发起页面请求时，服务端组件调用 `apps/tenant/src/kernel/navigation.ts` 的 `getAuthorizedTenantNavSections()`；
+3. 从数据库提取租户自定义菜单树 `customTree`；
+4. 传入 `packages/base/authorization/src/core/manifest.ts` 的 `pruneDynamicMenuTree(customTree, pageCatalog, can)` 进行**深度优先递归剪枝**；
+5. 剪枝后的纯净 JSON 传递给 `@base/ui` 的 `Sidebar` 组件，无权页面的任何路由或信息**根本不会下发给前端 DOM**。
+
+### 3. 实现原理与真实代码
+
+#### (1) 服务端动态菜单装配 (`apps/tenant/src/kernel/navigation.ts`)
 
 ```typescript
-// packages/authorization/src/adapters/client-ability.ts
-export interface AbilitySnapshot {
-  readonly subject: string;
-  readonly actions: readonly string[];
-  readonly fieldPolicies?: Readonly<Record<string, string>>;
+export async function getAuthorizedTenantNavSections(): Promise<FeatureNavSection[]> {
+  try {
+    const reqHeaders = await headers();
+    const runtime = getServerAuthRuntime();
+    const tenantCtx = await getCurrentTenantContext(reqHeaders);
+    const factory = new CaslAbilityFactory(
+      runtime.tenantContextRepository,
+      globalTenantCatalog,
+    );
+    const ability = await factory.createForTenant(tenantCtx);
+
+    const can = (action: string, subject: string) =>
+      ability.can(action as never, subject as never);
+
+    // 1. 系统基座菜单：按 CASL 权限自动控制显示/隐藏
+    const systemBaseSections = filterNavSections(
+      tenantAdminManifest.navSections ?? [],
+      can,
+    );
+
+    // 2. 从当前租户物理库查询自定义业务菜单配置
+    let customTree: TenantMenuNode[] = [];
+    try {
+      customTree = await getTenantCustomMenuTree(tenantCtx.organizationId);
+    } catch {
+      customTree = [];
+    }
+
+    // 3. 动态业务菜单安全剪枝
+    const dynamicBusinessSections =
+      customTree.length > 0
+        ? pruneDynamicMenuTree(customTree, globalTenantPageCatalog, can)
+        : [];
+
+    // 4. 组装最终侧边栏结构并返回
+    ...
+  } catch {
+    return [];
+  }
 }
 ```
 
-1. **服务端生成快照**：在 RSC（如页面 Layout）中调用 `getTenantSubjectPermissions(subject)`，通过后端 `CaslAbilityFactory` 计算出当前用户针对该实体的纯 JSON 快照。
-2. **客户端动态重建**：
-   - 客户端组件 `TenantAbilityProvider` 接收快照数组；
-   - 调用 `snapshotToRawRules(snapshots)` 将纯 JSON 还原为 CASL `RawRuleOf<AppClientAbility>[]`；
-   - 调用 `createAbilityFromSnapshot(snapshots)` 生成客户端轻量 `AppClientAbility` 实例，注入 React Context。
+#### (2) 递归安全剪枝与多 Subject OR 准入 (`packages/base/authorization/src/core/manifest.ts`)
 
-### 2. 声明式门禁组件：`AuthGuard` 与 `Can`
+```typescript
+export function pruneDynamicMenuTree(
+  tree: readonly TenantMenuNode[],
+  pageMap: Map<string, StandardPageDescriptor> | ReadonlyMap<string, StandardPageDescriptor>,
+  can: (action: string, subject: string) => boolean,
+): FeatureNavSection[] {
+  function pruneNode(node: TenantMenuNode): (FeatureNavItem | FeatureNavGroup) | null {
+    if (node.isVisible === false) return null;
+    if (node.itemType === "LINK") {
+      return { id: node.id, label: node.customLabel || "外部链接", href: node.externalUrl || "#", ... };
+    }
 
-- **`AuthGuard` (`packages/ui/src/components/composite/auth/AuthGuard.tsx`)**：
+    if (node.itemType === "GROUP") {
+      const sortedChildren = [...(node.children || [])]
+        .filter((c) => c.isVisible !== false)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
-  ```tsx
-  <AuthGuard action="create" subject="Customer">
-    <Button onClick={openCreateModal}>新增客户</Button>
-  </AuthGuard>
-  ```
+      const allowedChildren: (FeatureNavItem | FeatureNavGroup)[] = [];
+      for (const child of sortedChildren) {
+        const pruned = pruneNode(child);
+        if (pruned) allowedChildren.push(pruned);
+      }
 
-  若未显式指定 `subject`，`AuthGuard` 自动从外层 `DataTableContext` 向上回溯继承当前页面的默认 Subject。
+      // 若当前目录下的所有后代子项均被裁切，整组自动物理隐藏，消除空抽屉
+      if (allowedChildren.length === 0) {
+        return null;
+      }
 
-- **`Can` (`packages/authorization/src/adapters/react.tsx`)**：
-  直接提供强类型 Catalog 的 `<Can I="export" a="Customer">...</Can>` 语法糖。
+      return {
+        id: node.id,
+        label: node.customLabel || "未命名分组",
+        icon: node.customIcon || undefined,
+        items: allowedChildren as readonly FeatureNavItem[],
+      };
+    }
 
-### 3. 受控表单字段三态组件：`AuthField`
+    // PAGE 功能页面
+    if (!node.pageKey) return null;
+    const pageMeta = pageMap.get(node.pageKey);
+    if (!pageMeta) return null;
 
-- **源码路径**：`packages/ui/src/components/composite/auth/AuthField.tsx`
-- **三态推导算法 (`deriveFieldMode`)**：
+    // 安全权限校验：复合页面支持多 Subject OR 准入原则（拥有任意一个实体的 READ 权限即可访问页面）
+    const hasAccess = (() => {
+      if (pageMeta.subjects && pageMeta.subjects.length > 0) {
+        const action = pageMeta.requiredAction || "read";
+        return pageMeta.subjects.some((subj) => can(action, subj));
+      }
+      if (pageMeta.requiredSubject && pageMeta.requiredAction) {
+        return can(pageMeta.requiredAction, pageMeta.requiredSubject);
+      }
+      return true;
+    })();
 
-  ```typescript
-  const readable = ability.can("read", subject, field);
-  const writable = ability.can(action, subject, field); // 默认 action 为 "update"
-  if (!readable) return FieldPolicy.HIDDEN;
-  if (!writable) return FieldPolicy.READONLY;
-  return FieldPolicy.EDITABLE;
-  ```
+    if (!hasAccess) {
+      return null;
+    }
 
-- **视觉呈现规范**：
-  - **`HIDDEN`**：返回 `fallback`（默认 `null`），在 DOM 树中物理彻底不渲染。
-  - **`READONLY`**：自动通过 React `cloneElement` 向子输入组件注入 `disabled={true}` 和 `readOnly={true}`，外层打上 `data-disabled` 属性，并在字段 Label 旁边自动渲染工业风高对比度 `Badge` 标注 **「只读」**。
-  - **`EDITABLE`**：正常渲染受控输入组件。
+    return {
+      id: node.id,
+      label: node.customLabel || pageMeta.defaultLabel,
+      href: pageMeta.href,
+      icon: node.customIcon || pageMeta.defaultIcon || undefined,
+      badge: pageMeta.badge,
+      requiredAction: pageMeta.requiredAction,
+      requiredSubject: pageMeta.requiredSubject,
+      subjects: pageMeta.subjects,
+    };
+  }
 
-### 4. 表格操作列与按钮级权限集成
-
-- **`DataTableActionButton`**：
-  内置 `unauthorizedStrategy` 参数：
-  - `"hidden"`（默认）：无权时静默返回 `null`，保持界面精简；
-  - `"disabled-tooltip"`：无权时按钮保持呈现但处于置灰禁用状态，鼠标悬停时呼出 Tooltip 提示“暂无操作权限”，提升企业级软件的操作可预期性。
-- **`DataTableRowActions`**：
-  针对每行数据的操作列（编辑、查看、删除、自定义动作），在渲染前遍历每个操作项执行 `ability.can(action, subject)`，无权动作自动从行操作按钮与更多操作下拉浮层中剔除。
-
-### 5. Layout 层服务端路由门禁与动态菜单双轨裁剪引擎
-
-在 `apps/tenant/src/app/(dashboard)/layout.tsx` 与 `apps/tenant/src/kernel/navigation.ts` 中，升级为**“系统底座刚性隔离 + 租户业务菜单动态裁切”**的双轨引擎：
-
-1. **服务端会话与组织校验**：调用 `runtime.auth.api.getSession` 校验会话，未登录跳转 `/login`。
-2. **系统底座菜单判定**：工作台与系统管理（组织架构、角色权限、企业设置）作为系统核心底座，永远存在，直接依据 `ability.can("read", item.subject)` 进行状态显隐，不受租户业务菜单增删影响。
-3. **租户业务动态菜单递归裁剪 (`pruneDynamicMenuTree`)**：
-   - 从租户独立物理库查询 `tenant_menu_item` 自定义树；
-   - 调用 `buildMenuTree` 组装多级拓扑，再调用 `pruneDynamicMenuTree` 进行**深度优先递归裁剪**：
-     - 若用户对某业务页面无 `read` 权限，该项服务端剔除；
-     - 若某一目录下的所有后代页面均无权限，整组物理折叠隐藏；
-     - 零静默回退：若租户未配置业务菜单，业务动态区严格为空，杜绝越权展示。
-4. **角色权限配置中心联动 (`RolePermissionManager`)**：
-   - 角色权限矩阵调用 `deriveMenuAlignedPermissionTree`，100% 按照租户当前生效的菜单目录组织展示；
-   - 强化【查看 (read)】权限核心地位：取消查看权限时，连带清空该页面所有的写操作权限（新建/修改/删除），形成前后端严密一致的闭环。
+  // 遍历根节点生成导航
+  ...
+}
+```
 
 ---
 
-## 四、 后端权限拦截与数据库下推实现
+## 四、 功能操作权限控制（按钮显隐与方法物理拦截）
 
-### 1. SQL 自动下推引擎 (`accessibleBy` 与 `getAccessibleWhere`)
+系统严格遵循“前后端双向闭环”原则，既在前端界面给予极致交互反馈，又在后端坚壁清野进行物理阻断。
 
-- **源码实现**：`packages/authorization/src/ability/prisma-access.ts`
-- **机制原理**：
-  传统权限系统常将全量数据加载至 Node.js 内存，再通过循环过滤。在面对数十万条制造工单或采购明细时，会引发严重性能瓶颈与内存溢出（OOM）。
-  系统 ERP 深度结合 `@casl/prisma`，在构建 `PrismaAbility` 时将数据范围转换为 CASL 规则条件：
+### 1. 前端按钮显隐与交互控制
 
-  ```typescript
-  export function getAccessibleWhere<TSubject extends string>(
-    ability: AppPrismaAbility,
-    subject: TSubject,
-    action: string = "read",
-  ): PrismaQueryCondition {
-    const where = accessibleBy(ability, action)[subject];
-    // 1. 无权直接访问或 CASL 返回空拒绝集合
-    if (!where || (Array.isArray(where.OR) && where.OR.length === 0)) {
-      return { AND: [{ id: "__NO_PERMISSION_FAIL_CLOSED__" }] };
+- **前端效果体现**：
+  - **表格工具栏按钮**：若角色无 `create` 权限，表格右上角【新建】按钮物理消失；若无 `export` 权限，【导出】按钮消失；
+  - **行级操作列按钮**：若角色无 `update` 权限，行右侧【编辑】按钮消失；若无 `delete` 权限，【删除】按钮消失；若无 `audit` 权限，【审核】按钮消失；
+  - **只读模式**：当用户仅具备 `read` 权限时，界面呈现纯净的数据阅读模式，不可产生任何写操作交互。
+
+#### (1) 工具栏按钮受控组件 (`packages/base/ui/src/components/composite/table/DataTableActions.tsx`)
+
+```typescript
+export function DataTableActionButton({
+  action,
+  subject: explicitSubject,
+  field,
+  unauthorizedStrategy = "hidden",
+  unauthorizedTooltip = "暂无操作权限",
+  children,
+  disabled,
+  className,
+  ...props
+}: DataTableActionButtonProps) {
+  const { subject: contextSubject } = useDataTableContext();
+  const ability = useUiAbility();
+
+  const targetSubject = explicitSubject || contextSubject;
+
+  // Fail-Closed：声明了 action 却缺 subject/ability 时拒绝；未声明 action 视为非受控按钮
+  const hasPermission = React.useMemo(() => {
+    if (!action) return true;
+    if (!targetSubject || !ability) return false;
+    return ability.can(action, targetSubject, field);
+  }, [action, ability, targetSubject, field]);
+
+  if (!hasPermission) {
+    if (unauthorizedStrategy === "hidden") {
+      return null; // 物理不渲染 DOM
     }
-    // 2. 超管或全量范围
-    if (Object.keys(where).length === 0) {
-      return {};
-    }
-    // 3. 正常拼接数据范围 Where 条件
-    return where;
+
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-block cursor-not-allowed">
+              <Button disabled className={cn("pointer-events-none opacity-50", className)} {...props}>
+                {children}
+              </Button>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{unauthorizedTooltip}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
   }
-  ```
 
-- **服务层实战调用**：
+  return <Button className={className} disabled={disabled} {...props}>{children}</Button>;
+}
+```
 
-  ```typescript
-  // 在 ProcurementOrderService 中：
-  const accessibleWhere = getAccessibleWhere(ability, "PurchaseOrder", "read");
-  const orders = await prisma.purchaseOrder.findMany({
-    where: {
-      AND: [
-        accessibleWhere,
-        searchQuery ? { orderNo: { contains: searchQuery } } : {},
-      ],
-    },
-  });
-  ```
+#### (2) 行操作栏受控组件 (`packages/base/ui/src/components/composite/table/DataTableRowActions.tsx`)
 
-  PostgreSQL 引擎直接利用索引命中范围条件（`WHERE dept_id IN (...)`），实现真正的纳秒级存储下推。
+```typescript
+export function DataTableRowActions<TRecord>({
+  record,
+  onView,
+  onEdit,
+  onDelete,
+  ...
+}: DataTableRowActionsProps<TRecord>) {
+  const { subject } = useDataTableContext();
+  const ability = useUiAbility();
 
-### 2. 字段级权限后端双向防线
+  // Fail-Closed：缺 ability 或 subject 一律拒绝
+  const canPerform = (actionName: string) => {
+    if (!subject || !ability) return false;
+    return ability.can(actionName, subject);
+  };
 
-#### (1) 读取时：敏感数据物理剥离 (`pickReadableFields`)
+  const canView = canPerform("read");
+  const canEdit = canPerform("update");
+  const canDelete = canPerform("delete");
 
-- **源码实现**：`packages/authorization/src/fields/field-policy.ts`
-- **执行逻辑**：
-
-  ```typescript
-  export function pickReadableFields<T extends Record<string, unknown>>(
-    ability: SubjectAbilityLike,
-    subject: string,
-    record: T,
-  ): T {
-    // 提取当前成员对该 Subject 具备 read 权限的所有白名单字段
-    const allowed = new Set(permittedFieldsOf(ability, "read", subject));
-    // 物理剥离未授权字段，生成全新的干净数据传输对象 (DTO)
-    const result: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(record)) {
-      if (allowed.has(key)) {
-        result[key] = value;
-      }
+  // 构建内置操作列表项：无权限的操作项直接被 filter 过滤，不进入渲染队列
+  const builtInActions: RowActionItem<TRecord>[] = React.useMemo(() => {
+    const list: RowActionItem<TRecord>[] = [];
+    if (!hideView && (canView || keepUnauthorized)) {
+      list.push({ label: "详情", action: "read", icon: <Eye className="size-3.5" />, onClick: () => onView?.(record) });
     }
-    return result as T;
+    if (!hideEdit && (canEdit || keepUnauthorized)) {
+      list.push({ label: "编辑", action: "update", icon: <Edit2 className="size-3.5" />, onClick: () => onEdit?.(record) });
+    }
+    return list;
+  }, [hideView, hideEdit, canView, canEdit, onView, onEdit, record, subject, ability]);
+  ...
+}
+```
+
+#### (3) 响应式权限钩子 (`packages/base/authorization/src/adapters/ability-provider.tsx`)
+
+```typescript
+export function useSubjectCan(subject: string, action: string): boolean {
+  const ability = useOptionalAbility();
+  if (!ability) {
+    return false; // Fail-Closed
   }
-  ```
+  return ability.can(action, subject);
+}
+```
 
-  即便客户端通过修改网络请求试图刺探敏感数据，接口返回的 JSON payload 中也绝不包含未授权的字段键值，杜绝抓包泄密。
+---
 
-#### (2) 写入时：不可变字段强校验 (`assertEditableFields`)
+### 2. 后端方法/Action 拦截全链路（防穿透）
 
-- **源码实现**：`packages/authorization/src/fields/field-policy.ts`
-- **执行逻辑**：
-  在执行 `create` 或 `update` Server Action 时，传入提交参数的键集合：
+- **安全威胁场景**：
+  恶意用户绕过前端浏览器 UI，使用 Postman、Curl 或直接在浏览器控制台调用 Next.js Server Action 执行越权变更。
+- **后端拦截实现原理**：
+  1. **Server Action 包装器防护 (`packages/base/shared/src/api/action.ts`)**：
 
-  ```typescript
-  assertEditableFields(ability, "Customer", Object.keys(updatePayload));
-  ```
-
-  如果用户角色对 `creditLimit` 配置了 `READONLY` 或 `HIDDEN`，但 payload 中包含了该字段，`assertEditableFields` 立即抛出 CASL `ForbiddenError`，拒绝写入事务。
-
-### 3. Server Action 统一安全包装与错误处理 (`defineServerAction`)
-
-- **源码实现**：`packages/shared/src/api/action.ts`
-- **职责**：
-  1. 拦截未捕获的 `ForbiddenError` 并映射为结构化安全响应：
-
-     ```json
-     {
-       "success": false,
-       "error": "没有执行当前操作的权限: Cannot execute update on Customer"
+     ```typescript
+     export function defineServerAction<
+       TArgs extends readonly unknown[],
+       TReturn,
+     >(
+       actionFn: (...args: TArgs) => Promise<TReturn>,
+       defaultErrorMessage = "操作执行失败，请稍后重试",
+     ): (...args: TArgs) => Promise<ServerActionResult<TReturn>> {
+       return async (...args: TArgs): Promise<ServerActionResult<TReturn>> => {
+         try {
+           const result = await actionFn(...args);
+           return { success: true, data: toPlainData(result) };
+         } catch (err: unknown) {
+           const message =
+             err instanceof Error ? err.message : defaultErrorMessage;
+           return { success: false, error: message || defaultErrorMessage };
+         }
+       };
      }
      ```
 
-  2. 自动集成 `toPlainData`，解决 Prisma `Decimal`、`Date` 和 `BigInt` 在 React Server Components 跨端网络传输时的非序列化崩溃问题。
+  2. **上下文强类型断言 (`packages/domains/customer-center/src/assembly/context.ts`)**：
+
+     ```typescript
+     export function assertCustomerAbility(
+       ability: AppPrismaAbility,
+       action: string,
+       subject: string,
+     ): void {
+       // 利用 CASL 原生 ForbiddenError 强校验：
+       ForbiddenError.from(ability).throwUnlessCan(action, subject);
+     }
+     ```
+
+  3. **业务 Server Action 拦截代码 (`packages/domains/customer-center/src/features/customer-management/actions.ts`)**：
+
+     ```typescript
+     export const updateCustomerAction = defineServerAction(
+       async (customerCode: string, input: UpdateCustomerInput) => {
+         const { client, ability, userId } = await getTenantCustomerContext();
+
+         // 物理拦截点 1：功能权限断言。若无 update 权限，此处直接抛出 ForbiddenError
+         assertCustomerAbility(ability, StandardAction.UPDATE, CustomerSubject);
+
+         // 物理拦截点 2：字段可写断言。若修改了 READONLY 或 HIDDEN 字段，直接抛出 ForbiddenError
+         assertEditableFields(
+           ability as unknown as AnyMongoAbility,
+           CustomerSubject,
+           extractControlledPayload(
+             input as unknown as Record<string, unknown>,
+           ),
+         );
+
+         const updated = await CustomerService.updateCustomer(
+           client,
+           customerCode,
+           input,
+           { userId },
+         );
+         revalidatePath("/customer/customers");
+         return updated;
+       },
+       "更新客户失败",
+     );
+     ```
+
+  4. **拦截结果**：当 `ForbiddenError` 抛出时，`defineServerAction` 捕获该异常，向客户端返回统一的结构化错误：
+     `{ "success": false, "error": "Cannot execute \"update\" on \"Customer\"" }`。事务物理阻断在数据库之外。
 
 ---
 
-## 五、 全链路端到端流转时序图 (End-to-End Sequence)
+## 五、 行级数据范围控制与 SQL 自动物理下推 (Data Scope)
 
-从用户在浏览器发起请求，到后端完成四层校验并由数据库下推查询的完整全链路闭环：
+数据范围权限是多租户企业级应用中最核心的数据隔离防线，系统通过 CASL 与 Prisma Driver Adapter 深度绑定，实现了将部门拓扑计算与 SQL 物理下推无缝衔接。
+
+### 1. 数据流转与 SQL 自动下推链路
+
+```text
+当前登录用户 (userId, deptId, departmentTreeIds)
+                      │
+                      ▼
+CaslAbilityFactory.createForTenant()
+  - 解析角色的 RoleDataScopeConfig (例如 resource: "customer.customer", scopeType: "DEPT_TREE")
+  - 调用 resolveDataScopeConditions 解析部门拓扑
+  - 生成 CASL Prisma 条件: can("read", "Customer", { deptId: { in: ['dept_1', 'dept_2'] } })
+                      │
+                      ▼
+后端 Query: getAccessibleWhere(ability, "Customer", "read")
+  - 调用 @casl/prisma: accessibleBy(ability, "read").as("Customer")
+  - 直接转换为 Prisma 标准 WhereInput 语法树对象
+                      │
+                      ▼
+Prisma ORM 执行物理查询
+  prisma.customer.findMany({
+    where: {
+      isDeleted: false,
+      AND: [ accessibleWhere ] // 核心下推点
+    }
+  })
+                      │
+                      ▼
+PostgreSQL 执行真实索引 SQL
+  SELECT * FROM "customer"
+  WHERE "is_deleted" = false
+    AND "dept_id" IN ('dept_1', 'dept_2', 'dept_3')
+```
+
+### 2. 真实代码落脚点
+
+#### (1) 部门拓扑条件编译器 (`packages/base/authorization/src/scopes/data-scope.ts`)
+
+```typescript
+export function resolveDataScopeConditions(
+  scopeType: DataScopeType,
+  topology: UserDepartmentTopology,
+  fieldMapping?: DataScopeFieldMapping,
+): Record<string, unknown> {
+  const userField = fieldMapping?.userIdField ?? "createdById";
+  const deptField = fieldMapping?.departmentIdField ?? "deptId";
+
+  switch (scopeType) {
+    case DataScope.ALL:
+      return {}; // 全量放行
+    case DataScope.SELF:
+      return { [userField]: topology.userId }; // 仅本人
+    case DataScope.DEPT:
+      // Fail-Closed 保护：员工无部门时绝不放行全表
+      if (!topology.departmentId) {
+        return { [deptField]: "__NO_DEPARTMENT_FAIL_CLOSED__" };
+      }
+      return { [deptField]: topology.departmentId };
+    case DataScope.DEPT_TREE:
+      const treeIds = topology.departmentTreeIds ?? [];
+      if (treeIds.length === 0) {
+        return { [deptField]: "__NO_DEPARTMENT_FAIL_CLOSED__" };
+      }
+      return { [deptField]: { in: treeIds } };
+    case DataScope.CUSTOM:
+      return { [deptField]: { in: customDeptIds } };
+  }
+}
+```
+
+#### (2) Prisma SQL 下推转换器 (`packages/base/authorization/src/ability/prisma-access.ts`)
+
+```typescript
+export function getAccessibleWhere<T>(
+  ability: AppPrismaAbility,
+  subject: string,
+  action: string = StandardAction.READ,
+): Record<string, unknown> {
+  // 调用 @casl/prisma 原生能力无损提取 Where 条件
+  const accessible = accessibleBy(ability, action as never);
+  return (accessible as Record<string, unknown>)[subject] ?? {};
+}
+```
+
+#### (3) 业务 Query 中的端到端四层整合实战 (`packages/domains/customer-center/src/features/customer-management/queries.ts`)
+
+```typescript
+export async function listCustomersQuery(filter: ListCustomerFilter = {}) {
+  const { client, ability } = await getTenantCustomerContext();
+
+  // 第 1 层：功能操作门禁 (assertAbility)
+  assertCustomerAbility(ability, StandardAction.READ, CustomerSubject);
+
+  // 第 2 层：数据范围下推 (SQL accessibleWhere)
+  const accessibleWhere = getAccessibleWhere(ability, CustomerSubject, "read");
+  const result = await CustomerService.listCustomers(
+    client,
+    filter,
+    accessibleWhere,
+  );
+
+  // 第 3 层：敏感字段脱敏 (pickReadableFields)
+  const items: CustomerListItem[] = result.items.map((item) => {
+    const readable = pickReadableFields(
+      ability,
+      CustomerSubject,
+      item as Record<string, unknown>,
+    );
+    return {
+      id: item.customerCode,
+      ...readable,
+    } as unknown as CustomerListItem;
+  });
+
+  // 安全跨端纯数据序列化
+  return toPlainData({ ...result, items });
+}
+```
+
+---
+
+## 六、 敏感字段三态策略与脱敏防护 (Field Policy)
+
+防止敏感数据（如采购价、授信额度、手机号）通过网页 DOM 查看、浏览器 Network 抓包刺探、或导出 Excel 文件泄露。
+
+### 1. 前端效果与组件渲染
+
+#### (1) 表格视图物理列剔除 (`packages/base/ui/src/components/composite/table/DataTableContent.tsx`)
+
+```typescript
+// CASL 字段 HIDDEN + 用户列设置 visibleColumnIds 双重过滤
+const visibleColumns = useMemo(() => {
+  return columns.filter((col) => {
+    if (!visibleColumnIds.has(col.id)) return false;
+    // 业务受控列：向 CASL 校验当前操作员对该字段的读取能力
+    if (!col.field || !ability || !subject) return true;
+    return ability.can("read", subject, col.field);
+  });
+}, [columns, visibleColumnIds, ability, subject]);
+```
+
+**效果**：当字段为 `HIDDEN` 时，`visibleColumns` 排除该列，`<th>` 和 `<td>` 从 DOM 中**物理级彻底消失**，绝非 CSS `display: none`。
+
+#### (2) 受控表单输入三态积木 (`packages/base/ui/src/components/composite/auth/AuthField.tsx`)
+
+```typescript
+export function deriveFieldMode(
+  ability: AbilityLike | null | undefined,
+  subject: string,
+  field: string,
+  action: string = "update",
+  overrideMode?: FieldAccessMode,
+): FieldAccessMode {
+  if (overrideMode) return overrideMode;
+  if (!ability) return FieldPolicy.HIDDEN;
+
+  const readable = ability.can("read", subject, field);
+  const writable = ability.can(action, subject, field);
+
+  if (!readable) return FieldPolicy.HIDDEN;
+  if (!writable) return FieldPolicy.READONLY;
+  return FieldPolicy.EDITABLE;
+}
+
+export function AuthField({ ability, subject, field, action, children, label, fallback = null }: AuthFieldProps) {
+  const currentMode = deriveFieldMode(ability, subject, field, action);
+
+  if (currentMode === FieldPolicy.HIDDEN) {
+    return <>{fallback}</>; // 物理不渲染表单控件
+  }
+
+  if (currentMode === FieldPolicy.READONLY) {
+    // 自动克隆输入控件并注入 readOnly / disabled 属性，显示只读标记
+    return (
+      <Field>
+        {label && <FieldLabel>{label} <Badge variant="secondary" size="sm">只读锁定</Badge></FieldLabel>}
+        {cloneElement(children, { disabled: true, readOnly: true })}
+      </Field>
+    );
+  }
+
+  return (
+    <Field>
+      {label && <FieldLabel>{label}</FieldLabel>}
+      {children}
+    </Field>
+  );
+}
+```
+
+### 2. 后端物理脱敏与篡改拦截 (`packages/base/authorization/src/fields/field-policy.ts`)
+
+```typescript
+// 1. 读取响应物理脱敏
+export function pickReadableFields<T extends Record<string, unknown>>(
+  ability: AnyMongoAbility,
+  subject: string,
+  record: T,
+): T {
+  const allowed = new Set(permittedFieldsOf(ability, "read", subject));
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(record)) {
+    if (allowed.has(key)) {
+      result[key] = value;
+    }
+  }
+  return result as T;
+}
+
+// 2. 写入事务防篡改校验
+export function assertEditableFields(
+  ability: AnyMongoAbility,
+  subject: string,
+  payloadKeys: readonly string[],
+  action = "update",
+): void {
+  for (const field of payloadKeys) {
+    if (!ability.can(action, subject, field)) {
+      throw new FieldPolicyError(
+        `禁止修改受限只读或隐藏字段: ${subject}.${field}`,
+      );
+    }
+  }
+}
+```
+
+---
+
+## 七、 复合页面多实体权限与优雅降级机制
+
+真实工业 ERP 中，大量页面属于**复合型聚合页面**（一个路由下展示多张表单或多个数据源）。例如：
+
+- `/customer/categories-tags`：聚合了 `CustomerCategory`（客户分类）与 `CustomerTag`（客户标签）；
+- `/materials/categories`：聚合了商品分类、商品品种与商品等级；
+- `/materials/units`：聚合了系统单位与多单位换算；
+- `/materials/boms`：聚合了工艺 BOM、工序模板与生产线。
+
+### 1. 架构原则：页面为容器，实体为叶子
+
+```text
+📁 客户中心 (菜单分组)
+   └─ 📄 分类与标签 (/customer/categories-tags) [包含 2 个数据实体模块] [全选本页]
+         ├─ 客户分类 (customer.category)  [查看] [新建] [修改] [删除] | [-]        | [配置字段]
+         └─ 客户标签 (customer.tag)       [查看] [新建] [修改] [删除] | [本部门 ▼]  | [配置字段]
+```
+
+1. **切片清单显式挂载 `subjects` 数组**：
+   在 `manifest.ts` 中声明 `subjects: [CustomerCategorySubject, CustomerTagSubject]`。静态门禁（`scripts/check/check-permission-contracts.mjs`）对此执行物理级强校验，杜绝漏配。
+2. **权限配置中心树状行内嵌套展开 (`packages/platform/tenant-admin/src/features/role-management/ui/RolePermissionManager.tsx`)**：
+   复合页面作为容器行，支持一键“全选本页 / 清空本页”；展开后每个子实体模块拥有**独立的操作权限复选框、独立的数据范围下拉框、独立的字段策略**。
+3. **服务端 Query 细粒度按权加载，杜绝 403 白屏 (`packages/domains/customer-center/src/features/customer-management/classification/queries.ts`)**：
+
+   ```typescript
+   export async function getCategoriesTagsPageDataQuery(): Promise<CategoriesTagsPageData> {
+     const { client, ability } = await getTenantCustomerContext();
+     const canReadCategory = ability.can(
+       StandardAction.READ,
+       CustomerCategorySubject,
+     );
+     const canReadTag = ability.can(StandardAction.READ, CustomerTagSubject);
+
+     // 彻底阻断完全越权 (Fail-Closed)
+     if (!canReadCategory && !canReadTag) {
+       assertCustomerAbility(
+         ability,
+         StandardAction.READ,
+         CustomerCategorySubject,
+       );
+     }
+
+     // 细粒度按需加载：有权则查，无权安全回退 null
+     const [categories, tags] = await Promise.all([
+       canReadCategory
+         ? toPlainData(await CustomerCategoryTagService.getCategoryTree(client))
+         : Promise.resolve(null),
+       canReadTag
+         ? toPlainData(await CustomerCategoryTagService.listTags(client))
+         : Promise.resolve(null),
+     ]);
+
+     return { categories, tags, canReadCategory, canReadTag };
+   }
+   ```
+
+   - 客户端视图组件（`CategoryTagView.tsx`）智能感知权限：当用户仅有标签权限时，默认激活并仅呈现业务标签 Tab，分类区域隐藏，体验平滑，彻底消除 403 白屏。
+
+---
+
+## 八、 全链路端到端数据流转时序图 (End-to-End Sequence)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as 租户用户 (浏览器)
-    participant UI as 前端组件 (AuthGuard / AuthField)
+    actor User as 用户 (浏览器)
+    participant Sidebar as 导航侧边栏 (Sidebar)
+    participant View as 视图组件 (DataTable / View)
     participant RSC as 服务端装配层 (App Router Layout/Page)
-    participant SA as 安全 Server Action
+    participant Action as 安全 Server Action
     participant BetterAuth as Better Auth 认证中枢
-    participant Gate as 第4层租户门禁 (assertTenantAccessGate)
-    participant Factory as CASL Ability 工厂
-    participant DBControl as 平台控制库 (saas_control)
-    participant DBTenant as 租户专属物理库 (tenant_xxx)
+    participant Gate as 第4层门禁 (assertTenantAccessGate)
+    participant Factory as CASL Ability 编译工厂
+    participant DBTenant as 租户物理库 (Tenant DB)
 
-    Note over User, RSC: 【阶段一：页面加载与导航裁剪】
-    User->>RSC: 访问系统控制台 (/customer)
-    RSC->>BetterAuth: getSession() 校验有效会话并提取 activeOrgId
-    RSC->>Gate: 检查租户库中员工档案 (EmployeeProfile) 状态
-    alt 状态非 ACTIVE (如 SUSPENDED / TERMINATED)
+    Note over User, RSC: 【阶段一：导航加载与菜单安全剪枝】
+    User->>RSC: 打开系统 / 刷新页面
+    RSC->>BetterAuth: getSession() 校验会话并提取 activeOrgId
+    RSC->>Gate: 校验租户库 employee_profile 员工在职状态
+    alt 状态非 ACTIVE (如 SUSPENDED / 离职)
         Gate-->>RSC: 抛出 TenantAccessGateError
-        RSC-->>User: 阻断并展示 403 租户准入门禁拦截页
+        RSC-->>User: 阻断并展示 403 门禁拦截页
     end
-    RSC->>Factory: 编译生成当前用户的 CASL Ability
-    Factory->>DBControl: 读取用户在该租户绑定的 OrganizationRole
-    DBControl-->>Factory: 返回 statement + dataScopes + fieldPolicies
-    Factory-->>RSC: 成功编译 AppPrismaAbility
-    RSC->>RSC: filterNavSections 动态裁剪无权侧边栏菜单
-    RSC->>RSC: 提取纯 JSON: AbilitySnapshot
-    RSC-->>UI: 渲染 HTML 并将 AbilitySnapshot 传入 TenantAbilityProvider
-    UI->>UI: snapshotToRawRules 重构客户端 Ability
-    UI->>UI: AuthGuard 控制按钮显隐 / AuthField 呈现字段三态 (读/写/只读Badge)
+    RSC->>Factory: 编译生成当前成员的 CASL Ability
+    RSC->>RSC: pruneDynamicMenuTree 递归剪枝 (多实体 OR 准入 / 空目录折叠)
+    RSC-->>Sidebar: 输出安全导航树 (无权页面与空目录物理抹除)
+    RSC-->>View: 传递 AbilitySnapshot 纯数据快照
 
-    Note over User, DBTenant: 【阶段二：业务数据查询与 SQL 下推】
-    User->>SA: 触发列表查询 (分页/筛选)
-    SA->>Factory: 构造当前请求的服务端 Ability
-    SA->>SA: getAccessibleWhere(ability, "Customer", "read")
-    Note right of SA: 将数据范围 (DEPT_TREE / SELF) 转换为 Prisma Where 条件
-    SA->>DBTenant: prisma.customer.findMany({ where: accessibleWhere })
-    DBTenant-->>SA: 返回原始物理数据行集合
-    SA->>SA: pickReadableFields 物理剔除 HIDDEN 敏感字段
-    SA->>SA: toPlainData 进行跨端安全序列化
-    SA-->>User: 返回剔除敏感属性后的安全业务数据
-
-    Note over User, DBTenant: 【阶段三：业务数据变更与写入校验】
-    User->>SA: 提交修改表单 (updateCustomer)
-    SA->>Factory: 构造当前请求的服务端 Ability
-    SA->>SA: assertCustomerAbility("update", "Customer") 功能权限断言
-    SA->>SA: assertEditableFields(ability, "Customer", payloadKeys) 字段可写断言
-    alt 包含只读/隐藏字段篡改
-        SA-->>User: 返回 { success: false, error: "禁止修改受限只读字段" }
+    Note over User, DBTenant: 【阶段二：复合页面数据读取与 SQL 下推】
+    User->>RSC: 访问功能页面 (如 /customer/categories-tags)
+    RSC->>RSC: getCategoriesTagsPageDataQuery() 按权并行加载
+    alt 仅有标签权限
+        RSC->>DBTenant: prisma.customerTag.findMany({ where: accessibleWhere })
+        DBTenant-->>RSC: 返回标签数据
     end
-    SA->>DBTenant: prisma.customer.update({ where, data })
-    DBTenant-->>SA: 写入成功
-    SA-->>User: 返回成功状态，前端触发轻量 Toast 提示与数据乐观同步
+    RSC-->>View: 渲染视图 (仅有权限的 Tab/卡片正常激活，无权部分安全隐藏)
+
+    Note over User, DBTenant: 【阶段三：受控操作触发与写入物理阻断】
+    User->>View: 页面点击【新建客户】表单并提交
+    View->>Action: 调用 createCustomerAction(payload)
+    Action->>Factory: 重新构建服务端当前请求的 Ability
+    Action->>Action: assertCustomerAbility(ability, "create", "Customer") 功能权限断言
+    Action->>Action: assertEditableFields(ability, "Customer", payloadKeys) 字段可写断言
+    alt 用户缺乏 create 权限或篡改了只读字段
+        Action-->>User: 抛出 ForbiddenError 并由 defineServerAction 映射为 403 错误响应
+    end
+    Action->>DBTenant: prisma.customer.create({ data })
+    DBTenant-->>Action: 物理落库成功
+    Action-->>View: 返回 { success: true } 触发 Toast 提示与数据自动刷新
 ```
 
 ---
 
-## 六、 核心源码地图索引与指引
+## 九、 权威源码地图与工程落脚点速查
 
-| 模块类别          | 权威文件路径                                               | 核心导出 / 关键符号                              | 职责说明                                                 |
-| :---------------- | :--------------------------------------------------------- | :----------------------------------------------- | :------------------------------------------------------- |
-| **租户门禁**      | `packages/auth/src/context/tenant-context.ts`              | `assertTenantAccessGate`, `resolveTenantContext` | 解析租户会话上下文，执行第 4 层离职/停职硬阻断           |
-| **规则编译**      | `packages/authorization/src/ability/ability-factory.ts`    | `CaslAbilityFactory`, `serializeRolePermissions` | CASL 权限规则总编译工厂，处理四层模型合并                |
-| **SQL 下推**      | `packages/authorization/src/ability/prisma-access.ts`      | `getAccessibleWhere`                             | 桥接 `@casl/prisma`，将数据范围无缝编译为 SQL Where 条件 |
-| **数据范围**      | `packages/authorization/src/scopes/data-scope.ts`          | `DataScope`, `resolveDataScopeConditions`        | 解析五类数据范围并生成防穿透部门树过滤条件               |
-| **字段策略**      | `packages/authorization/src/fields/field-policy.ts`        | `pickReadableFields`, `assertEditableFields`     | 字段读写控制：读取时物理剥离脱敏、写入时白名单校验       |
-| **快照序列化**    | `packages/authorization/src/adapters/client-ability.ts`    | `AbilitySnapshot`, `createAbilityFromSnapshot`   | RSC 纯数据快照与客户端 CASL 实例双向转换                 |
-| **前端 Provider** | `packages/authorization/src/adapters/ability-provider.tsx` | `TenantAbilityProvider`, `useOptionalAbility`    | 前端 React 上下文挂载与无白屏安全取值钩子                |
-| **字段三态 UI**   | `packages/ui/src/components/composite/auth/AuthField.tsx`  | `AuthField`, `deriveFieldMode`                   | 受控表单输入三态渲染（编辑 / 只读 Badge / 物理隐藏）     |
-| **操作列门禁**    | `packages/ui/src/components/composite/data-table/`         | `DataTableActionButton`, `DataTableRowActions`   | 表格动作按钮、行操作列与批量操作栏动态鉴权               |
-| **导航裁剪**      | `apps/tenant/src/kernel/navigation.ts`                     | `getAuthorizedTenantNavSections`                 | 服务端依据 Ability 动态计算并裁剪侧边栏菜单              |
-| **安全 Action**   | `packages/shared/src/api/action.ts`                        | `defineServerAction`                             | Server Action 包装闭包，捕获鉴权异常并规范化序列化       |
-| **切片契约**      | `packages/features/*/src/contracts/*.contract.ts`          | `FeaturePagePermissionDescriptor`                | 特性切片受控字段清单与权限动作单一事实源 (SSoT)          |
+| 功能维度             | 核心实现文件路径                                                          | 核心关键符号 / 函数 / 组件                       | 功能说明与实现原理                                                               |
+| :------------------- | :------------------------------------------------------------------------ | :----------------------------------------------- | :------------------------------------------------------------------------------- |
+| **第4层租户门禁**    | `packages/base/auth/src/context/tenant-context.ts`                        | `assertTenantAccessGate`                         | 校验租户库中员工档案在职状态，离职/停职直接阻断                                  |
+| **规则编译中枢**     | `packages/base/authorization/src/ability/ability-factory.ts`              | `CaslAbilityFactory`                             | 将 DB 中持久化的 statement, scopes, fields 编译为 CASL `AppPrismaAbility`        |
+| **数据范围编译**     | `packages/base/authorization/src/scopes/data-scope.ts`                    | `resolveDataScopeConditions`                     | 解析 5 类数据范围并注入防穿透 `__NO_DEPARTMENT_FAIL_CLOSED__`                    |
+| **SQL 自动下推**     | `packages/base/authorization/src/ability/prisma-access.ts`                | `getAccessibleWhere`                             | 桥接 `@casl/prisma`，将 Ability 规则自动转换为 Prisma Where 语法树               |
+| **字段三态控制**     | `packages/base/authorization/src/fields/field-policy.ts`                  | `pickReadableFields`<br>`assertEditableFields`   | 服务端安全网：读取时物理剥离未授权字段，写入时拦截只读字段篡改                   |
+| **导航菜单裁剪**     | `packages/base/authorization/src/core/manifest.ts`                        | `pruneDynamicMenuTree`                           | 深度优先递归剪枝，支持多 Subject OR 准入，自动物理隐藏空抽屉目录                 |
+| **权限树菜单对齐**   | `packages/base/authorization/src/core/manifest.ts`                        | `deriveMenuAlignedPermissionTree`                | 将全局契约映射到租户当前菜单目录，按路由聚合多实体契约，消灭系统内置孤儿         |
+| **跨端快照传输**     | `packages/base/authorization/src/adapters/client-ability.ts`              | `AbilitySnapshot`<br>`createAbilityFromSnapshot` | RSC 与 Client 之间的纯 JSON 序列化快照转换契约                                   |
+| **客户端上下文**     | `packages/base/authorization/src/adapters/ability-provider.tsx`           | `TenantAbilityProvider`<br>`useSubjectCan`       | 在前端重建 CASL Ability 内存实例，提供响应式权限判定钩子                         |
+| **表格工具栏按钮**   | `packages/base/ui/src/components/composite/table/DataTableActions.tsx`    | `DataTableActionButton`                          | 根据 `action` 和 `subject` 调用 `ability.can`，无权限物理返回 `null`             |
+| **表格行操作按钮**   | `packages/base/ui/src/components/composite/table/DataTableRowActions.tsx` | `DataTableRowActions`                            | 行级操作栏，根据 `canPerform` 自动过滤 `onView/onEdit/onDelete`                  |
+| **表格声明式列控**   | `packages/base/ui/src/components/composite/table/DataTableContent.tsx`    | `DataTableContent`                               | 根据 `columns[].field` 结合 `ability.can("read", subject, col.field)` 物理剔除列 |
+| **受控表单字段**     | `packages/base/ui/src/components/composite/auth/AuthField.tsx`            | `AuthField`<br>`deriveFieldMode`                 | 表单字段三态渲染：EDITABLE 正常输入、READONLY 置灰锁定、HIDDEN 不渲染            |
+| **安全 Action 包装** | `packages/base/shared/src/api/action.ts`                                  | `defineServerAction`                             | 拦截 Server Action 未捕获的 `ForbiddenError`，映射为友好结构化错误响应           |
+| **角色权限配置中心** | `packages/platform/tenant-admin/.../RolePermissionManager.tsx`            | `RolePermissionManager`                          | 管理后台权限矩阵：对齐菜单目录，行内树状嵌套展开复合页面各实体权限               |
+| **契约静态门禁**     | `scripts/check/check-permission-contracts.mjs`                            | 静态合规检测脚本                                 | 编译与提交门禁：强制校验 Subject 契约覆盖、复合页面 `subjects` 显式声明          |

@@ -10,6 +10,7 @@ import {
   derivePageCatalog,
   pruneDynamicMenuTree,
   buildMenuTree,
+  deriveMenuAlignedPermissionTree,
   type TenantFeatureManifest,
   type TenantMenuNode,
 } from "./manifest";
@@ -400,4 +401,128 @@ test("buildMenuTree 能够将扁平数据库记录递归组装为无限多层级
   assert.equal(deepChild?.length, 1);
   assert.equal(deepChild![0].id, "deep-1-1-1");
   assert.equal(deepChild![0].customLabel, "物料档案");
+});
+
+test("deriveMenuAlignedPermissionTree 支持复合页面多实体归集并消除系统内置冗余", () => {
+  const mockCompositeFeature: TenantFeatureManifest = {
+    id: "composite-feature",
+    name: "复合中心",
+    order: 10,
+    pages: [
+      {
+        pageKey: "composite-page",
+        defaultLabel: "分类与标签",
+        href: "/composite/categories-tags",
+        requiredAction: "read",
+        requiredSubject: "CategorySubject",
+        subjects: ["CategorySubject", "TagSubject"],
+      },
+    ],
+    permissionModules: [
+      {
+        moduleKey: "composite-mod",
+        label: "复合中心",
+        iconName: "Folder",
+        pages: [
+          {
+            resource: "composite.category",
+            subject: "CategorySubject",
+            label: "客户分类",
+            path: "/composite/categories-tags",
+            actions: [{ action: "read", label: "查看" }],
+          },
+          {
+            resource: "composite.tag",
+            subject: "TagSubject",
+            label: "客户标签",
+            path: "/composite/categories-tags",
+            actions: [{ action: "read", label: "查看" }],
+          },
+        ],
+      },
+    ],
+  };
+
+  const menuTree: TenantMenuNode[] = [
+    {
+      id: "group-composite",
+      itemType: "GROUP",
+      customLabel: "业务导航",
+      sortOrder: 1,
+      children: [
+        {
+          id: "node-page",
+          parentId: "group-composite",
+          itemType: "PAGE",
+          pageKey: "composite-page",
+          sortOrder: 1,
+        },
+      ],
+    },
+  ];
+
+  const alignedTree = deriveMenuAlignedPermissionTree(
+    [mockCompositeFeature],
+    menuTree,
+  );
+
+  // 1. 业务导航目录下只应有 1 个分组模块，不能出现带有 (系统内置) 的多余分组
+  assert.equal(alignedTree.length, 1);
+  assert.equal(alignedTree[0].label, "业务导航");
+  assert.equal(alignedTree[0].pages.length, 1);
+
+  // 2. 复合页面应归集两个实体，且路由只出现一次
+  const pageNode = alignedTree[0].pages[0];
+  assert.equal(pageNode.path, "/composite/categories-tags");
+  assert.equal(pageNode.entities?.length, 2);
+  assert.equal(pageNode.entities[0].subject, "CategorySubject");
+  assert.equal(pageNode.entities[1].subject, "TagSubject");
+});
+
+test("pruneDynamicMenuTree 支持多 Subject 复合页面的 OR 准入原则", () => {
+  const mockCompositeFeature: TenantFeatureManifest = {
+    id: "composite-feature",
+    name: "复合中心",
+    pages: [
+      {
+        pageKey: "composite-page",
+        defaultLabel: "分类与标签",
+        href: "/composite/categories-tags",
+        requiredAction: "read",
+        subjects: ["CategorySubject", "TagSubject"],
+      },
+    ],
+  };
+
+  const catalog = derivePageCatalog([mockCompositeFeature]);
+  const tree: TenantMenuNode[] = [
+    {
+      id: "node-comp",
+      itemType: "PAGE",
+      pageKey: "composite-page",
+      sortOrder: 1,
+    },
+  ];
+
+  // 场景 1: 仅有 Tag 权限，没有 Category 权限 -> 菜单可见 (OR准入)
+  const sectionsTagOnly = pruneDynamicMenuTree(
+    tree,
+    catalog,
+    (action, subject) => action === "read" && subject === "TagSubject",
+  );
+  assert.equal(sectionsTagOnly.length, 1);
+  assert.equal((sectionsTagOnly[0].items[0] as { id: string }).id, "node-comp");
+
+  // 场景 2: 仅有 Category 权限，没有 Tag 权限 -> 菜单可见 (OR准入)
+  const sectionsCatOnly = pruneDynamicMenuTree(
+    tree,
+    catalog,
+    (action, subject) => action === "read" && subject === "CategorySubject",
+  );
+  assert.equal(sectionsCatOnly.length, 1);
+  assert.equal((sectionsCatOnly[0].items[0] as { id: string }).id, "node-comp");
+
+  // 场景 3: 两个权限都没有 -> 菜单被安全剪枝隐藏
+  const sectionsNone = pruneDynamicMenuTree(tree, catalog, () => false);
+  assert.equal(sectionsNone.length, 0);
 });

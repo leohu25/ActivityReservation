@@ -18,20 +18,26 @@ import { CategoryFormModal } from "./CategoryFormModal";
 import { VarietyFormModal } from "./VarietyFormModal";
 
 interface ClassificationViewProps {
-  initialCategories: CategoryListItem[];
-  initialVarieties: VarietyListItem[];
+  initialCategories?: CategoryListItem[] | null;
+  initialVarieties?: VarietyListItem[] | null;
+  canReadCategory?: boolean;
+  canReadVariety?: boolean;
 }
 
 export function ClassificationView({
   initialCategories,
   initialVarieties,
+  canReadCategory = true,
+  canReadVariety = true,
 }: ClassificationViewProps) {
-  const [categories, setCategories] =
-    useState<CategoryListItem[]>(initialCategories);
-  const [varieties, setVarieties] =
-    useState<VarietyListItem[]>(initialVarieties);
+  const [categories, setCategories] = useState<CategoryListItem[]>(
+    initialCategories ?? [],
+  );
+  const [varieties, setVarieties] = useState<VarietyListItem[]>(
+    initialVarieties ?? [],
+  );
   const [activeTab, setActiveTab] = useState<"category" | "variety">(
-    "category",
+    canReadCategory ? "category" : "variety",
   );
 
   // 搜索关键字状态
@@ -200,8 +206,7 @@ export function ClassificationView({
           hideDelete
           extraActions={[
             {
-              label:
-                row.status === MasterDataStatus.ACTIVE ? "停用" : "启用",
+              label: row.status === MasterDataStatus.ACTIVE ? "停用" : "启用",
               onClick: () => handleToggleVariety(row.id, row.status),
             },
           ]}
@@ -222,22 +227,26 @@ export function ClassificationView({
           </p>
         </div>
         <div className="flex space-x-2">
-          <Button
-            variant={activeTab === "category" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setActiveTab("category")}
-          >
-            <FolderTree className="mr-2 h-4 w-4" />
-            商品分类树 ({categories.length})
-          </Button>
-          <Button
-            variant={activeTab === "variety" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setActiveTab("variety")}
-          >
-            <Tag className="mr-2 h-4 w-4" />
-            独立品种档案 ({varieties.length})
-          </Button>
+          {canReadCategory && (
+            <Button
+              variant={activeTab === "category" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveTab("category")}
+            >
+              <FolderTree className="mr-2 h-4 w-4" />
+              商品分类树 ({categories.length})
+            </Button>
+          )}
+          {canReadVariety && (
+            <Button
+              variant={activeTab === "variety" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveTab("variety")}
+            >
+              <Tag className="mr-2 h-4 w-4" />
+              独立品种档案 ({varieties.length})
+            </Button>
+          )}
         </div>
       </div>
 

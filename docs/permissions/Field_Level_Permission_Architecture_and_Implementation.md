@@ -88,7 +88,7 @@ export enum FieldPolicy {
 
 ## 四、 关键技术实现解析
 
-### 1. 契约层：实体自描述受控字段 (`src/contracts/`)
+### 1. 契约层：实体自描述受控字段 (`packages/domains/<domain>/src/features/<feature>/contract.ts`)
 
 每个业务页面必须建立专属契约文件（如 `customer.contract.ts`），杜绝手写魔法字符串：
 
@@ -104,7 +104,11 @@ export const CustomerField = {
 // 2. 受控字段元数据定义
 export const customerConfigurableFields = [
   { field: CustomerField.CUSTOMER_CODE, label: "客户编码", isSensitive: false },
-  { field: CustomerField.CREDIT_LIMIT, label: "授信额度 (敏感资产)", isSensitive: true },
+  {
+    field: CustomerField.CREDIT_LIMIT,
+    label: "授信额度 (敏感资产)",
+    isSensitive: true,
+  },
   { field: CustomerField.STATUS, label: "客户状态", isSensitive: false },
 ] as const;
 ```
@@ -124,44 +128,49 @@ export const customerConfigurableFields = [
 
 ### 3. 表格视图层：DataTable 物理级列剔除机制
 
-在 `packages/ui/src/components/composite/data-table/DataTableContent.tsx` 中：
+在 `packages/base/ui/src/components/composite/table/DataTableContent.tsx` 中：
 
 ```tsx
-// DataTableContent.tsx
+// packages/base/ui/src/components/composite/table/DataTableContent.tsx
 const visibleColumns = useMemo(() => {
   return columns.filter((col) => {
-    // 1. 纯 UI 辅助列（无 field 属性，如多选框、操作列、子表展开箭头）默认放行
+    // 1. 用户自定义列设置 visibleColumnIds 过滤
+    if (!visibleColumnIds.has(col.id)) return false;
+    // 2. 纯 UI 辅助列（无 field 属性，如多选框、操作列、子表展开箭头）默认放行
     if (!col.field || !ability || !subject) return true;
-    
-    // 2. 业务受控列：严格向 CASL 校验当前操作员对该字段的读取能力
+
+    // 3. 业务受控列：严格向 CASL 校验当前操作员对该字段的读取能力
     return ability.can("read", subject, col.field);
   });
-}, [columns, ability, subject]);
+}, [columns, visibleColumnIds, ability, subject]);
 ```
 
 **效果**：当某字段被设为 `HIDDEN` 时，`visibleColumns` 会直接把该列排除，不管是 `<TableHead>` 还是每一行的 `<TableCell>`，在 HTML 渲染树中**彻底物理消失**，绝非 CSS 视觉隐藏！
 
 ---
 
-### 4. 表单与详情层：`<AuthorizedField>` 积木组件
+### 4. 表单与详情层：`<AuthField>` 积木组件
 
-针对表单编辑和弹窗录入，系统在 `@base/ui` 预置了 `<AuthorizedField>` 高阶组件：
+针对表单编辑和弹窗录入，系统在 `@base/ui`（`packages/base/ui/src/components/composite/auth/AuthField.tsx`）预置了 `<AuthField>` 高阶组件：
 
 ```tsx
-<AuthorizedField field={CustomerField.CREDIT_LIMIT} label="授信额度">
+<AuthField field={CustomerField.CREDIT_LIMIT} label="授信额度">
   <Input value={form.creditLimit} onChange={...} />
-</AuthorizedField>
+</AuthField>
 ```
 
 #### 组件内部推导机制 (`deriveFieldMode`)
 
 ```ts
+// packages/base/ui/src/components/composite/auth/AuthField.tsx
 export function deriveFieldMode(
   ability: AbilityLike | null | undefined,
   subject: string,
   field: string,
   action: string = "update",
+  overrideMode?: FieldAccessMode,
 ): FieldAccessMode {
+  if (overrideMode) return overrideMode;
   if (!ability) return FieldPolicy.HIDDEN;
 
   const readable = ability.can("read", subject, field);
@@ -173,7 +182,7 @@ export function deriveFieldMode(
 }
 ```
 
-- **遇到 `HIDDEN`**：组件直接返回 `fallback ?? null`，表单项彻底不渲染；
+- **遇到 `HIDDEN`**：组件直接返回 `<>{fallback}</>`，表单项在 DOM 中彻底不渲染；
 - **遇到 `READONLY`**：组件通过 React 原生 `cloneElement` 为传入的 `<Input />` 或 `<Select />` 自动注入 `readOnly: true`、`disabled: true`，并在外部呈现只读徽章与锁定样式；
 - **遇到 `EDITABLE`**：原样放行，支持用户输入交互。
 
@@ -194,7 +203,9 @@ const activeExportFields = fieldKeys.filter((f) => {
 const csvContent = [
   activeExportFields.map((f) => f.label).join(","),
   ...filteredData.map((row) =>
-    activeExportFields.map((f) => `"${String(row[f.key] ?? "").replace(/"/g, '""')}"`).join(",")
+    activeExportFields
+      .map((f) => `"${String(row[f.key] ?? "").replace(/"/g, '""')}"`)
+      .join(","),
   ),
 ].join("\n");
 ```
@@ -233,7 +244,7 @@ test("CustomerView 严格执行 HIDDEN 字段策略隐藏对应列与数据", ()
           creditLimit: "HIDDEN",
         },
       }}
-    />
+    />,
   );
 
   // 断言 1: 表头物理剔除
@@ -250,12 +261,12 @@ test("CustomerView 严格执行 HIDDEN 字段策略隐藏对应列与数据", ()
 
 ## 六、 开发者 SOP：为新页面接入字段权限的标准 3 步
 
-1. **在 `src/contracts/<page>.contract.ts` 中定义**：
+1. **在 `packages/domains/<domain>/src/features/<feature>/contract.ts` 中定义**：
    - 声明 `MyField` 枚举对象；
    - 编写 `myConfigurableFields` 数组，敏感字段标明 `isSensitive: true`；
    - 挂载入 `myPageContract.configurableFields`。
-2. **在 `src/components/<Page>View.tsx` 中绑定**：
+2. **在 `packages/domains/<domain>/src/features/<feature>/ui/<Page>View.tsx` 中绑定**：
    - `columns` 中凡是受控数据列，必须指定 `field: MyField.XXX`；
    - 导出 CSV 函数中，通过 `ability.can("read", Subject, f.field)` 动态裁剪导出行列。
-3. **在 `src/components/<Page>View.test.tsx` 中断言**：
+3. **在单元测试 `ui/<Page>View.test.tsx` 中断言**：
    - 传入 mock 的 `fieldPolicies: { [MyField.XXX]: "HIDDEN" }`，断言列头与数据均被彻底隐藏。

@@ -62,8 +62,10 @@ const tagTypeLabels: Record<string, string> = {
 };
 
 interface CategoryTagViewProps {
-  readonly initialCategories: CustomerCategoryItem[];
-  readonly initialTags: CustomerTagItem[];
+  readonly initialCategories?: CustomerCategoryItem[] | null;
+  readonly initialTags?: CustomerTagItem[] | null;
+  readonly canReadCategory?: boolean;
+  readonly canReadTag?: boolean;
 }
 
 export interface CategoryTreeItem extends HierarchyNodeData {
@@ -81,20 +83,27 @@ export interface CategoryTreeItem extends HierarchyNodeData {
 export function CategoryTagView({
   initialCategories,
   initialTags,
+  canReadCategory = true,
+  canReadTag = true,
 }: CategoryTagViewProps) {
   const router = useSafeRouter();
-  const [categories, setCategories] =
-    useState<CustomerCategoryItem[]>(initialCategories);
-  const [tags, setTags] = useState<CustomerTagItem[]>(initialTags);
+  const [categories, setCategories] = useState<CustomerCategoryItem[]>(
+    initialCategories ?? [],
+  );
+  const [tags, setTags] = useState<CustomerTagItem[]>(initialTags ?? []);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setCategories(initialCategories);
+    setCategories(initialCategories ?? []);
   }, [initialCategories]);
 
   useEffect(() => {
-    setTags(initialTags);
+    setTags(initialTags ?? []);
   }, [initialTags]);
+
+  const hasBoth = canReadCategory && canReadTag;
+  const defaultTab = hasBoth ? "all" : canReadTag ? "tags" : "categories";
+  const [activeTab, setActiveTab] = useState(defaultTab);
 
   // 搜索关键字
   const [catKeyword, setCatKeyword] = useState("");
@@ -535,37 +544,49 @@ export function CategoryTagView({
         </div>
       </div>
 
-      <Tabs defaultValue="all" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="mb-4 flex items-center justify-between">
           <TabsList className="bg-muted">
-            <TabsTrigger value="all" className="gap-1.5 text-xs">
-              全景并排视图
-            </TabsTrigger>
-            <TabsTrigger value="categories" className="gap-1.5 text-xs">
-              <FolderTree className="size-3.5" />
-              <span>客户多级分类 ({totalCatCount})</span>
-            </TabsTrigger>
-            <TabsTrigger value="tags" className="gap-1.5 text-xs">
-              <TagIcon className="size-3.5" />
-              <span>业务标签字典 ({tags.length})</span>
-            </TabsTrigger>
+            {hasBoth && (
+              <TabsTrigger value="all" className="gap-1.5 text-xs">
+                全景并排视图
+              </TabsTrigger>
+            )}
+            {canReadCategory && (
+              <TabsTrigger value="categories" className="gap-1.5 text-xs">
+                <FolderTree className="size-3.5" />
+                <span>客户多级分类 ({totalCatCount})</span>
+              </TabsTrigger>
+            )}
+            {canReadTag && (
+              <TabsTrigger value="tags" className="gap-1.5 text-xs">
+                <TagIcon className="size-3.5" />
+                <span>业务标签字典 ({tags.length})</span>
+              </TabsTrigger>
+            )}
           </TabsList>
         </div>
 
-        <TabsContent value="all" className="mt-0">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {hasBoth && (
+          <TabsContent value="all" className="mt-0">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {categorySection}
+              {tagSection}
+            </div>
+          </TabsContent>
+        )}
+
+        {canReadCategory && (
+          <TabsContent value="categories" className="mt-0">
             {categorySection}
+          </TabsContent>
+        )}
+
+        {canReadTag && (
+          <TabsContent value="tags" className="mt-0">
             {tagSection}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="categories" className="mt-0">
-          {categorySection}
-        </TabsContent>
-
-        <TabsContent value="tags" className="mt-0">
-          {tagSection}
-        </TabsContent>
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* 分类模态框 */}

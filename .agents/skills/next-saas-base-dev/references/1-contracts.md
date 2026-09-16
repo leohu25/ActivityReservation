@@ -54,9 +54,16 @@ export const itemMasterPageContract: FeaturePagePermissionDescriptor = {
 };
 ```
 
-### 聚合页面与独立实体
+### 聚合页面与独立实体 (Composite Pages & Multiple Subjects)
 
-“同一页面/同一 Tab 组”不代表共享 Subject。只要是独立实体且未来可能独立授权（例如 `ItemCategory`、`ItemVariety`、`ItemGrade`，或 `CustomerCategory`、`CustomerTag`），就必须分别声明 Subject、Resource、Field 和 Descriptor；Manifest 的 `permissionModules.pages` 必须消费全部 Descriptor。页面可以组合查询，但每个 Query/Action 必须校验自己实体对应的 Subject。只有生命周期不可分割、无独立授权语义的值对象/级联明细才允许受聚合根权限代理，并需在契约注释中说明。
+“同一页面/同一 Tab 组”不代表共享 Subject。只要是独立实体且未来可能独立授权（例如 `ItemCategory`、`ItemVariety`、`ItemGrade`，或 `CustomerCategory`、`CustomerTag`）：
+
+1. **分别声明独立契约**：必须分别声明各自的 Subject、Resource、Field 和 Descriptor；
+2. **Manifest 消费全部契约**：切片 Manifest 的 `permissionModules.pages` 必须全量消费所有 Descriptor；
+3. **复合功能页面必须声明 `subjects` 数组**：在 `manifest.pages` 功能池中，当页面聚合了多个实体时，必须显式声明 `subjects: [SubjectA, SubjectB, ...]`。门禁 `scripts/check/check-permission-contracts.mjs` 对此执行物理级静态强拦截；
+4. **动态菜单遵循 OR 准入原则**：用户拥有其中任意一实体的 `READ` 权限即可看到并访问该菜单，全无权限自动剪枝隐藏；
+5. **角色权限中心行内嵌套展开**：权限管理树按页面容器聚合，并在行内树状展开各子实体，独立配置操作按钮、数据范围与字段；
+6. **服务端按权优雅降级**：页面可以组合查询，但每个 Query/Action 必须校验自己实体对应的 Subject，禁止无条件并发引发 403 白屏崩溃。只有生命周期不可分割、无独立授权语义的值对象/级联明细才允许受聚合根权限代理，并需在契约注释中说明。
 
 ### 硬门禁
 

@@ -87,3 +87,35 @@ export async function getUnitConversionsQuery(
     updatedAt: c.updatedAt.toISOString(),
   }));
 }
+
+export interface UnitManagementPageData {
+  readonly units: UnitListItem[] | null;
+  readonly conversions: UnitConversionListItem[] | null;
+  readonly canReadUnit: boolean;
+  readonly canReadConversion: boolean;
+}
+
+export async function getUnitManagementPageDataQuery(): Promise<UnitManagementPageData> {
+  const { ability } = await getTenantMaterialContext();
+  const canReadUnit = ability.can(StandardAction.READ, UnitOfMeasureSubject);
+  const canReadConversion = ability.can(
+    StandardAction.READ,
+    UnitConversionSubject,
+  );
+
+  if (!canReadUnit && !canReadConversion) {
+    assertMaterialAbility(ability, StandardAction.READ, UnitOfMeasureSubject);
+  }
+
+  const [units, conversions] = await Promise.all([
+    canReadUnit ? getUnitsQuery() : Promise.resolve(null),
+    canReadConversion ? getUnitConversionsQuery() : Promise.resolve(null),
+  ]);
+
+  return {
+    units,
+    conversions,
+    canReadUnit,
+    canReadConversion,
+  };
+}

@@ -6,6 +6,7 @@ import {
 } from "./features/customer-management/contract";
 import {
   CustomerCategorySubject,
+  CustomerTagSubject,
   customerCategoryPageContract,
   customerTagPageContract,
 } from "./features/customer-management/classification/contract";
@@ -45,6 +46,7 @@ export const customerManifest: TenantFeatureManifest = {
       defaultIcon: "Tags",
       requiredAction: StandardAction.READ,
       requiredSubject: CustomerCategorySubject,
+      subjects: [CustomerCategorySubject, CustomerTagSubject],
     },
     {
       pageKey: "customer-quotes",

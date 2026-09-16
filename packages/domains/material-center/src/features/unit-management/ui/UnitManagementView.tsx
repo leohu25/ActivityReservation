@@ -16,17 +16,22 @@ import { UnitFormModal } from "./UnitFormModal";
 import { ConversionFormModal } from "./ConversionFormModal";
 
 interface UnitManagementViewProps {
-  initialUnits: UnitListItem[];
-  initialConversions: UnitConversionListItem[];
+  initialUnits?: UnitListItem[] | null;
+  initialConversions?: UnitConversionListItem[] | null;
+  canReadUnit?: boolean;
+  canReadConversion?: boolean;
 }
 
 export function UnitManagementView({
   initialUnits,
   initialConversions,
+  canReadUnit = true,
+  canReadConversion = true,
 }: UnitManagementViewProps) {
-  const [units, setUnits] = useState<UnitListItem[]>(initialUnits);
-  const [conversions, setConversions] =
-    useState<UnitConversionListItem[]>(initialConversions);
+  const [units, setUnits] = useState<UnitListItem[]>(initialUnits ?? []);
+  const [conversions, setConversions] = useState<UnitConversionListItem[]>(
+    initialConversions ?? [],
+  );
 
   // 搜索关键字状态
   const [unitKeyword, setUnitKeyword] = useState("");
@@ -212,48 +217,52 @@ export function UnitManagementView({
       </div>
 
       {/* 1. 计量单位定义 */}
-      <div className="space-y-4">
-        <DataTable
-          data={filteredUnits}
-          columns={unitColumns}
-          rowKey={(u) => u.id}
-          subject={UnitOfMeasureSubject}
-          title="系统单位字典"
-          description="系统度量衡基准字典"
-          onCreate={() =>
-            setUnitModal({ open: true, mode: "create", record: null })
-          }
-          createText="新增单位"
-          keywordValue={unitKeyword}
-          keywordPlaceholder="按单位名称或编码搜索..."
-          onKeywordChange={setUnitKeyword}
-          onSearch={() => {}}
-          onReset={() => setUnitKeyword("")}
-          hideStatusFilter={true}
-        />
-      </div>
+      {canReadUnit && (
+        <div className="space-y-4">
+          <DataTable
+            data={filteredUnits}
+            columns={unitColumns}
+            rowKey={(u) => u.id}
+            subject={UnitOfMeasureSubject}
+            title="系统单位字典"
+            description="系统度量衡基准字典"
+            onCreate={() =>
+              setUnitModal({ open: true, mode: "create", record: null })
+            }
+            createText="新增单位"
+            keywordValue={unitKeyword}
+            keywordPlaceholder="按单位名称或编码搜索..."
+            onKeywordChange={setUnitKeyword}
+            onSearch={() => {}}
+            onReset={() => setUnitKeyword("")}
+            hideStatusFilter={true}
+          />
+        </div>
+      )}
 
       {/* 2. 物料专属换算规则 */}
-      <div className="space-y-4 pt-4 border-t border-border">
-        <DataTable
-          data={filteredConversions}
-          columns={conversionColumns}
-          rowKey={(c) => c.id}
-          subject={UnitConversionSubject}
-          title="多单位换算表"
-          description="特定物料或全局多单位换算公式"
-          onCreate={() =>
-            setConvModal({ open: true, mode: "create", record: null })
-          }
-          createText="新增换算规则"
-          keywordValue={convKeyword}
-          keywordPlaceholder="按物料编码或单位名称搜索..."
-          onKeywordChange={setConvKeyword}
-          onSearch={() => {}}
-          onReset={() => setConvKeyword("")}
-          hideStatusFilter={true}
-        />
-      </div>
+      {canReadConversion && (
+        <div className="space-y-4 pt-4 border-t border-border">
+          <DataTable
+            data={filteredConversions}
+            columns={conversionColumns}
+            rowKey={(c) => c.id}
+            subject={UnitConversionSubject}
+            title="多单位换算表"
+            description="特定物料或全局多单位换算公式"
+            onCreate={() =>
+              setConvModal({ open: true, mode: "create", record: null })
+            }
+            createText="新增换算规则"
+            keywordValue={convKeyword}
+            keywordPlaceholder="按物料编码或单位名称搜索..."
+            onKeywordChange={setConvKeyword}
+            onSearch={() => {}}
+            onReset={() => setConvKeyword("")}
+            hideStatusFilter={true}
+          />
+        </div>
+      )}
 
       {/* 标准 FormModal：计量单位 */}
       {unitModal.open && (

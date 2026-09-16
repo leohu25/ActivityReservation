@@ -18,6 +18,7 @@ export interface FeatureNavItem {
   readonly isExternal?: boolean;
   readonly requiredAction?: string;
   readonly requiredSubject?: string;
+  readonly subjects?: readonly string[];
 }
 
 /**
@@ -66,6 +67,11 @@ export interface FeaturePageInput {
   readonly requiredSubject?: string;
   /** 关联的 CASL 权限动作 (默认为 read) */
   readonly requiredAction?: string;
+  /**
+   * 复合页面挂载的数据模型实体列表（支持 1 页面对 N 实体）
+   * 若提供此项，页面准入权限遵循 OR 逻辑：用户拥有其中任意一实体的 READ 权限即可访问页面
+   */
+  readonly subjects?: readonly string[];
   /** 徽标或额外提示（可选） */
   readonly badge?: string;
 }
@@ -125,6 +131,10 @@ export interface FeaturePagePermissionDescriptor {
   readonly path?: string;
   readonly actions: readonly FeatureActionConfigItem[];
   readonly configurableFields?: readonly FeatureConfigurableField[];
+  /**
+   * 复合页面包含的子数据实体受控契约列表（若存在且长度 > 1，则表示当前节点为多实体容器节点）
+   */
+  readonly entities?: readonly FeaturePagePermissionDescriptor[];
 }
 
 /**
@@ -178,21 +188,92 @@ export function deriveMenuAlignedPermissionTree(
     return basePermissionTree;
   }
 
-  // 1. 构建全局全量受控页面索引：resource -> descriptor, subject -> descriptor, path -> descriptor
+  // 1. 构建全局全量受控页面索引：resource -> descriptor, subject -> descriptor, path -> descriptors[]
   const resourceMap = new Map<string, FeaturePagePermissionDescriptor>();
   const subjectMap = new Map<string, FeaturePagePermissionDescriptor>();
-  const pathMap = new Map<string, FeaturePagePermissionDescriptor>();
+  const pathToDescriptors = new Map<
+    string,
+    FeaturePagePermissionDescriptor[]
+  >();
 
   for (const mod of basePermissionTree) {
     for (const page of mod.pages) {
       resourceMap.set(page.resource, page);
       if (page.subject) subjectMap.set(page.subject, page);
-      if (page.path) pathMap.set(page.path, page);
+      if (page.path) {
+        const list = pathToDescriptors.get(page.path) ?? [];
+        list.push(page);
+        pathToDescriptors.set(page.path, list);
+      }
     }
   }
 
   const pageCatalog = derivePageCatalog(manifests);
   const matchedResources = new Set<string>();
+
+  function resolveMatchingContracts(
+    meta: StandardPageDescriptor,
+  ): FeaturePagePermissionDescriptor[] {
+    const result: FeaturePagePermissionDescriptor[] = [];
+    const seen = new Set<string>();
+
+    // 1. 优先按 meta.subjects 声明提取全量实体契约
+    if (meta.subjects && meta.subjects.length > 0) {
+      for (const subj of meta.subjects) {
+        const desc = subjectMap.get(subj);
+        if (desc && !seen.has(desc.resource)) {
+          seen.add(desc.resource);
+          result.push(desc);
+        }
+      }
+    }
+
+    // 2. 次优按路由 href 提取共享同一物理页面的所有实体契约
+    if (meta.href && pathToDescriptors.has(meta.href)) {
+      const list = pathToDescriptors.get(meta.href)!;
+      for (const desc of list) {
+        if (!seen.has(desc.resource)) {
+          seen.add(desc.resource);
+          result.push(desc);
+        }
+      }
+    }
+
+    // 3. 兜底按 requiredSubject 提取
+    if (result.length === 0 && meta.requiredSubject) {
+      const desc = subjectMap.get(meta.requiredSubject);
+      if (desc && !seen.has(desc.resource)) {
+        seen.add(desc.resource);
+        result.push(desc);
+      }
+    }
+
+    return result;
+  }
+
+  function createPermissionNode(
+    subNode: TenantMenuNode,
+    meta: StandardPageDescriptor,
+  ): FeaturePagePermissionDescriptor | null {
+    const matched = resolveMatchingContracts(meta);
+    if (matched.length === 0) return null;
+
+    for (const c of matched) {
+      matchedResources.add(c.resource);
+    }
+
+    const primary =
+      (meta.requiredSubject
+        ? matched.find((c) => c.subject === meta.requiredSubject)
+        : undefined) || matched[0]!;
+
+    return {
+      ...primary,
+      label: subNode.customLabel || meta.defaultLabel || primary.label,
+      path: meta.href || primary.path,
+      entities: matched,
+    };
+  }
 
   // 2. 递归遍历菜单树，将菜单目录转化为权限模块
   const modules: FeatureModulePermissionDescriptor[] = [];
@@ -221,22 +302,9 @@ export function deriveMenuAlignedPermissionTree(
               const meta = pageCatalog.get(sub.pageKey);
               if (!meta) continue;
 
-              // 尝试匹配受控页面契约
-              const pageContract =
-                (meta.requiredSubject
-                  ? subjectMap.get(meta.requiredSubject)
-                  : undefined) ||
-                (meta.href ? pathMap.get(meta.href) : undefined);
-
-              if (pageContract) {
-                matchedResources.add(pageContract.resource);
-                // 覆盖 label 与 path，带上菜单里的自定义名称
-                groupPages.push({
-                  ...pageContract,
-                  label:
-                    sub.customLabel || meta.defaultLabel || pageContract.label,
-                  path: meta.href || pageContract.path,
-                });
+              const permNode = createPermissionNode(sub, meta);
+              if (permNode) {
+                groupPages.push(permNode);
               }
             } else if (sub.itemType === "GROUP" && sub.children) {
               collectLeaves(sub.children);
@@ -265,25 +333,14 @@ export function deriveMenuAlignedPermissionTree(
         // 顶级单页
         const meta = pageCatalog.get(node.pageKey);
         if (meta) {
-          const pageContract =
-            (meta.requiredSubject
-              ? subjectMap.get(meta.requiredSubject)
-              : undefined) || (meta.href ? pathMap.get(meta.href) : undefined);
-
-          if (pageContract) {
-            matchedResources.add(pageContract.resource);
+          const permNode = createPermissionNode(node, meta);
+          if (permNode) {
             modules.push({
               moduleKey: `menu-${node.id}`,
               label: node.customLabel || meta.defaultLabel,
               iconName: node.customIcon || meta.defaultIcon || "FileText",
               order: moduleOrder++,
-              pages: [
-                {
-                  ...pageContract,
-                  label: node.customLabel || meta.defaultLabel,
-                  path: meta.href || pageContract.path,
-                },
-              ],
+              pages: [permNode],
             });
           }
         }
@@ -306,7 +363,10 @@ export function deriveMenuAlignedPermissionTree(
           ? mod.label
           : `${mod.label} (系统内置)`,
         order: 1000 + (mod.order ?? 0),
-        pages: unallocatedPages,
+        pages: unallocatedPages.map((p) => ({
+          ...p,
+          entities: p.entities || [p],
+        })),
       });
     }
   }
@@ -442,7 +502,15 @@ export function derivePermissionTree(
   const modules: FeatureModulePermissionDescriptor[] = [];
   for (const manifest of sortedManifests) {
     if (manifest.permissionModules) {
-      modules.push(...manifest.permissionModules);
+      modules.push(
+        ...manifest.permissionModules.map((mod) => ({
+          ...mod,
+          pages: mod.pages.map((p) => ({
+            ...p,
+            entities: p.entities || [p],
+          })),
+        })),
+      );
     }
   }
 
@@ -481,11 +549,20 @@ export function filterNavSections(
           });
         }
       } else {
-        // 叶子项：判断权限
+        // 叶子项：判断权限（支持多 Subject OR 准入）
         const leaf = item as FeatureNavItem;
-        if (!leaf.requiredAction || !leaf.requiredSubject) {
-          filteredItems.push(leaf);
-        } else if (can(leaf.requiredAction, leaf.requiredSubject)) {
+        const hasAccess = (() => {
+          if (leaf.subjects && leaf.subjects.length > 0) {
+            const act = leaf.requiredAction || "read";
+            return leaf.subjects.some((s) => can(act, s));
+          }
+          if (leaf.requiredAction && leaf.requiredSubject) {
+            return can(leaf.requiredAction, leaf.requiredSubject);
+          }
+          return true;
+        })();
+
+        if (hasAccess) {
           filteredItems.push(leaf);
         }
       }
@@ -721,12 +798,19 @@ export function pruneDynamicMenuTree(
     const pageMeta = pageMap.get(node.pageKey);
     if (!pageMeta) return null;
 
-    // 安全权限校验：只认底座受控 Subject & Action，不受菜单层级与重命名影响
-    if (
-      pageMeta.requiredSubject &&
-      pageMeta.requiredAction &&
-      !can(pageMeta.requiredAction, pageMeta.requiredSubject)
-    ) {
+    // 安全权限校验：复合页面支持多 Subject OR 准入原则（拥有任意一个实体的 READ 权限即可访问页面）
+    const hasAccess = (() => {
+      if (pageMeta.subjects && pageMeta.subjects.length > 0) {
+        const action = pageMeta.requiredAction || "read";
+        return pageMeta.subjects.some((subj) => can(action, subj));
+      }
+      if (pageMeta.requiredSubject && pageMeta.requiredAction) {
+        return can(pageMeta.requiredAction, pageMeta.requiredSubject);
+      }
+      return true;
+    })();
+
+    if (!hasAccess) {
       return null;
     }
 
@@ -738,6 +822,7 @@ export function pruneDynamicMenuTree(
       badge: pageMeta.badge,
       requiredAction: pageMeta.requiredAction,
       requiredSubject: pageMeta.requiredSubject,
+      subjects: pageMeta.subjects,
     };
   }
 

@@ -179,6 +179,7 @@ for (const file of contractFiles) {
     const [, name, body] = match;
     const resource = body.match(/\bresource:\s*(\w+Resource)\b/)?.[1];
     const subject = body.match(/\bsubject:\s*(\w+Subject)\b/)?.[1];
+    const contractPath = body.match(/\bpath:\s*"([^"]+)"/)?.[1];
     if (!resource)
       fail(
         file,
@@ -207,7 +208,13 @@ for (const file of contractFiles) {
         "StandardAction.X or DomainAction.X",
       );
     }
-    descriptors.set(name, { file, resource, subject, index: match.index });
+    descriptors.set(name, {
+      file,
+      resource,
+      subject,
+      path: contractPath,
+      index: match.index,
+    });
     if (subject) descriptorSubjects.add(subject);
   }
   for (const match of source.matchAll(/(?:action|ACTION)\s*:\s*"([^"]+)"/g)) {
@@ -309,6 +316,41 @@ for (const file of filesUnderRoots((f) => f.endsWith("/manifest.ts"))) {
         descriptor,
         `include ${descriptor} in permissionModules.pages`,
       );
+    }
+  }
+
+  // 复合页面多实体校验：若同一切片多个 PageContract 共享同一 path，manifest.pages 中对应页面必须显式声明 subjects 数组
+  const manifestDir = path.dirname(file);
+  const featureDescriptors = Array.from(descriptors.entries()).filter(
+    ([, d]) => d.file.startsWith(manifestDir) && d.path,
+  );
+  const pathGroups = new Map();
+  for (const [, d] of featureDescriptors) {
+    const list = pathGroups.get(d.path) || [];
+    list.push(d);
+    pathGroups.set(d.path, list);
+  }
+
+  for (const [routePath, group] of pathGroups) {
+    if (group.length > 1) {
+      const expectedSubjects = group.map((g) => g.subject);
+      const hasRouteInPages = source.includes(`href: "${routePath}"`);
+      if (hasRouteInPages) {
+        // 确保声明了 subjects: [ ... ] 并且涵盖对应实体
+        const pagesBlock =
+          source.match(/pages:\s*\[([\s\S]*?)\n\s*\],/)?.[1] ?? "";
+        const hasSubjectsDecl = pagesBlock.includes("subjects:");
+        if (!hasSubjectsDecl) {
+          fail(
+            file,
+            source.indexOf(`href: "${routePath}"`),
+            "composite-page",
+            "multiple subjects declaration",
+            `href: "${routePath}" without subjects: [...]`,
+            `declare subjects: [${expectedSubjects.join(", ")}] on composite page matching multiple contracts`,
+          );
+        }
+      }
     }
   }
 }

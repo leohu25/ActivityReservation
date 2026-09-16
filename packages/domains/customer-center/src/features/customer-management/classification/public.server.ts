@@ -1,3 +1,8 @@
 import "server-only";
 
-export { getCategoryTreeQuery, listTagsQuery } from "./queries";
+export {
+  getCategoryTreeQuery,
+  listTagsQuery,
+  getCategoriesTagsPageDataQuery,
+  type CategoriesTagsPageData,
+} from "./queries";
