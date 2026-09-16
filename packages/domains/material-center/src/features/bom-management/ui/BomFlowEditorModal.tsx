@@ -14,6 +14,7 @@ import {
   SelectValue,
   SelectContent,
   SelectItem,
+  ActionButton,
   toast,
 } from "@base/ui";
 import {
@@ -25,6 +26,7 @@ import {
   CheckCircle2,
   X,
 } from "lucide-react";
+import { BomHeaderSubject, StandardAction } from "../contract";
 import type {
   BomListItem,
   ProcessTemplateItem,
@@ -394,9 +396,9 @@ export function BomFlowEditorModal({
           ...res.data,
           batchQty: Number(res.data.batchQty),
           totalYieldRate:
-            res.data.totalYieldRate !== null
-              ? Number(res.data.totalYieldRate)
-              : null,
+            res.data.totalYieldRate === null
+              ? null
+              : Number(res.data.totalYieldRate),
           effectiveDate: res.data.effectiveDate
             ? new Date(res.data.effectiveDate).toISOString()
             : new Date().toISOString(),
@@ -425,15 +427,18 @@ export function BomFlowEditorModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent
+        showCloseButton={false}
+        className="w-[95vw] sm:max-w-6xl max-w-6xl max-h-[92vh] flex flex-col p-0 overflow-hidden shadow-2xl"
+      >
         {/* Modal 头部 */}
         <div className="px-6 py-4 border-b border-border/80 flex items-center justify-between bg-muted/20">
-          <div className="flex items-center gap-2">
-            <div className="size-8 rounded bg-primary/10 flex items-center justify-center text-primary">
-              <Layers className="size-4" />
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shadow-xs">
+              <Layers className="size-5" />
             </div>
             <div>
-              <DialogTitle className="text-sm font-semibold">
+              <DialogTitle className="text-base font-bold text-foreground">
                 多工序 BOM 工艺路线设计器
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground mt-0.5">
@@ -445,10 +450,11 @@ export function BomFlowEditorModal({
             type="button"
             variant="ghost"
             size="icon"
-            className="size-7"
+            className="size-8 text-muted-foreground hover:text-foreground"
             onClick={onClose}
           >
             <X className="size-4" />
+            <span className="sr-only">关闭</span>
           </Button>
         </div>
 
@@ -777,8 +783,9 @@ export function BomFlowEditorModal({
             >
               取消
             </Button>
-            <Button
-              type="button"
+            <ActionButton
+              action={StandardAction.CREATE}
+              subject={BomHeaderSubject}
               variant="default"
               size="sm"
               onClick={handleSubmit}
@@ -787,7 +794,7 @@ export function BomFlowEditorModal({
             >
               <CheckCircle2 className="size-3.5 mr-1.5" />
               {isSubmitting ? "正在保存配方..." : "保存工艺 BOM"}
-            </Button>
+            </ActionButton>
           </div>
         </div>
       </DialogContent>

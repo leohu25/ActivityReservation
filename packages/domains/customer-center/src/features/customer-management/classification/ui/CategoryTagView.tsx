@@ -1,33 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { MasterDataStatus } from "@base/shared";
+import { StandardAction, useAbility } from "@base/authorization";
 import {
-  Edit2,
-  Trash2,
-  FolderTree,
-  Tag as TagIcon,
-  Search,
-  Plus,
-} from "lucide-react";
+  CustomerCategorySubject,
+  CustomerTagSubject,
+  customerTagPageContract,
+} from "../contract";
+import { Edit2, Trash2, FolderTree, Tag as TagIcon, Plus } from "lucide-react";
 import {
   Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
   Badge,
-  Button,
   Tabs,
   TabsList,
   TabsTrigger,
   TabsContent,
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
   ConfirmDialog,
-  HierarchyTree,
+  DataTree,
   type HierarchyNodeData,
+  DataTable,
+  type ColumnDef,
+  DataTableRowActions,
   toast,
   useSafeRouter,
 } from "@base/ui";
@@ -86,7 +80,14 @@ export function CategoryTagView({
   canReadCategory = true,
   canReadTag = true,
 }: CategoryTagViewProps) {
+  const ability = useAbility();
   const router = useSafeRouter();
+
+  // 权限位收敛（CASL Fail-Closed）
+  const canCreateTag = ability.can(StandardAction.CREATE, CustomerTagSubject);
+  const canUpdateTag = ability.can(StandardAction.UPDATE, CustomerTagSubject);
+  const canDeleteTag = ability.can(StandardAction.DELETE, CustomerTagSubject);
+
   const [categories, setCategories] = useState<CustomerCategoryItem[]>(
     initialCategories ?? [],
   );
@@ -108,6 +109,7 @@ export function CategoryTagView({
   // 搜索关键字
   const [catKeyword, setCatKeyword] = useState("");
   const [tagKeyword, setTagKeyword] = useState("");
+  const [tagTypeFilter, setTagTypeFilter] = useState<string>("ALL");
 
   // 待删除分类状态（由 ConfirmDialog 驱动）
   const [deletingCat, setDeletingCat] = useState<CustomerCategoryItem | null>(
@@ -245,288 +247,263 @@ export function CategoryTagView({
 
   const adaptedTreeData = adaptCategoryTree(categories);
 
-  const filteredTags = tags.filter((t) => {
-    if (!tagKeyword) return true;
-    const kw = tagKeyword.toLowerCase();
-    return (
-      t.tagCode.toLowerCase().includes(kw) ||
-      t.tagName.toLowerCase().includes(kw) ||
-      (t.description && t.description.toLowerCase().includes(kw))
-    );
-  });
+  const filteredTags = useMemo(() => {
+    return tags.filter((t) => {
+      const matchKeyword = tagKeyword
+        ? (() => {
+            const kw = tagKeyword.toLowerCase();
+            return (
+              t.tagCode.toLowerCase().includes(kw) ||
+              t.tagName.toLowerCase().includes(kw) ||
+              (t.description && t.description.toLowerCase().includes(kw))
+            );
+          })()
+        : true;
 
-  const categorySection = (
-    <Card className="flex flex-col border border-border/80 bg-card shadow-xs">
-      <CardHeader className="gap-3 border-b border-border/80 pb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <FolderTree className="size-4 text-primary" />
-          </div>
-          <div className="min-w-0">
-            <CardTitle className="text-base font-bold text-foreground">
-              客户多级分类树
-            </CardTitle>
-            <CardDescription className="text-xs text-muted-foreground">
-              按行业/业态构建树状体系（总计 {totalCatCount} 个分类节点）
-            </CardDescription>
-          </div>
-        </div>
+      const matchType =
+        tagTypeFilter === "ALL" || !tagTypeFilter
+          ? true
+          : t.tagType === tagTypeFilter;
 
-        <InputGroup>
-          <InputGroupAddon align="inline-start">
-            <Search className="size-3.5 text-muted-foreground" />
-          </InputGroupAddon>
-          <InputGroupInput
-            value={catKeyword}
-            onChange={(e) => setCatKeyword(e.target.value)}
-            placeholder="搜索分类名称或编码..."
-            className="h-8 text-xs"
-          />
-        </InputGroup>
-      </CardHeader>
+      return matchKeyword && matchType;
+    });
+  }, [tags, tagKeyword, tagTypeFilter]);
 
-      <CardContent className="flex-1 p-4">
-        <div className="max-h-[580px] overflow-y-auto pr-1">
-          {/* 正式接入公共 UI 库 HierarchyTree */}
-          <HierarchyTree<CategoryTreeItem>
-            data={adaptedTreeData}
-            createRootText="新增一级根分类"
-            emptyText="暂无分类数据，点击上方按钮创建第一条根分类"
-            onCreateRoot={() =>
-              setCatModal({
-                open: true,
-                mode: "create",
-                record: null,
-                defaultParentCode: null,
-              })
-            }
-            renderExtra={(node) =>
-              node.description ? (
-                <span className="hidden sm:inline truncate text-xs text-muted-foreground max-w-[200px]">
-                  {node.description}
-                </span>
-              ) : null
-            }
-            renderActions={(node) => {
-              const isActive = node.status === MasterDataStatus.ACTIVE;
-              return (
-                <>
-                  <Badge
-                    variant={isActive ? "success" : "secondary"}
-                    size="sm"
-                    className="text-[11px]"
-                  >
-                    {isActive ? "启用" : "停用"}
-                  </Badge>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={loading}
-                    onClick={() =>
-                      setCatModal({
-                        open: true,
-                        mode: "create",
-                        record: null,
-                        defaultParentCode: node.categoryCode,
-                      })
-                    }
-                    className="h-7 px-2 text-xs border-dashed text-primary hover:bg-primary/5 hover:text-primary"
-                    title={`在【${node.categoryName}】下新增子分类`}
-                  >
-                    <Plus className="size-3 mr-1" />
-                    下级
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={loading}
-                    onClick={() =>
-                      setCatModal({
+  const tagColumns: ColumnDef<CustomerTagItem>[] = useMemo(
+    () => [
+      {
+        id: "tagCode",
+        header: "标签编码",
+        width: 140,
+        cell: (t: CustomerTagItem) => (
+          <span className="font-mono text-xs font-semibold text-foreground">
+            {t.tagCode}
+          </span>
+        ),
+      },
+      {
+        id: "tagName",
+        header: "标签名称",
+        width: 160,
+        cell: (t: CustomerTagItem) => (
+          <span className="font-medium text-foreground">{t.tagName}</span>
+        ),
+      },
+      {
+        id: "tagType",
+        header: "业务类型",
+        width: 120,
+        cell: (t: CustomerTagItem) => (
+          <Badge variant="outline" size="sm" className="text-[11px]">
+            {tagTypeLabels[t.tagType || ""] || t.tagType || "未定义"}
+          </Badge>
+        ),
+      },
+      {
+        id: "description",
+        header: "描述说明",
+        cell: (t: CustomerTagItem) => (
+          <span className="text-xs text-muted-foreground truncate max-w-[240px] block">
+            {t.description || "-"}
+          </span>
+        ),
+      },
+      {
+        id: "status",
+        header: "状态",
+        width: 90,
+        align: "center",
+        cell: (t: CustomerTagItem) => {
+          const isActive = t.status === MasterDataStatus.ACTIVE;
+          return (
+            <Badge
+              variant={isActive ? "success" : "secondary"}
+              size="sm"
+              className="text-[11px]"
+            >
+              {isActive ? "启用" : "停用"}
+            </Badge>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: "操作",
+        width: 110,
+        align: "right",
+        cell: (t: CustomerTagItem) => {
+          const isActive = t.status === MasterDataStatus.ACTIVE;
+          return (
+            <DataTableRowActions
+              record={t}
+              onEdit={
+                canUpdateTag
+                  ? () =>
+                      setTagModal({
                         open: true,
                         mode: "edit",
-                        record: node,
-                        defaultParentCode: null,
+                        record: t,
                       })
-                    }
-                    className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    <Edit2 className="size-3 mr-1" />
-                    编辑
-                  </Button>
+                  : undefined
+              }
+              onDelete={canDeleteTag ? () => setDeletingTag(t) : undefined}
+              deleteConfirm={{
+                title: `确认删除业务标签 "${t.tagName}"？`,
+                description: `删除后编码为 ${t.tagCode} 的标签将彻底移除，客户关联将被解除。`,
+                confirmText: "确认删除",
+                cancelText: "取消",
+              }}
+              extraActions={
+                canUpdateTag
+                  ? [
+                      {
+                        label: isActive ? "停用" : "启用",
+                        action: StandardAction.UPDATE,
+                        onClick: () =>
+                          handleToggleTagStatus(
+                            t.tagCode,
+                            t.status || MasterDataStatus.ACTIVE,
+                          ),
+                      },
+                    ]
+                  : []
+              }
+            />
+          );
+        },
+      },
+    ],
+    [canUpdateTag, canDeleteTag, loading],
+  );
 
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={loading}
-                    onClick={() =>
-                      handleToggleCatStatus(
-                        node.categoryCode,
-                        node.status || "ACTIVE",
-                      )
-                    }
-                    className="h-7 px-2 text-xs"
-                  >
-                    {isActive ? "停用" : "启用"}
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={loading}
-                    onClick={() => setDeletingCat(node)}
-                    className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                    title="删除分类"
-                  >
-                    <Trash2 className="size-3" />
-                  </Button>
-                </>
-              );
-            }}
-          />
-        </div>
-      </CardContent>
-    </Card>
+  const categorySection = (
+    <DataTree<CategoryTreeItem>
+      subject={CustomerCategorySubject}
+      title="客户多级分类树"
+      description={`按行业/业态构建树状体系（总计 ${totalCatCount} 个分类节点）`}
+      data={adaptedTreeData}
+      searchValue={catKeyword}
+      onSearchChange={setCatKeyword}
+      createRootText="新增一级根分类"
+      emptyText="暂无分类数据，点击上方按钮创建第一条根分类"
+      onCreateRoot={() =>
+        setCatModal({
+          open: true,
+          mode: "create",
+          record: null,
+          defaultParentCode: null,
+        })
+      }
+      renderExtra={(node) => {
+        const isActive = node.status === MasterDataStatus.ACTIVE;
+        return (
+          <div className="inline-flex items-center gap-2">
+            <Badge
+              variant={isActive ? "success" : "secondary"}
+              size="sm"
+              className="text-[11px]"
+            >
+              {isActive ? "启用" : "停用"}
+            </Badge>
+            {node.description && (
+              <span className="hidden sm:inline truncate text-xs text-muted-foreground max-w-[200px]">
+                {node.description}
+              </span>
+            )}
+          </div>
+        );
+      }}
+      nodeActions={[
+        {
+          key: "add-child",
+          action: StandardAction.CREATE,
+          label: "下级",
+          icon: <Plus className="size-3" />,
+          variant: "outline",
+          className:
+            "h-7 px-2 text-xs border-dashed text-primary hover:bg-primary/5 hover:text-primary",
+          onClick: (node) =>
+            setCatModal({
+              open: true,
+              mode: "create",
+              record: null,
+              defaultParentCode: node.categoryCode,
+            }),
+        },
+        {
+          key: "edit-cat",
+          action: StandardAction.UPDATE,
+          label: "编辑",
+          icon: <Edit2 className="size-3" />,
+          className:
+            "h-7 px-2 text-xs text-muted-foreground hover:text-foreground",
+          onClick: (node) =>
+            setCatModal({
+              open: true,
+              mode: "edit",
+              record: node,
+              defaultParentCode: null,
+            }),
+        },
+        {
+          key: "toggle-status",
+          action: StandardAction.UPDATE,
+          label: (node) =>
+            node.status === MasterDataStatus.ACTIVE ? "停用" : "启用",
+          className: "h-7 px-2 text-xs",
+          onClick: (node) =>
+            handleToggleCatStatus(node.categoryCode, node.status || "ACTIVE"),
+        },
+        {
+          key: "delete-cat",
+          action: StandardAction.DELETE,
+          label: "",
+          icon: <Trash2 className="size-3" />,
+          title: "删除分类",
+          className: "h-7 w-7 p-0 text-muted-foreground hover:text-destructive",
+          onClick: (node) => setDeletingCat(node),
+        },
+      ]}
+    />
   );
 
   const tagSection = (
-    <Card className="flex flex-col border border-border/80 bg-card shadow-xs">
-      <CardHeader className="gap-3 border-b border-border/80 pb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <TagIcon className="size-4 text-primary" />
-          </div>
-          <div className="min-w-0">
-            <CardTitle className="text-base font-bold text-foreground">
-              业务标签字典
-            </CardTitle>
-            <CardDescription className="text-xs text-muted-foreground">
-              配送策略、结算方式、信用分级等（共 {tags.length} 个标签）
-            </CardDescription>
-          </div>
-        </div>
-
-        <InputGroup>
-          <InputGroupAddon align="inline-start">
-            <Search className="size-3.5 text-muted-foreground" />
-          </InputGroupAddon>
-          <InputGroupInput
-            value={tagKeyword}
-            onChange={(e) => setTagKeyword(e.target.value)}
-            placeholder="搜索标签名称或编码..."
-            className="h-8 text-xs"
-          />
-        </InputGroup>
-      </CardHeader>
-
-      <CardContent className="flex-1 p-4">
-        <div className="flex max-h-[580px] flex-col gap-2 overflow-y-auto pr-1">
-          {/* 第一行常驻通栏“+ 新增业务标签”虚线按钮 */}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              setTagModal({
-                open: true,
-                mode: "create",
-                record: null,
-              })
-            }
-            className="w-full h-10 border-dashed border-border/90 bg-muted/20 hover:bg-primary/5 hover:border-primary/50 text-muted-foreground hover:text-primary transition-all flex items-center justify-center gap-2 rounded-lg font-medium text-xs"
-          >
-            <Plus className="size-4" />
-            <span>新增业务标签</span>
-          </Button>
-
-          {filteredTags.length === 0 ? (
-            <div className="p-8 border border-dashed rounded-lg text-center text-xs text-muted-foreground">
-              暂无标签记录，点击上方按钮创建第一条标签
-            </div>
-          ) : (
-            filteredTags.map((t) => {
-              const isActive = t.status === MasterDataStatus.ACTIVE;
-              return (
-                <div
-                  key={t.tagCode}
-                  className="group flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-card p-2.5 transition-colors hover:bg-muted/40 shadow-xs"
-                >
-                  <div className="flex min-w-0 flex-1 items-center gap-2">
-                    <span className="rounded border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-xs font-semibold text-foreground">
-                      {t.tagCode}
-                    </span>
-                    <span className="truncate text-sm font-medium text-foreground">
-                      {t.tagName}
-                    </span>
-                    <Badge variant="outline" size="sm" className="text-[11px]">
-                      {tagTypeLabels[t.tagType || ""] || t.tagType}
-                    </Badge>
-                    {t.description && (
-                      <span className="hidden sm:inline truncate text-xs text-muted-foreground max-w-[200px]">
-                        {t.description}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    <Badge
-                      variant={isActive ? "success" : "secondary"}
-                      size="sm"
-                      className="text-[11px]"
-                    >
-                      {isActive ? "启用" : "停用"}
-                    </Badge>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={loading}
-                      onClick={() =>
-                        setTagModal({
-                          open: true,
-                          mode: "edit",
-                          record: t,
-                        })
-                      }
-                      className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      <Edit2 className="size-3 mr-1" />
-                      编辑
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={loading}
-                      onClick={() =>
-                        handleToggleTagStatus(
-                          t.tagCode,
-                          t.status || MasterDataStatus.ACTIVE,
-                        )
-                      }
-                      className="h-7 px-2 text-xs"
-                    >
-                      {isActive ? "停用" : "启用"}
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={loading}
-                      onClick={() => setDeletingTag(t)}
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                      title="删除标签"
-                    >
-                      <Trash2 className="size-3" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </CardContent>
+    <Card className="flex flex-col border border-border/80 bg-card shadow-xs p-3">
+      <DataTable
+        data={filteredTags}
+        columns={tagColumns}
+        rowKey={(t: CustomerTagItem) => t.tagCode}
+        subject={customerTagPageContract.subject}
+        title="业务标签字典"
+        description={`配送策略、结算方式、信用分级等（共 ${tags.length} 个标签）`}
+        onCreate={
+          canCreateTag
+            ? () =>
+                setTagModal({
+                  open: true,
+                  mode: "create",
+                  record: null,
+                })
+            : undefined
+        }
+        createText="新增标签"
+        keywordValue={tagKeyword}
+        onKeywordChange={setTagKeyword}
+        keywordPlaceholder="搜索标签名称、编码或说明..."
+        showKeywordFilter={true}
+        showPagination={false}
+        showColumnSettings={false}
+        statusOptions={[
+          { value: "DELIVERY", label: "配送策略" },
+          { value: "SETTLEMENT", label: "结算方式" },
+          { value: "CREDIT", label: "信用分级" },
+          { value: "OTHER", label: "其他通用" },
+        ]}
+        statusValue={tagTypeFilter}
+        statusAllValue="ALL"
+        statusAllLabel="全部业务类型"
+        onStatusChange={(val) => setTagTypeFilter(val)}
+      />
     </Card>
   );
 

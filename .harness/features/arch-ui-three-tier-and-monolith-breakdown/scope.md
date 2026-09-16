@@ -2,6 +2,12 @@
 
 ## 修改白名单
 
+- `packages/platform/tenant-admin/src/features/org-management/ui/EmployeeView.tsx` # 1 file @ 41845a3a，联动修改自动登记
+
+- `apps/tenant/src/app/layout.tsx` # 1 file @ 46ee97fa，联动修改自动登记
+
+- `packages/domains/customer-center/src/features/customer-management/classification/ui/CategoryTagView.test.tsx` # 1 file @ head，联动修改自动登记
+
 - `packages/platform/tenant-admin/src/features/role-management/ui/RolePermissionManager.tsx` # 1 file @ 41845a3a，联动修改自动登记
 
 - `packages/domains/material-center/src/manifest.ts` # 1 file @ 41845a3a，联动修改自动登记

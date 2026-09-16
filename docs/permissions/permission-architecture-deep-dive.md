@@ -204,6 +204,119 @@ export function pruneDynamicMenuTree(
 
 系统严格遵循“前后端双向闭环”原则，既在前端界面给予极致交互反馈，又在后端坚壁清野进行物理阻断。
 
+### 0. 权限上下文链路：如何获取、如何跨端传递与如何注入 UI
+
+在 Next.js App Router 架构下，服务端拥有全量租户 DB 与用户角色信息，而前端 UI 组件运行在浏览器客户端。为了确保极致性能并严守“RSC 严禁向客户端传递不可序列化的函数/类实例”的红线，系统构建了清晰的**四阶段注入与消费链路**：
+
+```text
+[阶段 1: 服务端获取与校验]
+ Next.js RSC (例如 apps/tenant/src/app/(dashboard)/customer/layout.tsx)
+   │
+   ▼ 调用 getTenantSubjectPermissions(Subject)
+   ├─ 读取 Request Headers 获取当前租户会话 (TenantContext)
+   ├─ CaslAbilityFactory 结合数据库角色权限编译出当前租户当前用户的完整 CASL Ability
+   └─ 纯数据快照化 (toPlainData): 生成纯 JSON 结构 { actions: ['read', 'create', ...], fieldPolicies: {...} }
+
+[阶段 2: 跨端序列化传输]
+ RSC 将纯 JSON 权限快照作为 props 传入 Client 边界组件
+ (例如 <CustomerAbilityBoundary permissions={{ customer, category, tag, ... }}>)
+
+[阶段 3: 客户端上下文重建与双层 Provider 注入]
+ CustomerAbilityBoundary (Client Component)
+   │
+   ├─ createAbilityFromSnapshot(snapshots): 在浏览器端无损重建 CASL Ability 实例
+   ├─ <TenantAbilityProvider snapshots={...}> 注入 CASL 官方 Context (@casl/react)
+   └─ <UiAbilityProvider ability={ability}> 注入 @base/ui 抽象权限 Context (UiAbilityContext)
+
+[阶段 4: UI 组件按需消费与自动受控]
+ 方式 A (自动感应):
+   DataTable.Root 接收 subject="CustomerTag" 并挂载 DataTableContext
+   内部的 <DataTableActionButton action="create"> 与 <DataTableRowActions>
+   自动通过 useDataTableContext() 取到 subject，通过 useUiAbility() 取到 ability
+   自动计算 ability.can(action, subject)，无权时物理隐藏或置灰，业务层零胶水代码！
+
+ 方式 B (手动/灵活读取):
+   自定义页面/非 DataTable 页面 (例如 CategoryTagView.tsx):
+   调用 useAbility() 拿到 CASL 实例，手动执行 can(action, subject) 精准控制自定义按钮。
+   或者向 DataTable 显式传递 ability={customAbility} 手动覆盖上下文。
+```
+
+#### (1) 服务端权限纯数据获取 (`apps/tenant/src/kernel/permissions.ts`)
+
+服务端 RSC 通过 `getTenantSubjectPermissions` 获取当前用户的权限快照：
+
+```typescript
+export async function getTenantSubjectPermissions(
+  subject: string,
+): Promise<TenantSubjectPermissions> {
+  const reqHeaders = await headers();
+  const runtime = getServerAuthRuntime();
+  const tenantCtx = await getCurrentTenantContext(reqHeaders);
+  const factory = new CaslAbilityFactory(
+    runtime.tenantContextRepository,
+    globalTenantCatalog,
+  );
+  const ability = await factory.createForTenant(tenantCtx);
+
+  // 严格遵循 Fail-Closed：仅提取契约中声明且当前用户真正拥有的动作列表
+  const declaredActions = globalTenantCatalog.getDeclaredActions(subject);
+  const allowedActions = declaredActions.filter((act) =>
+    ability.can(act as never, subject as never),
+  );
+  const fieldPolicies = await factory.resolveFieldPoliciesForSubject(
+    tenantCtx,
+    subject,
+  );
+
+  // 经 toPlainData 转换为纯 JSON 扁平数据，杜绝 Date/Class/Function 跨端序列化报错
+  return toPlainData({ actions: allowedActions, fieldPolicies });
+}
+```
+
+#### (2) 领域 Layout 一次性装配与注入 (`apps/tenant/src/app/(dashboard)/customer/layout.tsx`)
+
+业务大区 Layout 是 Server Component，一次性并行拉取该大区内各 Subject 的权限快照：
+
+```typescript
+export default async function CustomerLayout({ children }: { children: React.ReactNode }) {
+  const [customer, store, quote, category, tag] = await Promise.all([
+    getTenantSubjectPermissions(CustomerSubject),
+    getTenantSubjectPermissions(CustomerStoreSubject),
+    getTenantSubjectPermissions(CustomerQuoteSubject),
+    getTenantSubjectPermissions(CustomerCategorySubject),
+    getTenantSubjectPermissions(CustomerTagSubject),
+  ]);
+
+  return (
+    <CustomerAbilityBoundary permissions={{ customer, store, quote, category, tag }}>
+      {children}
+    </CustomerAbilityBoundary>
+  );
+}
+```
+
+#### (3) 客户端 Ability 重建与双层 Provider 广播 (`packages/domains/customer-center/.../CustomerAbilityBoundary.tsx`)
+
+`CustomerAbilityBoundary` 接收到纯 JSON 快照后，将其转化为浏览器端的 CASL Ability，并同时通过两个 Provider 向下广播：
+
+1. **`TenantAbilityProvider`**（基于 `@casl/react`）：供业务自定义组件通过 `useAbility()` 或 `useSubjectCan()` 读取；
+2. **`UiAbilityProvider`**（基于 `@base/ui` 的 `UiAbilityContext`）：为通用 UI 复合套件（如 DataTable、DataTableRowActions）提供解耦的纯接口能力（`UiAbilityLike { can(action, subject, field): boolean }`）。
+
+```typescript
+export function CustomerAbilityBoundary({ permissions, children }: CustomerAbilityBoundaryProps) {
+  const snapshots = React.useMemo(() => buildCustomerAbilitySnapshots(permissions), [permissions]);
+  const ability = React.useMemo(() => createAbilityFromSnapshot(snapshots), [snapshots]);
+
+  return (
+    <TenantAbilityProvider snapshots={snapshots}>
+      <UiAbilityProvider ability={ability}>{children}</UiAbilityProvider>
+    </TenantAbilityProvider>
+  );
+}
+```
+
+---
+
 ### 1. 前端按钮显隐与交互控制
 
 - **前端效果体现**：

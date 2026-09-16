@@ -122,6 +122,13 @@ const checks = [
     ],
   },
   {
+    label: "受控门禁",
+    cmd: nodePath,
+    args: [
+      path.join(WORKSPACE_ROOT, "scripts/check/check-ui-permission-guards.mjs"),
+    ],
+  },
+  {
     label: "门禁单测",
     cmd: nodePath,
     args: [
@@ -129,6 +136,10 @@ const checks = [
       path.join(WORKSPACE_ROOT, "scripts/check/check-redlines.test.mjs"),
       path.join(WORKSPACE_ROOT, "scripts/check/check-vertical-slices.test.mjs"),
       path.join(WORKSPACE_ROOT, "scripts/check/check-entity-baseline.test.mjs"),
+      path.join(
+        WORKSPACE_ROOT,
+        "scripts/check/check-ui-permission-guards.test.mjs",
+      ),
     ],
   },
 ];

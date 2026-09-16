@@ -53,6 +53,8 @@ import {
   transferRolesAction,
 } from "../actions";
 import { flattenTree, MasterDataStatus } from "@base/shared";
+import { useAbility } from "@base/authorization";
+import { EmployeeSubject } from "../employee.contract";
 
 export interface EmployeeViewProps {
   readonly initialEmployees: readonly EmployeeItem[];
@@ -76,6 +78,9 @@ export function EmployeeView({
   positions,
   availableRoles,
 }: EmployeeViewProps) {
+  const ability = useAbility();
+  const canUpdate = ability.can("update", EmployeeSubject);
+  const canCreate = ability.can("create", EmployeeSubject);
   const [employees, setEmployees] =
     useState<readonly EmployeeItem[]>(initialEmployees);
 
@@ -560,13 +565,27 @@ export function EmployeeView({
                   <Table className="w-full text-xs">
                     <TableHeader className="bg-muted/50 font-medium">
                       <TableRow className="border-b border-border">
-                        <TableHead className="px-5 py-3 text-xs font-semibold text-muted-foreground">员工姓名与账号</TableHead>
-                        <TableHead className="px-4 py-3 text-xs font-semibold text-muted-foreground">工号</TableHead>
-                        <TableHead className="px-4 py-3 text-xs font-semibold text-muted-foreground">所属部门</TableHead>
-                        <TableHead className="px-4 py-3 text-xs font-semibold text-muted-foreground">承担岗位</TableHead>
-                        <TableHead className="px-4 py-3 text-xs font-semibold text-muted-foreground">系统角色</TableHead>
-                        <TableHead className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">状态</TableHead>
-                        <TableHead className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground">人事与权限操作</TableHead>
+                        <TableHead className="px-5 py-3 text-xs font-semibold text-muted-foreground">
+                          员工姓名与账号
+                        </TableHead>
+                        <TableHead className="px-4 py-3 text-xs font-semibold text-muted-foreground">
+                          工号
+                        </TableHead>
+                        <TableHead className="px-4 py-3 text-xs font-semibold text-muted-foreground">
+                          所属部门
+                        </TableHead>
+                        <TableHead className="px-4 py-3 text-xs font-semibold text-muted-foreground">
+                          承担岗位
+                        </TableHead>
+                        <TableHead className="px-4 py-3 text-xs font-semibold text-muted-foreground">
+                          系统角色
+                        </TableHead>
+                        <TableHead className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">
+                          状态
+                        </TableHead>
+                        <TableHead className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground">
+                          人事与权限操作
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-border/60">
@@ -607,12 +626,16 @@ export function EmployeeView({
                             </TableCell>
                             <TableCell className="px-4 py-3.5 text-foreground">
                               {emp.departmentName || (
-                                <span className="text-muted-foreground">未分配</span>
+                                <span className="text-muted-foreground">
+                                  未分配
+                                </span>
                               )}
                             </TableCell>
                             <TableCell className="px-4 py-3.5 text-foreground">
                               {emp.positionName || (
-                                <span className="text-muted-foreground">未指定</span>
+                                <span className="text-muted-foreground">
+                                  未指定
+                                </span>
                               )}
                             </TableCell>
                             <TableCell className="px-4 py-3.5">
@@ -1154,7 +1177,9 @@ export function EmployeeView({
             : "停用后将立即阻断其访问当前企业，但不会封禁全局用户。"
         }
         confirmText={`确认${suspendTarget?.status === "SUSPENDED" ? "恢复" : "停用"}`}
-        variant={suspendTarget?.status === "SUSPENDED" ? "default" : "destructive"}
+        variant={
+          suspendTarget?.status === "SUSPENDED" ? "default" : "destructive"
+        }
         onConfirm={async () => {
           if (suspendTarget) {
             confirmToggleSuspend(suspendTarget);

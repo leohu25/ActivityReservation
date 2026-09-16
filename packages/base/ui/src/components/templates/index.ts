@@ -11,3 +11,4 @@ export * from "./DataTable";
 export * from "./DashboardShell";
 export * from "./PageShell";
 export * from "./MasterDetailShell";
+export * from "./DataTree";

@@ -2,21 +2,23 @@
 
 现代化多租户 SaaS 基础设施的共享 UI 资产库。本模块保持**设计与技术完全中立**，不与特定业务或单一行业视觉绑定，作为各垂直切片与平台的统一界面基础设施。
 
-代码架构严格遵循清晰、零冗余、高内聚的三层拓扑体系：
+代码架构严格遵循清晰、零冗余、高内聚的 **Atomic Design 三层递进拓扑体系（原子 Atoms -> 分子 Molecules -> 模板 Templates）**：
 
 ```text
 packages/ui/src/
 ├── components/
-│   ├── shadcn/                     # Layer 1: 基础原子层 (底层原语，通过 CLI 维护，保持纯粹)
+│   ├── shadcn/                     # Layer 1: 基础原子层 (Atoms / 底层原语，无权限逻辑，纯粹 UI 基石)
 │   │   └── button, input, dialog, popover, table, command, select, card...
-│   ├── composite/                  # Layer 2: 复合零件层 (通用交互功能封装，无业务页面状态)
-│   │   ├── table/                  # 表格积木 (DetailTable, Pagination, Toolbar, FilterBar...)
-│   │   ├── form/                   # 表单积木 (FormFields, Combobox, TagMultiSelect, Layout...)
-│   │   ├── auth/                   # 权限控件 (AuthorizedField, AuthGuard...)
-│   │   └── tree/                   # 树状导航 (HierarchyTree, DirectoryTreeFilter...)
-│   └── templates/                  # Layer 3: 场景模板层 (业务开箱即用整套组合，驱动全系统交互)
-│       ├── DataTable.tsx           # 全功能数据列表工作台模板 (搜索、高级筛选、分页、列配置)
-│       ├── FormModal.tsx           # 全功能表单弹窗模板 (三态切换、Zod 强校验、内置可选 DetailTable)
+│   ├── composite/                  # Layer 2: 分子受控层 (Molecules / 注入 CASL 抽象权限、防误删、Zod等中立能力)
+│   │   ├── auth/                   # 权限动作分子 (ActionButton, ActionGroup, AuthGuard, AuthorizedField...)
+│   │   ├── table/                  # 表格分子 (DataTableRowActions, DetailTable, Toolbar, FilterBar...)
+│   │   ├── form/                   # 表单分子 (FormFields, Combobox, TagMultiSelect, Layout...)
+│   │   └── tree/                   # 树状分子 (HierarchyTree, DirectoryTreeFilter...)
+│   └── templates/                  # Layer 3: 业务模板层 (Templates / 完整业务容器，负责布局编排与协议闭环)
+│       ├── DataTable.tsx           # 全功能数据列表工作台模板 (搜索、高级筛选、分页、列配置、Action 权限接管)
+│       ├── FormModal.tsx           # 全功能表单弹窗模板 (三态切换、Zod 强校验、字段三态动态豁免、内置明细表)
+│       ├── HierarchyWorkspace.tsx  # 多级树形维护工作台模板 (层级树、同级上下移排序、Action Schema 受控动作)
+│       ├── MasterDetailShell.tsx   # 企业级主从 (Master-Detail) 联动布局骨架
 │       ├── PageShell.tsx           # 非列表标准页面容器 (统一页头、描述、快捷操作与反馈横幅)
 │       └── DashboardShell.tsx      # 应用级后台主框架外壳 (侧边栏布局与自适应滚动)
 ```
@@ -25,15 +27,20 @@ packages/ui/src/
 
 ## 核心设计与使用原则
 
-1. **复杂场景优先使用标准模板**：
-   - 数据列表与 CRUD 工作台统一使用 `DataTable`（或 `DataTable.Workspace`）；
+1. **层层递进原则 (Atomic Design)**：
+   - **原子层 (Atoms)**：纯粹的 UI 渲染原语，不包含任何权限逻辑；
+   - **分子层 (Molecules)**：组合原子原语并注入中立规则（如权限判定、二次确认），自由定制页面**必须使用分子级受控组件（如 `ActionButton` / `ActionGroup`）**，严禁使用裸原子组件进行写操作；
+   - **模板层 (Templates)**：完整业务工作区，通过 Action Schema 或契约声明自动闭环权限与交互。
+2. **复杂场景优先使用标准模板**：
+   - 扁平数据列表与 CRUD 工作台统一使用 `DataTable`；
+   - 多级分类、组织架构等层级数据维护统一使用 `HierarchyWorkspace`；
    - 数据录入、信息修改及详情查看弹窗统一使用 `FormModal`；
-   - 避免业务层手写重复的 Dialog 遮罩拼装、原生表格布局或样板表单逻辑。
-2. **底层原子组件保持纯粹中立**：
+   - 避免在业务切片内手写重复的 Dialog 遮罩拼装、原生表格布局或样板表单逻辑。
+3. **底层原子组件保持纯粹中立**：
    - `shadcn/` 原子组件作为基石零件，不掺杂任何业务假定，能复用尽量复用；
    - 视觉主题由 CSS 语义变量与 Design System 外部注入，组件库内部不硬编码定制样式。
-3. **零冗余、单一事实源**：
-   - 同一类交互在组件库内有且仅有一套标准实现，杜绝同质化套壳组件；
+4. **零冗余、单一事实源 (SSoT)**：
+   - 权限判定仅依赖抽象的 `UiAbilityLike` 接口（`can(action, subject)`），与具体 CASL 库解耦；
    - 外部调用统一从 `@base/ui` 顶级入口扁平导入。
 
 ---
@@ -61,7 +68,7 @@ const columns: ColumnDef<UserItem>[] = [
   searchField="name"
   searchPlaceholder="输入姓名搜索..."
   onCreate={() => setModalOpen(true)}
-/>
+/>;
 ```
 
 ---
@@ -101,7 +108,7 @@ const fields: FormFieldSchema[] = [
   onSubmit={async (values) => {
     await saveItem(values);
   }}
-/>
+/>;
 ```
 
 #### B. 单据录入与详情场景 (开启内置明细表)

@@ -52,10 +52,10 @@ export function BomItemRatioTable({
   onUpdateOutput,
 }: BomItemRatioTableProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* 投入物料 */}
-      <div className="border border-border/80 rounded-md p-3 bg-muted/10 space-y-2">
-        <div className="flex items-center justify-between">
+      <div className="border border-border/80 rounded-lg p-3 bg-muted/10 space-y-2.5">
+        <div className="flex items-center justify-between pb-1 border-b border-border/50">
           <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
             <span className="size-2 rounded-full bg-blue-500" />
             投入物料 / 原料配比
@@ -64,26 +64,26 @@ export function BomItemRatioTable({
             type="button"
             variant="outline"
             size="sm"
-            className="h-6 text-[11px] px-2"
+            className="h-7 text-xs px-2.5"
             onClick={() => onAddInput(stepId)}
           >
-            <Plus className="size-3 mr-1" />
+            <Plus className="size-3.5 mr-1" />
             添加投入
           </Button>
         </div>
 
         {inputs.length === 0 ? (
-          <div className="text-[11px] text-muted-foreground text-center py-4 border border-dashed rounded">
-            暂无投入物料，请点击上方添加
+          <div className="text-xs text-muted-foreground text-center py-6 border border-dashed rounded-lg bg-card/40">
+            暂无投入物料，请点击右上角添加
           </div>
         ) : (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {inputs.map((inp) => (
               <div
                 key={inp.id}
-                className="flex items-center gap-2 bg-card p-1.5 rounded border border-border/60 text-xs"
+                className="flex items-center gap-2 bg-card p-2 rounded-lg border border-border/70 shadow-xs"
               >
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-[130px]">
                   <Select
                     value={inp.itemCode}
                     onValueChange={(val) => {
@@ -101,10 +101,10 @@ export function BomItemRatioTable({
                       }
                     }}
                   >
-                    <SelectTrigger className="h-7 text-xs">
+                    <SelectTrigger className="h-8 text-xs font-medium">
                       <SelectValue placeholder="选择物料" />
                     </SelectTrigger>
-                    <SelectContent className="max-h-[220px]">
+                    <SelectContent className="max-h-[240px]">
                       {items.map((it) => (
                         <SelectItem
                           key={it.itemCode}
@@ -118,7 +118,7 @@ export function BomItemRatioTable({
                   </Select>
                 </div>
 
-                <div className="w-20">
+                <div className="w-24 shrink-0">
                   <Input
                     type="number"
                     min="0.001"
@@ -132,22 +132,22 @@ export function BomItemRatioTable({
                         parseFloat(e.target.value) || 0,
                       )
                     }
-                    className="h-7 text-xs text-right font-mono"
+                    className="h-8 text-xs text-right font-mono"
                   />
                 </div>
 
-                <div className="w-12 text-[11px] text-muted-foreground font-mono text-center">
+                <div className="w-12 shrink-0 text-xs text-muted-foreground font-mono text-center">
                   {inp.uom}
                 </div>
 
-                <div className="w-20">
+                <div className="w-24 shrink-0">
                   <Select
                     value={inp.materialRole}
                     onValueChange={(val) =>
                       onUpdateInput(stepId, inp.id, "materialRole", val)
                     }
                   >
-                    <SelectTrigger className="h-7 text-[10px]">
+                    <SelectTrigger className="h-8 text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -168,10 +168,10 @@ export function BomItemRatioTable({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="size-6 text-muted-foreground hover:text-destructive"
+                  className="size-8 shrink-0 text-muted-foreground hover:text-destructive"
                   onClick={() => onRemoveInput(stepId, inp.id)}
                 >
-                  <Trash2 className="size-3" />
+                  <Trash2 className="size-3.5" />
                 </Button>
               </div>
             ))}
@@ -180,8 +180,8 @@ export function BomItemRatioTable({
       </div>
 
       {/* 产生物料 */}
-      <div className="border border-border/80 rounded-md p-3 bg-muted/10 space-y-2">
-        <div className="flex items-center justify-between">
+      <div className="border border-border/80 rounded-lg p-3 bg-muted/10 space-y-2.5">
+        <div className="flex items-center justify-between pb-1 border-b border-border/50">
           <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
             <span className="size-2 rounded-full bg-emerald-500" />
             产生物料 / 副产品 / 废料
@@ -190,26 +190,26 @@ export function BomItemRatioTable({
             type="button"
             variant="outline"
             size="sm"
-            className="h-6 text-[11px] px-2"
+            className="h-7 text-xs px-2.5"
             onClick={() => onAddOutput(stepId)}
           >
-            <Plus className="size-3 mr-1" />
+            <Plus className="size-3.5 mr-1" />
             添加产出
           </Button>
         </div>
 
         {outputs.length === 0 ? (
-          <div className="text-[11px] text-muted-foreground text-center py-4 border border-dashed rounded">
-            暂无产出项，请点击上方添加
+          <div className="text-xs text-muted-foreground text-center py-6 border border-dashed rounded-lg bg-card/40">
+            暂无产出项，请点击右上角添加
           </div>
         ) : (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {outputs.map((out) => (
               <div
                 key={out.id}
-                className="flex items-center gap-2 bg-card p-1.5 rounded border border-border/60 text-xs"
+                className="flex items-center gap-2 bg-card p-2 rounded-lg border border-border/70 shadow-xs"
               >
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-[130px]">
                   <Select
                     value={out.itemCode}
                     onValueChange={(val) => {
@@ -227,10 +227,10 @@ export function BomItemRatioTable({
                       }
                     }}
                   >
-                    <SelectTrigger className="h-7 text-xs">
+                    <SelectTrigger className="h-8 text-xs font-medium">
                       <SelectValue placeholder="选择物料" />
                     </SelectTrigger>
-                    <SelectContent className="max-h-[220px]">
+                    <SelectContent className="max-h-[240px]">
                       {items.map((it) => (
                         <SelectItem
                           key={it.itemCode}
@@ -244,7 +244,7 @@ export function BomItemRatioTable({
                   </Select>
                 </div>
 
-                <div className="w-20">
+                <div className="w-24 shrink-0">
                   <Input
                     type="number"
                     min="0.001"
@@ -258,22 +258,22 @@ export function BomItemRatioTable({
                         parseFloat(e.target.value) || 0,
                       )
                     }
-                    className="h-7 text-xs text-right font-mono"
+                    className="h-8 text-xs text-right font-mono"
                   />
                 </div>
 
-                <div className="w-12 text-[11px] text-muted-foreground font-mono text-center">
+                <div className="w-12 shrink-0 text-xs text-muted-foreground font-mono text-center">
                   {out.uom}
                 </div>
 
-                <div className="w-20">
+                <div className="w-24 shrink-0">
                   <Select
                     value={out.outputType}
                     onValueChange={(val) =>
                       onUpdateOutput(stepId, out.id, "outputType", val)
                     }
                   >
-                    <SelectTrigger className="h-7 text-[10px]">
+                    <SelectTrigger className="h-8 text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -284,7 +284,7 @@ export function BomItemRatioTable({
                         副产品
                       </SelectItem>
                       <SelectItem value="SCRAP" className="text-xs">
-                        废料
+                        边角废料
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -294,10 +294,10 @@ export function BomItemRatioTable({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="size-6 text-muted-foreground hover:text-destructive"
+                  className="size-8 shrink-0 text-muted-foreground hover:text-destructive"
                   onClick={() => onRemoveOutput(stepId, out.id)}
                 >
-                  <Trash2 className="size-3" />
+                  <Trash2 className="size-3.5" />
                 </Button>
               </div>
             ))}

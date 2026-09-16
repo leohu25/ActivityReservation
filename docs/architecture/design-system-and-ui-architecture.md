@@ -41,12 +41,12 @@
 │    • 通过 apps/<app>/src/app/globals.css 纯外挂 @import 注入 :root/.dark │
 ├────────────────────────────────────────────────────────────────────────┤
 │ 3. 技术中立组件库 (Neutral UI Infrastructure: @base/ui)                  │
-│    • packages/ui/src/components/shadcn/* (纯正官方原语，仅消费语义Tokens) │
-│    • packages/ui/src/components/composite/* (DataTable, FormFields等) │
-│    • packages/ui/src/components/templates/* (CrudFormModal, Workspace)  │
+│    • Layer 1: shadcn/* (纯正官方原子原语，仅消费语义 Tokens)               │
+│    • Layer 2: composite/* (受控分子组件：ActionButton, AuthGuard, Table) │
+│    • Layer 3: templates/* (开箱即用模板：DataTable, DataTree, FormModal) │
 ├────────────────────────────────────────────────────────────────────────┤
 │ 4. 垂直业务切片层 (Vertical Slice Features)                             │
-│    • packages/features/* (纯业务交互与模型，100% 消费 @base/ui 语义化组件)│
+│    • packages/domains/* (纯业务切片，100% 消费 @base/ui 语义化组件)       │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 

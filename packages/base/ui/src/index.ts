@@ -11,9 +11,9 @@ export {
 } from "./components/composite/auth";
 /** @deprecated 请使用 useUiAbility 替代，以保持 UI 库与鉴权引擎解耦 */
 export { useUiAbility as useOptionalAbility } from "./components/composite/auth";
-// 1 shadcn 层
+// 1. 原子层 (Atoms / shadcn 官方原语)
 export * from "./components/shadcn";
-// 2 组件层
+// 2. 分子层 (Molecules / Composite 受控中立组件)
 export * from "./components/feedback";
 export * from "./components/composite/table";
 export * from "./components/composite/tree";
@@ -28,7 +28,7 @@ export {
   type NavSection,
   type SidebarProps,
 } from "./components/layout/Sidebar";
-// 3 模板层
+// 3. 模板层 (Templates / 完整业务容器)
 export * from "./components/templates";
 export * from "./components/ThemeProvider";
 export * from "./components/ThemeToggle";
