@@ -154,43 +154,89 @@ const safeInfrastructurePatterns = [
 const changedFiles = getChangedFiles();
 const violations = [];
 
-// 自动向当前激活特性的 scope.md 追加白名单条目（格式对齐 ADR-006）
-function appendToScope(newRelPath) {
+// 获取当前 Git 提交 Hash（作为批次编号）
+function getBatchGitHash() {
   try {
-    let gitHash = "historical";
-    try {
-      gitHash = execSync(`git log -n 1 --pretty=format:%h -- "${newRelPath}"`, {
+    return (
+      execSync("git rev-parse --short HEAD", {
         cwd: workspaceRoot,
         encoding: "utf-8",
         stdio: ["pipe", "pipe", "ignore"],
-      }).trim();
-    } catch {}
-
-    const comment = ` # 1 file @ ${gitHash || "head"}，联动修改自动登记`;
-    const entry = `- \`${newRelPath}\`${comment}\n`;
-
-    const current = fs.readFileSync(scopeFile, "utf-8");
-    if (current.includes(`- \`${newRelPath}\``)) return;
-
-    // 智能插入：优先追加到 ### 联动修改 或 ### 修改白名单，兜底追加到末尾
-    if (current.includes("### 联动修改")) {
-      const parts = current.split("### 联动修改");
-      const updated = parts[0] + "### 联动修改\n" + entry + parts[1];
-      fs.writeFileSync(scopeFile, updated, "utf-8");
-    } else if (current.includes("## 修改白名单")) {
-      const parts = current.split("## 修改白名单");
-      const updated = parts[0] + "## 修改白名单\n" + entry + parts[1];
-      fs.writeFileSync(scopeFile, updated, "utf-8");
-    } else {
-      fs.appendFileSync(scopeFile, "\n" + entry, "utf-8");
-    }
-  } catch (err) {
-    console.warn(
-      `[Boundary] 自动登记 scope.md 失败 (${newRelPath}):`,
-      err.message,
+      }).trim() || "head"
     );
+  } catch {
+    return "head";
   }
 }
+
+// 自动向当前激活特性的 scope.md 追加白名单条目
+// 同一批次在前面统一写一次提交编号和自动登记标题，列表行内不再重复描述和编号
+function appendToScope(newRelPaths) {
+  const files = (
+    Array.isArray(newRelPaths) ? newRelPaths : [newRelPaths]
+  ).filter(Boolean);
+  if (files.length === 0) return;
+
+  try {
+    let current = fs.readFileSync(scopeFile, "utf-8");
+    const toAdd = files.filter((p) => !current.includes(`- \`${p}\``));
+    if (toAdd.length === 0) return;
+
+    const gitHash = getBatchGitHash();
+    const sectionHeader = `### @ ${gitHash} 联动修改自动登记`;
+    const entries = toAdd.map((p) => `- \`${p}\``).join("\n") + "\n";
+
+    if (current.includes(sectionHeader)) {
+      // 当前批次标题已存在，直接追加到该节下方
+      const idx = current.indexOf(sectionHeader);
+      const after = current.slice(idx + sectionHeader.length);
+      const nextHeading = after.search(/\n#{2,3}\s/);
+      if (nextHeading !== -1) {
+        const insertPos = idx + sectionHeader.length + nextHeading;
+        current =
+          current.slice(0, insertPos) +
+          "\n" +
+          entries +
+          current.slice(insertPos);
+      } else {
+        current = current.trimEnd() + "\n" + entries;
+      }
+    } else {
+      // 尚无当前批次标题，新建小节并写入
+      const block = `\n${sectionHeader}\n\n${entries}`;
+
+      if (current.includes("### 联动修改")) {
+        const parts = current.split("### 联动修改");
+        current = parts[0] + "### 联动修改\n" + block + parts[1];
+      } else if (current.includes("## 附带修改与前置联动")) {
+        const parts = current.split("## 附带修改与前置联动");
+        current = parts[0] + "## 附带修改与前置联动\n" + block + parts[1];
+      } else if (current.includes("## 修改白名单")) {
+        const idx = current.indexOf("## 修改白名单");
+        const after = current.slice(idx + "## 修改白名单".length);
+        const nextH2 = after.search(/\n##\s/);
+        if (nextH2 !== -1) {
+          const insertPos = idx + "## 修改白名单".length + nextH2;
+          current =
+            current.slice(0, insertPos) +
+            "\n" +
+            block +
+            current.slice(insertPos);
+        } else {
+          current = current.trimEnd() + "\n" + block;
+        }
+      } else {
+        current = current.trimEnd() + "\n" + block;
+      }
+    }
+
+    fs.writeFileSync(scopeFile, current, "utf-8");
+  } catch (err) {
+    process.stderr.write(`[Boundary] 自动登记 scope.md 失败: ${err.message}\n`);
+  }
+}
+
+const autoRecordCandidates = [];
 
 for (const file of changedFiles) {
   // 检查是否命中安全基础设施
@@ -217,7 +263,7 @@ for (const file of changedFiles) {
       file.endsWith("prisma.config.ts");
 
     if (isUnderFeatureDir || isAutoRecordCandidate) {
-      appendToScope(file);
+      autoRecordCandidates.push(file);
       whitelist.push(file); // 本次检查立即生效
       process.stdout.write(
         `  \x1b[36mℹ [Boundary Auto-Recorded]\x1b[0m 自动登记联动变动至 scope.md: ${file}\n`,
@@ -229,14 +275,18 @@ for (const file of changedFiles) {
   }
 }
 
+if (autoRecordCandidates.length > 0) {
+  appendToScope(autoRecordCandidates);
+}
+
 if (violations.length > 0) {
   process.stdout.write(
     `\x1b[33m⚠ [Sandbox Boundary Warning] 检测到扩展改动文件，已自动记录至 scope.md\x1b[0m\n` +
       `当前激活特性: \x1b[33m${activeFeature}\x1b[0m\n` +
       `白名单配置文件: \x1b[34m.harness/features/${activeFeature}/scope.md\x1b[0m\n\n`,
   );
+  appendToScope(violations);
   for (const v of violations) {
-    appendToScope(v);
     process.stdout.write(`    \x1b[33m• [Auto-Recorded] ${v}\x1b[0m\n`);
   }
 }
