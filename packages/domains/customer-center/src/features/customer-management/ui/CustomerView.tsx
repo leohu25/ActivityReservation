@@ -24,6 +24,7 @@ import {
   CustomerAction,
   CustomerField,
   customerPageContract,
+  customerSearchContract,
   MasterDataStatus,
 } from "../contract";
 import type {
@@ -121,9 +122,7 @@ export function CustomerView({
           ),
         );
         toast.success(
-          nextStatus === MasterDataStatus.ACTIVE
-            ? "客户已启用"
-            : "客户已停用",
+          nextStatus === MasterDataStatus.ACTIVE ? "客户已启用" : "客户已停用",
         );
         router?.refresh();
       } else {
@@ -336,7 +335,13 @@ export function CustomerView({
         onPageChange={(nextPage, nextPageSize) => {
           setPage(nextPage);
           setPageSize(nextPageSize);
-          navigateList({ page: nextPage, pageSize: nextPageSize });
+          navigateList({
+            page: nextPage,
+            pageSize: nextPageSize,
+            keyword: keyword.trim() || undefined,
+            category: selectedCat || undefined,
+            status: selectedStatus || undefined,
+          });
         }}
         onRefresh={() => router?.refresh()}
         onExport={handleExport}
@@ -344,8 +349,8 @@ export function CustomerView({
           setModalState({ open: true, mode: "create", record: null })
         }
         contentProps={{ selectable: true }}
+        searchContract={customerSearchContract}
         keywordValue={keyword}
-        keywordPlaceholder="单号 / 名称 / 联系人"
         onKeywordChange={setKeyword}
         statusOptions={[
           { value: MasterDataStatus.ACTIVE, label: "正常" },
@@ -355,7 +360,13 @@ export function CustomerView({
         onStatusChange={(v) => {
           setSelectedStatus(v);
           setPage(1);
-          navigateList({ page: 1, status: v });
+          navigateList({
+            page: 1,
+            pageSize,
+            keyword: keyword.trim() || undefined,
+            category: selectedCat || undefined,
+            status: v || undefined,
+          });
         }}
         filterExtra={
           <DataTableInputGroup label="客户分类" className="w-48">
@@ -365,7 +376,13 @@ export function CustomerView({
                 const value = next === "ALL" ? "" : next;
                 setSelectedCat(value);
                 setPage(1);
-                navigateList({ page: 1, category: value });
+                navigateList({
+                  page: 1,
+                  pageSize,
+                  keyword: keyword.trim() || undefined,
+                  category: value || undefined,
+                  status: selectedStatus || undefined,
+                });
               }}
             >
               <SelectTrigger className="h-10 border-0 bg-transparent shadow-none focus:ring-0">
@@ -386,14 +403,26 @@ export function CustomerView({
         }
         onSearch={() => {
           setPage(1);
-          navigateList({ page: 1 });
+          navigateList({
+            page: 1,
+            pageSize,
+            keyword: keyword.trim() || undefined,
+            category: selectedCat || undefined,
+            status: selectedStatus || undefined,
+          });
         }}
         onReset={() => {
           setKeyword("");
           setSelectedCat("");
           setSelectedStatus("");
           setPage(1);
-          navigateList({ page: 1, keyword: "", category: "", status: "" });
+          navigateList({
+            page: 1,
+            pageSize,
+            keyword: undefined,
+            category: undefined,
+            status: undefined,
+          });
         }}
         onAdvancedFilter={() => {
           toast.info("高级筛选面板可按业务扩展");

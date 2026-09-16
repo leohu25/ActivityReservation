@@ -108,6 +108,18 @@ export function checkUiFile(_filePath, content) {
     }
   }
 
+  // 规则 C：检测 DataTable onSearch 遗漏 keyword 的恶性 Bug 模式
+  // 匹配特征：有 keyword/keywordValue 状态或配置，但在 onSearch 内仅调用了 navigateList({ page: ... }) 且漏掉了 keyword
+  const searchLeakRegex =
+    /onSearch\s*=\s*{\s*\(\s*\)\s*=>\s*{\s*setPage\(1\);\s*navigateList\(\s*{\s*page:\s*1\s*}\s*\);\s*}\s*}/;
+  if (searchLeakRegex.test(content)) {
+    issues.push({
+      type: "DATA_TABLE_SEARCH_KEYWORD_LEAK",
+      message:
+        "检测到 DataTable 的 onSearch 中仅调用了 navigateList({ page: 1 })，严重漏传 keyword 参数，导致搜索点击无响应！请传入 keyword 参数或改用 useDataTableState 统一状态流水线。",
+    });
+  }
+
   return issues;
 }
 

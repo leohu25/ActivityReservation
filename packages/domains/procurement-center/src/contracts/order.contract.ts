@@ -5,6 +5,7 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
+import type { SearchContract } from "@base/shared";
 
 // 1. 实体与资源标识 (CASL Subject & Resource) (SSoT)
 export const ProcurementOrderSubject = "PurchaseOrder";
@@ -99,8 +100,7 @@ export const ProcurementAction = {
 } as const;
 
 export type ProcurementAction =
-  | (typeof StandardAction)[keyof typeof StandardAction]
-  | "audit";
+  (typeof StandardAction)[keyof typeof StandardAction] | "audit";
 
 // 4. 页面级纯数据权限契约 (SSoT)
 export const procurementOrderPageContract: FeaturePagePermissionDescriptor = {
@@ -136,6 +136,14 @@ export const procurementOrderPageContract: FeaturePagePermissionDescriptor = {
     label: f.label,
     sensitive: f.isSensitive,
   })),
+} as const;
+
+/** 采购订单搜索契约 (SSoT) */
+export const procurementOrderSearchContract: SearchContract = {
+  direct: [
+    { field: "orderNo", label: "采购单号" },
+    { field: "supplierName", label: "供应商" },
+  ],
 } as const;
 
 // 兼容别名导出

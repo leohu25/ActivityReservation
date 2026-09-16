@@ -10,7 +10,6 @@ import {
   FieldPolicy,
   StandardAction,
   parsePersistedPermissions,
-  serializeRolePermissions,
   type RolePermissionPayload,
   type TenantFeatureManifest,
 } from "@base/authorization";
@@ -18,6 +17,9 @@ import type {
   CreateRoleInput,
   SaveRolePermissionsInput,
   TenantRoleItem,
+  UpdateRoleInput,
+  ListRolesQueryInput,
+  PaginatedRolesResult,
 } from "./types";
 
 export { BUILT_IN_ROLES, type BuiltInRole, isBuiltInRole };
@@ -213,11 +215,25 @@ export class TenantRoleService {
       if (!handledRoles.has(record.role)) {
         handledRoles.add(record.role);
         const parsed = parsePersistedPermissions(record);
+        let metaName: string | undefined;
+        let metaDesc: string | undefined;
+        try {
+          const rawObj = JSON.parse(record.permission);
+          if (rawObj && typeof rawObj === "object") {
+            if (typeof rawObj._metaName === "string")
+              metaName = rawObj._metaName;
+            if (typeof rawObj._metaDescription === "string")
+              metaDesc = rawObj._metaDescription;
+          }
+        } catch {
+          // 忽略非法 JSON
+        }
+
         items.push({
           id: record.id,
           role: record.role,
-          name: record.role,
-          description: "自定义业务角色",
+          name: metaName || record.role,
+          description: metaDesc || "自定义业务角色",
           isSystem: false,
           permissions: {
             statement: parsed.statement,
@@ -248,7 +264,32 @@ export class TenantRoleService {
       );
     }
 
-    const permissionJson = serializeRolePermissions(input.payload);
+    // 保留既有的 _metaName 与 _metaDescription
+    let metaName: string | undefined;
+    let metaDesc: string | undefined;
+    const existingRecords = await this.repository.findOrganizationRoles(
+      input.organizationId,
+      [input.role],
+    );
+    if (existingRecords[0]) {
+      try {
+        const raw = JSON.parse(existingRecords[0].permission);
+        if (raw && typeof raw === "object") {
+          if (typeof raw._metaName === "string") metaName = raw._metaName;
+          if (typeof raw._metaDescription === "string")
+            metaDesc = raw._metaDescription;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    const permissionJson = JSON.stringify({
+      ...input.payload,
+      ...(metaName ? { _metaName: metaName } : {}),
+      ...(metaDesc ? { _metaDescription: metaDesc } : {}),
+    });
+
     const updated = await this.repository.upsertOrganizationRole({
       organizationId: input.organizationId,
       role: input.role,
@@ -259,7 +300,8 @@ export class TenantRoleService {
     return {
       id: updated.id,
       role: updated.role,
-      name: updated.role,
+      name: metaName || updated.role,
+      description: metaDesc || undefined,
       isSystem: isBuiltInRole(updated.role),
       permissions: {
         statement: parsed.statement,
@@ -293,10 +335,16 @@ export class TenantRoleService {
       fieldPolicies: [],
     };
 
+    const permissionJson = JSON.stringify({
+      ...initialPayload,
+      _metaName: input.roleName?.trim() || roleCode,
+      _metaDescription: input.description?.trim() || undefined,
+    });
+
     const created = await this.repository.upsertOrganizationRole({
       organizationId: input.organizationId,
       role: roleCode,
-      permission: serializeRolePermissions(initialPayload),
+      permission: permissionJson,
     });
 
     return {
@@ -307,6 +355,89 @@ export class TenantRoleService {
       isSystem: false,
       permissions: initialPayload,
       updatedAt: created.updatedAt,
+    };
+  }
+
+  /** 编辑更新自定义角色的显示名称与描述 */
+  async updateRole(input: UpdateRoleInput): Promise<TenantRoleItem> {
+    const roleCode = input.roleCode.trim();
+    if (!roleCode) {
+      throw new TenantRoleServiceError("角色编码不能为空");
+    }
+    if (isBuiltInRole(roleCode)) {
+      throw new TenantRoleServiceError(
+        `系统核心内置角色不支持在此修改名称: ${roleCode}`,
+      );
+    }
+
+    const records = await this.repository.findOrganizationRoles(
+      input.organizationId,
+      [roleCode],
+    );
+    const existing = records[0];
+    if (!existing) {
+      throw new TenantRoleServiceError(`未找到待更新的角色: ${roleCode}`);
+    }
+
+    const parsed = parsePersistedPermissions(existing);
+    const payload: RolePermissionPayload = {
+      statement: parsed.statement,
+      dataScopes: parsed.dataScopes,
+      fieldPolicies: parsed.fieldPolicies,
+    };
+
+    const permissionJson = JSON.stringify({
+      ...payload,
+      _metaName: input.roleName?.trim() || roleCode,
+      _metaDescription: input.description?.trim() || undefined,
+    });
+
+    const updated = await this.repository.upsertOrganizationRole({
+      organizationId: input.organizationId,
+      role: roleCode,
+      permission: permissionJson,
+    });
+
+    return {
+      id: updated.id,
+      role: updated.role,
+      name: input.roleName?.trim() || updated.role,
+      description: input.description?.trim() || undefined,
+      isSystem: false,
+      permissions: payload,
+      updatedAt: updated.updatedAt,
+    };
+  }
+
+  /** 服务端分页与关键字检索租户角色列表 */
+  async searchTenantRoles(
+    organizationId: string,
+    params?: ListRolesQueryInput,
+  ): Promise<PaginatedRolesResult> {
+    const allRoles = await this.listTenantRoles(organizationId);
+
+    const page = Math.max(1, params?.page ?? 1);
+    const pageSize = Math.max(1, params?.pageSize ?? 10);
+    const q = params?.keyword?.trim().toLowerCase();
+
+    const filtered = q
+      ? allRoles.filter(
+          (r) =>
+            r.role.toLowerCase().includes(q) ||
+            r.name.toLowerCase().includes(q) ||
+            (r.description && r.description.toLowerCase().includes(q)),
+        )
+      : allRoles;
+
+    const total = filtered.length;
+    const start = (page - 1) * pageSize;
+    const items = filtered.slice(start, start + pageSize);
+
+    return {
+      items,
+      total,
+      page,
+      pageSize,
     };
   }
 

@@ -2,6 +2,7 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
+import type { SearchContract } from "@base/shared";
 
 /** 分类与标签同页展示，但分别对应真实 Prisma 实体与独立权限。 */
 export const CustomerCategorySubject = "CustomerCategory";
@@ -60,6 +61,15 @@ export const customerTagPageContract: FeaturePagePermissionDescriptor = {
     label: field,
     sensitive: false,
   })),
+} as const;
+
+/** 业务标签搜索契约 (SSoT) */
+export const customerTagSearchContract: SearchContract = {
+  direct: [
+    { field: "tagCode", label: "标签编码" },
+    { field: "tagName", label: "标签名称" },
+    { field: "description", label: "说明" },
+  ],
 } as const;
 
 /** @deprecated Use independent category/tag descriptors. */

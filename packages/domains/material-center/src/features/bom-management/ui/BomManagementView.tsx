@@ -12,7 +12,7 @@ import {
 } from "@base/ui";
 import { Layers, ExternalLink } from "lucide-react";
 import type { BomListItem, ProcessTemplateItem } from "../types";
-import { BomHeaderSubject } from "../contract";
+import { BomHeaderSubject, bomHeaderSearchContract } from "../contract";
 import { publishBomAction, createNewBomVersionAction } from "../actions";
 import { BomFlowEditorModal } from "./BomFlowEditorModal";
 import { MasterDataStatus } from "@base/shared";
@@ -282,8 +282,8 @@ export function BomManagementView({
         description="系统全部工艺 BOM 方案及工序投入产出结构表"
         onCreate={() => setShowModal(true)}
         createText="编排工艺 BOM"
+        searchContract={bomHeaderSearchContract}
         keywordValue={keyword}
-        keywordPlaceholder="按 BOM 编码、名称或产出商品搜索..."
         onKeywordChange={setKeyword}
         onSearch={() => {}}
         onReset={() => setKeyword("")}

@@ -393,6 +393,81 @@ for (const pkg of workspacePackages) {
   }
 }
 
+// 规则 9：严禁对外键编码字段 (如 customerCode / storeCode) 在关联单据中直接使用 contains 进行偷懒模糊匹配
+// 检查逻辑：如果在除 Customer 主数据与 Store 主数据自身之外的单据服务中，
+// 出现了外键编码字段使用 contains 匹配，则判定为偷懒漏穿透！
+const forbiddenForeignKeyContainsRegex =
+  /(customerCode|storeCode|deptId|supplierCode)\s*:\s*{\s*contains\s*:/;
+
+for (const pkg of workspacePackages) {
+  if (pkg.name?.startsWith(featurePackagePrefix)) {
+    const pkgFiles = allFiles.filter((f) => {
+      const rel = path.relative(workspaceRoot, f).replace(/\\/g, "/");
+      // 豁免主数据自身服务（如 customer-management/service.ts 本身是 Customer 主表，可以搜 customerCode）
+      const isSelfMaster =
+        rel.includes("customer-management") || rel.includes("store-management");
+      return (
+        rel.startsWith(pkg.relDir + "/") &&
+        rel.endsWith("service.ts") &&
+        !isSelfMaster
+      );
+    });
+
+    for (const filePath of pkgFiles) {
+      const relPath = path
+        .relative(workspaceRoot, filePath)
+        .replace(/\\/g, "/");
+      const content = fs.readFileSync(filePath, "utf-8");
+
+      let match;
+      if ((match = forbiddenForeignKeyContainsRegex.exec(content)) !== null) {
+        violations.push({
+          file: relPath,
+          line: 1,
+          rule: `严禁对外键编码 [${match[1]}] 直接执行 contains 文本检索！前端用户展示与搜索的是业务名称，必须在契约中定义 SearchContract 并使用 executeSearchContract 进行参数化穿透关联查询。`,
+          code: match[0],
+        });
+      }
+    }
+  }
+}
+
+// 规则 10：严禁在业务视图组件中硬编码 keywordPlaceholder
+// 必须在契约中定义 searchContract 并直接传递给 <DataTable searchContract={...} />，由框架自动推导生成占位符
+const forbiddenHardcodedPlaceholderRegex =
+  /<DataTable\b[^>]*\bkeywordPlaceholder\s*=\s*["'][^"']+["']/g;
+
+for (const pkg of workspacePackages) {
+  if (
+    pkg.name?.startsWith(featurePackagePrefix) ||
+    pkg.name === "@base/feature-tenant-admin"
+  ) {
+    const pkgFiles = allFiles.filter((f) => {
+      const rel = path.relative(workspaceRoot, f).replace(/\\/g, "/");
+      return rel.startsWith(pkg.relDir + "/") && rel.endsWith(".tsx");
+    });
+
+    for (const filePath of pkgFiles) {
+      const relPath = path
+        .relative(workspaceRoot, filePath)
+        .replace(/\\/g, "/");
+      const content = fs.readFileSync(filePath, "utf-8");
+
+      let match;
+      while (
+        (match = forbiddenHardcodedPlaceholderRegex.exec(content)) !== null
+      ) {
+        violations.push({
+          file: relPath,
+          line: 1,
+          rule: "严禁手写硬编码 keywordPlaceholder！所有业务列表必须在对应 contract.ts 中定义 searchContract 并通过 <DataTable searchContract={...} /> 自动绑定占位符与后端检索逻辑。",
+          code: match[0],
+        });
+      }
+    }
+  }
+}
+
 // 规则 8：严禁在仓库内引入平台相关 Bash 脚本 (*.sh)，所有脚本必须使用跨平台 Node.js (*.mjs)
 function scanForbiddenShellScripts(dir, shellFiles = []) {
   if (!fs.existsSync(dir)) return shellFiles;

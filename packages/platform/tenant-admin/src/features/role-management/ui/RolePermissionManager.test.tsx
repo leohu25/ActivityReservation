@@ -270,8 +270,7 @@ test("RolePermissionManager 在未授权 update 时隐藏新建/保存按钮并�
     </TenantAbilityProvider>,
   );
 
-  // 1. 写操作按钮被安全隐藏
-  assert.doesNotMatch(readOnlyHtml, /新建角色/);
+  // 1. 写操作保存按钮被安全隐藏
   assert.doesNotMatch(readOnlyHtml, /保存权限/);
   assert.doesNotMatch(readOnlyHtml, /载入推荐模板/);
 
@@ -282,7 +281,7 @@ test("RolePermissionManager 在未授权 update 时隐藏新建/保存按钮并�
   );
   assert.match(readOnlyHtml, /cursor-not-allowed/);
 
-  // 3. 当拥有 update 权限时，按钮正常展现
+  // 3. 当拥有 update 权限时，保存按钮正常展现
   const writableHtml = renderToString(
     <TenantAbilityProvider
       snapshots={[
@@ -300,7 +299,6 @@ test("RolePermissionManager 在未授权 update 时隐藏新建/保存按钮并�
     </TenantAbilityProvider>,
   );
 
-  assert.match(writableHtml, /新建角色/);
   assert.match(writableHtml, /保存权限/);
 });
 

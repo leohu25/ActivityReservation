@@ -3,6 +3,7 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
+import type { SearchContract } from "@base/shared";
 
 /** 门店档案实体与资源标识 (SSoT) */
 export const CustomerStoreSubject = "CustomerStore";
@@ -92,4 +93,25 @@ export const storePageContract: FeaturePagePermissionDescriptor = {
     label: f.label,
     sensitive: f.isSensitive,
   })),
+} as const;
+
+/**
+ * 门店档案搜索契约 (SSoT)
+ * 支持门店自身编码/名称/地址，以及通过客户外键穿透反查客户名称
+ */
+export const storeSearchContract: SearchContract = {
+  direct: [
+    { field: "storeCode", label: "门店编码" },
+    { field: "storeName", label: "门店名称" },
+    { field: "address", label: "地址" },
+    { field: "contactPerson", label: "联系人" },
+  ],
+  relations: [
+    {
+      targetField: "customerCode",
+      relationModel: "customer",
+      searchField: "customerName",
+      label: "所属客户",
+    },
+  ],
 } as const;

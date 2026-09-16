@@ -1,12 +1,11 @@
 import "server-only";
 
-export { listTenantRolesQuery } from "./queries";
+export { listTenantRolesQuery, searchTenantRolesQuery } from "./queries";
 export {
+  listRolesAction,
   saveRolePermissionsAction,
   createRoleAction,
+  updateRoleAction,
   deleteRoleAction,
 } from "./actions";
-export {
-  TenantRoleService,
-  deriveBuiltInRoleDefaults,
-} from "./service";
+export { TenantRoleService, deriveBuiltInRoleDefaults } from "./service";

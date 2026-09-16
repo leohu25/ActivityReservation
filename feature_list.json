@@ -349,6 +349,15 @@
       "status": "completed",
       "owner": "implementer",
       "evidence": "1. @base/ui 确立并落地三层架构规范（shadcn/ 原子 -> composite/ 复合 -> templates/ 模板），新增并导出 MasterDetailShell 标准主从骨架与单测；2. 解构 packages/platform/tenant-admin 中的 NavigationConfigView.tsx（由 1284 行降至 720 行，解耦抽离 menu-tree-helpers、MenuTreeNodeItem、NodePropertyForm 与 AvailablePagePool）；3. 解构 packages/domains/material-center 中的 BomFlowEditorModal.tsx（由 1206 行降至 786 行，抽离 bom-editor-types、BomItemRatioTable 与 BomYieldCalculator）；4. 全仓 pnpm check/test/lint 16/16 全部绿灯，node scripts/verify.mjs 9 项门禁全绿通过。"
+    },
+    {
+      "id": "ui-datatable-pipeline-and-dx-governance",
+      "name": "【UI流水线与DX治理】DataTable搜索/分页状态管道封装与业务切片搜索Bug治理",
+      "description": "彻底根除列表搜索失效、占位符错乱与按钮黑盒失踪等问题：1. 封装通用 useDataTableState Hook，将分页、关键字防抖/回车、URL同步与重置操作全自动化，消除业务组件漏传 keyword 的手写胶水代码；2. 在 DataTable 关键字输入框上原生打通 Enter 键触发 onSearch，移除硬编码的 '单号' 占位符并支持智能语义推导；3. 全面重构治理 CustomerView, StoreView, QuoteView 等业务切片，修复漏传 keyword 导致的搜索瘫痪，修正语义占位符；4. 优化 DataTableActionButton 与 DataTableRowActions 的权限防御机制，支持调试态/非静默下友好置灰并带 Tooltip 说明权限缺失原因；5. 补齐对应单元测试与沙盒交接文档。",
+      "dependencies": ["arch-ui-three-tier-and-monolith-breakdown"],
+      "status": "in_progress",
+      "owner": "coordinator",
+      "evidence": "制定 Feature 与沙盒上下文，推进状态流水线封装与全仓切片治理。"
     }
   ]
 }

@@ -16,6 +16,7 @@ import {
   ProcurementOrderField,
   ProcurementOrderStatus,
   procurementOrderPageContract,
+  procurementOrderSearchContract,
 } from "../contracts";
 import type {
   ProcurementOrderItem,
@@ -259,8 +260,8 @@ export function ProcurementOrderCenter({
         showRefresh={true}
         showCreate={false}
         onRefresh={() => router?.refresh()}
+        searchContract={procurementOrderSearchContract}
         keywordValue={keyword}
-        keywordPlaceholder="单号 / 供应商"
         onKeywordChange={setKeyword}
         statusOptions={[
           { value: ProcurementOrderStatus.PENDING, label: "待审核" },

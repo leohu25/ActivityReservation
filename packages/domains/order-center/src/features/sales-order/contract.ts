@@ -3,6 +3,7 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
+import type { SearchContract } from "@base/shared";
 
 // 1. 实体与资源标识 (CASL Subject & Resource)
 export const SalesOrderSubject = "SalesOrder";
@@ -120,4 +121,26 @@ export const salesOrderPageContract: FeaturePagePermissionDescriptor = {
     label: f.label,
     sensitive: f.isSensitive,
   })),
+} as const;
+
+// 6. 搜索契约 SSoT：声明直接字段与穿透关联反查，驱动前端输入框占位符与后端参数化检索
+export const salesOrderSearchContract: SearchContract = {
+  direct: [
+    { field: "orderId", label: "订单号" },
+    { field: "salesPerson", label: "销售员" },
+  ],
+  relations: [
+    {
+      targetField: "customerCode",
+      relationModel: "customer",
+      searchField: "customerName",
+      label: "客户",
+    },
+    {
+      targetField: "storeCode",
+      relationModel: "customerStore",
+      searchField: "storeName",
+      label: "门店",
+    },
+  ],
 } as const;

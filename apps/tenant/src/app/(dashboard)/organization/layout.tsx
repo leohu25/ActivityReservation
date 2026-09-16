@@ -9,10 +9,11 @@ export default async function OrganizationLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [employee, department, position] = await Promise.all([
+  const [employee, department, position, role] = await Promise.all([
     getTenantSubjectPermissions("Employee"),
     getTenantSubjectPermissions("Department"),
     getTenantSubjectPermissions("Position"),
+    getTenantSubjectPermissions("Role"),
   ]);
 
   return (
@@ -22,6 +23,7 @@ export default async function OrganizationLayout({
           Employee: employee,
           Department: department,
           Position: position,
+          Role: role,
         },
       }}
     >

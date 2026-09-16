@@ -3,6 +3,7 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
+import type { SearchContract } from "@base/shared";
 
 export { StandardAction };
 
@@ -109,4 +110,14 @@ export const itemMasterPageContract: FeaturePagePermissionDescriptor = {
     label: f.label,
     sensitive: f.isSensitive,
   })),
+} as const;
+
+/** 商品档案搜索契约 (SSoT) */
+export const itemMasterSearchContract: SearchContract = {
+  direct: [
+    { field: "itemCode", label: "商品编码" },
+    { field: "itemName", label: "商品名称" },
+    { field: "pinyinCode", label: "拼音码" },
+    { field: "barcode", label: "条码" },
+  ],
 } as const;

@@ -21,7 +21,11 @@ import { exportContractCsv, MasterDataStatus } from "@base/shared";
 import { useAbility } from "@base/authorization";
 import { updateStoreStatusAction, deleteStoreAction } from "../actions";
 import { StoreFormModal } from "./StoreFormModal";
-import { CustomerStoreField, storePageContract } from "../contract";
+import {
+  CustomerStoreField,
+  storePageContract,
+  storeSearchContract,
+} from "../contract";
 import type { StoreListItem } from "../types";
 import type { CustomerListItem } from "../../customer-management/types";
 
@@ -107,9 +111,7 @@ export function StoreView({
           ),
         );
         toast.success(
-          nextStatus === MasterDataStatus.ACTIVE
-            ? "门店已启用"
-            : "门店已停用",
+          nextStatus === MasterDataStatus.ACTIVE ? "门店已启用" : "门店已停用",
         );
         router?.refresh();
       } else {
@@ -316,7 +318,13 @@ export function StoreView({
         onPageChange={(nextPage, nextPageSize) => {
           setPage(nextPage);
           setPageSize(nextPageSize);
-          navigateList({ page: nextPage, pageSize: nextPageSize });
+          navigateList({
+            page: nextPage,
+            pageSize: nextPageSize,
+            keyword: keyword.trim() || undefined,
+            customer: selectedCust || undefined,
+            status: selectedStatus || undefined,
+          });
         }}
         onRefresh={() => router?.refresh()}
         onExport={handleExport}
@@ -324,8 +332,8 @@ export function StoreView({
           setModalState({ open: true, mode: "create", record: null })
         }
         contentProps={{ selectable: true }}
+        searchContract={storeSearchContract}
         keywordValue={keyword}
-        keywordPlaceholder="名称 / 编码 / 地址"
         onKeywordChange={setKeyword}
         statusOptions={[
           { value: MasterDataStatus.ACTIVE, label: "正常" },
@@ -335,7 +343,13 @@ export function StoreView({
         onStatusChange={(v) => {
           setSelectedStatus(v);
           setPage(1);
-          navigateList({ page: 1, status: v });
+          navigateList({
+            page: 1,
+            pageSize,
+            keyword: keyword.trim() || undefined,
+            customer: selectedCust || undefined,
+            status: v || undefined,
+          });
         }}
         filterExtra={
           <DataTableInputGroup label="所属客户" className="w-52">
@@ -345,7 +359,13 @@ export function StoreView({
                 const next = v === "ALL" ? "" : v;
                 setSelectedCust(next);
                 setPage(1);
-                navigateList({ page: 1, customer: next });
+                navigateList({
+                  page: 1,
+                  pageSize,
+                  keyword: keyword.trim() || undefined,
+                  customer: next || undefined,
+                  status: selectedStatus || undefined,
+                });
               }}
             >
               <SelectTrigger className="border-0 shadow-none">
@@ -367,14 +387,26 @@ export function StoreView({
         }
         onSearch={() => {
           setPage(1);
-          navigateList({ page: 1 });
+          navigateList({
+            page: 1,
+            pageSize,
+            keyword: keyword.trim() || undefined,
+            customer: selectedCust || undefined,
+            status: selectedStatus || undefined,
+          });
         }}
         onReset={() => {
           setKeyword("");
           setSelectedCust("");
           setSelectedStatus("");
           setPage(1);
-          navigateList({ page: 1, keyword: "", customer: "", status: "" });
+          navigateList({
+            page: 1,
+            pageSize,
+            keyword: undefined,
+            customer: undefined,
+            status: undefined,
+          });
         }}
       >
         <StoreFormModal

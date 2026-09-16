@@ -19,8 +19,8 @@ export function DashboardShell({
   sidebar,
 }: DashboardShellProps) {
   return (
-    <SidebarProvider className="min-h-svh">
-      <div className="flex min-h-svh w-full flex-col bg-background font-sans text-foreground">
+    <SidebarProvider className="h-svh overflow-hidden">
+      <div className="flex h-svh w-full flex-col bg-background font-sans text-foreground overflow-hidden">
         {header}
         <div className="flex min-h-0 flex-1 overflow-hidden">
           {sidebar}

@@ -9,6 +9,7 @@ import {
   addSalesOrderFee,
   auditSalesOrderFee,
   deleteSalesOrder,
+  listSalesOrders,
 } from "./service";
 import type { TenantPrismaClient } from "@base/db-tenant";
 
@@ -471,5 +472,97 @@ describe("SalesOrderService 领域服务与业务规则测试", () => {
     await markSalesOrderReadyToShip(client, order.orderId, { userId: "WH-1" });
 
     assert.strictEqual(store.salesOrder[0].fulfillmentStatus, "READY_TO_SHIP");
+  });
+
+  it("listSalesOrders: 搜索客户名称 (如 '李四') 能够安全穿透反查并返回订单", async () => {
+    const { client, store } = createMockPrismaClient();
+
+    // 录入客户李四及订单
+    store.customer.push({
+      customerCode: "CUST-LISI",
+      customerName: "李四餐馆",
+      status: "ACTIVE",
+      customerTags: "普通",
+      defaultTaxRate: 9.0,
+    });
+    store.customerStore.push({
+      storeCode: "STOR-LISI",
+      customerCode: "CUST-LISI",
+      storeName: "李四总店",
+      regionCode: "REG-NORTH",
+      status: "ACTIVE",
+      defaultRoute: "ROUTE-B",
+      defaultDriver: "DRIVER-2",
+      deliveryPeriod: "NOON",
+    });
+
+    await createSalesOrder(
+      client,
+      {
+        customerCode: "CUST-LISI",
+        storeCode: "STOR-LISI",
+        orderDate: "2026-03-12",
+        deliveryDate: "2026-03-13",
+        items: [
+          {
+            itemCode: "ITEM-POTATO",
+            itemName: "土豆丝",
+            salesUnit: "kg",
+            orderQty: 5,
+          },
+        ],
+      },
+      { userId: "USER-1" },
+    );
+
+    // Mock count 和 findMany 条件过滤
+    (client.salesOrder as any).count = async ({ where }: any) => {
+      // 验证 where.OR 是否包含了 customerCode 或 storeCode 的 in 条件
+      const orList = where?.OR ?? [];
+      const hasCustomerCodeIn = orList.some((cond: any) =>
+        cond.customerCode?.in?.includes("CUST-LISI"),
+      );
+      return hasCustomerCodeIn ? 1 : 0;
+    };
+    (client.salesOrder as any).findMany = async ({ where }: any) => {
+      const orList = where?.OR ?? [];
+      const hasCustomerCodeIn = orList.some((cond: any) =>
+        cond.customerCode?.in?.includes("CUST-LISI"),
+      );
+      if (hasCustomerCodeIn) {
+        return store.salesOrder
+          .filter((o) => o.customerCode === "CUST-LISI")
+          .map((o) => ({ ...o, _count: { items: 1 } }));
+      }
+      return [];
+    };
+
+    // 针对客户名称反查
+    (client.customer as any).findMany = async ({ where }: any) => {
+      const contains = where?.customerName?.contains;
+      if (contains) {
+        return store.customer.filter((c) => c.customerName.includes(contains));
+      }
+      return store.customer;
+    };
+    (client.customerStore as any).findMany = async ({ where }: any) => {
+      const contains = where?.storeName?.contains;
+      if (contains) {
+        return store.customerStore.filter((s) =>
+          s.storeName.includes(contains),
+        );
+      }
+      return store.customerStore;
+    };
+
+    // 搜索关键字 "李四"
+    const result = await listSalesOrders(client, {
+      page: 1,
+      pageSize: 10,
+      keyword: "李四",
+    });
+
+    assert.strictEqual(result.total, 1);
+    assert.strictEqual(result.items[0].customerName, "李四餐馆");
   });
 });

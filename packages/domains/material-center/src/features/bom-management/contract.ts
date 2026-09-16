@@ -3,6 +3,7 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
+import type { SearchContract } from "@base/shared";
 
 export { StandardAction };
 
@@ -145,4 +146,13 @@ export const bomManagementPageContract: FeaturePagePermissionDescriptor = {
     label: f.label,
     sensitive: f.isSensitive,
   })),
+} as const;
+
+/** 工艺BOM搜索契约 (SSoT) */
+export const bomHeaderSearchContract: SearchContract = {
+  direct: [
+    { field: "bomCode", label: "BOM编码" },
+    { field: "bomName", label: "BOM名称" },
+    { field: "outputItemCode", label: "产出物料" },
+  ],
 } as const;

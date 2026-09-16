@@ -12,8 +12,9 @@ import {
 import { useDataTableContext } from "./DataTableContext";
 import { cn } from "../../../lib/utils";
 
-export interface DataTableActionButtonProps
-  extends React.ComponentProps<typeof Button> {
+export interface DataTableActionButtonProps extends React.ComponentProps<
+  typeof Button
+> {
   /** 权限动作名称 (如 "create", "export", "delete", "audit") */
   action?: string;
   /** 权限 Subject 覆盖，若未传入则默认使用 DataTable.Root 上配置的 subject */
@@ -61,6 +62,11 @@ export function DataTableActionButton({
     return ability.can(action, targetSubject, field);
   }, [action, ability, targetSubject, field]);
 
+  const defaultTooltip =
+    targetSubject && action
+      ? `当前角色缺少 [${action}:${targetSubject}] 权限`
+      : unauthorizedTooltip;
+
   if (!hasPermission) {
     if (unauthorizedStrategy === "hidden") {
       return null;
@@ -80,9 +86,7 @@ export function DataTableActionButton({
               </Button>
             </span>
           </TooltipTrigger>
-          <TooltipContent className="text-xs">
-            {unauthorizedTooltip}
-          </TooltipContent>
+          <TooltipContent className="text-xs">{defaultTooltip}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     );

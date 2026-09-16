@@ -72,8 +72,7 @@ export function QuoteView({
   const handleUpdateStatus = async (
     quoteId: string,
     status:
-      | typeof CustomerQuoteStatus.ACTIVE
-      | typeof CustomerQuoteStatus.VOIDED,
+      typeof CustomerQuoteStatus.ACTIVE | typeof CustomerQuoteStatus.VOIDED,
   ) => {
     try {
       const res = await updateQuoteStatusAction(quoteId, status);
@@ -273,10 +272,7 @@ export function QuoteView({
                     label: "审核生效",
                     action: CustomerQuoteAction.AUDIT,
                     onClick: () =>
-                      handleUpdateStatus(
-                        q.quoteId,
-                        CustomerQuoteStatus.ACTIVE,
-                      ),
+                      handleUpdateStatus(q.quoteId, CustomerQuoteStatus.ACTIVE),
                     confirm: {
                       title: `确认审核并生效报价单 "${q.displayName || q.quoteId}"？`,
                       description: "生效后对应维度的商品下单将立即执行此价格。",
@@ -293,10 +289,7 @@ export function QuoteView({
                     action: StandardAction.UPDATE,
                     variant: "destructive" as const,
                     onClick: () =>
-                      handleUpdateStatus(
-                        q.quoteId,
-                        CustomerQuoteStatus.VOIDED,
-                      ),
+                      handleUpdateStatus(q.quoteId, CustomerQuoteStatus.VOIDED),
                     confirm: {
                       title: `确认作废报价单 "${q.displayName || q.quoteId}"？`,
                       description: "作废后客户下单将不再匹配此单据定价。",
@@ -327,7 +320,11 @@ export function QuoteView({
         onPageChange={(nextPage, nextPageSize) => {
           setPage(nextPage);
           setPageSize(nextPageSize);
-          navigateList({ page: nextPage, pageSize: nextPageSize });
+          navigateList({
+            page: nextPage,
+            pageSize: nextPageSize,
+            status: statusFilter || undefined,
+          });
         }}
         onRefresh={() => router?.refresh()}
         onExport={handleExport}
@@ -347,16 +344,20 @@ export function QuoteView({
           const next = v === "ALL" ? "" : v;
           setStatusFilter(next);
           setPage(1);
-          navigateList({ page: 1, status: next });
+          navigateList({ page: 1, pageSize, status: next || undefined });
         }}
         onSearch={() => {
           setPage(1);
-          navigateList({ page: 1 });
+          navigateList({
+            page: 1,
+            pageSize,
+            status: statusFilter || undefined,
+          });
         }}
         onReset={() => {
           setStatusFilter("");
           setPage(1);
-          navigateList({ page: 1, status: "" });
+          navigateList({ page: 1, pageSize, status: undefined });
         }}
       />
 

@@ -52,3 +52,26 @@ export interface CreateRoleInput {
   readonly roleName?: string;
   readonly description?: string;
 }
+
+/** 更新自定义角色请求输入 */
+export interface UpdateRoleInput {
+  readonly organizationId: string;
+  readonly roleCode: string;
+  readonly roleName?: string;
+  readonly description?: string;
+}
+
+/** 分页与检索角色列表输入 */
+export interface ListRolesQueryInput {
+  readonly page?: number;
+  readonly pageSize?: number;
+  readonly keyword?: string;
+}
+
+/** 角色分页查询结果契约 */
+export interface PaginatedRolesResult {
+  readonly items: readonly TenantRoleItem[];
+  readonly total: number;
+  readonly page: number;
+  readonly pageSize: number;
+}

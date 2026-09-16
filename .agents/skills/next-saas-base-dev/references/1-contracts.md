@@ -236,3 +236,69 @@ assertCustomerAbility(
 ```
 
 两页都要「盘点」但权限互不通用 → 各自契约、**不同 Subject**；动作值可同名，但必须由所属领域动作对象引用。
+
+---
+
+## 模块 1.1：搜索契约体系 (SearchContract - 搜索防注入与关联穿透 SSoT)
+
+在复杂业务单据（如销售订单、采购单、出入库流水）中，数据库底层往往只存储外键编码（如 `customerCode` / `storeCode`），而业务用户在界面输入框搜索的是**关联对象的名称**（如客户名称“李四”、门店名称“总店”）。
+
+为杜绝前后端割裂、漏穿透、手写重复代码与 SQL 注入风险，框架推行 **SearchContract 搜索契约单一事实源**：
+
+```ts
+import type { SearchContract } from "@base/shared";
+
+// 在 contract.ts 中显式声明
+export const salesOrderSearchContract: SearchContract = {
+  // 1. 主表直接搜索字段
+  direct: [
+    { field: "orderId", label: "订单号" },
+    { field: "salesPerson", label: "销售员" },
+  ],
+  // 2. 跨表穿透关联反查配置
+  relations: [
+    {
+      targetField: "customerCode",
+      relationModel: "customer",
+      searchField: "customerName",
+      label: "客户",
+    },
+    {
+      targetField: "storeCode",
+      relationModel: "customerStore",
+      searchField: "storeName",
+      label: "门店",
+    },
+  ],
+} as const;
+```
+
+### 极简开箱即用三端闭环
+
+1. **前端输入框 (`@base/ui`)**：
+   无需手写 `keywordPlaceholder`，直接传入 `searchContract`，输入框自动推导生成精准的占位符（如 `输入 订单号 / 销售员 / 客户 / 门店...`），并原生支持 Enter 回车查询：
+
+   ```tsx
+   <DataTable {...table.bindProps} searchContract={salesOrderSearchContract} />
+   ```
+
+2. **后端查询服务 (`service.ts`)**：
+   无需手写反查代码，直接调用 `@base/shared` 导出的通用安全引擎 `executeSearchContract`：
+
+   ```ts
+   if (params.keyword) {
+     where.OR = await executeSearchContract(
+       client,
+       salesOrderSearchContract,
+       params.keyword,
+     );
+   }
+   ```
+
+   底层自动完成：
+   - 强类型防 SQL 注入、超长截断与不可见控制字符清洗；
+   - 自动并发反查关联外键，并加上 `take: 100` 熔断防护；
+   - 自动生成符合 Prisma 参数化 Prepared Statement 标准的 `OR` 条件。
+
+3. **门禁静态强拦截 (`scripts/check/check-redlines.mjs`)**：
+   严禁在单据 Service 中对外键编码直接使用 `contains` 文本检索；违反规则将在 `pre-commit` 门禁时物理级硬拦截！

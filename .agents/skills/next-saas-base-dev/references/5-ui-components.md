@@ -73,6 +73,47 @@ toast.warning("检测到该客户存在未结款项");
 
 > **权限来源（官方 CASL）**：切片 layout 已挂 `TenantAbilityProvider`；Workspace/Root **只传 `subject`**，禁止传 `permissions`/`ability`。完整范式见 `7-casl-ability-provider.md`。
 
+### 2.0 状态流水线与防漏传黄金法则 (`useDataTableState`)
+
+> ⚠️ **高频踩坑警示（搜索失效根因）**：
+> 过去很多业务页面手写 `onSearch={() => navigateList({ page: 1 })}`，**极其容易手抖漏传 `keyword` 参数**，导致用户点击查询或敲回车时没有任何反应！
+> 同时，直接写死的 `"单号 / 名称 / 关键字"` 占位符在客户档案、门店管理等非单据页面造成业务语义严重错乱。
+>
+> **官方统一规范**：所有 `DataTable` 列表组件**推荐使用 `useDataTableState` 接管状态管道**，自动搞定分页、关键字、URL 双向同步与重置；且关键字输入框**原生支持 Enter 回车自动触发查询**！
+
+```tsx
+import { DataTable, useDataTableState } from "@base/ui";
+
+export function CustomerView({
+  initialCustomers,
+  initialTotal,
+  initialPage,
+  initialPageSize,
+  initialKeyword,
+}: Props) {
+  // 一行代码统一接管受控状态与 URL 参数同步，物理杜绝漏传 keyword！
+  const table = useDataTableState({
+    initialPage,
+    initialPageSize,
+    initialTotal,
+    initialKeyword,
+  });
+
+  return (
+    <DataTable
+      {...table.bindProps} // 自动绑定 page, pageSize, total, keywordValue, onKeywordChange, onSearch, onReset, onPageChange, onRefresh
+      data={customers}
+      columns={columns}
+      rowKey={(c) => c.customerCode}
+      subject={customerPageContract.subject}
+      title="客户档案"
+      description="维护企业客户主数据、结算方式、授信与服务时间。"
+      keywordPlaceholder="输入客户编码 / 客户名称 / 联系人..."
+    />
+  );
+}
+```
+
 ### 2.1 一体化卡片容器原则
 
 **推荐整页模板（约定大于配置）**：`DataTable.Workspace` 默认带齐 Header + 刷新/导出/列设置/新增 + 关键字(+/状态)筛选 + 表格 + 分页，页面按需 `show*=false` 关闭：

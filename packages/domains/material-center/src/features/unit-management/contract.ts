@@ -3,6 +3,7 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
+import type { SearchContract } from "@base/shared";
 
 export { StandardAction };
 
@@ -139,4 +140,21 @@ export const unitConversionPageContract: FeaturePagePermissionDescriptor = {
     label: f.label,
     sensitive: f.isSensitive,
   })),
+} as const;
+
+/** 计量单位搜索契约 */
+export const unitOfMeasureSearchContract: SearchContract = {
+  direct: [
+    { field: "unitCode", label: "单位编码" },
+    { field: "unitName", label: "单位名称" },
+  ],
+} as const;
+
+/** 单位换算搜索契约 */
+export const unitConversionSearchContract: SearchContract = {
+  direct: [
+    { field: "itemCode", label: "物料编码" },
+    { field: "fromUnitName", label: "源单位" },
+    { field: "toUnitName", label: "目标单位" },
+  ],
 } as const;

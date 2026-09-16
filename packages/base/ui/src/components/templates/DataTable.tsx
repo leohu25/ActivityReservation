@@ -37,6 +37,7 @@ import {
 import type { ColumnDef } from "../composite/table/DataTableContext";
 import type { DataTableRootProps } from "../composite/table/DataTableRoot";
 import type { DataTableContentProps } from "../composite/table/DataTableContent";
+import { type SearchContract, generateSearchPlaceholder } from "@base/shared";
 
 export interface DataTableStatusOption {
   readonly value: string;
@@ -77,6 +78,8 @@ export interface DataTableProps<TData> extends Omit<
   /** 提供 options 则展示状态筛选；hideStatusFilter 可强制关闭 */
   statusOptions?: readonly DataTableStatusOption[];
   hideStatusFilter?: boolean;
+  /** 统一定义的搜索契约 (SSoT)；传入后将自动生成 keywordPlaceholder 并与后端检索规则强绑定 */
+  searchContract?: SearchContract<any> | null;
   keywordPlaceholder?: string;
   keywordValue?: string;
   statusValue?: string;
@@ -140,7 +143,8 @@ export function DataTable<TData>({
   showKeywordFilter = true,
   statusOptions,
   hideStatusFilter = false,
-  keywordPlaceholder = "单号 / 名称 / 关键字",
+  searchContract,
+  keywordPlaceholder,
   keywordValue,
   statusValue,
   onKeywordChange,
@@ -159,6 +163,10 @@ export function DataTable<TData>({
 }: DataTableProps<TData>) {
   const showStatusFilter =
     !hideStatusFilter && !!statusOptions && statusOptions.length > 0;
+
+  const resolvedPlaceholder =
+    keywordPlaceholder ??
+    generateSearchPlaceholder(searchContract, "输入关键字搜索...");
 
   return (
     <DataTableRoot<TData>
@@ -246,9 +254,15 @@ export function DataTable<TData>({
                   className="min-w-[280px] sm:w-80"
                 >
                   <Input
-                    placeholder={keywordPlaceholder}
+                    placeholder={resolvedPlaceholder}
                     value={keywordValue}
                     onChange={(e) => onKeywordChange?.(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        onSearch?.();
+                      }
+                    }}
                   />
                 </DataTableInputGroup>
               ) : null}

@@ -11,7 +11,12 @@ import {
 } from "@base/ui";
 import { FolderTree, Tag } from "lucide-react";
 import type { CategoryListItem, VarietyListItem } from "../types";
-import { ItemCategorySubject, ItemVarietySubject } from "../contract";
+import {
+  ItemCategorySubject,
+  ItemVarietySubject,
+  itemCategorySearchContract,
+  itemVarietySearchContract,
+} from "../contract";
 import { deleteCategoryAction, toggleVarietyStatusAction } from "../actions";
 import { MasterDataStatus } from "@base/shared";
 import { CategoryFormModal } from "./CategoryFormModal";
@@ -263,8 +268,8 @@ export function ClassificationView({
               setCatModal({ open: true, mode: "create", record: null })
             }
             createText="新增分类"
+            searchContract={itemCategorySearchContract}
             keywordValue={catKeyword}
-            keywordPlaceholder="按分类名称或编码搜索..."
             onKeywordChange={setCatKeyword}
             onSearch={() => {}}
             onReset={() => setCatKeyword("")}
@@ -284,8 +289,8 @@ export function ClassificationView({
               setVarModal({ open: true, mode: "create", record: null })
             }
             createText="新增品种"
+            searchContract={itemVarietySearchContract}
             keywordValue={varKeyword}
-            keywordPlaceholder="按品种名称、编码或描述搜索..."
             onKeywordChange={setVarKeyword}
             onSearch={() => {}}
             onReset={() => setVarKeyword("")}

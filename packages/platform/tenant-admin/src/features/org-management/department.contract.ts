@@ -3,6 +3,7 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
+import type { SearchContract } from "@base/shared";
 
 /** 部门实体与资源标识 (SSoT) */
 export const DepartmentSubject = "Department";
@@ -28,7 +29,11 @@ export const departmentConfigurableFields = [
   { field: DepartmentField.NAME, label: "部门名称", isSensitive: false },
   { field: DepartmentField.CODE, label: "部门编码", isSensitive: false },
   { field: DepartmentField.PARENT_ID, label: "上级部门", isSensitive: false },
-  { field: DepartmentField.LEADER_MEMBER_ID, label: "部门负责人", isSensitive: false },
+  {
+    field: DepartmentField.LEADER_MEMBER_ID,
+    label: "部门负责人",
+    isSensitive: false,
+  },
   { field: DepartmentField.SORT, label: "排序序号", isSensitive: false },
   { field: DepartmentField.STATUS, label: "部门状态", isSensitive: false },
 ] as const;
@@ -60,4 +65,13 @@ export const departmentPageContract: FeaturePagePermissionDescriptor = {
     label: f.label,
     sensitive: f.isSensitive,
   })),
+} as const;
+
+/** 部门搜索契约 (SSoT) */
+export const departmentSearchContract: SearchContract = {
+  direct: [
+    { field: "name", label: "部门名称" },
+    { field: "code", label: "部门编码" },
+    { field: "leaderName", label: "负责人" },
+  ],
 } as const;

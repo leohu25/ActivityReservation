@@ -2,14 +2,21 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
+import type { SearchContract } from "@base/shared";
 
-/** 角色权限管理实体与资源标识 (SSoT) */
+/** 角色管理 (组织架构下 CRUD) 实体与资源标识 (SSoT) */
+export const RoleSubject = "Role";
+export type RoleSubject = typeof RoleSubject;
+export const RoleResource = "organization.role";
+export type RoleResource = typeof RoleResource;
+
+/** 角色权限配置中心 (矩阵编排) 实体与资源标识 (SSoT) */
 export const RoleManagementSubject = "RoleManagement";
 export type RoleManagementSubject = typeof RoleManagementSubject;
 export const RoleManagementResource = "system.role_management";
 export type RoleManagementResource = typeof RoleManagementResource;
 
-/** 角色管理受控字段字典 */
+/** 角色受控字段字典 */
 export const RoleField = {
   ROLE: "role",
   NAME: "name",
@@ -20,7 +27,7 @@ export const RoleField = {
 
 export type RoleField = (typeof RoleField)[keyof typeof RoleField];
 
-/** 角色管理受控字段元数据定义 */
+/** 角色受控字段元数据定义 */
 export const roleConfigurableFields = [
   { field: RoleField.ROLE, label: "角色编码", isSensitive: false },
   { field: RoleField.NAME, label: "角色名称", isSensitive: false },
@@ -30,12 +37,42 @@ export const roleConfigurableFields = [
 ] as const;
 
 /**
- * 角色权限管理页面纯数据权限契约 (SSoT)
+ * 组织架构 - 角色管理页面纯数据权限契约 (SSoT)
+ */
+export const roleDefinitionPageContract: FeaturePagePermissionDescriptor = {
+  resource: RoleResource,
+  subject: RoleSubject,
+  label: "角色管理",
+  path: "/organization/roles",
+  actions: [
+    { action: StandardAction.READ, label: "查看角色" },
+    { action: StandardAction.CREATE, label: "新建角色" },
+    { action: StandardAction.UPDATE, label: "编辑角色" },
+    { action: StandardAction.DELETE, label: "删除角色" },
+  ],
+  configurableFields: roleConfigurableFields.map((f) => ({
+    field: f.field,
+    label: f.label,
+    sensitive: f.isSensitive,
+  })),
+} as const;
+
+/** 角色字典搜索契约 (SSoT) */
+export const roleSearchContract: SearchContract = {
+  direct: [
+    { field: "role", label: "角色编码" },
+    { field: "name", label: "角色名称" },
+    { field: "description", label: "职责描述" },
+  ],
+} as const;
+
+/**
+ * 权限管理 - 角色权限配置中心页面纯数据权限契约 (SSoT)
  */
 export const rolePageContract: FeaturePagePermissionDescriptor = {
   resource: RoleManagementResource,
   subject: RoleManagementSubject,
-  label: "角色权限管理",
+  label: "角色权限配置",
   path: "/settings/roles",
   actions: [
     { action: StandardAction.READ, label: "查看配置" },

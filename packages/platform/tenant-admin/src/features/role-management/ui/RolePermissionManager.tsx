@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useMemo } from "react";
+import Link from "next/link";
 import {
   Shield,
-  Plus,
-  Trash2,
   Save,
   CheckCircle2,
   AlertCircle,
@@ -18,6 +17,8 @@ import {
   FileText,
   Sparkles,
   Layers,
+  Search,
+  ExternalLink,
 } from "lucide-react";
 import {
   Card,
@@ -26,7 +27,7 @@ import {
   CardContent,
   Button,
   Badge,
-  ConfirmDialog,
+  Input,
   Table,
   TableHeader,
   TableBody,
@@ -45,8 +46,7 @@ import {
   type RolePermissionPayload,
 } from "@base/authorization";
 import type { TenantRoleItem } from "../types";
-import { CreateRoleModal } from "./CreateRoleModal";
-import { saveRolePermissionsAction, deleteRoleAction } from "../actions";
+import { saveRolePermissionsAction } from "../actions";
 import {
   DATA_SCOPE_SELECT_OPTIONS,
   type ModulePermissionDescriptor,
@@ -103,8 +103,19 @@ export function RolePermissionManager({
     Record<string, boolean>
   >({});
 
-  // 新增角色模态框状态
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  // 角色搜索关键字 (左侧快速检索)
+  const [roleSearchKeyword, setRoleSearchKeyword] = useState("");
+
+  const filteredRoles = useMemo(() => {
+    const q = roleSearchKeyword.trim().toLowerCase();
+    if (!q) return roles;
+    return roles.filter(
+      (r) =>
+        r.role.toLowerCase().includes(q) ||
+        r.name.toLowerCase().includes(q) ||
+        (r.description && r.description.toLowerCase().includes(q)),
+    );
+  }, [roles, roleSearchKeyword]);
 
   const selectedRole =
     roles.find((r) => r.role === selectedRoleCode) || roles[0];
@@ -401,30 +412,6 @@ export function RolePermissionManager({
     });
   };
 
-  // 9. 删除自定义角色
-  const [deleteRoleTarget, setDeleteRoleTarget] = useState<string | null>(null);
-
-  const confirmDeleteRole = (roleToDelete: string) => {
-    setNotification(null);
-    startTransition(async () => {
-      const res = await deleteRoleAction(roleToDelete);
-      if (res.success) {
-        setRoles((prev) => prev.filter((r) => r.role !== roleToDelete));
-        setSelectedRoleCode("admin");
-        setNotification({
-          type: "success",
-          message: `角色 [${roleToDelete}] 已成功删除`,
-        });
-      } else {
-        setNotification({
-          type: "error",
-          message: res.error || "删除失败",
-        });
-      }
-      setDeleteRoleTarget(null);
-    });
-  };
-
   // 辅助渲染模块图标
   const renderModuleIcon = (iconName: string) => {
     switch (iconName) {
@@ -452,25 +439,22 @@ export function RolePermissionManager({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">
-              角色与权限配置中心
+              角色权限配置中心
             </h1>
           </div>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            配置企业角色的功能操作权限、数据范围隔离与敏感字段保护策略。
+            细粒度编排企业角色的功能操作权限、数据范围隔离与敏感字段保护策略；角色的增删由组织架构下的角色管理统一维护。
           </p>
         </div>
 
-        {canUpdate && (
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => setShowCreateModal(true)}
-            className="shadow-xs"
-          >
-            <Plus className="size-3.5" />
-            <span>新建角色</span>
-          </Button>
-        )}
+        <Link
+          href="/organization/roles"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+        >
+          <Users className="size-3.5 text-blue-600" />
+          <span>管理角色字典</span>
+          <ExternalLink className="size-3 text-muted-foreground" />
+        </Link>
       </div>
 
       {/* 提示通知反馈栏 */}
@@ -492,78 +476,84 @@ export function RolePermissionManager({
       )}
 
       {/* 紧凑型主从工作台 (左侧角色列表 3 列，右侧权限矩阵 9 列) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-        {/* 左侧：角色列表导航 */}
-        <Card className="lg:col-span-3 border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-xs">
-          <CardHeader className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xs font-bold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
-                <Shield className="size-3.5 text-blue-600" />
-                <span>租户企业角色</span>
-              </CardTitle>
-              <span className="text-[11px] font-mono text-slate-400">
-                {roles.length} 个角色
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent className="p-2 space-y-1">
-            {roles.map((r) => {
-              const active = r.role === selectedRoleCode;
-              return (
-                <div
-                  key={r.role}
-                  onClick={() => setSelectedRoleCode(r.role)}
-                  className={`group flex items-center justify-between rounded-lg px-2.5 py-2 text-xs cursor-pointer transition-all border ${
-                    active
-                      ? "border-blue-600/30 bg-blue-50/80 text-blue-900 font-bold shadow-xs dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-100"
-                      : "border-transparent hover:bg-slate-50 text-slate-700 dark:text-slate-300 dark:hover:bg-slate-800/50"
-                  }`}
-                >
-                  <div className="min-w-0 pr-2">
-                    <div className="flex items-center gap-1.5 truncate">
-                      <span className="truncate">{r.name}</span>
-                      {r.isSystem && (
-                        <Badge
-                          variant="outline"
-                          size="sm"
-                          className="text-[10px] px-1 py-0 h-4 border-slate-200 dark:border-slate-700 text-slate-500 font-normal shrink-0"
-                        >
-                          内置
-                        </Badge>
-                      )}
-                      {!r.updatedAt && (
-                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-normal shrink-0">
-                          (未配置)
-                        </span>
-                      )}
-                    </div>
-                    <div className="font-mono text-[10px] text-slate-400 truncate">
-                      {r.role}
-                    </div>
-                  </div>
-
-                  {!r.isSystem && canUpdate && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteRoleTarget(r.role);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 size-6 p-0 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 shrink-0"
-                    >
-                      <Trash2 className="size-3" />
-                    </Button>
-                  )}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* 左侧：角色列表导航 (独立 Grid 列撑开滑动轨道，内部容器执行绝对可靠 sticky) */}
+        <div className="lg:col-span-3">
+          <div className="lg:sticky lg:top-4 space-y-2">
+            <Card className="gap-0 py-0 overflow-hidden border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-xs">
+              <CardHeader className="p-3 [.border-b]:pb-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xs font-bold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+                    <Shield className="size-3.5 text-blue-600" />
+                    <span>选择配置角色</span>
+                  </CardTitle>
+                  <span className="text-[11px] font-mono text-slate-400">
+                    {roles.length} 个角色
+                  </span>
                 </div>
-              );
-            })}
-          </CardContent>
-        </Card>
+                {/* 角色快速过滤框 */}
+                <div className="relative mt-2">
+                  <Search className="absolute left-2 top-2 size-3 text-muted-foreground" />
+                  <Input
+                    value={roleSearchKeyword}
+                    onChange={(e) => setRoleSearchKeyword(e.target.value)}
+                    placeholder="过滤角色..."
+                    className="h-7 pl-7 text-xs bg-white dark:bg-slate-900"
+                  />
+                </div>
+              </CardHeader>
+              <CardContent className="p-2 space-y-1 max-h-[calc(100vh-14rem)] overflow-y-auto">
+                {filteredRoles.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-muted-foreground">
+                    未匹配到角色
+                  </div>
+                ) : (
+                  filteredRoles.map((r) => {
+                    const active = r.role === selectedRoleCode;
+                    return (
+                      <div
+                        key={r.role}
+                        onClick={() => setSelectedRoleCode(r.role)}
+                        className={`group flex items-center justify-between rounded-lg px-2.5 py-2 text-xs cursor-pointer transition-all border ${
+                          active
+                            ? "border-blue-600/30 bg-blue-50/80 text-blue-900 font-bold shadow-xs dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-100"
+                            : "border-transparent hover:bg-slate-50 text-slate-700 dark:text-slate-300 dark:hover:bg-slate-800/50"
+                        }`}
+                      >
+                        <div className="min-w-0 pr-2">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="truncate">{r.name}</span>
+                            {r.isSystem && (
+                              <Badge
+                                variant="outline"
+                                size="sm"
+                                className="text-[10px] px-1 py-0 h-4 border-slate-200 dark:border-slate-700 text-slate-500 font-normal shrink-0"
+                              >
+                                内置
+                              </Badge>
+                            )}
+                            {!r.updatedAt && (
+                              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-normal shrink-0">
+                                (未配置)
+                              </span>
+                            )}
+                          </div>
+                          <div className="font-mono text-[10px] text-slate-400 truncate">
+                            {r.role}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
         {/* 右侧：权限配置表格与折叠树矩阵 (已移除多余的模块可见列) */}
-        <Card className="lg:col-span-9 border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-xs">
-          <CardHeader className="p-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+        <Card className="lg:col-span-9 gap-0 py-0 overflow-hidden border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-xs">
+          <CardHeader className="p-3.5 [.border-b]:pb-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 min-w-0">
                 <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
@@ -612,7 +602,7 @@ export function RolePermissionManager({
               <Table className="w-full text-xs">
                 <TableHeader className="bg-muted/50 font-medium">
                   <TableRow className="border-b border-border">
-                    <TableHead className="py-2.5 px-3 w-[280px] text-xs font-semibold text-muted-foreground">
+                    <TableHead className="py-2.5 px-3 w-[360px] min-w-[360px] text-xs font-semibold text-muted-foreground">
                       功能模块 / 页面
                     </TableHead>
                     <TableHead className="py-2.5 px-3 text-left text-xs font-semibold text-muted-foreground">
@@ -689,7 +679,7 @@ export function RolePermissionManager({
                                   {options.prefixSymbol}
                                 </span>
                                 <span
-                                  className={`truncate ${
+                                  className={`shrink-0 ${
                                     hasRead
                                       ? "text-slate-900 dark:text-slate-100 font-bold"
                                       : "text-slate-500 dark:text-slate-400 font-normal"
@@ -699,12 +689,18 @@ export function RolePermissionManager({
                                   {options.displayLabel || entity.label}
                                 </span>
                                 {options.showPath && entity.path && (
-                                  <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 shrink-0 hidden sm:inline">
+                                  <span
+                                    className="text-[10px] font-mono text-slate-400 dark:text-slate-500 truncate max-w-[150px] hidden sm:inline"
+                                    title={entity.path}
+                                  >
                                     {entity.path}
                                   </span>
                                 )}
                                 {!options.showPath && (
-                                  <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded shrink-0 hidden sm:inline">
+                                  <span
+                                    className="text-[10px] font-mono text-slate-400 dark:text-slate-500 bg-slate-100/80 dark:bg-slate-800/80 px-1 py-0.5 rounded truncate max-w-[140px] hidden sm:inline"
+                                    title={entity.resource}
+                                  >
                                     {entity.resource}
                                   </span>
                                 )}
@@ -1082,7 +1078,7 @@ export function RolePermissionManager({
                                         onClick={() =>
                                           toggleCompositeExpand(pageKey)
                                         }
-                                        className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500"
+                                        className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 shrink-0"
                                       >
                                         {isCompositeExpanded ? (
                                           <ChevronDown className="size-3 text-slate-500" />
@@ -1091,11 +1087,17 @@ export function RolePermissionManager({
                                         )}
                                       </button>
                                       <Layers className="size-3.5 text-blue-500 shrink-0" />
-                                      <span className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                                      <span
+                                        className="font-bold text-slate-800 dark:text-slate-200 shrink-0"
+                                        title={page.label}
+                                      >
                                         {page.label}
                                       </span>
                                       {page.path && (
-                                        <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 shrink-0 hidden sm:inline">
+                                        <span
+                                          className="text-[10px] font-mono text-slate-400 dark:text-slate-500 truncate max-w-[140px] hidden sm:inline"
+                                          title={page.path}
+                                        >
                                           {page.path}
                                         </span>
                                       )}
@@ -1172,33 +1174,6 @@ export function RolePermissionManager({
           </CardContent>
         </Card>
       </div>
-
-      {showCreateModal && (
-        <CreateRoleModal
-          onClose={() => setShowCreateModal(false)}
-          onCreated={() => {
-            setShowCreateModal(false);
-            window.location.reload();
-          }}
-        />
-      )}
-
-      {/* 删除角色二次确认弹窗 */}
-      <ConfirmDialog
-        open={Boolean(deleteRoleTarget)}
-        onOpenChange={(open) => {
-          if (!open) setDeleteRoleTarget(null);
-        }}
-        title={`确认删除业务角色 [${deleteRoleTarget || ""}] 吗？`}
-        description="此操作不可逆。删除后该角色关联的用户将失去对应的角色权限授权。"
-        confirmText="确认删除"
-        variant="destructive"
-        onConfirm={async () => {
-          if (deleteRoleTarget) {
-            confirmDeleteRole(deleteRoleTarget);
-          }
-        }}
-      />
     </div>
   );
 }

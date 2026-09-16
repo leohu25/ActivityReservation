@@ -1,6 +1,10 @@
+export { RoleListView } from "./ui/RoleListView";
+export type { RoleListViewProps } from "./ui/RoleListView";
 export { RolePermissionManager } from "./ui/RolePermissionManager";
 export type { RolePermissionManagerProps } from "./ui/RolePermissionManager";
 export { CreateRoleModal } from "./ui/CreateRoleModal";
 export type { CreateRoleModalProps } from "./ui/CreateRoleModal";
+export { EditRoleModal } from "./ui/EditRoleModal";
+export type { EditRoleModalProps } from "./ui/EditRoleModal";
 export * from "./contract";
 export type * from "./types";

@@ -10,7 +10,7 @@ import {
 } from "@base/ui";
 import { Package } from "lucide-react";
 import type { ItemMasterListItem } from "../types";
-import { ItemMasterSubject } from "../contract";
+import { ItemMasterSubject, itemMasterSearchContract } from "../contract";
 import { toggleItemStatusAction, deleteItemMasterAction } from "../actions";
 import { MasterDataStatus } from "@base/shared";
 import { ItemMasterFormModal } from "./ItemMasterFormModal";
@@ -184,8 +184,7 @@ export function ItemMasterView({
           }
           extraActions={[
             {
-              label:
-                row.status === MasterDataStatus.ACTIVE ? "停售" : "启售",
+              label: row.status === MasterDataStatus.ACTIVE ? "停售" : "启售",
               onClick: () => handleToggleStatus(row.id, row.status),
             },
           ]}
@@ -245,8 +244,8 @@ export function ItemMasterView({
           setModalState({ open: true, mode: "create", record: null })
         }
         createText="新建商品"
+        searchContract={itemMasterSearchContract}
         keywordValue={keyword}
-        keywordPlaceholder="按商品编码或名称搜索..."
         onKeywordChange={setKeyword}
         statusOptions={[
           { value: MasterDataStatus.ACTIVE, label: "在售/有效" },

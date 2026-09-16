@@ -81,3 +81,38 @@ test("checkUiFile: 属于 FormModal 或被 AuthGuard 包裹的高危按钮，合
   );
   assert.equal(issues.length, 0, "被 AuthGuard 包裹应判定合规通过");
 });
+
+test("checkUiFile: DataTable onSearch 漏传 keyword 搜索参数，精准硬拦截", () => {
+  const badContent = `
+    export function BadCustomerView() {
+      return (
+        <DataTable
+          keywordValue={keyword}
+          onSearch={() => {
+            setPage(1);
+            navigateList({ page: 1 });
+          }}
+        />
+      );
+    }
+  `;
+  const issues = checkUiFile("CustomerView.tsx", badContent);
+  assert.equal(issues.length, 1);
+  assert.equal(issues[0].type, "DATA_TABLE_SEARCH_KEYWORD_LEAK");
+
+  const goodContent = `
+    export function GoodCustomerView() {
+      return (
+        <DataTable
+          keywordValue={keyword}
+          onSearch={() => {
+            setPage(1);
+            navigateList({ page: 1, keyword: keyword.trim() || undefined });
+          }}
+        />
+      );
+    }
+  `;
+  const goodIssues = checkUiFile("CustomerView.tsx", goodContent);
+  assert.equal(goodIssues.length, 0);
+});
