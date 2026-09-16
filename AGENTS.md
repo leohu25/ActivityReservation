@@ -3,8 +3,10 @@
 本项目为 **现代化多租户 SaaS 基础设施与通用业务底座 (Modular Monorepo + Vertical Slice Architecture)**。
 
 - **双端应用**：`apps/control`（平台管控平面）与 `apps/tenant`（租户数据平面）；
-- **横向平台基建**：`@base/auth`（认证）、`@base/authorization`（CASL 四层权限）、`@base/db-tenant`（多租户动态连接池）、`@base/ui`（工业风组件与 DataTable）、`@base/biz-shared`（业务中台资产）、`tooling/db-migrate`（12-Factor 无状态迁移引擎）；
-- **纵向业务切片**：`packages/features/*`（各业务切片物理内聚、无横向耦合）；
+- **横向平台基建**：`packages/base/*`（`@base/auth` 认证、`@base/authorization` CASL 四层权限、`@base/db-tenant` 多租户动态连接池、`@base/ui` 工业风组件与 DataTable、`@base/biz-shared` 业务中台资产、`@base/shared` 序列化工具）；
+- **平台系统套件**：`packages/platform/*`（`@base/feature-control-admin` 平台管控中心、`@base/feature-tenant-admin` 租户系统设置）；
+- **垂直业务切片**：`packages/domains/*`（各业务切片物理内聚、无横向耦合，包括客户、物料、订单、采购等领域）；
+- **迁移引擎与工具**：`tooling/db-migrate`（12-Factor 无状态自愈迁移引擎）；
 - **全栈开发规范事实源**：本底座派生出的全套开发规范详见 **`.agents/skills/next-saas-base-dev/`**（开工前必须参考）。
 
 ---
@@ -98,17 +100,17 @@ node .harness/lifecycle/session-end.mjs
 
 根据具体任务类型，按需调阅对应底层文档，杜绝盲目全库扫描：
 
-| 维度 | 路径 | 核心内容与适用场景 |
-| :--- | :--- | :--- |
-| **全栈开发规范事实源** | `.agents/skills/next-saas-base-dev/` | 涵盖切片 8 阶段流水线、纯数据契约、工业风 UI、CASL Provider、基座基础设施演进 |
-| **智能体开发工作流** | `docs/collaboration/agent-development-workflow.md` | 智能体端到端 5 步闭环作业指导书 (SOP)、双轨模式与门禁规范 |
-| **系统架构白皮书** | `docs/ARCHITECTURE.md` | 双平面运行模型、四大架构支柱、技术栈选型与全景索引 |
-| **多租户分库深度解析** | `docs/architecture/saas-multitenant-architecture.md` | 物理分库连接池治理、并发防击穿、TenantDbManager 与全生命周期 |
-| **权限系统全链路** | `docs/permissions/permission-architecture-deep-dive.md` | CASL 四层权限闭环、SQL 自动下推、字段物理剥离与端到端时序 |
-| **自愈数据迁移引擎** | `docs/architecture/database-migration-engine.md` | 12-Factor 原则、预编译 Catalog、Schema 聚合与咨询锁机制 |
-| **Turborepo 拓扑与缓存** | `docs/architecture/turborepo-pipeline-and-cache-specification.md` | turbo.json 完整拓扑规范、依赖流向、增量缓存策略与任务机制 |
-| **工程命令技术手册** | `docs/collaboration/scripts-reference.md` | 根 package.json 全量命令参考、Turborepo 任务拓扑与 Next.js 运行时自愈机制 |
-| **团队架构决策 (ADR)** | `.harness/memory/adr/` | 核心决策记录（ADR-001 ~ ADR-009 分层、分库、权限、审计基线） |
-| **团队持久记忆** | `.harness/memory/` | 避坑经验 (`learnings.md`) 与技术债台账 (`technical-debt.md`) |
-| **多智能体编排 (按需选用)** | `.harness/agents/index.md` | **仅在复杂多阶段或跨模块并行任务中选用**：Coordinator 编排与角色契约 |
-| **生命周期钩子脚本** | `.harness/lifecycle/` | 环境启动检查 (`bootstrap.mjs`, `session-start.mjs`) 与收尾校验 (`session-end.mjs`) |
+| 维度                        | 路径                                                              | 核心内容与适用场景                                                                 |
+| :-------------------------- | :---------------------------------------------------------------- | :--------------------------------------------------------------------------------- |
+| **全栈开发规范事实源**      | `.agents/skills/next-saas-base-dev/`                              | 涵盖切片 8 阶段流水线、纯数据契约、工业风 UI、CASL Provider、基座基础设施演进      |
+| **智能体开发工作流**        | `docs/collaboration/agent-development-workflow.md`                | 智能体端到端 5 步闭环作业指导书 (SOP)、双轨模式与门禁规范                          |
+| **系统架构白皮书**          | `docs/ARCHITECTURE.md`                                            | 双平面运行模型、四大架构支柱、技术栈选型与全景索引                                 |
+| **多租户分库深度解析**      | `docs/architecture/saas-multitenant-architecture.md`              | 物理分库连接池治理、并发防击穿、TenantDbManager 与全生命周期                       |
+| **权限系统全链路**          | `docs/permissions/permission-architecture-deep-dive.md`           | CASL 四层权限闭环、SQL 自动下推、字段物理剥离与端到端时序                          |
+| **自愈数据迁移引擎**        | `docs/architecture/database-migration-engine.md`                  | 12-Factor 原则、预编译 Catalog、Schema 聚合与咨询锁机制                            |
+| **Turborepo 拓扑与缓存**    | `docs/architecture/turborepo-pipeline-and-cache-specification.md` | turbo.json 完整拓扑规范、依赖流向、增量缓存策略与任务机制                          |
+| **工程命令技术手册**        | `docs/collaboration/scripts-reference.md`                         | 根 package.json 全量命令参考、Turborepo 任务拓扑与 Next.js 运行时自愈机制          |
+| **团队架构决策 (ADR)**      | `.harness/memory/adr/`                                            | 核心决策记录（ADR-001 ~ ADR-009 分层、分库、权限、审计基线）                       |
+| **团队持久记忆**            | `.harness/memory/`                                                | 避坑经验 (`learnings.md`) 与技术债台账 (`technical-debt.md`)                       |
+| **多智能体编排 (按需选用)** | `.harness/agents/index.md`                                        | **仅在复杂多阶段或跨模块并行任务中选用**：Coordinator 编排与角色契约               |
+| **生命周期钩子脚本**        | `.harness/lifecycle/`                                             | 环境启动检查 (`bootstrap.mjs`, `session-start.mjs`) 与收尾校验 (`session-end.mjs`) |

@@ -346,9 +346,9 @@
       "name": "【UI三层体系重构与巨石拆解】确立@base/ui三层架构、沉淀MasterDetailShell并拆解超大组件",
       "description": "规范平台 UI 资产库并消除千行巨石代码：1. 在 @base/ui 确立三层结构标准（原子 shadcn Primitives、复合分子/框架组件 Composite、场景模板 Templates）；2. 提炼 MasterDetailShell 通用双栏工作台模板与通用明细编辑表分子组件；3. 将 1284 行的 NavigationConfigView 解构为树面板、属性编辑面板、状态 Hook 与功能池抽屉，补齐核心交互与状态流转单测；4. 拆解 1200 行的 BomFlowEditorModal，解耦工序步骤编排与计算逻辑；5. 全仓通过 pre-commit 与 verify.mjs 门禁。",
       "dependencies": ["arch-domain-platform-layering-refactor"],
-      "status": "pending",
+      "status": "completed",
       "owner": "implementer",
-      "evidence": ""
+      "evidence": "1. @base/ui 确立并落地三层架构规范（shadcn/ 原子 -> composite/ 复合 -> templates/ 模板），新增并导出 MasterDetailShell 标准主从骨架与单测；2. 解构 packages/platform/tenant-admin 中的 NavigationConfigView.tsx（由 1284 行降至 720 行，解耦抽离 menu-tree-helpers、MenuTreeNodeItem、NodePropertyForm 与 AvailablePagePool）；3. 解构 packages/domains/material-center 中的 BomFlowEditorModal.tsx（由 1206 行降至 786 行，抽离 bom-editor-types、BomItemRatioTable 与 BomYieldCalculator）；4. 全仓 pnpm check/test/lint 16/16 全部绿灯，node scripts/verify.mjs 9 项门禁全绿通过。"
     }
   ]
 }

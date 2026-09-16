@@ -2,6 +2,8 @@
 
 ## 修改白名单
 
+- `packages/shared/tsconfig.json` # 1 file @ 37792230，联动修改自动登记
+
 - `packages/base/ui/src/lib/utils.ts` # 1 file @ head，联动修改自动登记
 
 - `packages/base/ui/src/lib/use-safe-router.ts` # 1 file @ head，联动修改自动登记
