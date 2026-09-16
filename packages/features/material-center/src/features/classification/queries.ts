@@ -4,10 +4,7 @@ import {
   getTenantMaterialContext,
   assertMaterialAbility,
 } from "../../assembly/context";
-import {
-  ItemCategorySubject,
-  ItemVarietySubject,
-} from "./contract";
+import { ItemCategorySubject, ItemVarietySubject } from "./contract";
 
 export interface CategoryListItem {
   id: string;
@@ -36,7 +33,7 @@ export async function getCategoriesQuery(): Promise<CategoryListItem[]> {
   const { client, ability } = await getTenantMaterialContext();
   assertMaterialAbility(ability, StandardAction.READ, ItemCategorySubject);
 
-  const categories = await (client as any).itemCategory.findMany({
+  const categories = await client.itemCategory.findMany({
     where: { isDeleted: false },
     orderBy: [{ level: "asc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
     include: {
@@ -46,7 +43,7 @@ export async function getCategoriesQuery(): Promise<CategoryListItem[]> {
     },
   });
 
-  return categories.map((c: any) => ({
+  return categories.map((c) => ({
     id: c.id,
     categoryCode: c.categoryCode,
     categoryName: c.categoryName,
@@ -64,12 +61,12 @@ export async function getVarietiesQuery(): Promise<VarietyListItem[]> {
   const { client, ability } = await getTenantMaterialContext();
   assertMaterialAbility(ability, StandardAction.READ, ItemVarietySubject);
 
-  const varieties = await (client as any).itemVariety.findMany({
+  const varieties = await client.itemVariety.findMany({
     where: { isDeleted: false },
     orderBy: [{ createdAt: "desc" }],
   });
 
-  return varieties.map((v: any) => ({
+  return varieties.map((v) => ({
     id: v.id,
     varietyCode: v.varietyCode,
     varietyName: v.varietyName,

@@ -70,8 +70,8 @@ export interface QuoteListItem {
   quoteDate: string | Date;
   effectiveDate: string | Date;
   expiryDate?: string | Date | null;
-  quoteType?: "STANDARD" | "CYCLE" | string;
-  status: "ACTIVE" | "DISABLED" | "DRAFT" | "EXPIRED" | "VOIDED" | string;
+  quoteType?: "STANDARD" | "CYCLE";
+  status: "ACTIVE" | "DISABLED" | "DRAFT" | "EXPIRED" | "VOIDED";
   itemCount?: number;
   items?: QuoteItemDetail[];
   createdBy?: string;

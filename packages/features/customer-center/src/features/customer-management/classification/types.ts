@@ -36,7 +36,7 @@ export interface CustomerCategoryItem {
   categoryName: string;
   parentCode?: string | null;
   description?: string | null;
-  status?: CustomerClassificationStatus | string;
+  status?: CustomerClassificationStatus;
   children?: CustomerCategoryItem[];
 }
 
@@ -46,5 +46,5 @@ export interface CustomerTagItem {
   tagName: string;
   tagType?: string;
   description?: string | null;
-  status?: CustomerClassificationStatus | string;
+  status?: CustomerClassificationStatus;
 }

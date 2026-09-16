@@ -2,6 +2,7 @@ import { StandardAction } from "@base/authorization";
 import "server-only";
 
 import { getAccessibleWhere } from "@base/authorization";
+import type { TenantPrisma } from "@base/db-tenant";
 import {
   assertOrderAbility,
   getTenantOrderContext,
@@ -33,7 +34,11 @@ export async function listSalesOrdersQuery(
     SalesOrderSubject,
     "read",
   );
-  const result = await listSalesOrders(client, params, accessibleWhere as any);
+  const result = await listSalesOrders(
+    client,
+    params,
+    accessibleWhere as TenantPrisma.SalesOrderWhereInput,
+  );
   return toPlainData(result);
 }
 

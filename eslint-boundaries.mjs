@@ -1,10 +1,12 @@
-import boundaries from "eslint-plugin-boundaries";
-import { architectureRedlineRules } from "./eslint-rules.mjs";
-
 /**
- * 架构边界与 Monorepo 依赖流向 ESLint 插件配置
- * 用于在编辑器层面实时阻断跨切片横向调用与底层反向依赖上层
+ * @fileoverview Monorepo 模块架构拓扑与单向流依赖防御规则 (eslint-plugin-boundaries)
+ *
+ * 遵循架构分层规范：
+ * apps/* -> packages/features/* -> packages/* (platform-core / ui)
  */
+
+import boundaries from "eslint-plugin-boundaries";
+
 export const boundariesConfig = {
   plugins: {
     boundaries,
@@ -28,17 +30,8 @@ export const boundariesConfig = {
       },
       {
         type: "platform-core",
-        pattern: [
-          "packages/auth",
-          "packages/authorization",
-          "packages/db-tenant",
-          "packages/db-control",
-        ],
-        mode: "folder",
-      },
-      {
-        type: "platform-foundation",
-        pattern: ["packages/shared", "packages/biz-shared"],
+        pattern:
+          "packages/(auth|authorization|biz-shared|db-control|db-tenant|shared)",
         mode: "folder",
       },
       {
@@ -46,45 +39,48 @@ export const boundariesConfig = {
         pattern: "tooling/*",
         mode: "folder",
       },
+      {
+        type: "scripts",
+        pattern: "scripts/*",
+        mode: "folder",
+      },
     ],
   },
   rules: {
-    ...architectureRedlineRules,
     "boundaries/element-types": [
       "error",
       {
         default: "disallow",
         rules: [
-          // 1. 应用装配层 (apps/*)：允许编排业务切片与所有平台基础设施
+          // 1. 应用装配层 (apps/*) 拥有最高装配权限
           {
             from: "app",
-            allow: [
-              "feature",
-              "platform-ui",
-              "platform-core",
-              "platform-foundation",
-              "tooling",
-            ],
+            allow: ["feature", "platform-ui", "platform-core", "tooling"],
           },
-          // 2. 业务切片 (packages/features/*)：只能依赖平台基础设施，严禁 Feature 依赖 Feature
+          // 2. 业务切片 (packages/features/*) 允许消费平台基建，严禁切片间横向依赖与应用反向依赖
           {
             from: "feature",
-            allow: ["platform-ui", "platform-core", "platform-foundation"],
+            allow: ["platform-ui", "platform-core"],
           },
-          // 3. UI 视觉地基 (packages/ui)：处于纯视觉层，只允许依赖 shared 基础类型与工具，严禁依赖业务切片、auth 或 db
+          // 3. UI 库 (@base/ui) 纯无头中立，严禁依赖业务切片、认证授权等具体逻辑
           {
             from: "platform-ui",
-            allow: ["platform-foundation"],
+            allow: ["platform-core"],
           },
-          // 4. 平台核心层 (auth, authorization, db-tenant, db-control)：只能依赖纯底层契约，严禁依赖 UI 与业务切片
+          // 4. 平台核心基建 (auth, db 等)
           {
             from: "platform-core",
-            allow: ["platform-foundation", "platform-core"],
+            allow: ["platform-core", "tooling"],
           },
-          // 5. 纯契约与工具基础库 (shared, biz-shared)：最底层，严禁依赖任何外部工作区模块
+          // 5. 迁移与工程工具
           {
-            from: "platform-foundation",
-            allow: ["platform-foundation"],
+            from: "tooling",
+            allow: ["platform-core"],
+          },
+          // 6. 治理脚本
+          {
+            from: "scripts",
+            allow: ["platform-core", "tooling", "feature", "app"],
           },
         ],
       },

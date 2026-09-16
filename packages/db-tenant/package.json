@@ -11,7 +11,8 @@
   "scripts": {
     "check": "tsc --noEmit",
     "generate": "prisma generate --config prisma.config.ts",
-    "test": "tsx --test --test-reporter=../../scripts/reporter/fail-only-reporter.mjs src/*.test.ts src/**/*.test.ts"
+    "test": "tsx --test --test-reporter=../../scripts/reporter/fail-only-reporter.mjs src/*.test.ts src/**/*.test.ts",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@base/db-control": "workspace:*",

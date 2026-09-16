@@ -24,15 +24,11 @@
     "build": {
       "dependsOn": ["generate", "^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*", ".env.local"],
-      "outputs": [
-        ".next/**",
-        "!.next/cache/**",
-        "!.next/dev/**",
-        "dist/**"
-      ]
+      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**", "dist/**"]
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": ["^lint"],
+      "outputs": []
     },
     "check": {
       "dependsOn": ["generate", "^check"],

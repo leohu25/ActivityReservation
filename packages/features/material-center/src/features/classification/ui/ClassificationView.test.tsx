@@ -11,7 +11,7 @@ import { ClassificationView } from "./ClassificationView";
 import { ItemCategorySubject, ItemVarietySubject } from "../contract";
 
 // Node.js SSR 环境兜底
-(globalThis as any).React = React;
+Object.assign(globalThis, { React });
 
 test("ClassificationView 权限门禁：普通成员无 create 权限时，DataTable 模板的新增按钮自动隐藏", () => {
   // 1. 模拟只读权限快照（无 create 权限）

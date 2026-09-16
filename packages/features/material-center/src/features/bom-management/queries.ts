@@ -1,5 +1,6 @@
 import "server-only";
 import { StandardAction } from "@base/authorization";
+import { MasterDataStatus } from "@base/shared";
 
 import {
   getTenantMaterialContext,
@@ -22,7 +23,7 @@ export async function getBomsQuery(filter?: {
   const { client, ability } = await getTenantMaterialContext();
   assertMaterialAbility(ability, StandardAction.READ, BomHeaderSubject);
 
-  const boms = await (client as any).bomHeader.findMany({
+  const boms = await client.bomHeader.findMany({
     where: {
       isDeleted: false,
       ...(filter?.bomType ? { bomType: filter.bomType } : {}),
@@ -55,13 +56,13 @@ export async function getBomsQuery(filter?: {
     orderBy: [{ createdAt: "desc" }],
   });
 
-  return boms.map((b: any) => {
-    const rawInputs = b.processes.flatMap((p: any) =>
-      (p.inputs || []).map((i: any) => i.itemCode),
+  return boms.map((b) => {
+    const rawInputs = b.processes.flatMap((p) =>
+      (p.inputs || []).map((i) => i.itemCode),
     );
     const uniqueInputs = Array.from(new Set(rawInputs)).slice(0, 3).join(", ");
 
-    const dagProcesses: DagProcess[] = (b.processes || []).map((p: any) => ({
+    const dagProcesses: DagProcess[] = (b.processes || []).map((p) => ({
       seqNo: p.seqNo,
       processId: p.processId,
       processName: p.process?.processName || `工序 #${p.seqNo}`,
@@ -70,21 +71,21 @@ export async function getBomsQuery(filter?: {
       lossRate: Number(p.lossRate),
       yieldRate: Number(p.yieldRate),
       stdLaborHours: p.stdLaborHours ? Number(p.stdLaborHours) : null,
-      inputs: (p.inputs || []).map((inp: any) => ({
+      inputs: (p.inputs || []).map((inp) => ({
         itemCode: inp.itemCode,
         quantity: Number(inp.quantity),
         uom: inp.uom,
-        materialRole: inp.materialRole,
+        materialRole: inp.materialRole as "FLOW" | "SUB_BOM" | "PURCHASE",
         proportion: inp.proportion ? Number(inp.proportion) : null,
         prevProcessSeq: inp.prevProcessSeq ?? null,
         childBomId: inp.childBomId || null,
       })),
-      outputs: (p.outputs || []).map((out: any) => ({
+      outputs: (p.outputs || []).map((out) => ({
         itemCode: out.itemCode,
         quantity: Number(out.quantity),
         uom: out.uom,
-        outputType: out.outputType,
-        materialRole: out.materialRole,
+        outputType: out.outputType as "MAIN" | "BYPRODUCT" | "SCRAP",
+        materialRole: out.materialRole as "FLOW" | "FINAL",
         nextProcessSeq: out.nextProcessSeq ?? null,
       })),
     }));
@@ -119,7 +120,7 @@ export async function getBomDetailQuery(bomId: string) {
   const { client, ability } = await getTenantMaterialContext();
   assertMaterialAbility(ability, StandardAction.READ, BomHeaderSubject);
 
-  const bom = await (client as any).bomHeader.findUnique({
+  const bom = await client.bomHeader.findUnique({
     where: { id: bomId },
     include: {
       outputItem: true,
@@ -142,17 +143,17 @@ export async function getBomDetailQuery(bomId: string) {
     ...bom,
     batchQty: Number(bom.batchQty),
     totalYieldRate: bom.totalYieldRate ? Number(bom.totalYieldRate) : null,
-    processes: (bom.processes || []).map((p: any) => ({
+    processes: (bom.processes || []).map((p) => ({
       ...p,
       lossRate: Number(p.lossRate),
       yieldRate: Number(p.yieldRate),
       stdLaborHours: p.stdLaborHours ? Number(p.stdLaborHours) : null,
-      inputs: (p.inputs || []).map((inp: any) => ({
+      inputs: (p.inputs || []).map((inp) => ({
         ...inp,
         quantity: Number(inp.quantity),
         proportion: inp.proportion ? Number(inp.proportion) : null,
       })),
-      outputs: (p.outputs || []).map((out: any) => ({
+      outputs: (p.outputs || []).map((out) => ({
         ...out,
         quantity: Number(out.quantity),
       })),
@@ -164,40 +165,42 @@ export async function getProductionLinesQuery() {
   const { client, ability } = await getTenantMaterialContext();
   assertMaterialAbility(ability, StandardAction.READ, ProductionLineSubject);
 
-  const lines = await (client as any).productionLine.findMany({
-    where: { isDeleted: false, status: "ACTIVE" },
+  const lines = await client.productionLine.findMany({
+    where: { isDeleted: false, status: MasterDataStatus.ACTIVE },
     orderBy: [{ lineCode: "asc" }],
   });
 
-  return lines.map((l: any) => ({
+  return lines.map((l) => ({
     id: l.id,
     lineCode: l.lineCode,
     lineName: l.lineName,
-    workshopLocation: l.workshopLocation ?? null,
+    workshopLocation: l.description ?? null,
     status: l.status,
   }));
 }
 
-export async function getProcessTemplatesQuery(): Promise<ProcessTemplateItem[]> {
+export async function getProcessTemplatesQuery(): Promise<
+  ProcessTemplateItem[]
+> {
   const { client, ability } = await getTenantMaterialContext();
   assertMaterialAbility(ability, StandardAction.READ, ProcessMasterSubject);
 
-  const templates = await (client as any).processMaster.findMany({
-    where: { isDeleted: false, status: "ACTIVE" },
+  const templates = await client.processMaster.findMany({
+    where: { isDeleted: false, status: MasterDataStatus.ACTIVE },
     include: {
-      specs: { where: { isDeleted: false, status: "ACTIVE" } },
+      specs: { where: { isDeleted: false, status: MasterDataStatus.ACTIVE } },
     },
     orderBy: [{ processCode: "asc" }],
   });
 
-  return templates.map((t: any) => ({
+  return templates.map((t) => ({
     id: t.id,
     processCode: t.processCode,
     processName: t.processName,
     category: t.category,
     defaultLossRate: Number(t.defaultLossRate),
     stdLaborHours: t.stdLaborHours ? Number(t.stdLaborHours) : null,
-    specs: (t.specs || []).map((s: any) => ({
+    specs: (t.specs || []).map((s) => ({
       id: s.id,
       specCode: s.specCode,
       specName: s.specName,

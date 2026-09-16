@@ -1,7 +1,11 @@
 "use server";
 import { StandardAction } from "@base/authorization";
 
-import { defineServerAction, toPlainData } from "@base/shared";
+import {
+  defineServerAction,
+  toPlainData,
+  MasterDataStatus,
+} from "@base/shared";
 import {
   getTenantMaterialContext,
   assertMaterialAbility,
@@ -24,14 +28,14 @@ export const createCategoryAction = defineServerAction(
       await getTenantMaterialContext();
     assertMaterialAbility(ability, StandardAction.CREATE, ItemCategorySubject);
 
-    const created = await (client as any).itemCategory.create({
+    const created = await client.itemCategory.create({
       data: {
         categoryCode: input.categoryCode.trim(),
         categoryName: input.categoryName.trim(),
         parentId: input.parentId || null,
         level: input.level || 1,
         sortOrder: input.sortOrder || 0,
-        status: "ACTIVE",
+        status: MasterDataStatus.ACTIVE,
         createdById: userId,
         deptId: employeeProfile?.departmentId || null,
       },
@@ -53,7 +57,7 @@ export const updateCategoryAction = defineServerAction(
     const { client, ability, userId } = await getTenantMaterialContext();
     assertMaterialAbility(ability, StandardAction.UPDATE, ItemCategorySubject);
 
-    const updated = await (client as any).itemCategory.update({
+    const updated = await client.itemCategory.update({
       where: { id: input.id },
       data: {
         ...(input.categoryName
@@ -79,7 +83,7 @@ export const deleteCategoryAction = defineServerAction(
     assertMaterialAbility(ability, StandardAction.DELETE, ItemCategorySubject);
 
     // 软删除
-    const deleted = await (client as any).itemCategory.update({
+    const deleted = await client.itemCategory.update({
       where: { id: input.id },
       data: {
         isDeleted: true,
@@ -102,12 +106,12 @@ export const createVarietyAction = defineServerAction(
       await getTenantMaterialContext();
     assertMaterialAbility(ability, StandardAction.CREATE, ItemVarietySubject);
 
-    const created = await (client as any).itemVariety.create({
+    const created = await client.itemVariety.create({
       data: {
         varietyCode: input.varietyCode.trim(),
         varietyName: input.varietyName.trim(),
         description: input.description || null,
-        status: "ACTIVE",
+        status: MasterDataStatus.ACTIVE,
         createdById: userId,
         deptId: employeeProfile?.departmentId || null,
       },
@@ -126,7 +130,7 @@ export const toggleVarietyStatusAction = defineServerAction(
       ItemVarietySubject,
     );
 
-    const updated = await (client as any).itemVariety.update({
+    const updated = await client.itemVariety.update({
       where: { id: input.id },
       data: {
         status: input.targetStatus,

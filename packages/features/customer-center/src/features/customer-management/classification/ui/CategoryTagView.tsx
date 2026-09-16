@@ -74,7 +74,7 @@ export interface CategoryTreeItem extends HierarchyNodeData {
   categoryName: string;
   parentCode: string | null;
   description: string | null;
-  status: string;
+  status: MasterDataStatus;
   children?: CategoryTreeItem[];
 }
 
@@ -133,9 +133,7 @@ export function CategoryTagView({
       const res = await updateCategoryStatusAction(code, nextStatus);
       if (res.success) {
         toast.success(
-          nextStatus === MasterDataStatus.ACTIVE
-            ? "分类已启用"
-            : "分类已停用",
+          nextStatus === MasterDataStatus.ACTIVE ? "分类已启用" : "分类已停用",
         );
         router?.refresh();
       } else {
@@ -184,9 +182,7 @@ export function CategoryTagView({
           ),
         );
         toast.success(
-          nextStatus === MasterDataStatus.ACTIVE
-            ? "标签已启用"
-            : "标签已停用",
+          nextStatus === MasterDataStatus.ACTIVE ? "标签已启用" : "标签已停用",
         );
         router?.refresh();
       } else {

@@ -45,7 +45,7 @@ export interface CustomerListItem {
   category?: CustomerCategoryItem | null;
   contactPerson: string;
   contactPhone: string;
-  settlementMethod: "MONTHLY" | "CASH" | "PREPAID" | string;
+  settlementMethod: "MONTHLY" | "CASH" | "PREPAID";
   defaultTaxRate?: number | null | unknown;
   creditLimit?: number | null | unknown;
   customerTags?: string | null;
@@ -53,6 +53,6 @@ export interface CustomerListItem {
   defaultWarehouse?: string | null;
   paymentCycle?: string | null;
   serviceTime?: string | null;
-  status: "ACTIVE" | "DISABLED" | string;
+  status: "ACTIVE" | "DISABLED";
   _count?: { stores?: number };
 }

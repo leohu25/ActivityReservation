@@ -1,7 +1,11 @@
 "use server";
 import { StandardAction } from "@base/authorization";
 
-import { defineServerAction, toPlainData } from "@base/shared";
+import {
+  defineServerAction,
+  toPlainData,
+  MasterDataStatus,
+} from "@base/shared";
 import {
   getTenantMaterialContext,
   assertMaterialAbility,
@@ -24,14 +28,14 @@ export const createUnitAction = defineServerAction(
       await getTenantMaterialContext();
     assertMaterialAbility(ability, StandardAction.CREATE, UnitOfMeasureSubject);
 
-    const created = await (client as any).unitOfMeasure.create({
+    const created = await client.unitOfMeasure.create({
       data: {
         unitCode: input.unitCode.trim(),
         unitName: input.unitName.trim(),
         unitType: input.unitType,
         baseRatio: input.baseRatio,
         isBaseUnit: input.isBaseUnit || false,
-        status: "ACTIVE",
+        status: MasterDataStatus.ACTIVE,
         createdById: userId,
         deptId: employeeProfile?.departmentId || null,
       },
@@ -56,27 +60,38 @@ export const configureConversionAction = defineServerAction(
       UnitConversionSubject,
     );
 
-    const conversion = await (client as any).unitConversion.upsert({
+    const existing = await client.unitConversion.findFirst({
       where: {
-        itemCode_fromUnitId_toUnitId: {
-          itemCode: input.itemCode || null,
-          fromUnitId: input.fromUnitId,
-          toUnitId: input.toUnitId,
-        },
-      },
-      update: {
-        conversionRate: input.conversionRate,
-        updatedById: userId,
-      },
-      create: {
         itemCode: input.itemCode || null,
         fromUnitId: input.fromUnitId,
         toUnitId: input.toUnitId,
-        conversionRate: input.conversionRate,
-        createdById: userId,
-        deptId: employeeProfile?.departmentId || null,
       },
     });
+
+    let conversion;
+    if (existing) {
+      conversion = await client.unitConversion.update({
+        where: { id: existing.id },
+        data: {
+          conversionRate: input.conversionRate,
+          isDeleted: false,
+          deletedAt: null,
+          deletedById: null,
+          updatedById: userId,
+        },
+      });
+    } else {
+      conversion = await client.unitConversion.create({
+        data: {
+          itemCode: input.itemCode || null,
+          fromUnitId: input.fromUnitId,
+          toUnitId: input.toUnitId,
+          conversionRate: input.conversionRate,
+          createdById: userId,
+          deptId: employeeProfile?.departmentId || null,
+        },
+      });
+    }
 
     return toPlainData(conversion);
   },
@@ -94,7 +109,7 @@ export const updateUnitAction = defineServerAction(
     const { client, ability, userId } = await getTenantMaterialContext();
     assertMaterialAbility(ability, StandardAction.UPDATE, UnitOfMeasureSubject);
 
-    const updated = await (client as any).unitOfMeasure.update({
+    const updated = await client.unitOfMeasure.update({
       where: { id: input.id },
       data: {
         ...(input.unitName ? { unitName: input.unitName.trim() } : {}),
@@ -119,7 +134,7 @@ export const deleteUnitAction = defineServerAction(
     const { client, ability, userId } = await getTenantMaterialContext();
     assertMaterialAbility(ability, StandardAction.DELETE, UnitOfMeasureSubject);
 
-    const deleted = await (client as any).unitOfMeasure.update({
+    const deleted = await client.unitOfMeasure.update({
       where: { id: input.id },
       data: {
         isDeleted: true,
@@ -141,7 +156,7 @@ export const deleteConversionAction = defineServerAction(
       UnitConversionSubject,
     );
 
-    const deleted = await (client as any).unitConversion.update({
+    const deleted = await client.unitConversion.update({
       where: { id: input.id },
       data: {
         isDeleted: true,

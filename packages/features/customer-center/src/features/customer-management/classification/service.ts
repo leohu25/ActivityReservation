@@ -18,7 +18,7 @@ export interface CategoryTreeNode {
   categoryName: string;
   parentCode: string | null;
   description: string | null;
-  status: string;
+  status: MasterDataStatus;
   children: CategoryTreeNode[];
 }
 
@@ -85,7 +85,7 @@ export class CustomerCategoryTagService {
     client: TenantPrismaClient,
     filter?: { status?: CustomerClassificationStatus },
   ): Promise<CustomerCategoryItem[]> {
-    return client.customerCategory.findMany({
+    const list = await client.customerCategory.findMany({
       where: filter?.status ? { status: filter.status } : undefined,
       orderBy: { categoryCode: "asc" },
       select: {
@@ -96,6 +96,10 @@ export class CustomerCategoryTagService {
         status: true,
       },
     });
+    return list.map((c) => ({
+      ...c,
+      status: c.status as CustomerClassificationStatus,
+    }));
   }
 
   /**
@@ -240,7 +244,7 @@ export class CustomerCategoryTagService {
     client: TenantPrismaClient,
     filter?: { tagType?: string; status?: CustomerClassificationStatus },
   ): Promise<CustomerTagItem[]> {
-    return client.customerTag.findMany({
+    const list = await client.customerTag.findMany({
       where: {
         ...(filter?.tagType ? { tagType: filter.tagType } : {}),
         ...(filter?.status ? { status: filter.status } : {}),
@@ -254,6 +258,10 @@ export class CustomerCategoryTagService {
         status: true,
       },
     });
+    return list.map((t) => ({
+      ...t,
+      status: t.status as CustomerClassificationStatus,
+    }));
   }
 
   /**

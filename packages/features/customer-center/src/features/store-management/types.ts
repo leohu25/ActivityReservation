@@ -47,5 +47,5 @@ export interface StoreListItem {
   defaultDriver?: string | null;
   billingContact?: string | null;
   billingPhone?: string | null;
-  status: "ACTIVE" | "DISABLED" | string;
+  status: "ACTIVE" | "DISABLED";
 }

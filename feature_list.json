@@ -304,6 +304,51 @@
       "status": "completed",
       "owner": "implementer",
       "evidence": "1. 重构 db-control, db-tenant 与 db-migrate 的 prisma.config.ts，彻底消除硬编码连接串兜底，遵循 Fail-Fast 原则并实现应用级 .env.local 规范化加载；2. packages/db-tenant 与 packages/db-control 的 generate 纯化为干净的 prisma 命令，去除 Node 拼接胶水；3. turbo.json 注册 generate 任务并建立 //#codegen -> generate -> (build/check/test/dev) 拓扑流水线；4. init.sh 接入自动自愈 Client 生成；5. 编写 packages/db-control/src/prisma-config.test.ts 与 packages/db-tenant/src/prisma-config.test.ts 单测，全仓 247 个测试用例 100% 通过，check/lint 全绿。"
+    },
+    {
+      "id": "arch-cross-platform-node-scripts",
+      "name": "【工程基建与跨平台】移除Shell脚本并全面迁移至跨平台Node.js与双重拦截门禁",
+      "description": "抹平 Windows/Mac/Linux 差异：1. 彻底移除所有平台相关的 .sh 脚本（init.sh, verify.sh, status.sh, save-patch.sh），100% 重写为原生 Node.js (*.mjs)；2. 编写 scripts/README.md 技术手册；3. 在 AGENTS.md 确立第九大工程红线；4. 在 init.mjs 启动自检与 check-redlines.mjs 门禁中设立禁止 Shell 脚本的双重物理硬拦截与单测保障。",
+      "dependencies": ["arch-prisma-config-and-generate-pipeline"],
+      "status": "completed",
+      "owner": "coordinator",
+      "evidence": "1. 彻底移除全仓 5 个 .sh 脚本，新增 scripts/init.mjs, verify.mjs, clean.mjs, status.mjs, save-patch.mjs；2. pre-commit 钩子纯化为 node 调用；3. check-redlines.mjs 增加 shell 脚本扫描与单元测试；4. init.mjs 增加环境与钩子自检并实现跨平台统一；全栈门禁验证通过。"
+    },
+    {
+      "id": "feature-tenant-dynamic-navigation-and-menu-alignment",
+      "name": "【系统底座与动态导航】租户自定义业务菜单树、业务功能池与角色权限目录对齐",
+      "description": "建设企业级 SaaS 动态导航体系：1. 基于 StandardPageDescriptor 建立业务切片自发现标准功能页面池；2. 租户物理库建立 TenantMenuItem 模型，采用 parentId 纯标量自引用零死锁设计并带 ADR-009 审计基线；3. 租户端落地系统设置 /settings/navigation 可视化配置中心与 Master-Detail 双栏管理；4. 沉淀公共 buildMenuTree 递归算法至 @base/authorization；5. 角色权限配置中心全面对齐菜单目录心智；6. @base/ui 沉淀 DynamicNavIcon 与 IconPicker 复合分子组件并增强 Sidebar 外链支持。",
+      "dependencies": ["arch-cross-platform-node-scripts"],
+      "status": "completed",
+      "owner": "coordinator",
+      "evidence": "1. 数据库落地 tenant_menu_item 实体与 8 大审计字段；2. @base/authorization 导出 buildMenuTree, pruneDynamicMenuTree, deriveMenuAlignedPermissionTree；3. 租户端落地 /settings/navigation 动态菜单配置大屏与单元测试；4. 角色权限配置中心自动对齐菜单层级结构；5. @base/ui 扩展 DynamicNavIcon, IconPicker 与 Sidebar 外链；6. 全栈单测与类型检查全部 PASS。"
+    },
+    {
+      "id": "arch-quality-eslint-and-type-hardening",
+      "name": "【代码质量与门禁加固】修复Turborepo全仓ESLint覆盖、消除any恶性降解与迁移账本压实",
+      "description": "消除代码熵增与隐患：1. 修复 Turborepo lint 任务无法覆盖 packages/* 的问题，补齐各包与根目录统一 ESLint 执行通道；2. 治理 material-center 等包中因开发妥协产生的 60 余处 (client as any)，恢复强类型 PrismaClient；3. 清理状态类型定义中的 | string 宽化反模式；4. 将动态菜单开发过程中产生的 3 次修补型迁移合并压实为 1 个干净确定的最终状态迁移；5. 增强 check-redlines.mjs 对对象字面量等全场景状态魔法值的准确拦截。",
+      "dependencies": ["feature-tenant-dynamic-navigation-and-menu-alignment"],
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "1. 为全仓 14 个子包补齐 package.json#lint 并在根配置统一 ESLint 规则；2. 彻底消灭 material-center 中 60 余处 (client as any)，恢复强类型 Prisma 查询；3. 消除状态联合类型中的 | string 宽化反模式；4. 将动态菜单 3 次修补型迁移压缩合并为 1 个干净的最终状态迁移并更新 catalog；5. pnpm check (16/16), pnpm test (16/16), pnpm lint (16/16) 与 node scripts/verify.mjs 全部一次性通过。"
+    },
+    {
+      "id": "arch-domain-platform-layering-refactor",
+      "name": "【架构分层与命名拓扑治理】建立packages/platform与packages/domains物理隔离并净化门禁",
+      "description": "彻底分离平台系统套件与业务领域切片：1. 将 tenant-admin 与 control-admin 下沉至 packages/platform/，建立系统框架专属边界；2. 将 customer-center, material-center, order-center, procurement-center 归位至 packages/domains/；3. 更新 pnpm-workspace.yaml、turbo.json、package.json 语义化子路径及 tsconfig 路径别名；4. 净化 check-vertical-slices.mjs 与 sync-features.mjs，彻底移除所有针对 control-admin 等的静态硬编码白名单与免死金牌。",
+      "dependencies": ["arch-quality-eslint-and-type-hardening"],
+      "status": "pending",
+      "owner": "coordinator",
+      "evidence": ""
+    },
+    {
+      "id": "arch-ui-three-tier-and-monolith-breakdown",
+      "name": "【UI三层体系重构与巨石拆解】确立@base/ui三层架构、沉淀MasterDetailShell并拆解超大组件",
+      "description": "规范平台 UI 资产库并消除千行巨石代码：1. 在 @base/ui 确立三层结构标准（原子 shadcn Primitives、复合分子/框架组件 Composite、场景模板 Templates）；2. 提炼 MasterDetailShell 通用双栏工作台模板与通用明细编辑表分子组件；3. 将 1284 行的 NavigationConfigView 解构为树面板、属性编辑面板、状态 Hook 与功能池抽屉，补齐核心交互与状态流转单测；4. 拆解 1200 行的 BomFlowEditorModal，解耦工序步骤编排与计算逻辑；5. 全仓通过 pre-commit 与 verify.mjs 门禁。",
+      "dependencies": ["arch-domain-platform-layering-refactor"],
+      "status": "pending",
+      "owner": "implementer",
+      "evidence": ""
     }
   ]
 }

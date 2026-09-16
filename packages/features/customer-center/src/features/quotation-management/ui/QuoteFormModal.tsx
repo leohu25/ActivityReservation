@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import {
   FormModal,
-  FormBanner,
   Input,
   toast,
   type FormFieldSchema,
@@ -377,20 +376,27 @@ export function QuoteFormModal({
         minRows: 1,
       }}
       initialItems={items}
-      onSubmit={async (formValues: any, { items: detailItems }: any) => {
+      onSubmit={async (
+        formValues: Record<string, unknown>,
+        { items: detailItems }: { items: CreateQuoteItemInput[] },
+      ) => {
         const payload = {
           customerCode:
             formValues.scopeType === "CUSTOMER" ||
             formValues.scopeType === "STORE"
-              ? formValues.customerCode
+              ? (formValues.customerCode as string)
               : null,
           storeCode:
-            formValues.scopeType === "STORE" ? formValues.storeCode : null,
+            formValues.scopeType === "STORE"
+              ? (formValues.storeCode as string)
+              : null,
           regionCode:
-            formValues.scopeType === "REGION" ? formValues.regionCode : null,
-          effectiveDate: formValues.effectiveDate,
-          expiryDate: formValues.expiryDate || null,
-          displayName: formValues.displayName || null,
+            formValues.scopeType === "REGION"
+              ? (formValues.regionCode as string)
+              : null,
+          effectiveDate: formValues.effectiveDate as string,
+          expiryDate: (formValues.expiryDate as string) || null,
+          displayName: (formValues.displayName as string) || null,
           items: detailItems,
         };
 

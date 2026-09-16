@@ -208,7 +208,9 @@ test("树结构工具：扁平转嵌套、展开 depth、查找节点与防环�
   assert.equal(found?.name, "前端组");
 
   // 收集子树 ID 集合
-  const subtreeIds = collectSubtreeIds(tree[0]?.children[0]!);
+  const firstChild = tree[0]?.children?.[0];
+  assert.ok(firstChild);
+  const subtreeIds = collectSubtreeIds(firstChild);
   assert.deepEqual(subtreeIds.sort(), ["dept_rd", "dept_rd_fe"].sort());
 });
 

@@ -67,30 +67,10 @@ export function resolveActiveFeature(workspaceRoot = process.cwd()) {
     // 非 git 环境忽略
   }
 
-  // 3. feature_list.json 中进行中的特性
-  const featureListPath = path.join(workspaceRoot, "feature_list.json");
-  if (fs.existsSync(featureListPath)) {
-    try {
-      const listData = JSON.parse(fs.readFileSync(featureListPath, "utf-8"));
-      const inProgress = listData.features?.filter(
-        (f) => f.status === "in_progress",
-      );
-      if (inProgress && inProgress.length === 1) {
-        return {
-          id: inProgress[0].id,
-          source: "feature_list.json",
-          developer: "team",
-          role: "implementer",
-        };
-      }
-    } catch {
-      // ignore
-    }
-  }
-
+  // 3. 严格判定：当未设定 member.local.md 且未处于特定特性分支时，返回未锁定状态
   return {
     id: null,
-    source: "global",
+    source: "unassigned",
     developer: "team",
     role: "general",
   };

@@ -5,10 +5,7 @@ import {
   getTenantMaterialContext,
   assertMaterialAbility,
 } from "../../assembly/context";
-import {
-  UnitConversionSubject,
-  UnitOfMeasureSubject,
-} from "./contract";
+import { UnitConversionSubject, UnitOfMeasureSubject } from "./contract";
 
 export interface UnitListItem {
   id: string;
@@ -38,7 +35,7 @@ export async function getUnitsQuery(): Promise<UnitListItem[]> {
   const { client, ability } = await getTenantMaterialContext();
   assertMaterialAbility(ability, StandardAction.READ, UnitOfMeasureSubject);
 
-  const units = await (client as any).unitOfMeasure.findMany({
+  const units = await client.unitOfMeasure.findMany({
     where: { isDeleted: false },
     orderBy: [
       { unitType: "asc" },
@@ -47,7 +44,7 @@ export async function getUnitsQuery(): Promise<UnitListItem[]> {
     ],
   });
 
-  return units.map((u: any) => ({
+  return units.map((u) => ({
     id: u.id,
     unitCode: u.unitCode,
     unitName: u.unitName,
@@ -66,7 +63,7 @@ export async function getUnitConversionsQuery(
   const { client, ability } = await getTenantMaterialContext();
   assertMaterialAbility(ability, StandardAction.READ, UnitConversionSubject);
 
-  const conversions = await (client as any).unitConversion.findMany({
+  const conversions = await client.unitConversion.findMany({
     where: {
       isDeleted: false,
       ...(itemCode ? { itemCode } : {}),
@@ -78,7 +75,7 @@ export async function getUnitConversionsQuery(
     orderBy: [{ createdAt: "desc" }],
   });
 
-  return conversions.map((c: any) => ({
+  return conversions.map((c) => ({
     id: c.id,
     itemCode: c.itemCode,
     fromUnitId: c.fromUnitId,

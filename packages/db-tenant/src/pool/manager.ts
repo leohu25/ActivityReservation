@@ -208,6 +208,7 @@ export class TenantDbManager<Client extends TenantDbClient> {
 
 export type TenantPrismaClient = GeneratedTenantPrismaClient;
 export type { TenantPrisma };
+export type { Prisma as TenantPrismaNamespace } from "@prisma/client-tenant";
 
 /**
  * 根据数据库连接串创建租户专属的 Prisma 客户端实例

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { TenantPrismaClient } from "@base/db-tenant";
+import type { TenantPrismaClient, TenantPrisma } from "@base/db-tenant";
 import type { PrismaQueryCondition } from "@base/authorization";
 import { CustomerQuoteStatus } from "./contract";
 import type {
@@ -60,10 +60,14 @@ export class CustomerQuoteService {
     const pageSize = Math.min(100, Math.max(1, filter.pageSize ?? 10));
     const skip = (page - 1) * pageSize;
 
-    const andConditions: any[] = [{ isDeleted: false }];
+    const andConditions: TenantPrisma.CustomerQuoteWhereInput[] = [
+      { isDeleted: false },
+    ];
 
     if (accessibleWhere && Object.keys(accessibleWhere).length > 0) {
-      andConditions.push(accessibleWhere);
+      andConditions.push(
+        accessibleWhere as TenantPrisma.CustomerQuoteWhereInput,
+      );
     }
 
     if (filter.customerCode) {
@@ -270,8 +274,7 @@ export class CustomerQuoteService {
     client: TenantPrismaClient,
     quoteId: string,
     status:
-      | typeof CustomerQuoteStatus.ACTIVE
-      | typeof CustomerQuoteStatus.VOIDED,
+      typeof CustomerQuoteStatus.ACTIVE | typeof CustomerQuoteStatus.VOIDED,
   ) {
     const existing = await client.customerQuote.findUnique({
       where: { quoteId },

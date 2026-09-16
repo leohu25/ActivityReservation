@@ -56,14 +56,38 @@ interface Props {
   stores: Array<{ storeCode: string; storeName: string; customerCode: string }>;
 }
 
-const STATUS_BADGES: Record<string, { label: string; variant: any }> = {
+const STATUS_BADGES: Record<
+  string,
+  {
+    label: string;
+    variant:
+      | "default"
+      | "secondary"
+      | "destructive"
+      | "outline"
+      | "success"
+      | "warning";
+  }
+> = {
   DRAFT: { label: "草稿", variant: "secondary" },
   PENDING: { label: "待审核", variant: "warning" },
   APPROVED: { label: "已审核", variant: "success" },
   CANCELLED: { label: "已取消", variant: "destructive" },
 };
 
-const FULFILLMENT_BADGES: Record<string, { label: string; variant: any }> = {
+const FULFILLMENT_BADGES: Record<
+  string,
+  {
+    label: string;
+    variant:
+      | "default"
+      | "secondary"
+      | "destructive"
+      | "outline"
+      | "success"
+      | "warning";
+  }
+> = {
   PENDING_SUMMARY: { label: "待汇总", variant: "secondary" },
   PRODUCING: { label: "生产中", variant: "warning" },
   PRODUCED: { label: "生产完成", variant: "default" },

@@ -462,8 +462,14 @@ export function BomFlowEditorModal({
               .slice(0, 3)
               .join(", ") || "-",
           status: res.data.status,
-          effectiveDate: res.data.effectiveDate,
-          updatedAt: res.data.updatedAt,
+          effectiveDate:
+            typeof res.data.effectiveDate === "string"
+              ? res.data.effectiveDate
+              : new Date(res.data.effectiveDate).toISOString(),
+          updatedAt:
+            typeof res.data.updatedAt === "string"
+              ? res.data.updatedAt
+              : new Date(res.data.updatedAt).toISOString(),
           processes: payloadProcesses.map((p) => {
             const tpl = processTemplates.find((t) => t.id === p.processId);
             const spec = tpl?.specs.find((sp) => sp.id === p.specId);
@@ -609,9 +615,9 @@ export function BomFlowEditorModal({
                 </label>
                 <div className="mt-1 flex gap-2">
                   {[
-                    { key: "SINGLE", label: "单品初加工" },
-                    { key: "COMPOSITE", label: "组合调理" },
-                    { key: "PACKAGING", label: "定量包装" },
+                    { key: "SINGLE" as const, label: "单品初加工" },
+                    { key: "COMPOSITE" as const, label: "组合调理" },
+                    { key: "PACKAGING" as const, label: "定量包装" },
                   ].map((t) => (
                     <Button
                       key={t.key}
@@ -619,7 +625,7 @@ export function BomFlowEditorModal({
                       size="sm"
                       variant={bomType === t.key ? "default" : "outline"}
                       className="flex-1 text-xs cursor-pointer py-1 h-8"
-                      onClick={() => setBomType(t.key as any)}
+                      onClick={() => setBomType(t.key)}
                     >
                       {t.label}
                     </Button>

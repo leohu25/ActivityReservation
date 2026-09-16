@@ -52,56 +52,19 @@ export const TENANT_MIGRATION_CATALOG = {
     {
       formatVersion: 1,
       scope: "tenant",
-      version: "20260915035330",
+      version: "20260915124216",
       name: "add_tenant_menu_item",
       previousVersion: "20260913144525",
       checksum:
-        "1caf411f3eefb70592d55ca34377f333c3f859faeaa5f9d7c972dfdfca6ea6ae",
-      schemaChecksum:
-        "3d8c60344483145f42a1f4dd7168c699a7f7d229a2d253c86faa5d3d44a133b2",
-      createdAt: "2026-09-15T03:53:30.057Z",
-      risks: [],
-      rollbackSupported: true,
-      upSql:
-        '-- CreateTable\nCREATE TABLE "tenant_menu_item" (\n    "id" TEXT NOT NULL,\n    "parent_id" TEXT,\n    "item_type" TEXT NOT NULL DEFAULT \'PAGE\',\n    "page_key" TEXT,\n    "custom_label" TEXT,\n    "custom_icon" TEXT,\n    "sort_order" INTEGER NOT NULL DEFAULT 0,\n    "is_visible" BOOLEAN NOT NULL DEFAULT true,\n    "created_by_id" TEXT NOT NULL DEFAULT \'system\',\n    "dept_id" TEXT,\n    "updated_by_id" TEXT,\n    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    "updated_at" TIMESTAMP(3) NOT NULL,\n    "is_deleted" BOOLEAN NOT NULL DEFAULT false,\n    "deleted_at" TIMESTAMP(3),\n    "deleted_by_id" TEXT,\n\n    CONSTRAINT "tenant_menu_item_pkey" PRIMARY KEY ("id")\n);\n\n-- CreateIndex\nCREATE INDEX "tenant_menu_item_parent_id_sort_order_idx" ON "tenant_menu_item"("parent_id", "sort_order");\n\n-- CreateIndex\nCREATE INDEX "tenant_menu_item_is_deleted_idx" ON "tenant_menu_item"("is_deleted");\n\n-- AddForeignKey\nALTER TABLE "tenant_menu_item" ADD CONSTRAINT "tenant_menu_item_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "tenant_menu_item"("id") ON DELETE CASCADE ON UPDATE CASCADE;\n\n-- Comments Migration\nCOMMENT ON TABLE "tenant_menu_item" IS \'租户动态导航菜单配置模型 (支持现场层级调整、自定义别名与跨切片灵活编排)\';\nCOMMENT ON COLUMN "tenant_menu_item"."id" IS \'节点主键ID\';\nCOMMENT ON COLUMN "tenant_menu_item"."parent_id" IS \'父节点ID (空表示顶级大菜单/顶级单页)\';\nCOMMENT ON COLUMN "tenant_menu_item"."item_type" IS \'节点类型: GROUP(大菜单/目录分组) | PAGE(具体功能页面)\';\nCOMMENT ON COLUMN "tenant_menu_item"."page_key" IS \'关联的标准页面键名 (若 itemType="PAGE"，对应 StandardPageDescriptor.pageKey)\';\nCOMMENT ON COLUMN "tenant_menu_item"."custom_label" IS \'自定义显示别名 (现场实施重命名；空则使用页面契约 defaultLabel)\';\nCOMMENT ON COLUMN "tenant_menu_item"."custom_icon" IS \'自定义图标名称 (空则使用页面契约 defaultIcon)\';\nCOMMENT ON COLUMN "tenant_menu_item"."sort_order" IS \'排序权重 (升序排列)\';\nCOMMENT ON COLUMN "tenant_menu_item"."is_visible" IS \'是否可见\';\nCOMMENT ON COLUMN "tenant_menu_item"."created_by_id" IS \'创建人 ID\';\nCOMMENT ON COLUMN "tenant_menu_item"."dept_id" IS \'归属部门 ID\';\nCOMMENT ON COLUMN "tenant_menu_item"."updated_by_id" IS \'更新人 ID\';\nCOMMENT ON COLUMN "tenant_menu_item"."created_at" IS \'创建时间\';\nCOMMENT ON COLUMN "tenant_menu_item"."updated_at" IS \'更新时间\';\nCOMMENT ON COLUMN "tenant_menu_item"."is_deleted" IS \'软删除标记\';\nCOMMENT ON COLUMN "tenant_menu_item"."deleted_at" IS \'软删除时间\';\nCOMMENT ON COLUMN "tenant_menu_item"."deleted_by_id" IS \'软删除人 ID\';\n',
-      downSql:
-        '-- DropForeignKey\nALTER TABLE "tenant_menu_item" DROP CONSTRAINT "tenant_menu_item_parent_id_fkey";\n\n-- DropTable\nDROP TABLE "tenant_menu_item";',
-    },
-    {
-      formatVersion: 1,
-      scope: "tenant",
-      version: "20260915042732",
-      name: "add_menu_external_url",
-      previousVersion: "20260915035330",
-      checksum:
-        "cbefc2954a7e9423d8d47478b9fbb813ea9c1eac8ac31756ea60ae1db24eeb42",
-      schemaChecksum:
-        "ad43e0f9570ee22750ccc86d1a20c247311fb1efbf461c4d607fac4a512f1ab0",
-      createdAt: "2026-09-15T04:27:32.768Z",
-      risks: [],
-      rollbackSupported: true,
-      upSql:
-        '-- AlterTable\nALTER TABLE "tenant_menu_item" ADD COLUMN     "external_url" TEXT,\nADD COLUMN     "open_in_new_tab" BOOLEAN NOT NULL DEFAULT false;\n\n-- Comments Migration\nCOMMENT ON COLUMN "tenant_menu_item"."item_type" IS \'节点类型: GROUP(大菜单/目录分组) | PAGE(具体功能页面) | LINK(外部链接)\';\nCOMMENT ON COLUMN "tenant_menu_item"."external_url" IS \'外部跳转 URL (若 itemType="LINK"，如 "https://bi.company.com")\';\nCOMMENT ON COLUMN "tenant_menu_item"."open_in_new_tab" IS \'是否在新标签页打开\';\n',
-      downSql:
-        '-- AlterTable\nALTER TABLE "tenant_menu_item" DROP COLUMN "external_url",\nDROP COLUMN "open_in_new_tab";\n\n-- Comments Rollback\nCOMMENT ON COLUMN "tenant_menu_item"."item_type" IS \'节点类型: GROUP(大菜单/目录分组) | PAGE(具体功能页面)\';\n',
-    },
-    {
-      formatVersion: 1,
-      scope: "tenant",
-      version: "20260915051227",
-      name: "remove_menu_relation",
-      previousVersion: "20260915042732",
-      checksum:
-        "8fbb8ce750a93fa87324898da285ac3453cc85f236d5472629af8afb82521383",
+        "c380c1444e3a9c183f5a9797ef12dde16aeb96b9b8a105f302283bbfd00b4195",
       schemaChecksum:
         "4742442b228d9f549ce23734820f6ccee916deedf6416382a1e310e630326a98",
-      createdAt: "2026-09-15T05:12:27.841Z",
+      createdAt: "2026-09-15T12:42:16.594Z",
       risks: [],
       rollbackSupported: true,
       upSql:
-        '-- DropForeignKey\nALTER TABLE "tenant_menu_item" DROP CONSTRAINT "tenant_menu_item_parent_id_fkey";',
-      downSql:
-        '-- AddForeignKey\nALTER TABLE "tenant_menu_item" ADD CONSTRAINT "tenant_menu_item_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "tenant_menu_item"("id") ON DELETE CASCADE ON UPDATE CASCADE;',
+        '-- CreateTable\nCREATE TABLE "tenant_menu_item" (\n    "id" TEXT NOT NULL,\n    "parent_id" TEXT,\n    "item_type" TEXT NOT NULL DEFAULT \'PAGE\',\n    "page_key" TEXT,\n    "external_url" TEXT,\n    "open_in_new_tab" BOOLEAN NOT NULL DEFAULT false,\n    "custom_label" TEXT,\n    "custom_icon" TEXT,\n    "sort_order" INTEGER NOT NULL DEFAULT 0,\n    "is_visible" BOOLEAN NOT NULL DEFAULT true,\n    "created_by_id" TEXT NOT NULL DEFAULT \'system\',\n    "dept_id" TEXT,\n    "updated_by_id" TEXT,\n    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    "updated_at" TIMESTAMP(3) NOT NULL,\n    "is_deleted" BOOLEAN NOT NULL DEFAULT false,\n    "deleted_at" TIMESTAMP(3),\n    "deleted_by_id" TEXT,\n\n    CONSTRAINT "tenant_menu_item_pkey" PRIMARY KEY ("id")\n);\n\n-- CreateIndex\nCREATE INDEX "tenant_menu_item_parent_id_sort_order_idx" ON "tenant_menu_item"("parent_id", "sort_order");\n\n-- CreateIndex\nCREATE INDEX "tenant_menu_item_is_deleted_idx" ON "tenant_menu_item"("is_deleted");\n\n-- Comments Migration\nCOMMENT ON TABLE "tenant_menu_item" IS \'租户动态导航菜单配置模型 (支持现场层级调整、自定义别名与跨切片灵活编排)\';\nCOMMENT ON COLUMN "tenant_menu_item"."id" IS \'节点主键ID\';\nCOMMENT ON COLUMN "tenant_menu_item"."parent_id" IS \'父节点ID (空表示顶级大菜单/顶级单页)\';\nCOMMENT ON COLUMN "tenant_menu_item"."item_type" IS \'节点类型: GROUP(大菜单/目录分组) | PAGE(具体功能页面) | LINK(外部链接)\';\nCOMMENT ON COLUMN "tenant_menu_item"."page_key" IS \'关联的标准页面键名 (若 itemType="PAGE"，对应 StandardPageDescriptor.pageKey)\';\nCOMMENT ON COLUMN "tenant_menu_item"."external_url" IS \'外部跳转 URL (若 itemType="LINK"，如 "https://bi.company.com")\';\nCOMMENT ON COLUMN "tenant_menu_item"."open_in_new_tab" IS \'是否在新标签页打开\';\nCOMMENT ON COLUMN "tenant_menu_item"."custom_label" IS \'自定义显示别名 (现场实施重命名；空则使用页面契约 defaultLabel)\';\nCOMMENT ON COLUMN "tenant_menu_item"."custom_icon" IS \'自定义图标名称 (空则使用页面契约 defaultIcon)\';\nCOMMENT ON COLUMN "tenant_menu_item"."sort_order" IS \'排序权重 (升序排列)\';\nCOMMENT ON COLUMN "tenant_menu_item"."is_visible" IS \'是否可见\';\nCOMMENT ON COLUMN "tenant_menu_item"."created_by_id" IS \'创建人 ID\';\nCOMMENT ON COLUMN "tenant_menu_item"."dept_id" IS \'归属部门 ID\';\nCOMMENT ON COLUMN "tenant_menu_item"."updated_by_id" IS \'更新人 ID\';\nCOMMENT ON COLUMN "tenant_menu_item"."created_at" IS \'创建时间\';\nCOMMENT ON COLUMN "tenant_menu_item"."updated_at" IS \'更新时间\';\nCOMMENT ON COLUMN "tenant_menu_item"."is_deleted" IS \'软删除标记\';\nCOMMENT ON COLUMN "tenant_menu_item"."deleted_at" IS \'软删除时间\';\nCOMMENT ON COLUMN "tenant_menu_item"."deleted_by_id" IS \'软删除人 ID\';\n',
+      downSql: '-- DropTable\nDROP TABLE "tenant_menu_item";',
     },
   ],
 } as const satisfies MigrationRuntimeCatalog;

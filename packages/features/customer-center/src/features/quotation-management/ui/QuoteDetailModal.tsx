@@ -25,6 +25,90 @@ export function QuoteDetailModal({
   onClose,
   onEdit,
 }: QuoteDetailModalProps) {
+  const columns: DetailTableColumn<QuoteItemDetail>[] = useMemo(
+    () => [
+      {
+        id: "itemCode",
+        header: "商品编码",
+        renderCell: (item) => (
+          <span className="text-muted-foreground font-mono">
+            {item.itemCode}
+          </span>
+        ),
+      },
+      {
+        id: "itemName",
+        header: "商品名称",
+        renderCell: (item) => (
+          <span className="font-medium text-foreground">{item.itemName}</span>
+        ),
+      },
+      {
+        id: "salesUnit",
+        header: "销售单位",
+        align: "center",
+        renderCell: (item) => <span>{item.salesUnit}</span>,
+      },
+      {
+        id: "unitPriceExclTax",
+        header: "去税单价",
+        align: "right",
+        renderCell: (item) => (
+          <span className="font-mono tabular-nums text-foreground">
+            ¥{Number(item.unitPriceExclTax).toFixed(2)}
+          </span>
+        ),
+      },
+      {
+        id: "taxRate",
+        header: "税率",
+        align: "right",
+        renderCell: (item) => (
+          <span className="font-mono tabular-nums text-muted-foreground">
+            {Number(item.taxRate)}%
+          </span>
+        ),
+      },
+      {
+        id: "unitPriceInclTax",
+        header: "含税单价",
+        align: "right",
+        renderCell: (item) => (
+          <span className="font-mono tabular-nums font-semibold text-primary">
+            ¥{Number(item.unitPriceInclTax).toFixed(2)}
+          </span>
+        ),
+      },
+      {
+        id: "qtyRange",
+        header: "阶梯起订量",
+        align: "center",
+        renderCell: (item) => {
+          if (!item.minQty && !item.maxQty) {
+            return <span className="text-muted-foreground text-xs">不限</span>;
+          }
+          const minText = String(item.minQty ?? 0);
+          const maxText = String(item.maxQty ?? "∞");
+          return (
+            <span className="text-xs font-mono">
+              {minText} ~ {maxText}
+            </span>
+          );
+        },
+      },
+      {
+        id: "remark",
+        header: "备注",
+        renderCell: (item) => (
+          <span className="text-xs text-muted-foreground">
+            {item.remark || "-"}
+          </span>
+        ),
+      },
+    ],
+    [],
+  );
+
   if (!quote) return null;
 
   const renderStatusBadge = (status: string) => {
@@ -97,90 +181,6 @@ export function QuoteDetailModal({
     if (!dateVal) return "长期有效";
     return formatDate(dateVal);
   };
-
-  const columns: DetailTableColumn<QuoteItemDetail>[] = useMemo(
-    () => [
-      {
-        id: "itemCode",
-        header: "商品编码",
-        renderCell: (item) => (
-          <span className="text-muted-foreground font-mono">
-            {item.itemCode}
-          </span>
-        ),
-      },
-      {
-        id: "itemName",
-        header: "商品名称",
-        renderCell: (item) => (
-          <span className="font-medium text-foreground">{item.itemName}</span>
-        ),
-      },
-      {
-        id: "salesUnit",
-        header: "销售单位",
-        align: "center",
-        renderCell: (item) => <span>{item.salesUnit}</span>,
-      },
-      {
-        id: "unitPriceExclTax",
-        header: "不含税单价",
-        align: "right",
-        renderCell: (item) => (
-          <span className="font-mono text-muted-foreground">
-            ¥{Number(item.unitPriceExclTax || 0).toFixed(2)}
-          </span>
-        ),
-      },
-      {
-        id: "taxRate",
-        header: "税率 (%)",
-        align: "right",
-        renderCell: (item) => (
-          <span className="font-mono text-muted-foreground">
-            {Number(item.taxRate || 0).toFixed(1)}%
-          </span>
-        ),
-      },
-      {
-        id: "unitPriceInclTax",
-        header: "含税单价",
-        align: "right",
-        renderCell: (item) => (
-          <span className="font-mono font-semibold text-primary">
-            ¥{Number(item.unitPriceInclTax || 0).toFixed(2)}
-          </span>
-        ),
-      },
-      {
-        id: "qtyConstraint",
-        header: "起订限量限制",
-        align: "center",
-        renderCell: (item) =>
-          item.minQty != null || item.maxQty != null ? (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted text-[10px] text-foreground">
-              起订:{" "}
-              {item.minQty == null ? "无" : `${item.minQty}${item.salesUnit}`}
-              {item.maxQty == null
-                ? ""
-                : ` / 限购: ${item.maxQty}${item.salesUnit}`}
-            </span>
-          ) : (
-            <span className="text-muted-foreground text-[10px]">-</span>
-          ),
-      },
-      {
-        id: "remark",
-        header: "明细备注",
-        renderCell: (item) => (
-          <span className="text-muted-foreground truncate max-w-[150px] inline-block">
-            {item.remark || "-"}
-          </span>
-        ),
-      },
-    ],
-    [],
-  );
 
   const sections: FormModalSection[] = [
     {

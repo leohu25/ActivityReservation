@@ -26,6 +26,12 @@ interface Props {
   inline?: boolean;
 }
 
+function getDefaultDeliveryDate(): string {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return tomorrow.toISOString().split("T")[0];
+}
+
 export function CreateOrderModal({
   open,
   onOpenChange,
@@ -45,7 +51,7 @@ export function CreateOrderModal({
     () => ({
       customerCode: "",
       storeCode: "",
-      deliveryDate: new Date(Date.now() + 86400000).toISOString().split("T")[0],
+      deliveryDate: getDefaultDeliveryDate(),
       orderType: defaultOrderType,
       originalOrderId: defaultOriginalOrderId || "",
       salesPerson: "",

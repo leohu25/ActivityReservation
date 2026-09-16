@@ -50,7 +50,7 @@ export async function getItemsQuery(filter?: {
   const { client, ability } = await getTenantMaterialContext();
   assertMaterialAbility(ability, StandardAction.READ, ItemMasterSubject);
 
-  const items = await (client as any).itemMaster.findMany({
+  const items = await client.itemMaster.findMany({
     where: {
       isDeleted: false,
       ...(filter?.itemCategory ? { itemCategory: filter.itemCategory } : {}),
@@ -73,7 +73,7 @@ export async function getItemsQuery(filter?: {
     orderBy: [{ createdAt: "desc" }],
   });
 
-  return items.map((i: any) => ({
+  return items.map((i) => ({
     id: i.id,
     itemCode: i.itemCode,
     itemName: i.itemName,

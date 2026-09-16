@@ -6,7 +6,6 @@ import {
   ArrowRight,
   Clock,
   PackageCheck,
-  CheckCircle2,
   Settings2,
   ExternalLink,
   Layers,
@@ -192,7 +191,7 @@ export function BomVisualDag({
               )}
             </div>
           ) : (
-            processes.map((proc, idx) => (
+            processes.map((proc) => (
               <React.Fragment key={proc.seqNo}>
                 {/* 工序节点卡片 */}
                 <div className="border border-border rounded-xl bg-background p-4 w-72 shadow-xs space-y-3 relative hover:border-primary/60 transition-all hover:shadow-sm">
@@ -225,14 +224,15 @@ export function BomVisualDag({
                         </span>
                       </p>
                     )}
-                    {proc.stdLaborHours !== null && proc.stdLaborHours !== undefined && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        标准工时:{" "}
-                        <span className="font-mono tabular-nums">
-                          {proc.stdLaborHours}h
-                        </span>
-                      </p>
-                    )}
+                    {proc.stdLaborHours !== null &&
+                      proc.stdLaborHours !== undefined && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          标准工时:{" "}
+                          <span className="font-mono tabular-nums">
+                            {proc.stdLaborHours}h
+                          </span>
+                        </p>
+                      )}
                   </div>
 
                   {/* 投入物料 */}
