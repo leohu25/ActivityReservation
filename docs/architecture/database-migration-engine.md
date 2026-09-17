@@ -52,7 +52,8 @@ export const TENANT_CATALOG = {
   scope: "tenant",
   baseline: {
     version: "20260910141219",
-    checksum: "6882650be6ba13b35522e8486001258ef9c7bb72911bfbe2427aae69c36280b2",
+    checksum:
+      "6882650be6ba13b35522e8486001258ef9c7bb72911bfbe2427aae69c36280b2",
     sql: `
       CREATE TABLE IF NOT EXISTS "department" (
         "id" TEXT NOT NULL,
@@ -129,13 +130,38 @@ graph TD
 ### 状态机四大核心状态定义
 
 1. **`EMPTY` (纯净空库)**：
-   数据库中既无迁移账本表，也无任何业务表（即使预装了 PostGIS 扩展表如 `spatial_ref_sys` 也不会被误判）。允许自动执行 Day 0 初始化。
+   数据库中既无迁移账本表，也无任何业务核心表（如 `user`、`organization`、`session`，即使预装了 PostGIS 扩展表如 `spatial_ref_sys` 也不会被误判）。且必须提供初始超管配置（`CONTROL_BOOTSTRAP_ADMIN_*`），方可自动执行 Day 0 初始化。
 2. **`READY` (健康就绪)**：
    账本存在，所有登记的基线与增量迁移 SHA-256 校验和与代码中的 `runtime-catalog.ts` 严格吻合，核心表完整存在，直接放行系统启动。
 3. **`PARTIAL` (非空残缺库 - Fail-Closed 阻断)**：
    库中存在部分业务表，但迁移账本不存在；或者账本虽在但核心表发生物理丢失。系统判定为“脏库或遭到非正常篡改”，**严禁自动运行任何建表语句**，立即抛出致命错误，要求人工运维介入，防止覆盖破坏存量数据。
 4. **`CHECKSUM_MISMATCH` (校验和冲突 - 防架构漂移阻断)**：
    数据库中记录的历史迁移 SQL 哈希与当前代码预编译工件中的哈希不一致，说明代码发生了未经过正式迁移的私自篡改，立即阻断部署。
+
+### 💡 核心设计问答与排障指南 (FAQ)
+
+#### Q1: 为什么在 Navicat / DBeaver 中手动删除了所有表，系统仍然无法自愈初始化？
+
+这是本地开发排查中最常见的问题，根本原因在于**Fail-Closed 故障闭锁安全哲学**与**严格空库判定**：
+
+1. **删表不彻底被判定为 `PARTIAL`**：
+   通过 GUI 客户端手动右键批量删表时，常因外键约束拦截、删表顺序或未提交事务等，残留了部分表或隐藏依赖。只要残留了核心业务表（`user`、`organization`、`session` 等），系统就会判定为**非空残缺库（`PARTIAL`）**，绝对不会自动补建表，而是直接阻断。
+   > **正确的清空方式**：在数据库客户端直接执行以下原生 SQL：
+
+> ```sql
+> DROP SCHEMA public CASCADE;
+> CREATE SCHEMA public;
+> ```
+
+2. **缺少初始超级管理员环境变量 (`SEED_CONFIGURATION_MISSING`)**：
+   平台总控库的 Day 0 初始化不仅是跑 DDL 建表，还必须同时向 Better Auth 写入初始超管账号以供系统能够正常登录。如果未在 `apps/control/.env.local` 中配置以下变量，即便库是彻底干净的，也会抛出错误阻断初始化：
+   - `CONTROL_BOOTSTRAP_ADMIN_EMAIL`
+   - `CONTROL_BOOTSTRAP_ADMIN_NAME`
+   - `CONTROL_BOOTSTRAP_ADMIN_PASSWORD` (长度不得少于 12 位)
+
+#### Q2: 删除了整个物理数据库 (DROP DATABASE) 为什么应用无法自愈？
+
+应用运行时建立的数据库连接池是绑定特定数据库名称（如 `control_db`）的。如果物理 Database 彻底不存在，PostgreSQL 在 TCP 握手与鉴权阶段就会报致命错误 `FATAL: database "control_db" does not exist`。应用层无权也无法在未连接的状态下跨库执行 `CREATE DATABASE`。物理 Database 必须先由 Docker 或基础设施层预先创建完毕。
 
 ---
 
@@ -162,11 +188,11 @@ COMMIT; -- 事务提交时，锁自动释放，天然免疫长连接泄漏与 Pg
 
 ## 六、 核心源码地图索引与指引
 
-| 架构职责 | 权威源码文件路径 | 核心类 / 导出 | 架构说明 |
-| :--- | :--- | :--- | :--- |
-| **运行时静态目录** | `tooling/db-migrate/generated/runtime-catalog.ts` | `PLATFORM_CATALOG`, `TENANT_CATALOG` | 预编译全量基线 DDL、增量迁移与校验和常量 |
-| **Schema 聚合器** | `tooling/db-migrate/src/schema/aggregate.ts` | `aggregateSchemas` | 解析 `@db-migrate-extension` 注解，聚合跨切片模型 |
-| **状态机探查器** | `tooling/db-migrate/src/runtime/inspection.ts` | `inspectDatabaseState` | 判定 `EMPTY` / `READY` / `PARTIAL` / `CHECKSUM_MISMATCH` |
-| **平台库执行器** | `tooling/db-migrate/src/runtime/platform-runner.ts` | `PlatformMigrationRunner` | 平台集中管控库 Day 0 自愈、迁移升级与 Advisory 锁管理 |
-| **租户库开通器** | `tooling/db-migrate/src/runtime/provisioner.ts` | `TenantDatabaseProvisioner` | 租户物理库原子开通、Baseline 批量执行与健康自检 |
-| **迁移 CLI 入口** | `tooling/db-migrate/src/cli.ts` | `db:catalog:build`, `db:platform:ensure` | 开发与部署期命令行工具 |
+| 架构职责           | 权威源码文件路径                                    | 核心类 / 导出                            | 架构说明                                                 |
+| :----------------- | :-------------------------------------------------- | :--------------------------------------- | :------------------------------------------------------- |
+| **运行时静态目录** | `tooling/db-migrate/generated/runtime-catalog.ts`   | `PLATFORM_CATALOG`, `TENANT_CATALOG`     | 预编译全量基线 DDL、增量迁移与校验和常量                 |
+| **Schema 聚合器**  | `tooling/db-migrate/src/schema/aggregate.ts`        | `aggregateSchemas`                       | 解析 `@db-migrate-extension` 注解，聚合跨切片模型        |
+| **状态机探查器**   | `tooling/db-migrate/src/runtime/inspection.ts`      | `inspectDatabaseState`                   | 判定 `EMPTY` / `READY` / `PARTIAL` / `CHECKSUM_MISMATCH` |
+| **平台库执行器**   | `tooling/db-migrate/src/runtime/platform-runner.ts` | `PlatformMigrationRunner`                | 平台集中管控库 Day 0 自愈、迁移升级与 Advisory 锁管理    |
+| **租户库开通器**   | `tooling/db-migrate/src/runtime/provisioner.ts`     | `TenantDatabaseProvisioner`              | 租户物理库原子开通、Baseline 批量执行与健康自检          |
+| **迁移 CLI 入口**  | `tooling/db-migrate/src/cli.ts`                     | `db:catalog:build`, `db:platform:ensure` | 开发与部署期命令行工具                                   |

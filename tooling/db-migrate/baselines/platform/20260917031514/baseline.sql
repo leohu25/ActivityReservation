@@ -77,6 +77,16 @@ CREATE TABLE "organization_role" (
 );
 
 -- CreateTable
+CREATE TABLE "platform_migration" (
+    "version" VARCHAR(30) NOT NULL,
+    "migration_name" VARCHAR(100) NOT NULL,
+    "checksum" VARCHAR(64) NOT NULL,
+    "applied_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "platform_migration_pkey" PRIMARY KEY ("version")
+);
+
+-- CreateTable
 CREATE TABLE "session" (
     "id" TEXT NOT NULL,
     "expires_at" TIMESTAMP(3) NOT NULL,
@@ -285,6 +295,11 @@ COMMENT ON COLUMN "organization_role"."role" IS '角色代号';
 COMMENT ON COLUMN "organization_role"."permission" IS 'CASL 声明权限策略 JSON';
 COMMENT ON COLUMN "organization_role"."created_at" IS '角色创建时间';
 COMMENT ON COLUMN "organization_role"."updated_at" IS '角色最后更新时间';
+COMMENT ON TABLE "platform_migration" IS '平台总控库版本演进与迁移执行台账 (12-Factor 自愈基线账本)';
+COMMENT ON COLUMN "platform_migration"."version" IS '迁移版本时间戳';
+COMMENT ON COLUMN "platform_migration"."migration_name" IS '迁移名称或标识 (如 baseline)';
+COMMENT ON COLUMN "platform_migration"."checksum" IS '迁移脚本 SHA-256 校验和';
+COMMENT ON COLUMN "platform_migration"."applied_at" IS '迁移应用时间戳';
 COMMENT ON TABLE "session" IS '用户认证会话表 (Better Auth Session)';
 COMMENT ON COLUMN "session"."id" IS '会话唯一ID';
 COMMENT ON COLUMN "session"."expires_at" IS '会话过期时间戳';

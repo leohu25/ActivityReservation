@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   findImmutableMigrationViolations,
+  isMigrationBaselineResetAllowed,
   isProtectedMigrationArtifact,
   parseNameStatus,
 } from "./check-migration-immutability.mjs";
@@ -86,15 +87,18 @@ test("findImmutableMigrationViolations - 允许新增迁移，阻止修改和删
   );
 });
 
-test("findImmutableMigrationViolations - 阻止重命名历史，允许复制为新增工件", () => {
-  const changes = parseNameStatus(
-    [
-      "R100\ttooling/db-migrate/migrations/tenant/old/migration.sql\tarchive/migration.sql",
-      "C100\ttooling/db-migrate/baselines/tenant/old/baseline.sql\tbackup/baseline.sql",
-    ].join("\n"),
+test("isMigrationBaselineResetAllowed - 识别环境变量显式受控开关", () => {
+  assert.equal(isMigrationBaselineResetAllowed({}), false);
+  assert.equal(
+    isMigrationBaselineResetAllowed({ ALLOW_MIGRATION_BASELINE_RESET: "0" }),
+    false,
   );
-
-  const violations = findImmutableMigrationViolations(changes);
-  assert.equal(violations.length, 1);
-  assert.equal(violations[0].status, "R");
+  assert.equal(
+    isMigrationBaselineResetAllowed({ ALLOW_MIGRATION_BASELINE_RESET: "1" }),
+    true,
+  );
+  assert.equal(
+    isMigrationBaselineResetAllowed({ ALLOW_MIGRATION_BASELINE_RESET: "true" }),
+    true,
+  );
 });

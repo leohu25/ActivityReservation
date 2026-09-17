@@ -12,14 +12,14 @@
 
 根命令通过 `turbo.json` 显式声明依赖拓扑与增量缓存，无需手动前置依赖：
 
-| 顶层命令 | 底层实际调度 | 拓扑前置依赖 (`dependsOn`) | 增量缓存策略 | 职责定位 |
-| :--- | :--- | :--- | :--- | :--- |
-| `pnpm dev` | `turbo run dev` | `//#codegen` | 缓存命中时 20ms 跳过代码生成 | 本地全端联调 (Turbo 并行拉起双端) |
-| `pnpm dev:tenant` | `turbo run dev --filter=tenant` | `//#codegen` | 依赖切片无变动则直接拉起应用 | 租户端独立开发 (`:3000`) |
-| `pnpm dev:control` | `turbo run dev --filter=control` | `//#codegen` + 运行时自愈 | 依赖切片无变动则直接拉起应用 | 平台总控端独立开发 (`:3001`) |
-| `pnpm build` | `turbo run build` | `//#codegen`, `^build` | 产物增量缓存 | 生产全端构建 |
-| `pnpm check` | `turbo run check` | `//#codegen`, `^check` | 执行各包类型检查与迁移校验 | 全仓静态扫描 (`tsc --noEmit`) |
-| `pnpm test` | `turbo run test` | `//#codegen`, `^test` | 单元测试拓扑调度 | 全仓单测执行 |
+| 顶层命令           | 底层实际调度                     | 拓扑前置依赖 (`dependsOn`) | 增量缓存策略                 | 职责定位                          |
+| :----------------- | :------------------------------- | :------------------------- | :--------------------------- | :-------------------------------- |
+| `pnpm dev`         | `turbo run dev`                  | `//#codegen`               | 缓存命中时 20ms 跳过代码生成 | 本地全端联调 (Turbo 并行拉起双端) |
+| `pnpm dev:tenant`  | `turbo run dev --filter=tenant`  | `//#codegen`               | 依赖切片无变动则直接拉起应用 | 租户端独立开发 (`:3000`)          |
+| `pnpm dev:control` | `turbo run dev --filter=control` | `//#codegen` + 运行时自愈  | 依赖切片无变动则直接拉起应用 | 平台总控端独立开发 (`:3001`)      |
+| `pnpm build`       | `turbo run build`                | `//#codegen`, `^build`     | 产物增量缓存                 | 生产全端构建                      |
+| `pnpm check`       | `turbo run check`                | `//#codegen`, `^check`     | 执行各包类型检查与迁移校验   | 全仓静态扫描 (`tsc --noEmit`)     |
+| `pnpm test`        | `turbo run test`                 | `//#codegen`, `^test`      | 单元测试拓扑调度             | 全仓单测执行                      |
 
 ---
 
@@ -57,20 +57,26 @@
 4. **自动建表与播种**：未就绪时自动应用平台基线 SQL 建表，并使用 Better Auth 相同算法哈希密码创建初始超管；
 5. **控制台自描述**：服务拉起时自动输出 `[Control DB] 平台总控库自愈就绪 (状态: READY, 当前版本: ...)`。
 
+> ⚠️ **排障提醒 (为什么删表后没有自动初始化？)**：
+>
+> - **严格空库 (Fail-Closed)**：系统仅在库完全无核心表（`user`、`organization`、`session`）时才判定为 `EMPTY`。若在 Navicat 中手动删表遗留了部分表，会被判定为残缺库 `PARTIAL` 强行阻断。彻底清空请执行 `DROP SCHEMA public CASCADE; CREATE SCHEMA public;`。
+> - **超管环境变量配置**：执行 Day 0 初始化必须在 `apps/control/.env.local` 中配置 `CONTROL_BOOTSTRAP_ADMIN_EMAIL`、`CONTROL_BOOTSTRAP_ADMIN_NAME` 与 `CONTROL_BOOTSTRAP_ADMIN_PASSWORD` (≥12位)，缺失时会直接抛出 `SEED_CONFIGURATION_MISSING` 阻断。
+> - **物理库必须预先存在**：应用无跨库创建 Database 权限，物理库（如 `control_db`）必须已由 Docker 或 DBA 创建。
+
 ---
 
 ## 四、数据库迁移引擎 (`tooling/db-migrate`)
 
 基于 12-Factor 无状态原则设计的迁移引擎，支持 `tenant`（多租户分库）与 `platform`（平台总控库）两套 Scope。
 
-| 命令 | 说明 | 适用阶段 |
-| :--- | :--- | :--- |
-| `pnpm db:migrate:check` | **只读一致性校验**（CI 与 `pre-commit` 门禁使用） | 门禁、CI、改动 Schema 后的自检 |
-| `pnpm db:migrate:catalog` | 重新生成预编译运行时 Catalog 快照 | 迁移脚本目录变更后 |
-| `pnpm db:migrate:generate` | 生成新迁移：`--scope platform/tenant --name <名称>`；破坏性变更需加 `--allow-destructive --reason ...` | 数据模型字段增删改 |
-| `pnpm db:migrate:baseline` | 为已有数据库打基线：`--scope platform/tenant` | 存量库接入管理 |
-| `pnpm db:migrate:baseline:reset` | 重置租户基线：`--scope tenant --reset` | 租户基线异常重建 (谨慎) |
-| `pnpm db:platform:ensure` | 手动触发平台总控库自愈初始化（CLI 调试用） | 调试或独立脚本使用 |
+| 命令                                      | 说明                                                                                                   | 适用阶段                       |
+| :---------------------------------------- | :----------------------------------------------------------------------------------------------------- | :----------------------------- |
+| `pnpm db:migrate:check`                   | **只读一致性校验**（CI 与 `pre-commit` 门禁使用）                                                      | 门禁、CI、改动 Schema 后的自检 |
+| `pnpm db:migrate:catalog`                 | 重新生成预编译运行时 Catalog 快照                                                                      | 迁移脚本目录变更后             |
+| `pnpm db:migrate:generate`                | 生成新迁移：`--scope platform/tenant --name <名称>`；破坏性变更需加 `--allow-destructive --reason ...` | 数据模型字段增删改             |
+| `pnpm db:migrate:baseline`                | 为已有数据库打基线：`--scope platform/tenant`                                                          | 存量库接入管理                 |
+| `pnpm db:migrate:baseline:reset:tenant`   | 重置租户基线：`--scope tenant --reset`                                                                 | 租户基线异常重建 (谨慎)        |
+| `pnpm db:migrate:baseline:reset:platform` | 重置平台基线：`--scope platform --reset`                                                               | 平台基线异常重建 (谨慎)        |
 
 ### `db:migrate:check`（4 项静态一致性门禁）
 
@@ -89,13 +95,13 @@
 
 用于 `apps/control` 总控库本地快速诊断（基于 Prisma CLI 封装）。常规模型变更仍须遵循迁移引擎。
 
-| 命令 | 对应底层指令 | 用途 |
-| :--- | :--- | :--- |
-| `pnpm db:control:diff` | `tsx src/cli.ts diff` | 比对 Schema 与数据库实体的差异 |
-| `pnpm db:control:diff:sql` | `tsx src/cli.ts diff:sql` | 输出差异对应的可执行 SQL |
-| `pnpm db:control:push` | `tsx src/cli.ts push` | 本地原型开发直接同步结构（**严禁生产使用**） |
-| `pnpm db:control:status` | `tsx src/cli.ts status` | 查看当前总控库迁移状态 |
-| `pnpm db:control:gen` | `prisma generate` | 重新生成控制端 Prisma Client |
+| 命令                       | 对应底层指令              | 用途                                         |
+| :------------------------- | :------------------------ | :------------------------------------------- |
+| `pnpm db:control:diff`     | `tsx src/cli.ts diff`     | 比对 Schema 与数据库实体的差异               |
+| `pnpm db:control:diff:sql` | `tsx src/cli.ts diff:sql` | 输出差异对应的可执行 SQL                     |
+| `pnpm db:control:push`     | `tsx src/cli.ts push`     | 本地原型开发直接同步结构（**严禁生产使用**） |
+| `pnpm db:control:status`   | `tsx src/cli.ts status`   | 查看当前总控库迁移状态                       |
+| `pnpm db:control:gen`      | `prisma generate`         | 重新生成控制端 Prisma Client                 |
 
 ---
 
@@ -103,12 +109,12 @@
 
 ### 服务启动
 
-| 命令 | 对应 Turbo 任务 | 默认端口 |
-| :--- | :--- | :--- |
-| `pnpm dev` | `turbo run dev` | 3000 (租户) / 3001 (管控) |
-| `pnpm dev:tenant` | `turbo run dev --filter=tenant` | 3000 |
-| `pnpm dev:control` | `turbo run dev --filter=control` | 3001 |
-| `pnpm build` | `turbo run build` | — |
+| 命令               | 对应 Turbo 任务                  | 默认端口                  |
+| :----------------- | :------------------------------- | :------------------------ |
+| `pnpm dev`         | `turbo run dev`                  | 3000 (租户) / 3001 (管控) |
+| `pnpm dev:tenant`  | `turbo run dev --filter=tenant`  | 3000                      |
+| `pnpm dev:control` | `turbo run dev --filter=control` | 3001                      |
+| `pnpm build`       | `turbo run build`                | —                         |
 
 > 端口优先级：`apps/*/.env.local` > `apps/*/.env` > 默认值 (租户 3000 / 管控 3001)。
 
@@ -125,27 +131,27 @@
 
 ## 七、工程治理与质量门禁
 
-| 命令 | 作用 | 触发时机 |
-| :--- | :--- | :--- |
-| `pnpm init` | 环境自检（Node/pnpm 版本、pre-commit 钩子、总控库自愈） | 新会话开始前执行 |
-| `pnpm status` | 输出当前协作分支、生效特性沙盒及特性交付状态 | 随时确认当前工作项 |
-| `pnpm verify` | 执行 8 项架构门禁扫描（红线、沙盒、实体基线、权限契约、类型检查） | `git commit` 时钩子自动拦截 |
-| `pnpm session:end` | 校验特性总账、经验记忆文件是否齐备 | 任务交接或会话结束时 |
-| `pnpm check` | 聚合执行全仓类型检查 (`turbo run check`，包含 codegen、迁移校验、tsc) | 门禁调用或改动类型后 |
-| `pnpm lint` | 执行全仓 ESLint 代码规范扫描 (`turbo run lint`) | 提交前审查 |
-| `pnpm test` | 执行全仓单元测试 (`turbo run test`) | 逻辑修改后验证 |
-| `pnpm ui:add` | 使用 shadcn CLI 向 `packages/ui` 引入组件 | 扩展通用 UI 库时 |
-| `pnpm clean:cache` | 清理 Turbo 缓存与 Next.js 编译中间产物 (`.turbo`, `apps/*/.next`) | 编译缓存污染排查 |
+| 命令               | 作用                                                                  | 触发时机                    |
+| :----------------- | :-------------------------------------------------------------------- | :-------------------------- |
+| `pnpm init`        | 环境自检（Node/pnpm 版本、pre-commit 钩子、总控库自愈）               | 新会话开始前执行            |
+| `pnpm status`      | 输出当前协作分支、生效特性沙盒及特性交付状态                          | 随时确认当前工作项          |
+| `pnpm verify`      | 执行 8 项架构门禁扫描（红线、沙盒、实体基线、权限契约、类型检查）     | `git commit` 时钩子自动拦截 |
+| `pnpm session:end` | 校验特性总账、经验记忆文件是否齐备                                    | 任务交接或会话结束时        |
+| `pnpm check`       | 聚合执行全仓类型检查 (`turbo run check`，包含 codegen、迁移校验、tsc) | 门禁调用或改动类型后        |
+| `pnpm lint`        | 执行全仓 ESLint 代码规范扫描 (`turbo run lint`)                       | 提交前审查                  |
+| `pnpm test`        | 执行全仓单元测试 (`turbo run test`)                                   | 逻辑修改后验证              |
+| `pnpm ui:add`      | 使用 shadcn CLI 向 `packages/ui` 引入组件                             | 扩展通用 UI 库时            |
+| `pnpm clean:cache` | 清理 Turbo 缓存与 Next.js 编译中间产物 (`.turbo`, `apps/*/.next`)     | 编译缓存污染排查            |
 
 ---
 
 ## 八、开发场景速查清单
 
-| 场景 | 推荐操作路径 |
-| :--- | :--- |
-| **开工就绪** | 执行 `pnpm init`，按需执行 `pnpm status` 查看任务状态 |
-| **新增/删除业务切片** | 直接运行 `pnpm dev:tenant`（Turbo 自动检测并增量执行 `codegen`） |
+| 场景                          | 推荐操作路径                                                                                                                      |
+| :---------------------------- | :-------------------------------------------------------------------------------------------------------------------------------- |
+| **开工就绪**                  | 执行 `pnpm init`，按需执行 `pnpm status` 查看任务状态                                                                             |
+| **新增/删除业务切片**         | 直接运行 `pnpm dev:tenant`（Turbo 自动检测并增量执行 `codegen`）                                                                  |
 | **改动租户/平台 Prisma 模型** | 1. 补齐字段 `///` 注释；2. 运行 `pnpm db:migrate:generate --scope platform/tenant --name <名称>`；3. 运行 `pnpm check` 验证一致性 |
-| **本地断点调试** | Zed 中按 `Cmd + Shift + P` → 执行 `debugger: start` → 选择对应端启动 |
-| **遇到 Next.js 编译异常** | 执行 `pnpm clean:cache`，随后重新拉起服务 |
-| **代码提交阶段** | 正常执行 `git commit`，底层门禁会自动运行全量校验，无需手工调用 verify |
+| **本地断点调试**              | Zed 中按 `Cmd + Shift + P` → 执行 `debugger: start` → 选择对应端启动                                                              |
+| **遇到 Next.js 编译异常**     | 执行 `pnpm clean:cache`，随后重新拉起服务                                                                                         |
+| **代码提交阶段**              | 正常执行 `git commit`，底层门禁会自动运行全量校验，无需手工调用 verify                                                            |

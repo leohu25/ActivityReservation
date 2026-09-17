@@ -178,3 +178,20 @@
 - `tooling/db-migrate/migrations/tenant/20260917020253_drop_all_foreign_keys_and_use_logical_relations/manifest.json`
 - `tooling/db-migrate/migrations/tenant/20260917020253_drop_all_foreign_keys_and_use_logical_relations/migration.sql`
 - `tooling/db-migrate/migrations/tenant/20260917020253_drop_all_foreign_keys_and_use_logical_relations/schema.snapshot.prisma`
+
+### @ 8eafcb98 联动修改自动登记
+
+- `tooling/db-migrate/baselines/platform/20260913144500/manifest.json`
+- `tooling/db-migrate/baselines/platform/20260913144500/schema.prisma`
+- `tooling/db-migrate/baselines/platform/20260917031514/baseline.sql`
+- `tooling/db-migrate/baselines/platform/20260917031514/manifest.json`
+- `tooling/db-migrate/baselines/platform/20260917031514/schema.prisma`
+- `tooling/db-migrate/baselines/tenant/20260913144525/manifest.json`
+- `tooling/db-migrate/baselines/tenant/20260913144525/schema.prisma`
+- `tooling/db-migrate/baselines/tenant/20260917031400/baseline.sql`
+- `tooling/db-migrate/baselines/tenant/20260917031400/manifest.json`
+- `tooling/db-migrate/baselines/tenant/20260917031400/schema.prisma`
+- `tooling/db-migrate/migrations/platform/20260914170214_add_platform_migration/down.sql`
+- `tooling/db-migrate/migrations/platform/20260914170214_add_platform_migration/manifest.json`
+- `tooling/db-migrate/migrations/platform/20260914170214_add_platform_migration/migration.sql`
+- `apps/control/Dockerfile`

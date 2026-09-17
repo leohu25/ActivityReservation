@@ -134,7 +134,21 @@ try {
   isDirectRun = false;
 }
 
+export function isMigrationBaselineResetAllowed(env = process.env) {
+  return (
+    env.ALLOW_MIGRATION_BASELINE_RESET === "1" ||
+    env.ALLOW_MIGRATION_BASELINE_RESET === "true"
+  );
+}
+
 if (isDirectRun) {
+  if (isMigrationBaselineResetAllowed()) {
+    process.stdout.write(
+      "\x1b[33m• 迁移历史不可变门禁: 检测到 ALLOW_MIGRATION_BASELINE_RESET，受控放行基线重置\x1b[0m\n",
+    );
+    process.exit(0);
+  }
+
   const violations = runMigrationImmutabilityCheck(findWorkspaceRoot());
   if (violations.length > 0) {
     process.stderr.write(

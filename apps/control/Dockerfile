@@ -69,5 +69,5 @@ COPY --from=builder /app/package.json /app/pnpm-workspace.yaml ./
 
 EXPOSE 3001
 
-# 启动命令：自动执行 Day 0 平台基线与超管自愈，随后启动 Next.js 生产 standalone 服务
-CMD ["sh", "-c", "pnpm db:platform:ensure && exec node apps/control/server.js"]
+# 启动命令：启动 Next.js 生产 standalone 服务（由 instrumentation.ts 自动执行平台总控库自愈与超管初始化）
+CMD ["node", "apps/control/server.js"]

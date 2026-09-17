@@ -104,7 +104,8 @@ pnpm run db:migrate:check
 pnpm run db:migrate:catalog
 
 # 4. (开发重构/上线前专用) 将所有增量演进完整压平进全新 Day 0 基线快照
-pnpm run db:migrate:baseline:reset
+pnpm run db:migrate:baseline:reset:tenant
+pnpm run db:migrate:baseline:reset:platform
 ```
 
 ### 迁移历史不可变规则（Append-Only）
