@@ -213,5 +213,5 @@ model TenantMenuItem {
    在业务切片的 `manifest.ts` 中声明 `pages` 数组（使用 `StandardPageDescriptor` 规范），定义明确的 `pageKey` 与 `requiredSubject`，构建期脚本将自动收录至全局功能池；
 2. **新增公共菜单工具时**：
    与数据库脱耦的纯计算/转换逻辑统一收敛在 `@base/authorization` 中，严禁在业务切片或 App 层重复编写组装算法；
-3. **保持原子组件纯洁**：
-   `packages/ui/src/components/shadcn/*` 属于纯正的 Shadcn 原子资产，禁止在其中夹带业务逻辑或定制格式化；任何复合布局逻辑一律收敛于 `packages/ui/src/components/layout/*`。
+3. **保持原子组件规范**：
+   `packages/base/ui/src/components/ui/*` 属于遵循 shadcn 官方规范的原子 Primitives，源码归项目所有，支持就地使用 CVA 扩充变体与内嵌修补；任何应用级布局逻辑收敛于 `packages/base/ui/src/components/layout/*`。具体 UI 开发遵循 `.agents/skills/shadcn/` 最佳范式。

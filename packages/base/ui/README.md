@@ -1,47 +1,92 @@
 # @base/ui — 通用企业级 SaaS UI 组件系统
 
-现代化多租户 SaaS 基础设施的共享 UI 资产库。本模块保持**设计与技术完全中立**，不与特定业务或单一行业视觉绑定，作为各垂直切片与平台的统一界面基础设施。
+现代化多租户 SaaS 基础设施的共享 UI 资产库。本模块保持**设计与技术完全中立**，不与特定业务或单一行业视觉绑定，作为各垂直切片与应用平面的统一界面基础设施。
 
-代码架构严格遵循清晰、零冗余、高内聚的 **Atomic Design 三层递进拓扑体系（原子 Atoms -> 分子 Molecules -> 模板 Templates）**：
+代码架构严格遵循 **shadcn UI 官方最佳实践（Monorepo Design System 标准拓扑）**，落实“代码所有权（Code Ownership）”，消灭多余的伪包装层与深层嵌套，形成扁平、高内聚、语义化的设计系统架构：
 
 ```text
-packages/ui/src/
-├── components/
-│   ├── shadcn/                     # Layer 1: 基础原子层 (Atoms / 底层原语，无权限逻辑，纯粹 UI 基石)
-│   │   └── button, input, dialog, popover, table, command, select, card...
-│   ├── composite/                  # Layer 2: 分子受控层 (Molecules / 注入 CASL 抽象权限、防误删、Zod等中立能力)
-│   │   ├── auth/                   # 权限动作分子 (ActionButton, ActionGroup, AuthGuard, AuthorizedField...)
-│   │   ├── table/                  # 表格分子 (DataTableRowActions, DetailTable, Toolbar, FilterBar...)
-│   │   ├── form/                   # 表单分子 (FormFields, Combobox, TagMultiSelect, Layout...)
-│   │   └── tree/                   # 树状分子 (HierarchyTree, DirectoryTreeFilter...)
-│   └── templates/                  # Layer 3: 业务模板层 (Templates / 完整业务容器，负责布局编排与协议闭环)
-│       ├── DataTable.tsx           # 全功能数据列表工作台模板 (搜索、高级筛选、分页、列配置、Action 权限接管)
-│       ├── FormModal.tsx           # 全功能表单弹窗模板 (三态切换、Zod 强校验、字段三态动态豁免、内置明细表)
-│       ├── DataTree.tsx            # 多级树形维护工作台模板 (层级树、同级上下移排序、Action Schema 受控动作)
-│       ├── MasterDetailShell.tsx   # 企业级主从 (Master-Detail) 联动布局骨架
-│       ├── PageShell.tsx           # 非列表标准页面容器 (统一页头、描述、快捷操作与反馈横幅)
-│       └── DashboardShell.tsx      # 应用级后台主框架外壳 (侧边栏布局与自适应滚动)
+packages/base/ui/
+├── components.json              # 官方标准别名配置 ("ui": "@/components/ui")
+├── package.json                 # 依赖版本锁死 (@base-ui/react 1.8.0, sonner 2.0.8 等)
+├── src/
+│   ├── components/
+│   │   ├── ui/                  # 【官方原子 Primitives】(Base UI 无头原语与 CVA 样式基石)
+│   │   │   ├── button.tsx       # 按钮基石
+│   │   │   ├── badge.tsx        # 内置 default/secondary/destructive/success/warning/process 与 sm/lg
+│   │   │   ├── select.tsx       # 内置中文 label 自动递归解析与回显
+│   │   │   ├── sonner.tsx       # 统一 Toast 呈现容器
+│   │   │   ├── field.tsx        # 官方表单基石 (FieldGroup + Field + FieldLabel)
+│   │   │   ├── dialog.tsx
+│   │   │   └── ... (共 62 个纯净原子组件，由 Git 跟踪)
+│   │   │
+│   │   ├── data-table/          # 【高阶数据表格资产】(全功能数据列表工作台)
+│   │   │   ├── DataTable.tsx    # 全系统标准列表模板 (搜索、高级筛选、分页、列配置、权限接管)
+│   │   │   ├── DataTableRoot.tsx
+│   │   │   ├── DataTableToolbar.tsx
+│   │   │   ├── DataTableFilterBar.tsx
+│   │   │   ├── DataTablePagination.tsx
+│   │   │   └── ...
+│   │   │
+│   │   ├── auth/                # 【权限基础设施】(与 CASL 四层权限闭环深度结合)
+│   │   │   ├── AuthGuard.tsx    # 声明式权限门禁
+│   │   │   ├── ActionButton.tsx # 自动感知 Subject 与动作的受控权限按钮
+│   │   │   └── ui-ability-context.tsx
+│   │   │
+│   │   ├── form/                # 【高阶表单项与弹窗】(Zod 驱动的三态表单与交互控件)
+│   │   │   ├── FormModal.tsx    # 全功能表单弹窗模板 (三态切换、Zod 强校验、内置明细表)
+│   │   │   ├── Combobox.tsx     # 单属性配置的高阶下拉组合框
+│   │   │   ├── DatePicker.tsx   # 工业风日期选择器
+│   │   │   ├── FormDrawer.tsx   # 侧滑表单抽屉
+│   │   │   └── FormLayout.tsx
+│   │   │
+│   │   ├── tree/                # 【树形资产】(多级层级结构与分类维护)
+│   │   │   ├── HierarchyTree.tsx
+│   │   │   ├── DirectoryTreeFilter.tsx
+│   │   │   └── DataTree.tsx
+│   │   │
+│   │   ├── layout/              # 【应用骨架与导航】(Shell 与系统级布局套件)
+│   │   │   ├── AppSidebar.tsx   # 业务导航侧边栏
+│   │   │   ├── TabBar.tsx       # 现代 ERP 多标签页卡片导航
+│   │   │   ├── TopHeader.tsx    # 顶部导航栏
+│   │   │   ├── DashboardShell.tsx
+│   │   │   ├── PageShell.tsx
+│   │   │   └── MasterDetailShell.tsx
+│   │   │
+│   │   ├── feedback/            # 【交互反馈】
+│   │   │   ├── ConfirmDialog.tsx # 二次破坏性确认弹窗
+│   │   │   ├── EmptyState.tsx    # 统一空状态
+│   │   │   └── Toast.tsx         # 统一导出 sonner
+│   │   │
+│   │   └── icon/                # 【图标资产】IconPicker, DynamicNavIcon
+│   │
+│   ├── hooks/                   # 通用 Hook (use-mobile 等)
+│   ├── lib/                     # 工具库 (cn, use-data-table-state, use-safe-router 等)
+│   └── index.ts                 # 统一导出入口（无同名遮蔽、无重复覆盖，干净透明）
 ```
 
 ---
 
 ## 核心设计与使用原则
 
-1. **层层递进原则 (Atomic Design)**：
-   - **原子层 (Atoms)**：纯粹的 UI 渲染原语，不包含任何权限逻辑；
-   - **分子层 (Molecules)**：组合原子原语并注入中立规则（如权限判定、二次确认），自由定制页面**必须使用分子级受控组件（如 `ActionButton` / `ActionGroup`）**，严禁使用裸原子组件进行写操作；
-   - **模板层 (Templates)**：完整业务工作区，通过 Action Schema 或契约声明自动闭环权限与交互。
-2. **复杂场景优先使用标准模板**：
-   - 扁平数据列表与 CRUD 工作台统一使用 `DataTable`；
-   - 多级分类、组织架构等层级数据维护统一使用 `DataTree`；
-   - 数据录入、信息修改及详情查看弹窗统一使用 `FormModal`；
-   - 避免在业务切片内手写重复的 Dialog 遮罩拼装、原生表格布局或样板表单逻辑。
-3. **底层原子组件保持纯粹中立**：
-   - `shadcn/` 原子组件作为基石零件，不掺杂任何业务假定，能复用尽量复用；
-   - 视觉主题由 CSS 语义变量与 Design System 外部注入，组件库内部不硬编码定制样式。
-4. **零冗余、单一事实源 (SSoT)**：
-   - 权限判定仅依赖抽象的 `UiAbilityLike` 接口（`can(action, subject)`），与具体 CASL 库解耦；
-   - 外部调用统一从 `@base/ui` 顶级入口扁平导入。
+1. **原子层可变更性与代码所有权 (Code Ownership)**：
+   - 原子组件存放于 `src/components/ui/`，其源码归项目所有，由 **Git 正常跟踪版本历史**；
+   - **支持就地添加 CVA 变体**：需要新增语义形态或尺寸时，直接在组件源码中的 `cva()` 扩展 `variants` 和 `sizes`，严禁为了加几个类名就在外面套一层同名伪包装壳；
+   - **支持就地修补缺陷**：遇到上游/基底缺陷（如 Base UI 中文 label 回显），直接在原子源码内修正；
+   - **UI 开发必须对齐官方 Skill**：在进行任何 UI 开发、页面交互实现、组件优化或重构时，**必须参考并遵循 `.agents/skills/shadcn/` 官方最佳范式 Skill**。
+
+2. **组件定制的四层最佳实践**（由轻到重）：
+   - **Level 1（全局主题）**：修改 CSS Variables（颜色、圆角、间隙）；
+   - **Level 2（形态变体）**：直接在组件源码内编辑 `cva()` 添加 Variant；
+   - **Level 3（单次调用微调）**：在页面调用处传 `className`，由内置的 `cn()`（`tailwind-merge`）保证生效；
+   - **Level 4（高阶编排）**：仅在组装跨原子复合中台资产（如 `DataTable`, `ConfirmDialog`, `FormModal`）时才创建复合组件。
+
+3. **视觉风格与组件逻辑完全解耦（Design Tokens 驱动）**：
+   - `@base/ui` 组件内部**绝对零硬编码具体色值**，100% 使用语义 Token（如 `bg-primary`, `text-foreground`, `border-border`）；
+   - 具体的视觉调色（如工业灰蓝、深色主题）完全通过外部 CSS 变量由消费端（`apps/tenant`、`apps/control` 或租户动态配置）注入，实现一套代码零成本换肤。
+
+4. **单事实源与干净导出 (Single Source of Truth)**：
+   - 全局通知统一事实源：`sonner`，彻底消灭废弃的原生 `toast.tsx` 与 `baseToast`；
+   - 顶层出口 `packages/base/ui/src/index.ts` 每个组件语义明确、唯一，彻底杜绝同名覆盖与导出遮蔽。
 
 ---
 
@@ -49,7 +94,7 @@ packages/ui/src/
 
 ### 1. 列表场景：`DataTable`
 
-通过 Compound 组件模式提供开箱即用的工作台能力，内置关键字搜索、分面过滤、分页器及列显示配置：
+通过一体化卡片容器提供开箱即用的工作台能力，内置关键字搜索、分面过滤、分页器及列显示配置：
 
 ```tsx
 import { DataTable, type ColumnDef } from "@base/ui";
@@ -59,14 +104,13 @@ const columns: ColumnDef<UserItem>[] = [
   { accessorKey: "email", header: "邮箱" },
 ];
 
-<DataTable.Workspace
+<DataTable
   title="用户管理"
   description="维护租户成员名单与访问权限"
   columns={columns}
   data={userList}
   total={totalCount}
-  searchField="name"
-  searchPlaceholder="输入姓名搜索..."
+  keywordPlaceholder="输入姓名搜索..."
   onCreate={() => setModalOpen(true)}
 />;
 ```
@@ -143,9 +187,10 @@ const fields: FormFieldSchema[] = [
 
 ---
 
-### 3. 基础复合组件
+### 3. 高阶中台组件
 
-- **`Combobox`**：通用搜索下拉框（基于 Popover + Command），支持动态过滤、快捷清空与大容量列表；
+- **`Combobox`**：通用搜索下拉框（基于 Base UI Combobox），支持动态过滤、快捷清空与大容量列表；
 - **`DetailTable`**：统一行明细表格组件，支持可编辑模式与纯只读模式；
 - **`FormFields`**：表单字段动态排版引擎，支持 text, number, date, select, combobox, radio, switch, custom 等多种形态；
-- **`ConfirmDialog`**：全局破坏性操作二次确认框，替代浏览器原生 confirm。
+- **`ConfirmDialog`**：全局破坏性操作二次确认框，替代浏览器原生 confirm；
+- **`toast`**：基于 `sonner` 的全局通知，支持 `toast.success`、`toast.error` 与 `toast.promise`。

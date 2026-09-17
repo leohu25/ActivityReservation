@@ -2,25 +2,30 @@
 
 本系统基于技术中立的 `@base/ui`（shadcn/ui 官方原语体系）构建，具体视觉设计风格（如 Chenrun Digital ERP 风格）作为外部 Theme 资产在 `design-system/chenrun-digital-erp/MASTER.md` 与 CSS 语义变量中配置注入。
 
-## 0. 三层 UI 资产模型与中立性原则 (Atomic Design 架构体系)
+## 0. 设计系统资产模型与官方范式 (Monorepo Design System)
 
-全系统严格遵循层层递进的三层组件资产模型，严禁越级或在业务层手写裸原语：
+全系统严格遵循 **shadcn UI 官方最佳实践（Monorepo Design System 标准拓扑）**，落实“代码所有权（Code Ownership）”，消灭多余伪包装层：
 
-| 层级                                  | 目录位置                             | 典型代表                                                                                               | 职责与依赖规范                                                                                                     |
-| ------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| **1. 原子层 (Atoms)**                 | `packages/ui/.../shadcn/`            | `Button`, `Input`, `Dialog`, `Card`, `Badge`, `Select`, `Table` 等                                     | Base UI (`@base-ui/react`) / shadcn 官方无头原语封装，纯 UI 渲染基石，**业务禁止手写修改，不包含任何权限逻辑**。   |
-| **2. 分子层 (Molecules / Composite)** | `composite/`、`layout/`、`feedback/` | `ActionButton`, `ActionGroup`, `AuthGuard`, `DataTableRowActions`, `DetailTable`, `AuthorizedField` 等 | 组合原子组件，注入中立业务规则（如 CASL 权限判定、Zod 校验、二次确认防误删）。**依赖原子组件，不绑特定业务领域**。 |
-| **3. 模板层 (Templates)**             | `templates/`                         | `DataTable`, `FormModal`, `DataTree`, `DashboardShell`, `PageShell` 等                                 | 开箱即用的完整业务工作区/容器，负责整体布局编排、上下文生命周期与 Action Schema 协议闭环。**依赖分子与原子组件**。 |
+| 层级与模块                           | 目录位置                                      | 典型代表                                                                                     | 职责与规范                                                                                                                                                        |
+| ------------------------------------ | --------------------------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1. 官方原子基石 (Primitives)**     | `packages/base/ui/src/components/ui/`         | `button`, `input`, `dialog`, `card`, `badge`, `select`, `table`, `field`, `sonner` 等        | Base UI (`@base-ui/react`) / shadcn 官方原语基石，**源码归项目所有（Git 跟踪），允许且推荐就地通过 CVA 扩充变体与内嵌修补，遵循 `.agents/skills/shadcn/` 规范**。 |
+| **2. 高阶表格资产 (Data Table)**     | `packages/base/ui/src/components/data-table/` | `DataTable`, `DataTableRoot`, `DataTableRowActions`, `DataTablePagination`, `DetailTable` 等 | 完整业务表格工作区，负责搜索、分面过滤、分页、列配置、Action 权限接管与 CSV 导出。                                                                                |
+| **3. 权限基础设施 (Auth Guards)**    | `packages/base/ui/src/components/auth/`       | `ActionButton`, `ActionGroup`, `AuthGuard`, `AuthField`, `UiAbilityProvider` 等              | 注入 CASL 强类型权限判定、三态权限控制与防误删门禁，解耦业务与权限规则。                                                                                          |
+| **4. 高阶表单与弹窗 (Form & Modal)** | `packages/base/ui/src/components/form/`       | `FormModal`, `Combobox`, `DatePicker`, `FormDrawer`, `FormFields`, `FormLayout` 等           | Zod Schema 运行时校验驱动的三态表单（create/edit/view）、复杂单据录入与内置明细表联动。                                                                           |
+| **5. 树形工作台 (Tree)**             | `packages/base/ui/src/components/tree/`       | `HierarchyTree`, `DirectoryTreeFilter`, `DataTree` 等                                        | 组织架构、商品分类等层级数据维护、左树右表过滤与同级排序。                                                                                                        |
+| **6. 应用布局与外壳 (Layout)**       | `packages/base/ui/src/components/layout/`     | `DashboardShell`, `TabBar`, `TopHeader`, `AppSidebar`, `MasterDetailShell`, `PageShell` 等   | 双端应用级主框架外壳、现代 ERP 多标签页、面包屑与自适应主从联动骨架。                                                                                             |
+| **7. 交互反馈套件 (Feedback)**       | `packages/base/ui/src/components/feedback/`   | `ConfirmDialog`, `EmptyState`, `Toast` (基于 `sonner`) 等                                    | 全局统一反馈事实源、破坏性操作二次确认、空状态引导。                                                                                                              |
 
 > ⚠️ **核心红线与行为准则**：
 >
-> 1. **全量基于 shadcn 官方原语构建 (No Raw Divs/Controls)**：杜绝裸手写 `div` 布局或裸浏览器原生控件（如原生 `input type="date"`），所有布局排版与交互控件必须基于框架已有的原子、分子与模板组件开发；
-> 2. **严禁写操作按钮裸奔（必须使用分子或模板组件）**：标准列表优先使用 `DataTable`（显式配置 `subject` 自动接管 `create`、`export` 与行操作 `DataTableRowActions`）；多级层级树统一使用 `DataTree`；自由定制页面必须通过分子级受控组件 `<ActionButton>` / `<ActionGroup>` 或声明式 `<AuthGuard>` 包裹，严禁在业务中直接渲染无权限受控的裸 `<Button>` 写操作；
-> 3. **平台 UI 基建沉淀主动提问机制 (UI Infrastructure Extraction Trigger)**：在垂直切片实施过程中，一旦发现当前交互模式、明细表、子表单或看板具备通用性，**严禁在切片内部私造或闭门造车，必须主动向用户发起提问**，评估并沉淀至 `@base/ui`；
-> 4. **二次确认只在对话框提示一次**：破坏性操作统一由 `ActionButton` 或 `DataTableRowActions` 的 `ConfirmDialog` 进行模态对话框确认，严禁在回调函数内再次使用浏览器的 `window.confirm` 进行二次弹窗；
-> 5. **消息通知右上角 Toast 弹出**：严禁在页面顶部塞入静态红色大横幅挤压变形表格布局，所有成功、警告与错误提示统一使用右上角 `toast` 浮层通知；页内粘性反馈用 `FeedbackBanner`（基于 shadcn `Alert`）；
-> 6. **杜绝全页强刷**：严禁调用 `window.location.reload()`，状态变更必须由 React 本地 State 即时响应驱动，配合 `router?.refresh()` 静默同步；
-> 7. **服务端分页（生产必选）**：`DataTable.Root` 默认不做客户端切片，服务端分页驱动。
+> 1. **全量遵循 shadcn 官方规范 (No Raw Divs/Controls)**：杜绝裸手写 `div` 布局或裸浏览器原生控件（如原生 `input type="date"`），所有布局排版与交互控件必须基于框架已有的原子与高阶中台组件开发。开发时直接指明使用 `.agents/skills/shadcn/` 最佳范式 Skill；
+> 2. **原子层支持就地修改，禁止套壳伪封装**：新增变体直接修改 `components/ui/` 源码中的 `cva`，严禁为了加几个类名就在外层包一个 1:1 的同名包装壳；
+> 3. **严禁写操作按钮裸奔（必须受控于 CASL）**：标准列表优先使用 `DataTable`（显式配置 `subject` 自动接管 `create`、`export` 与行操作 `DataTableRowActions`）；多级层级树统一使用 `DataTree`；自由定制页面必须通过受控组件 `<ActionButton>` / `<ActionGroup>` 或声明式 `<AuthGuard>` 包裹，严禁在业务中直接渲染无权限受控的裸 `<Button>` 写操作；
+> 4. **平台 UI 基建沉淀主动提问机制 (UI Infrastructure Extraction Trigger)**：在垂直切片实施过程中，一旦发现当前交互模式、明细表、子表单或看板具备通用性，**严禁在切片内部私造或闭门造车，必须主动向用户发起提问**，评估并沉淀至 `@base/ui`；
+> 5. **二次确认只在对话框提示一次**：破坏性操作统一由 `ActionButton` 或 `DataTableRowActions` 的 `ConfirmDialog` 进行模态对话框确认，严禁在回调函数内再次使用浏览器的 `window.confirm` 进行二次弹窗；
+> 6. **消息通知右上角 Toast 弹出**：严禁在页面顶部塞入静态红色大横幅挤压变形表格布局，所有成功、警告与错误提示统一使用右上角 `toast`（基于 `sonner`）；页内粘性反馈用 `FeedbackBanner`（基于 shadcn `Alert`）；
+> 7. **杜绝全页强刷**：严禁调用 `window.location.reload()`，状态变更必须由 React 本地 State 即时响应驱动，配合 `router?.refresh()` 静默同步；
+> 8. **服务端分页（生产必选）**：`DataTable` 默认不做客户端切片，服务端分页驱动。
 
 `DataTable.Root` 默认**不做**客户端切片：`data` 必须是服务端返回的**当前页**，`total` 来自 API `count`。
 

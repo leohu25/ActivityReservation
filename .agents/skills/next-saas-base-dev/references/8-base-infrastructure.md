@@ -93,12 +93,15 @@ graph TD
 ### 5. `@base/ui` — 现代工业风高密度 UI 体系
 
 - **职责**：为整个多租户 SaaS 系统提供设计系统代币、通用组件积木与页面布局框架。
-- **分层规范**：
-  - **原子组件层 (`src/shadcn/`)**：严格锁定由 `npx shadcn@latest add` 生成的纯标准官方组件，**绝对禁止手写或破坏原子组件结构**；
-  - **企业级组合套件 (`src/components/`)**：
-    - `DataTable.*` 系列：涵盖自增序号、动态列配置 (`ColumnSettings`)、多维筛选条 (`FilterBar`)、紧凑数字分页 (`Pagination`)、单次确认对话框 (`ConfirmDialog`) 与一体化白卡卡片容器 (`DataTable.Root`)；
-    - `FormModal`：基于 Zod Schema 驱动的增改查三态受控模态表单，自动处理运行时校验、字段三态锁定与统一错误回显；
-    - `AuthGuard` & `AuthField`：声明式权限守卫与敏感字段渲染器。
+- **架构范式**：对齐 **shadcn UI 官方最佳实践（Monorepo Design System）**，开发时参考并执行 `.agents/skills/shadcn/` Skill：
+  - **原子组件层 (`src/components/ui/`)**：基于 Base UI 无头原语构建，源码归项目所有（由 Git 跟踪）。**允许且推荐就地通过 CVA 扩展变体与尺寸，支持就地内嵌修补**，彻底消除无意义伪包装层；
+  - **高阶业务资产目录 (`src/components/`)**：
+    - `data-table/`：企业级表格中台资产（涵盖自增序号、动态列配置、多维筛选条、紧凑数字分页与一体化白卡容器）；
+    - `form/`：基于 Zod Schema 驱动的增改查三态表单 `FormModal`、下拉组合框 `Combobox`、日期选择 `DatePicker`；
+    - `auth/`：声明式权限守卫 `AuthGuard`、权限受控按钮 `ActionButton` 与敏感字段渲染器 `AuthField`；
+    - `tree/`：层级管理树 `HierarchyTree` 与左树右表过滤面板 `DirectoryTreeFilter`；
+    - `layout/`：后台框架 `DashboardShell`、标签页 `TabBar`、顶部栏 `TopHeader`；
+    - `feedback/`：单次确认对话框 `ConfirmDialog`、空状态 `EmptyState` 与统一 `toast`（基于 `sonner`）。
 
 ### 6. `@base/biz-shared` — 跨切片中台公共资产库 (Level 2)
 
@@ -144,11 +147,11 @@ graph TD
 # 在根目录下通过项目脚本添加
 pnpm ui:add <component-name>
 # 或显式指定配置路径
-npx shadcn@latest add <component-name> -y --overwrite -c packages/ui
+npx shadcn@latest add <component-name> -y -c packages/base/ui
 ```
 
-- 添加后在 `packages/ui/src/index.ts` 中规范导出；
-- 若需包装为高密度工业风组合套件，在 `packages/ui/src/components/` 下新建包装组件并编写同级单测。
+- 添加后遵循 `.agents/skills/shadcn/` 最佳范式规范，在 `packages/base/ui/src/index.ts` 中规范导出；
+- 若需定制样式变体，直接在 `src/components/ui/<component>.tsx` 内扩充 CVA variants，杜绝手写 1:1 伪包装层。
 
 ### 场景 2：扩展 `@base/biz-shared` 业务中台资产
 

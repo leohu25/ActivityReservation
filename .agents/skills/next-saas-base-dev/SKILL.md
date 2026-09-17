@@ -41,13 +41,13 @@ agent_created: true
 11. **列表优先 shadcn**：简单列表/表单直接用 `Table`/`Form`/`Dialog`；需要统一工具栏时再用 `DataTable.Workspace`（可选加速，非强制）；
 12. **表单优先 shadcn Form**：短表单直接 `Form`+`Field`；长表单/批量字段可用 `FormFields` Schema（可选）；
 13. **导出走契约**：CSV 导出用 `exportContractCsv(rows, contract.configurableFields, ...)`，禁止手写 fieldKeys；
-14. **原子层与排版 100% 遵循 shadcn 官方原语**：`packages/ui/.../shadcn/` 由官方 CLI 引入并保持纯净。杜绝手写裸 `div` 布局或裸浏览器原生控件，所有布局排版与交互控件必须基于框架已有的原子与复合组件开发（`Table`、`Card`、`Input`、`DatePicker`、`Select`、`Dialog` 等）；
+14. **原子层与排版 100% 遵循 shadcn 官方规范**：`packages/base/ui/src/components/ui/` 作为官方原子基石层（Primitives），落实 Code Ownership（源码所有权归项目所有，由 Git 跟踪），**允许且推荐在源码内直接使用 CVA 扩充语义变体与尺寸，支持就地修补上游缺陷**，彻底消除无意义的 1:1 伪包装层。在进行任何 UI 开发、页面交互实现、组件优化或重构时，**必须参考并遵循 `.agents/skills/shadcn/` 官方最佳范式 Skill**。杜绝手写裸 `div` 布局或裸浏览器原生控件，所有布局排版与交互控件必须基于框架已有的原子与高阶中台组件开发（`Table`、`Card`、`Input`、`DatePicker`、`Select`、`Dialog` 等）；
 15. **平台 UI 基建沉淀主动提问准则**：在垂直切片实施过程中，一旦识别到交互模式、子表单、明细表格、看板或展示卡片具备通用性，严禁在业务切片内部闭门造车，必须主动向用户发起提问，评估并沉淀至公共 `@base/ui` 库；
 16. **单一 Zod 强类型驱动与 Table 列派生**：增改查与单据弹窗统一使用 `FormModal`（或其增强版），强制传入 `schema: z.ZodType` 执行 safeParse 运行时校验拦截，消灭无校验双分支；列表优先使用 `DataTable`（或 `DataTable.Workspace`）渲染；
 17. **UI 组件库基建演进四法则 (UI Infrastructure Evolution)**：
 
 - **(a) 复杂场景统一用模板 (Templates for Complex UX)**：列表统一使用 `DataTable`，单据与增改查弹窗统一使用 `FormModal`，内置可选明细表 `DetailTable`，严禁业务层自行手写弹窗与表格拼装胶水；
-- **(b) 原子组件保持纯粹不变 (Pure Atomic Invariant)**：`shadcn/` 原子组件仅由官方 CLI 维护，严禁在原子层侵入业务状态与胶水代码，能复用就 100% 复用；
+- **(b) 原子层遵循官方标准与可变性 (Official Primitives Standard & In-place Variants)**：原子组件归于 `src/components/ui/`，拥有完全源码所有权。支持根据设计系统规范在源码内就地扩充 CVA 变体（如 `badge.tsx` 的 `success/warning/process`）与内嵌修复逻辑（如 `select.tsx` 的中文 label 回显），严禁为了加几个属性而套一层同名伪包装壳；所有组件规范、术语与交互形态以 `.agents/skills/shadcn/` 官方最佳范式为准；
 - **(c) 组件组装零冗余 (Zero Glue, Zero Redundancy)**：同一类交互形态在系统内有且仅有一套标准实现与统一导出，彻底废除多余别名与历史胶水包装，保持命名清晰、直观、主流；
 - **(d) 复杂超大表单演进标准 (Complex Form Standard)**：当前轻量表单采用受控 React 状态与 Zod 校验；后续若出现超大、深层嵌套联动或频繁动态字段的复杂单据表单，底层驱动引擎统一切换为业界标准 **React Hook Form (`react-hook-form` + `@hookform/resolvers/zod`)**，保持对外暴露的 `FormModal` 声明式 API 完全不变，以获得非受控高性能与脏检查能力。
 
@@ -108,7 +108,7 @@ Phase 7: 契约对齐单测与全栈门禁验证
 - **`@base/db-tenant` (动态多租户物理分库连接池)**：PostgreSQL Database-per-tenant 治理，`globalThis` 全局单例杜绝 HMR 句柄泄漏，`initializing` 互斥锁防止高并发初次连接击穿，`secretRef` 环境变量安全凭据解耦；包含 `TenantMenuItem` 租户自定义菜单物理模型（纯标量 parentId 零死锁设计）；
 - **`@base/db-control` (总控库客户端)**：管理平台集中控制库 `saas_control`，服务于租户开辟、状态机管控与全局审计；
 - **`tooling/db-migrate` (12-Factor 无状态预编译迁移引擎)**：构建期静态化预编译 `runtime-catalog.ts`，运行期 0 CLI 子进程；`@db-migrate-extension` 切片 Schema 动态聚合；Day 0 状态机自愈与 `pg_advisory_xact_lock` 事务咨询锁保障；
-- **`@base/ui` (技术中立设计系统与组件库)**：技术基础设施保持完全中立，不硬编码具体视觉风格。原子层严格由 `npx shadcn@latest add` 维护，组合层沉淀 `DataTable` 企业级积木套件、`FormModal` 三态表单、`DetailTable` 明细表、`DataTree` 树形工作台与声明式 `AuthGuard`；项目的具体视觉语言（如 Chenrun Digital ERP 风格）作为外部 Theme 资产在 `design-system/` 与 CSS 语义变量中配置注入；
+- **`@base/ui` (技术中立设计系统与组件库)**：技术基础设施保持完全中立，不硬编码具体视觉风格。原子层归于 `components/ui/` 并严格遵循 `.agents/skills/shadcn/` 官方最佳实践（支持就地 CVA 变体扩展），高阶中台层沉淀 `DataTable` 企业级表格套件、`FormModal` 三态表单、`DetailTable` 明细表、`DataTree` 树形工作台与声明式 `AuthGuard`；项目的具体视觉语言作为外部 Theme 资产通过 CSS 语义变量配置注入；
 - **`@base/biz-shared` (跨切片中台公共资产库)**：沉淀经 2 个以上业务切片验证的公共业务模式（如单据流水号系统、通用审批流契约、明细行业务表格模板）；
 - **`@base/shared` (纯技术工具库)**：`Result<T, E>` 模式、`toPlainData` 跨端序列化防错与纯技术工具函数。
 
