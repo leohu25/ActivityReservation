@@ -6,9 +6,9 @@ build
 dist
 .turbo
 
-# 纯原子组件（保持官方原汁原味，避免格式化产生海量 diff 与哈希变化）
-packages/base/ui/src/components/shadcn/**
-packages/ui/src/components/shadcn/**
+# 纯原子组件（避免格式化产生海量 diff）
+packages/base/ui/src/components/ui/**
+packages/ui/src/components/ui/**
 
 # 数据库迁移与生成产物
 *.generated.*

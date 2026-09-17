@@ -23,7 +23,7 @@
       "@base/db-tenant": ["packages/base/db-tenant/src/index.ts"],
       "@base/ui": ["packages/base/ui/src/index.ts"],
       "@base/ui/*": ["packages/base/ui/src/*"],
-      "@/components/shadcn/*": ["packages/base/ui/src/components/shadcn/*"],
+      "@/components/ui/*": ["packages/base/ui/src/components/ui/*"],
       "@/hooks/*": ["packages/base/ui/src/hooks/*"],
       "@base/feature-control-admin": [
         "packages/platform/control-admin/src/index.ts"

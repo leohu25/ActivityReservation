@@ -376,6 +376,15 @@
       "status": "completed",
       "owner": "implementer",
       "evidence": "1. 将 packages/base/ui/components.json 切换为 base-nova 风格；2. 通过 official CLI 重新全量生成 44 个 Base UI 原子组件（保持 100% 纯净，零人工修改）；3. 在复合层 (@base/ui/composite) 平滑封装 Badge 与 Combobox，无缝承接原有 size/variant 契约及表单接口；4. 全面消除 Radix 专有 asChild、position='item-aligned' 与 onValueChange 空值兼容问题；5. 全 Monorepo 16 个包 pnpm turbo run check test 全部通过 (32/32 tasks pass, 250+ 单测通过)；6. 彻底解决 CustomerFormModal 中客户分类下拉脱焦、白屏及位置漂移问题。"
+    },
+    {
+      "id": "arch-ui-shadcn-official-standardization",
+      "name": "【UI基座架构重构】对齐 shadcn UI 官方最佳范式与设计系统收敛",
+      "description": "按照 shadcn UI 官方权威规范与 Monorepo 设计系统最佳实践，彻底重构 @base/ui：1. 废除 SHA256 哈希防篡改与过度防御限制，锁死核心依赖版本；2. 将 components/shadcn 目录正名为官方标准的 components/ui 并同步更新 components.json 别名；3. 落实 Code Ownership 与 CVA 变体扩展规范，将 Badge 语义变体/尺寸与 Select 中文回显补丁就地合流进原子源码，彻底删除 composite/badge 与 composite/form/Select 伪包装层；4. 废除废弃的 toast.tsx，全仓统一收敛至 sonner 单一通知事实源；5. 梳理 composite 目录至扁平语义目录，净化 @base/ui 顶层导出（零覆盖、零冲突）；6. 确保全 Monorepo 双端应用与业务切片平滑无缝过渡，测试与门禁 100% 绿灯。",
+      "dependencies": ["arch-ui-base-ui-full-migration"],
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "1. 彻底删除 SHA256 哈希清单与 check-shadcn-immutability.mjs 门禁脚本，解除原子层修改限制并锁死核心依赖版本；2. 将 components/shadcn 正名为 components/ui 并更新 components.json 别名对齐官方 CLI；3. 将 Badge 语义变体/尺寸与 Select 中文 label 回显逻辑就地合入原子组件源码，彻底物理删除 composite/badge 与 composite/form/Select 伪包装层；4. 物理删除废弃的 components/ui/toast.tsx，全仓收敛至 sonner 单一事实源；5. 将 composite 与 templates 扁平解构收敛为 data-table, auth, form, tree, layout, feedback, icon 语义目录，重构 index.ts 实现干净透明、零冲突导出；6. 全 Monorepo 16 个包与双端应用通过类型检查，@base/ui 13/13 单测通过，node scripts/verify.mjs 门禁 100% 绿灯。"
     }
   ]
 }

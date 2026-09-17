@@ -2,73 +2,73 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { renderToString } from "react-dom/server";
 import { useDataTableState } from "./use-data-table-state";
-import { DataTable } from "../components/templates/DataTable";
-import type { ColumnDef } from "../components/composite/table/DataTableContext";
+import { DataTable } from "../components/data-table/DataTable";
+import type { ColumnDef } from "../components/data-table/DataTableContext";
 
 test("useDataTableState: 初始状态正常推导与暴露 bindProps", () => {
-  function DummyComponent() {
-    const table = useDataTableState({
-      initialPage: 2,
-      initialPageSize: 20,
-      initialTotal: 50,
-      initialKeyword: "test-query",
-      syncUrl: false,
-    });
+	function DummyComponent() {
+		const table = useDataTableState({
+			initialPage: 2,
+			initialPageSize: 20,
+			initialTotal: 50,
+			initialKeyword: "test-query",
+			syncUrl: false,
+		});
 
-    assert.equal(table.page, 2);
-    assert.equal(table.pageSize, 20);
-    assert.equal(table.total, 50);
-    assert.equal(table.keyword, "test-query");
-    assert.equal(table.bindProps.keywordValue, "test-query");
+		assert.equal(table.page, 2);
+		assert.equal(table.pageSize, 20);
+		assert.equal(table.total, 50);
+		assert.equal(table.keyword, "test-query");
+		assert.equal(table.bindProps.keywordValue, "test-query");
 
-    return null;
-  }
+		return null;
+	}
 
-  renderToString(<DummyComponent />);
+	renderToString(<DummyComponent />);
 });
 
 test("DataTable: 默认占位符升级为中立语义且支持 Enter 快捷键", () => {
-  interface RecordItem {
-    id: string;
-    name: string;
-  }
+	interface RecordItem {
+		id: string;
+		name: string;
+	}
 
-  const columns: ColumnDef<RecordItem>[] = [
-    {
-      id: "name",
-      header: "名称",
-      cell: (r) => <span>{r.name}</span>,
-    },
-  ];
+	const columns: ColumnDef<RecordItem>[] = [
+		{
+			id: "name",
+			header: "名称",
+			cell: (r) => <span>{r.name}</span>,
+		},
+	];
 
-  const html = renderToString(
-    <DataTable<RecordItem>
-      title="测试列表"
-      data={[{ id: "1", name: "商品A" }]}
-      columns={columns}
-      rowKey={(r) => r.id}
-    />,
-  );
+	const html = renderToString(
+		<DataTable<RecordItem>
+			title="测试列表"
+			data={[{ id: "1", name: "商品A" }]}
+			columns={columns}
+			rowKey={(r) => r.id}
+		/>,
+	);
 
-  // 验证消除了原先粗暴硬编码的 "单号" 占位符
-  assert.doesNotMatch(html, /单号 \/ 名称 \/ 关键字/);
-  assert.match(html, /输入关键字搜索\.\.\./);
+	// 验证消除了原先粗暴硬编码的 "单号" 占位符
+	assert.doesNotMatch(html, /单号 \/ 名称 \/ 关键字/);
+	assert.match(html, /输入关键字搜索\.\.\./);
 });
 
 test("DataTable: 传入 keywordPlaceholder 能够自定义渲染占位符", () => {
-  interface RecordItem {
-    id: string;
-  }
+	interface RecordItem {
+		id: string;
+	}
 
-  const html = renderToString(
-    <DataTable<RecordItem>
-      title="销售订单"
-      data={[{ id: "1" }]}
-      columns={[]}
-      rowKey={(r) => r.id}
-      keywordPlaceholder="搜索订单号、销售员、客户..."
-    />,
-  );
+	const html = renderToString(
+		<DataTable<RecordItem>
+			title="销售订单"
+			data={[{ id: "1" }]}
+			columns={[]}
+			rowKey={(r) => r.id}
+			keywordPlaceholder="搜索订单号、销售员、客户..."
+		/>,
+	);
 
-  assert.match(html, /搜索订单号、销售员、客户\.\.\./);
+	assert.match(html, /搜索订单号、销售员、客户\.\.\./);
 });

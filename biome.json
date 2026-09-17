@@ -8,8 +8,8 @@
   "files": {
     "includes": [
       "**",
-      "!**/packages/base/ui/src/components/shadcn",
-      "!packages/base/ui/src/components/shadcn"
+      "!**/packages/base/ui/src/components/ui",
+      "!packages/base/ui/src/components/ui"
     ]
   }
 }
