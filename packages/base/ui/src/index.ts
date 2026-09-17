@@ -13,8 +13,6 @@ export {
   type UiAbilityLike,
   type UiAbilityProviderProps,
 } from "./components/composite/auth";
-/** @deprecated 请使用 useUiAbility 替代，以保持 UI 库与鉴权引擎解耦 */
-export { useUiAbility as useOptionalAbility } from "./components/composite/auth";
 // 1. 原子层 (Atoms / shadcn 官方原语)
 export * from "./components/shadcn";
 // 2. 分子层 (Molecules / Composite 受控中立组件)

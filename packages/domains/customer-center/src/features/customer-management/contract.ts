@@ -4,7 +4,6 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
-import type { SearchContract } from "@base/shared";
 
 export { MasterDataStatus };
 
@@ -98,17 +97,4 @@ export const customerPageContract: FeaturePagePermissionDescriptor = {
     label: f.label,
     sensitive: f.isSensitive,
   })),
-} as const;
-
-/**
- * 客户档案搜索契约 (SSoT)
- * 驱动前端输入框自动生成占位符，并与后端参数化查询严格对齐
- */
-export const customerSearchContract: SearchContract = {
-  direct: [
-    { field: "customerCode", label: "客户编码" },
-    { field: "customerName", label: "客户名称" },
-    { field: "contactPerson", label: "联系人" },
-    { field: "contactPhone", label: "联系电话" },
-  ],
 } as const;

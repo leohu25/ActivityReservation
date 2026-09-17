@@ -84,6 +84,3 @@ export const companyProfilePageContract: FeaturePagePermissionDescriptor = {
     sensitive: f.isSensitive,
   })),
 } as const;
-
-/** 兼容别名导出 */
-export const companySettingsPageContract = companyProfilePageContract;

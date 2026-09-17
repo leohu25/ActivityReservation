@@ -7,7 +7,6 @@ import type {
 } from "@base/db-control";
 import {
   assertTenantAccessGate,
-  assertEmployeeActive,
   resolveTenantContext,
   TenantContextError,
   type AuthSessionInput,
@@ -164,9 +163,6 @@ test("trusted request resolver fails closed when Better Auth finds no session", 
 test("assertTenantAccessGate allows ACTIVE employee profile", () => {
   assert.doesNotThrow(() => {
     assertTenantAccessGate({ status: "ACTIVE" });
-  });
-  assert.doesNotThrow(() => {
-    assertEmployeeActive({ status: "ACTIVE" });
   });
 });
 

@@ -16,11 +16,10 @@ import {
   ProcurementOrderField,
   ProcurementOrderStatus,
   procurementOrderPageContract,
-  procurementOrderSearchContract,
 } from "../contracts";
 import type {
   ProcurementOrderItem,
-  ProcurementFieldVisibility,
+  ProcurementOrderFieldVisibility,
 } from "../types";
 import { CreateOrderDialog } from "./CreateOrderDialog";
 import { AuditOrderModal } from "./AuditOrderModal";
@@ -32,7 +31,7 @@ export interface ProcurementOrderCenterProps {
   readonly departmentName?: string | null;
   readonly canCreate?: boolean;
   readonly canExport?: boolean;
-  readonly fieldVisibility?: ProcurementFieldVisibility;
+  readonly fieldVisibility?: ProcurementOrderFieldVisibility;
   readonly currentUserId?: string;
   readonly createFieldModes?: Record<string, FieldAccessMode>;
 }
@@ -260,7 +259,7 @@ export function ProcurementOrderCenter({
         showRefresh={true}
         showCreate={false}
         onRefresh={() => router?.refresh()}
-        searchContract={procurementOrderSearchContract}
+        keywordPlaceholder="搜索采购单号、供应商..."
         keywordValue={keyword}
         onKeywordChange={setKeyword}
         statusOptions={[

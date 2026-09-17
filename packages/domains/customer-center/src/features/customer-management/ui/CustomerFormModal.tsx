@@ -24,10 +24,6 @@ export interface CustomerFormModalProps {
   readonly record?: CustomerListItem | null;
   readonly categoryOptions?: readonly CustomerCategoryItem[];
   readonly tagOptions?: readonly CustomerTagItem[];
-  /** @deprecated 使用 categoryOptions */
-  readonly categories?: readonly CustomerCategoryItem[];
-  /** @deprecated 使用 tagOptions */
-  readonly tags?: readonly CustomerTagItem[];
   readonly onClose: () => void;
   readonly onSuccess?: () => void;
   readonly inline?: boolean;
@@ -95,8 +91,6 @@ export function CustomerFormModal({
   record,
   categoryOptions,
   tagOptions,
-  categories,
-  tags,
   onClose,
   onSuccess,
   inline,
@@ -105,8 +99,8 @@ export function CustomerFormModal({
   const contextAbility = useOptionalAbility();
   const ability =
     explicitAbility === undefined ? contextAbility : explicitAbility;
-  const resolvedCategoryOptions = categoryOptions ?? categories ?? [];
-  const resolvedTagOptions = tagOptions ?? tags ?? [];
+  const resolvedCategoryOptions = categoryOptions ?? [];
+  const resolvedTagOptions = tagOptions ?? [];
 
   // 组装初始值：新增时使用默认纯净数据；编辑/查看时回填记录
   const initialValues = useMemo<CustomerFormData>(() => {
@@ -152,7 +146,7 @@ export function CustomerFormModal({
       serviceTime: record.serviceTime || "",
       tagCodes: existingTagCodes,
     };
-  }, [record, mode, categories]);
+  }, [record, mode, resolvedCategoryOptions]);
 
   // 动态字段结构：按业务分组
   const sections = useMemo<FormModalSection[]>(() => {
@@ -391,7 +385,3 @@ export function CustomerFormModal({
     />
   );
 }
-
-// 兼容既有导入别名
-export type { FormModalMode as CrudFormMode };
-export { CustomerFormModal as CreateCustomerModal };

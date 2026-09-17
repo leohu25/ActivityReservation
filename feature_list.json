@@ -355,9 +355,18 @@
       "name": "【UI流水线与DX治理】DataTable搜索/分页状态管道封装与业务切片搜索Bug治理",
       "description": "彻底根除列表搜索失效、占位符错乱与按钮黑盒失踪等问题：1. 封装通用 useDataTableState Hook，将分页、关键字防抖/回车、URL同步与重置操作全自动化，消除业务组件漏传 keyword 的手写胶水代码；2. 在 DataTable 关键字输入框上原生打通 Enter 键触发 onSearch，移除硬编码的 '单号' 占位符并支持智能语义推导；3. 全面重构治理 CustomerView, StoreView, QuoteView 等业务切片，修复漏传 keyword 导致的搜索瘫痪，修正语义占位符；4. 优化 DataTableActionButton 与 DataTableRowActions 的权限防御机制，支持调试态/非静默下友好置灰并带 Tooltip 说明权限缺失原因；5. 补齐对应单元测试与沙盒交接文档。",
       "dependencies": ["arch-ui-three-tier-and-monolith-breakdown"],
-      "status": "in_progress",
+      "status": "completed",
       "owner": "coordinator",
-      "evidence": "制定 Feature 与沙盒上下文，推进状态流水线封装与全仓切片治理。"
+      "evidence": "1. 封装通用 useDataTableState Hook 与回车即时搜索；2. 治理 CustomerView, StoreView, QuoteView 修复漏传 keyword；3. 优化 DataTableActionButton 与 DataTableRowActions 权限调试提示；4. 补齐单元测试全量 PASS。"
+    },
+    {
+      "id": "arch-eliminate-search-dsl-and-adopt-prisma-native-relations",
+      "name": "【架构规范与范式升级】消除私有搜索DSL并落地Prisma原生逻辑关系与标准搜索",
+      "description": "彻底消除项目内为了跨表反查自创的私有搜索 DSL（SearchContract 与 executeSearchContract）及历史兼容包袱：1. 在 packages/base/db-tenant 的 Prisma Schema 引入 relationMode = 'prisma' 声明应用层逻辑关联（零物理外键约束，彻底杜绝死锁与强耦合）；2. 在销售订单（SalesOrder）等切片声明对 Customer / CustomerStore 的标准 @relation 映射；3. 业务端（order-center, customer-center, procurement-center 等）全面升级为 Prisma 官方原生嵌套关系过滤（范式 A）与强类型 Where 拼装，彻底消灭 client as unknown as Record 暴力类型强转；4. 物理删除 @base/shared 中的 keyword-search-engine.ts 等私有 DSL 文件；5. 净化 scripts/check/check-redlines.mjs 门禁规则；6. 建立 .harness/features/arch-eliminate-search-dsl-and-adopt-prisma-native-relations/ 标准沙盒文档。",
+      "dependencies": ["ui-datatable-pipeline-and-dx-governance"],
+      "status": "completed",
+      "owner": "coordinator",
+      "evidence": "1. 全仓配置 relationMode = 'prisma' 并生成全新迁移 20260917020253_drop_all_foreign_keys_and_use_logical_relations，一次性 DROP 掉全部 29 个存量物理外键，达成数据库物理层零外键约束与零死锁；2. 业务切片全面升级为 Prisma 原生嵌套关系过滤与强类型 Where 拼装；3. 物理彻底删除 keyword-search-engine.ts 并净化门禁脚本；4. 全仓 pnpm check (18/18)、pnpm test (16/16 包 250+ 单测) 与全套架构门禁 100% 通过。"
     }
   ]
 }

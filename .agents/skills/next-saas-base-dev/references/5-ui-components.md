@@ -10,12 +10,12 @@
 | ------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
 | **1. 原子层 (Atoms)**                 | `packages/ui/.../shadcn/`            | `Button`, `Input`, `Dialog`, `Card`, `Badge`, `Select`, `Table` 等                                     | Radix / shadcn 官方无头原语封装，纯 UI 渲染基石，**业务禁止手写修改，不包含任何权限逻辑**。                        |
 | **2. 分子层 (Molecules / Composite)** | `composite/`、`layout/`、`feedback/` | `ActionButton`, `ActionGroup`, `AuthGuard`, `DataTableRowActions`, `DetailTable`, `AuthorizedField` 等 | 组合原子组件，注入中立业务规则（如 CASL 权限判定、Zod 校验、二次确认防误删）。**依赖原子组件，不绑特定业务领域**。 |
-| **3. 模板层 (Templates)**             | `templates/`                         | `DataTable`, `FormModal`, `HierarchyWorkspace`, `DashboardShell`, `PageShell` 等                       | 开箱即用的完整业务工作区/容器，负责整体布局编排、上下文生命周期与 Action Schema 协议闭环。**依赖分子与原子组件**。 |
+| **3. 模板层 (Templates)**             | `templates/`                         | `DataTable`, `FormModal`, `DataTree`, `DashboardShell`, `PageShell` 等                                 | 开箱即用的完整业务工作区/容器，负责整体布局编排、上下文生命周期与 Action Schema 协议闭环。**依赖分子与原子组件**。 |
 
 > ⚠️ **核心红线与行为准则**：
 >
 > 1. **全量基于 shadcn 官方原语构建 (No Raw Divs/Controls)**：杜绝裸手写 `div` 布局或裸浏览器原生控件（如原生 `input type="date"`），所有布局排版与交互控件必须基于框架已有的原子、分子与模板组件开发；
-> 2. **严禁写操作按钮裸奔（必须使用分子或模板组件）**：标准列表优先使用 `DataTable`（显式配置 `subject` 自动接管 `create`、`export` 与行操作 `DataTableRowActions`）；多级层级树统一使用 `HierarchyWorkspace`；自由定制页面必须通过分子级受控组件 `<ActionButton>` / `<ActionGroup>` 或声明式 `<AuthGuard>` 包裹，严禁在业务中直接渲染无权限受控的裸 `<Button>` 写操作；
+> 2. **严禁写操作按钮裸奔（必须使用分子或模板组件）**：标准列表优先使用 `DataTable`（显式配置 `subject` 自动接管 `create`、`export` 与行操作 `DataTableRowActions`）；多级层级树统一使用 `DataTree`；自由定制页面必须通过分子级受控组件 `<ActionButton>` / `<ActionGroup>` 或声明式 `<AuthGuard>` 包裹，严禁在业务中直接渲染无权限受控的裸 `<Button>` 写操作；
 > 3. **平台 UI 基建沉淀主动提问机制 (UI Infrastructure Extraction Trigger)**：在垂直切片实施过程中，一旦发现当前交互模式、明细表、子表单或看板具备通用性，**严禁在切片内部私造或闭门造车，必须主动向用户发起提问**，评估并沉淀至 `@base/ui`；
 > 4. **二次确认只在对话框提示一次**：破坏性操作统一由 `ActionButton` 或 `DataTableRowActions` 的 `ConfirmDialog` 进行模态对话框确认，严禁在回调函数内再次使用浏览器的 `window.confirm` 进行二次弹窗；
 > 5. **消息通知右上角 Toast 弹出**：严禁在页面顶部塞入静态红色大横幅挤压变形表格布局，所有成功、警告与错误提示统一使用右上角 `toast` 浮层通知；页内粘性反馈用 `FeedbackBanner`（基于 shadcn `Alert`）；
@@ -375,12 +375,12 @@ const columns: ColumnDef<Customer>[] = [
 </DataTable.DetailDrawer>
 ```
 
-### 2.8 新建/编辑/查看三态弹窗与 Zod 运行时拦截 (`CrudFormModal`)
+### 2.8 新建/编辑/查看三态弹窗与 Zod 运行时拦截 (`FormModal`)
 
-对于 80% 的通用 CRUD 业务表单，推荐使用基于 **TypeScript + Zod Schema 真实运行时驱动** 的 `CrudFormModal`，实现新增、编辑、查看三态合一复用：
+对于 80% 的通用 CRUD 业务表单，推荐使用基于 **TypeScript + Zod Schema 真实运行时驱动** 的 `FormModal`，实现新增、编辑、查看三态合一复用：
 
 ```tsx
-import { z, CrudFormModal, type DataTableFormFieldSchema } from "@base/ui";
+import { z, FormModal, type FormFieldSchema } from "@base/ui";
 
 // 1. 真实 Zod Schema 校验（负责格式验证与运行时拦截）
 const customerSchema = z.object({
@@ -394,7 +394,7 @@ const customerSchema = z.object({
 });
 
 // 2. UI 渲染字段配置（负责控件类型、网格布局与提示）
-const customerFormFields: DataTableFormFieldSchema[] = [
+const customerFormFields: FormFieldSchema[] = [
   {
     name: "customerCode",
     label: "客户编码",
@@ -428,7 +428,7 @@ const customerFormFields: DataTableFormFieldSchema[] = [
   },
 ];
 
-<CrudFormModal
+<FormModal
   open={modalOpen}
   mode={formMode} // "create" | "edit" | "view"
   title={

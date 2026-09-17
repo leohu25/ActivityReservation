@@ -87,12 +87,21 @@ export const EXEMPT_MODELS = new Set([
  */
 export function parsePrismaModels(schemaContent) {
   const models = new Map();
-  const modelPattern = /model\s+([A-Za-z0-9_]+)\s*\{([\s\S]*?)\}/g;
+  // 匹配注释以及 model 声明，用以识别 @db-migrate-extension 扩展模型
+  const modelPattern =
+    /((?:\/\/[^\n]*\n\s*)*)model\s+([A-Za-z0-9_]+)\s*\{([\s\S]*?)\}/g;
   let match;
 
   while ((match = modelPattern.exec(schemaContent)) !== null) {
-    const modelName = match[1];
-    const body = match[2];
+    const comments = match[1] ?? "";
+    const modelName = match[2];
+    const body = match[3];
+
+    // 如果带有 @db-migrate-extension，说明是跨切片反向关系扩展，跳过其主表字段基线检查
+    if (/^\/\/\s*@db-migrate-extension\s+/m.test(comments)) {
+      continue;
+    }
+
     const fields = new Map();
 
     for (const rawLine of body.split("\n")) {

@@ -56,11 +56,9 @@ export function checkUiFile(_filePath, content) {
   const hasWriteAction = writeActionRegex.test(content);
 
   // 2. 检测是否具备合法的权限受控标记
-  // A. 模板级闭环组件（自带字段三态与操作权限）：DataTable、HierarchyWorkspace、FormModal 等，或属于 FormModal 专属子表单
+  // A. 模板级闭环组件（自带字段三态与操作权限）：DataTable、DataTree、FormModal 等，或属于 FormModal 专属子表单
   const hasTemplateGuard =
-    /\b(DataTable|HierarchyWorkspace|FormModal|CrudFormModal)\b/.test(
-      content,
-    ) ||
+    /\b(DataTable|DataTree|FormModal)\b/.test(content) ||
     /FormModal\.tsx/.test(_filePath) ||
     /Modal\.tsx/.test(_filePath);
   // B. 分子级受控组件
@@ -80,7 +78,7 @@ export function checkUiFile(_filePath, content) {
     issues.push({
       type: "MISSING_ACTION_GUARD",
       message:
-        "文件引入并调用了写操作 Server Action，但未接入任何模板组件 (DataTable/HierarchyWorkspace/FormModal)、受控分子组件 (ActionButton/AuthGuard) 或 useAbility 权限判定。",
+        "文件引入并调用了写操作 Server Action，但未接入任何模板组件 (DataTable/DataTree/FormModal)、受控分子组件 (ActionButton/AuthGuard) 或 useAbility 权限判定。",
     });
   }
 
@@ -166,7 +164,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
       }
     }
     console.error(
-      "\n请根据 Atomic Design 规范，改用分子级组件 (ActionButton/AuthGuard) 或标准模板 (DataTable/HierarchyWorkspace)。\n",
+      "\n请根据 Atomic Design 规范，改用分子级组件 (ActionButton/AuthGuard) 或标准模板 (DataTable/DataTree/FormModal)。\n",
     );
     process.exit(1);
   }

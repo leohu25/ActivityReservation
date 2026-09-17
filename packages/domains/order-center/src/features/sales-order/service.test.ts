@@ -515,21 +515,24 @@ describe("SalesOrderService 领域服务与业务规则测试", () => {
       { userId: "USER-1" },
     );
 
-    // Mock count 和 findMany 条件过滤
+    // Mock count 和 findMany 条件过滤 (支持 Prisma 原生嵌套关系过滤)
     (client.salesOrder as any).count = async ({ where }: any) => {
-      // 验证 where.OR 是否包含了 customerCode 或 storeCode 的 in 条件
       const orList = where?.OR ?? [];
-      const hasCustomerCodeIn = orList.some((cond: any) =>
-        cond.customerCode?.in?.includes("CUST-LISI"),
+      const matches = orList.some(
+        (cond: any) =>
+          cond.customer?.customerName?.contains === "李四" ||
+          cond.customerCode?.in?.includes("CUST-LISI"),
       );
-      return hasCustomerCodeIn ? 1 : 0;
+      return matches ? 1 : 0;
     };
     (client.salesOrder as any).findMany = async ({ where }: any) => {
       const orList = where?.OR ?? [];
-      const hasCustomerCodeIn = orList.some((cond: any) =>
-        cond.customerCode?.in?.includes("CUST-LISI"),
+      const matches = orList.some(
+        (cond: any) =>
+          cond.customer?.customerName?.contains === "李四" ||
+          cond.customerCode?.in?.includes("CUST-LISI"),
       );
-      if (hasCustomerCodeIn) {
+      if (matches) {
         return store.salesOrder
           .filter((o) => o.customerCode === "CUST-LISI")
           .map((o) => ({ ...o, _count: { items: 1 } }));

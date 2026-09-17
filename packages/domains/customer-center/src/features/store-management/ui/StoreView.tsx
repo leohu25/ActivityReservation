@@ -21,11 +21,7 @@ import { exportContractCsv, MasterDataStatus } from "@base/shared";
 import { useAbility } from "@base/authorization";
 import { updateStoreStatusAction, deleteStoreAction } from "../actions";
 import { StoreFormModal } from "./StoreFormModal";
-import {
-  CustomerStoreField,
-  storePageContract,
-  storeSearchContract,
-} from "../contract";
+import { CustomerStoreField, storePageContract } from "../contract";
 import type { StoreListItem } from "../types";
 import type { CustomerListItem } from "../../customer-management/types";
 
@@ -332,7 +328,7 @@ export function StoreView({
           setModalState({ open: true, mode: "create", record: null })
         }
         contentProps={{ selectable: true }}
-        searchContract={storeSearchContract}
+        keywordPlaceholder="搜索门店编码、名称、地址、联系人、客户..."
         keywordValue={keyword}
         onKeywordChange={setKeyword}
         statusOptions={[

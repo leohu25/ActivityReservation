@@ -129,6 +129,11 @@ const checks = [
     ],
   },
   {
+    label: "逻辑外键",
+    cmd: nodePath,
+    args: [path.join(WORKSPACE_ROOT, "scripts/check/check-relation-mode.mjs")],
+  },
+  {
     label: "门禁单测",
     cmd: nodePath,
     args: [
@@ -140,6 +145,7 @@ const checks = [
         WORKSPACE_ROOT,
         "scripts/check/check-ui-permission-guards.test.mjs",
       ),
+      path.join(WORKSPACE_ROOT, "scripts/check/check-relation-mode.test.mjs"),
     ],
   },
 ];

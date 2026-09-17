@@ -13,10 +13,7 @@ import {
 } from "@base/ui";
 import { Building, Users, FolderTree } from "lucide-react";
 import type { DepartmentTreeNode } from "../types";
-import {
-  DepartmentSubject,
-  departmentSearchContract,
-} from "../department.contract";
+import { DepartmentSubject } from "../department.contract";
 import { deleteDepartmentAction, listDepartmentTreeAction } from "../actions";
 import { DepartmentFormModal } from "./DepartmentFormModal";
 
@@ -370,7 +367,7 @@ export function DepartmentView({ initialTree }: DepartmentViewProps) {
             onRefresh={refreshTree}
             onCreate={() => openCreateModal(selectedDeptId)}
             createText={selectedDeptId ? "新建当前子部门" : "新建部门"}
-            searchContract={departmentSearchContract}
+            keywordPlaceholder="搜索部门名称、编码、负责人..."
             keywordValue={keyword}
             onKeywordChange={setKeyword}
             hideStatusFilter={true}

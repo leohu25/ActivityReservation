@@ -2,7 +2,6 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
-import type { SearchContract } from "@base/shared";
 
 /** 角色管理 (组织架构下 CRUD) 实体与资源标识 (SSoT) */
 export const RoleSubject = "Role";
@@ -55,15 +54,6 @@ export const roleDefinitionPageContract: FeaturePagePermissionDescriptor = {
     label: f.label,
     sensitive: f.isSensitive,
   })),
-} as const;
-
-/** 角色字典搜索契约 (SSoT) */
-export const roleSearchContract: SearchContract = {
-  direct: [
-    { field: "role", label: "角色编码" },
-    { field: "name", label: "角色名称" },
-    { field: "description", label: "职责描述" },
-  ],
 } as const;
 
 /**

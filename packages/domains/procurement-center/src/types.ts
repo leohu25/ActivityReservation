@@ -1,7 +1,7 @@
 import type { AppPrismaAbility, AppAbility } from "@base/authorization";
 import type {
   ProcurementAction,
-  ProcurementField,
+  ProcurementOrderField,
   ProcurementOrderStatus,
 } from "./contracts";
 
@@ -15,8 +15,8 @@ export type ProcurementAnyAbility =
 /**
  * 采购订单业务展示模型 (DTO)
  */
-export type ProcurementFieldVisibility = Readonly<
-  Record<ProcurementField, boolean>
+export type ProcurementOrderFieldVisibility = Readonly<
+  Record<ProcurementOrderField, boolean>
 >;
 
 export interface ProcurementOrderItem {

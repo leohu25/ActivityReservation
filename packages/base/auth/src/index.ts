@@ -24,7 +24,6 @@ export {
 export {
   TenantContextError,
   assertTenantAccessGate,
-  assertEmployeeActive,
   resolveTenantContext,
   type AuthenticatedSession,
   type AuthenticatedUser,

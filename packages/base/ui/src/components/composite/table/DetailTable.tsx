@@ -220,7 +220,3 @@ export function DetailTable<T>({
     </div>
   );
 }
-
-/** 兼容旧版命名导出 */
-export const EditableDetailTable = DetailTable;
-export type EditableDetailTableProps<T> = DetailTableProps<T>;

@@ -13,7 +13,7 @@ import {
   procurementCatalog,
   procurementCreateFields,
   ProcurementOrderService,
-  ProcurementSubject,
+  ProcurementOrderSubject,
   type ProcurementAction,
 } from "../index";
 import type { ProcurementOrderCenterProps } from "../components/ProcurementOrderCenter";
@@ -135,21 +135,21 @@ export async function getProcurementOrdersPageData(): Promise<ProcurementOrdersP
   // 提取实时下推条件与权限状态
   const sqlWhere = getAccessibleWhere(
     prismaAbility,
-    ProcurementSubject,
+    ProcurementOrderSubject,
     "read",
   );
   const fieldVisibility = getProcurementFieldVisibility(prismaAbility);
   const canCreate =
-    prismaAbility.can("create", ProcurementSubject) &&
+    prismaAbility.can("create", ProcurementOrderSubject) &&
     procurementCreateFields.every((field) =>
-      prismaAbility.can("create", ProcurementSubject, field),
+      prismaAbility.can("create", ProcurementOrderSubject, field),
     );
   const canCreateCostPrice = prismaAbility.can(
     "create",
-    ProcurementSubject,
+    ProcurementOrderSubject,
     "costPrice",
   );
-  const canExport = prismaAbility.can("export", ProcurementSubject);
+  const canExport = prismaAbility.can("export", ProcurementOrderSubject);
 
   let departmentName: string | null = null;
   if (topology.departmentId) {

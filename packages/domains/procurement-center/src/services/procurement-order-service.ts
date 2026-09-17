@@ -16,9 +16,8 @@ import type { TenantPrismaClient, TenantPrisma } from "@base/db-tenant";
 import {
   ProcurementAction,
   ProcurementOrderField,
-  type ProcurementField,
   ProcurementOrderStatus,
-  ProcurementSubject,
+  ProcurementOrderSubject,
 } from "../contracts";
 import type {
   AuditOrderInput,
@@ -50,7 +49,7 @@ export class ProcurementOrderService {
     // SAFETY: ability 满足 PrismaAbility 运行时契约，提取下推过滤条件
     const accessibleWhere = getAccessibleWhere(
       ability as unknown as PrismaAbility<[string, string]>,
-      ProcurementSubject,
+      ProcurementOrderSubject,
       StandardAction.READ,
     );
 
@@ -69,7 +68,7 @@ export class ProcurementOrderService {
 
     const canAuditGlobal = ability.can(
       ProcurementAction.AUDIT,
-      ProcurementSubject,
+      ProcurementOrderSubject,
     );
 
     return rawOrders.map((order) => {
@@ -83,7 +82,7 @@ export class ProcurementOrderService {
       // SAFETY: ProcurementAnyAbility 均实现 CASL 的字段级 can/rules 运行时契约。
       const readableFields = pickReadableFields(
         ability as unknown as AnyMongoAbility,
-        ProcurementSubject,
+        ProcurementOrderSubject,
         {
           orderNo: order.orderNo,
           supplierName: order.supplierName,
@@ -91,7 +90,7 @@ export class ProcurementOrderService {
           costPrice: formatCurrency(order.costPrice),
           status: order.status as ProcurementOrderStatus,
           auditComment: order.auditComment,
-        } satisfies Record<ProcurementField, unknown>,
+        } satisfies Record<ProcurementOrderField, unknown>,
       );
 
       return {
@@ -117,14 +116,14 @@ export class ProcurementOrderService {
     operator: CreateOrderOperator,
     input: CreateOrderInput,
   ): Promise<ProcurementOrderItem> {
-    if (!ability.can(StandardAction.CREATE, ProcurementSubject)) {
+    if (!ability.can(StandardAction.CREATE, ProcurementOrderSubject)) {
       throw new ForbiddenError("权限拒绝：您不具备新建采购订单的权限");
     }
 
     // SAFETY: ability 满足 AnyMongoAbility 运行时契约，供 assertEditableFields 进行字段权限校验
     assertEditableFields(
       ability as unknown as AnyMongoAbility,
-      ProcurementSubject,
+      ProcurementOrderSubject,
       {
         supplierName: input.supplierName,
         quantity: input.quantity,
@@ -175,7 +174,7 @@ export class ProcurementOrderService {
     // SAFETY: ProcurementAnyAbility 均实现 CASL 的字段级 can/rules 运行时契约。
     const readableFields = pickReadableFields(
       ability as unknown as AnyMongoAbility,
-      ProcurementSubject,
+      ProcurementOrderSubject,
       {
         orderNo: created.orderNo,
         supplierName: created.supplierName,
@@ -183,7 +182,7 @@ export class ProcurementOrderService {
         costPrice: formatCurrency(created.costPrice),
         status: ProcurementOrderStatus.PENDING,
         auditComment: null,
-      } satisfies Record<ProcurementField, unknown>,
+      } satisfies Record<ProcurementOrderField, unknown>,
     );
 
     return {
@@ -208,7 +207,7 @@ export class ProcurementOrderService {
     operator: AuditOrderOperator,
     input: AuditOrderInput,
   ): Promise<ProcurementOrderItem> {
-    if (!ability.can(ProcurementAction.AUDIT, ProcurementSubject)) {
+    if (!ability.can(ProcurementAction.AUDIT, ProcurementOrderSubject)) {
       throw new ForbiddenError("权限拒绝：您不具备采购订单的审核权限");
     }
 
@@ -263,7 +262,7 @@ export class ProcurementOrderService {
     // SAFETY: ProcurementAnyAbility 均实现 CASL 的字段级 can/rules 运行时契约。
     const readableFields = pickReadableFields(
       ability as unknown as AnyMongoAbility,
-      ProcurementSubject,
+      ProcurementOrderSubject,
       {
         orderNo: updated.orderNo,
         supplierName: updated.supplierName,
@@ -271,7 +270,7 @@ export class ProcurementOrderService {
         costPrice: formatCurrency(updated.costPrice),
         status: newStatus,
         auditComment: updated.auditComment,
-      } satisfies Record<ProcurementField, unknown>,
+      } satisfies Record<ProcurementOrderField, unknown>,
     );
 
     return {
@@ -294,14 +293,14 @@ export class ProcurementOrderService {
     prisma: TenantPrismaClient,
     ability: ProcurementAnyAbility,
   ): Promise<readonly ExportOrderItem[]> {
-    if (!ability.can(StandardAction.EXPORT, ProcurementSubject)) {
+    if (!ability.can(StandardAction.EXPORT, ProcurementOrderSubject)) {
       throw new ForbiddenError("权限拒绝：您不具备导出采购订单的权限");
     }
 
     // SAFETY: ability 满足 PrismaAbility 运行时契约，提取导出操作的数据下推过滤条件
     const accessibleWhere = getAccessibleWhere(
       ability as unknown as PrismaAbility<[string, string]>,
-      ProcurementSubject,
+      ProcurementOrderSubject,
       StandardAction.READ,
     );
 
@@ -314,12 +313,12 @@ export class ProcurementOrderService {
     const canExportCostPrice =
       ability.can(
         StandardAction.EXPORT,
-        ProcurementSubject,
+        ProcurementOrderSubject,
         ProcurementOrderField.COST_PRICE,
       ) ||
       ability.can(
         StandardAction.READ,
-        ProcurementSubject,
+        ProcurementOrderSubject,
         ProcurementOrderField.COST_PRICE,
       );
 

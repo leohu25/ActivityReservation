@@ -30,7 +30,7 @@ test("DetailTable [mode=view]: 渲染表头、单元格与空状态提示，隐�
   assert.ok(!html.includes("操作"));
 });
 
-test("DetailTable [readOnly=true 兼容性]: 只读态正确生效", () => {
+test("DetailTable [readOnly=true]: 只读态正确生效", () => {
   const html = renderToString(
     <DetailTable<{ id: string; name: string }>
       columns={[
@@ -67,9 +67,7 @@ test("DetailTable [mode=edit]: 渲染添加行按钮与操作列", () => {
 test("DetailTable [空数据状态]: 呈现 emptyText", () => {
   const html = renderToString(
     <DetailTable<{ id: string; name: string }>
-      columns={[
-        { id: "id", header: "编码", renderCell: (row) => row.id },
-      ]}
+      columns={[{ id: "id", header: "编码", renderCell: (row) => row.id }]}
       data={[]}
       emptyText="暂无商品明细"
       mode="view"

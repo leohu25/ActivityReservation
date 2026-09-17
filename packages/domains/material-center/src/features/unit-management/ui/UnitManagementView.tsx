@@ -10,12 +10,7 @@ import {
 } from "@base/ui";
 import { Scale } from "lucide-react";
 import type { UnitListItem, UnitConversionListItem } from "../types";
-import {
-  UnitOfMeasureSubject,
-  UnitConversionSubject,
-  unitOfMeasureSearchContract,
-  unitConversionSearchContract,
-} from "../contract";
+import { UnitOfMeasureSubject, UnitConversionSubject } from "../contract";
 import { deleteUnitAction, deleteConversionAction } from "../actions";
 import { UnitFormModal } from "./UnitFormModal";
 import { ConversionFormModal } from "./ConversionFormModal";
@@ -235,7 +230,7 @@ export function UnitManagementView({
               setUnitModal({ open: true, mode: "create", record: null })
             }
             createText="新增单位"
-            searchContract={unitOfMeasureSearchContract}
+            keywordPlaceholder="搜索单位编码、名称..."
             keywordValue={unitKeyword}
             onKeywordChange={setUnitKeyword}
             onSearch={() => {}}
@@ -259,7 +254,7 @@ export function UnitManagementView({
               setConvModal({ open: true, mode: "create", record: null })
             }
             createText="新增换算规则"
-            searchContract={unitConversionSearchContract}
+            keywordPlaceholder="搜索物料编码、换算单位..."
             keywordValue={convKeyword}
             onKeywordChange={setConvKeyword}
             onSearch={() => {}}

@@ -92,9 +92,6 @@ export function assertTenantAccessGate(
   }
 }
 
-/** 兼容别名导出 */
-export const assertEmployeeActive = assertTenantAccessGate;
-
 /**
  * Resolves the tenant exclusively from a trusted Better Auth session.
  * Client-supplied tenant identifiers are intentionally not accepted.

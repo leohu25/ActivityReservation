@@ -3,7 +3,6 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
-import type { SearchContract } from "@base/shared";
 
 /** 部门实体与资源标识 (SSoT) */
 export const DepartmentSubject = "Department";
@@ -65,13 +64,4 @@ export const departmentPageContract: FeaturePagePermissionDescriptor = {
     label: f.label,
     sensitive: f.isSensitive,
   })),
-} as const;
-
-/** 部门搜索契约 (SSoT) */
-export const departmentSearchContract: SearchContract = {
-  direct: [
-    { field: "name", label: "部门名称" },
-    { field: "code", label: "部门编码" },
-    { field: "leaderName", label: "负责人" },
-  ],
 } as const;

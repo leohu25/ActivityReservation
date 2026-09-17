@@ -1,5 +1,6 @@
 datasource db {
-  provider = "postgresql"
+  provider     = "postgresql"
+  relationMode = "prisma"
 }
 
 // ----------------------------------------------------
@@ -41,7 +42,7 @@ model ItemCategory {
   /// 更新时间
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  parent         ItemCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  parent         ItemCategory?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   children       ItemCategory[] @relation("CategoryTree")
   items          ItemMaster[]
 
@@ -205,9 +206,9 @@ model UnitConversion {
   /// 更新时间
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  fromUnit       UnitOfMeasure @relation("FromUnit", fields: [fromUnitId], references: [id])
-  toUnit         UnitOfMeasure @relation("ToUnit", fields: [toUnitId], references: [id])
-  item           ItemMaster?   @relation(fields: [itemCode], references: [itemCode])
+  fromUnit       UnitOfMeasure @relation("FromUnit", fields: [fromUnitId], references: [id], onUpdate: Restrict)
+  toUnit         UnitOfMeasure @relation("ToUnit", fields: [toUnitId], references: [id], onUpdate: Restrict)
+  item           ItemMaster?   @relation(fields: [itemCode], references: [itemCode], onUpdate: Restrict)
 
   @@unique([itemCode, fromUnitId, toUnitId])
   @@index([createdById])
@@ -309,9 +310,9 @@ model ItemMaster {
   /// 更新时间
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
-  category           ItemCategory     @relation(fields: [categoryId], references: [id])
-  variety            ItemVariety?     @relation(fields: [varietyId], references: [id])
-  grade              ItemGrade?       @relation(fields: [gradeId], references: [id])
+  category           ItemCategory     @relation(fields: [categoryId], references: [id], onUpdate: Restrict)
+  variety            ItemVariety?     @relation(fields: [varietyId], references: [id], onUpdate: Restrict)
+  grade              ItemGrade?       @relation(fields: [gradeId], references: [id], onUpdate: Restrict)
   conversions        UnitConversion[]
   bomsAsOutput       BomHeader[]      @relation("BomOutputItem")
 
@@ -445,7 +446,7 @@ model ProcessSpec {
   /// 更新时间
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  process         ProcessMaster @relation(fields: [processId], references: [id])
+  process         ProcessMaster @relation(fields: [processId], references: [id], onUpdate: Restrict)
   bomProcesses    BomProcess[]
 
   @@unique([processId, specCode])
@@ -516,8 +517,8 @@ model BomHeader {
   /// 更新时间
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
-  outputItem         ItemMaster      @relation("BomOutputItem", fields: [outputItemCode], references: [itemCode])
-  productionLine     ProductionLine? @relation(fields: [productionLineId], references: [id])
+  outputItem         ItemMaster      @relation("BomOutputItem", fields: [outputItemCode], references: [itemCode], onUpdate: Restrict)
+  productionLine     ProductionLine? @relation(fields: [productionLineId], references: [id], onUpdate: Restrict)
   processes          BomProcess[]
 
   @@index([outputItemCode, bomType, status])
@@ -553,9 +554,9 @@ model BomProcess {
   /// 工序操作图文说明
   operatingInstructions String?   @map("operating_instructions") @db.Text
 
-  bom                   BomHeader      @relation(fields: [bomId], references: [id], onDelete: Cascade)
-  process               ProcessMaster  @relation(fields: [processId], references: [id])
-  spec                  ProcessSpec?   @relation(fields: [specId], references: [id])
+  bom                   BomHeader      @relation(fields: [bomId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  process               ProcessMaster  @relation(fields: [processId], references: [id], onUpdate: Restrict)
+  spec                  ProcessSpec?   @relation(fields: [specId], references: [id], onUpdate: Restrict)
   inputs                BomInputItem[]
   outputs               BomOutputItem[]
 
@@ -584,7 +585,7 @@ model BomInputItem {
   /// 外部子件挂载的子BOM编号
   childBomId     String?    @map("child_bom_id") @db.VarChar(50)
 
-  bomProcess     BomProcess @relation(fields: [bomProcessId], references: [id], onDelete: Cascade)
+  bomProcess     BomProcess @relation(fields: [bomProcessId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([bomProcessId])
   @@map("bom_input_item")
@@ -609,7 +610,7 @@ model BomOutputItem {
   /// 下游流转工序seq_no（留空代表最终品）
   nextProcessSeq Int?       @map("next_process_seq")
 
-  bomProcess     BomProcess @relation(fields: [bomProcessId], references: [id], onDelete: Cascade)
+  bomProcess     BomProcess @relation(fields: [bomProcessId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([bomProcessId])
   @@map("bom_output_item")

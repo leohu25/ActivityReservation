@@ -31,7 +31,7 @@ packages/authorization/
 │   ├── adapters/                   # 【跨端运行适配器】
 │   │   ├── server.ts               # 服务端 Server Action 守卫 (createServerAbilityAdapter)
 │   │   └── react.tsx               # 浏览器端 React Context, Hooks (useAbility) 与 <Can /> 声明式组件
-│   ├── react.tsx                   # 向下兼容 ./react 导出的适配桥接
+│   ├── react.tsx                   # ./react 导出桥接
 │   └── index.ts                    # 统一平滑聚合导出入口
 └── README.md
 ```
@@ -41,7 +41,11 @@ packages/authorization/
 ### 3.1 服务端构建 Ability 并执行数据与字段安全过滤
 
 ```ts
-import { CaslAbilityFactory, getAccessibleWhere, pickReadableFields } from "@base/authorization";
+import {
+  CaslAbilityFactory,
+  getAccessibleWhere,
+  pickReadableFields,
+} from "@base/authorization";
 
 // 1. 编译当前租户身份的 CASL Ability
 const factory = new CaslAbilityFactory({ catalog, repository: controlRepo });
@@ -55,7 +59,7 @@ const orders = await tenantPrisma.procurementOrder.findMany({
 
 // 3. 字段列级安全裁剪（自动抹除无权查看的敏感单价/成本）
 const safeOrders = orders.map((order) =>
-  pickReadableFields(order, ability, "ProcurementOrder")
+  pickReadableFields(order, ability, "ProcurementOrder"),
 );
 ```
 

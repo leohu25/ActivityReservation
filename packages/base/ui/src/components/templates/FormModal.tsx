@@ -91,11 +91,9 @@ export interface FormModalProps<
 
   // Zod 运行时强类型校验
   readonly schema?: z.ZodType<TValues> | z.ZodType<any>;
-  readonly headerSchema?: z.ZodType<any>; // 兼容别名
 
   // 内置明细表集成 (DetailTable)
   readonly detailConfig?: FormModalDetailConfig<TItem>;
-  readonly detail?: FormModalDetailConfig<TItem>; // 兼容别名
   readonly initialItems?: readonly TItem[];
   readonly items?: readonly TItem[];
   readonly onItemsChange?: (items: TItem[]) => void;
@@ -180,11 +178,9 @@ export function FormModal<
   initialValues,
   onValuesChange,
   schema,
-  headerSchema,
   subject,
   ability: explicitAbility,
   detailConfig,
-  detail,
   initialItems = EMPTY_INITIAL_ITEMS,
   items: controlledItems,
   onItemsChange,
@@ -204,8 +200,8 @@ export function FormModal<
   children,
   footer,
 }: FormModalProps<TValues, TItem>) {
-  const activeDetailConfig = detailConfig ?? detail;
-  const effectiveSchema = schema ?? headerSchema;
+  const activeDetailConfig = detailConfig;
+  const effectiveSchema = schema;
   const effectiveItemsSchema = itemsSchema ?? activeDetailConfig?.schema;
   const isView = mode === "view";
 

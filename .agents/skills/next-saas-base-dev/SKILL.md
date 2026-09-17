@@ -1,6 +1,6 @@
 ---
 name: next-saas-base-dev
-description: 现代多租户 SaaS 架构全栈工程开发与基建演进标准指南。本规范从企业级真实生产工程中严格提炼派生，是本模板项目及所有基于本基座衍生项目的核心开发宪法与权威事实源。在进行任何代码编写、功能开发、模块扩展、架构重构、组件封装或缺陷修复时必须优先加载并严格遵循本指南。涵盖两大核心领域：1. 业务特性垂直切片开发（packages/features/*，严格遵循 8 阶段标准流水线：架构拓扑与语义子路径、Prisma 数据建模与多租户分库迁移基线、纯数据权限契约 SSoT、领域服务与 RSC server-only Queries、defineServerAction 安全 Action 与 CASL 写路径守卫、工业风高密度 DataTable 与 CrudFormModal UI 交互、双端路由装配与 Manifest 动态自发现、契约对齐单测）；2. 平台基座与基础设施框架演进（@base/auth 双端认证会话、@base/authorization 四层权限闭环与 AbilityProvider、@base/db-tenant 动态连接池 TenantDbManager 治理、@base/db-control 总控库、@base/ui 工业风与 shadcn 原子套件、@base/biz-shared 跨切片中台资产、@base/shared 序列化与工具、tooling/db-migrate 12-Factor 无状态迁移引擎）。触发场景：开发/修改任何业务功能或特性切片（Feature/Sub-Feature/Use Case）、新增/修改页面与视图组件、实现 CRUD 增删改查、编写 Server Action/Query、定义/修改 Prisma Schema 与数据库迁移、配置 CASL 权限与契约、设计/调整 DataTable 与表单、迭代底层 base 基础设施/连接池/中间件/认证授权、修改 apps/tenant 或 apps/control 装配层、编写自动化单测或修复 Bug。
+description: 现代多租户 SaaS 架构全栈工程开发与基建演进标准指南。本规范从企业级真实生产工程中严格提炼派生，是本模板项目及所有基于本基座衍生项目的核心开发宪法与权威事实源。在进行任何代码编写、功能开发、模块扩展、架构重构、组件封装或缺陷修复时必须优先加载并严格遵循本指南。涵盖两大核心领域：1. 业务特性垂直切片开发（packages/features/*，严格遵循 8 阶段标准流水线：架构拓扑与语义子路径、Prisma 数据建模与多租户分库迁移基线、纯数据权限契约 SSoT、领域服务与 RSC server-only Queries、defineServerAction 安全 Action 与 CASL 写路径守卫、工业风高密度 DataTable 与 FormModal UI 交互、双端路由装配与 Manifest 动态自发现、契约对齐单测）；2. 平台基座与基础设施框架演进（@base/auth 双端认证会话、@base/authorization 四层权限闭环与 AbilityProvider、@base/db-tenant 动态连接池 TenantDbManager 治理、@base/db-control 总控库、@base/ui 工业风与 shadcn 原子套件、@base/biz-shared 跨切片中台资产、@base/shared 序列化与工具、tooling/db-migrate 12-Factor 无状态迁移引擎）。触发场景：开发/修改任何业务功能或特性切片（Feature/Sub-Feature/Use Case）、新增/修改页面与视图组件、实现 CRUD 增删改查、编写 Server Action/Query、定义/修改 Prisma Schema 与数据库迁移、配置 CASL 权限与契约、设计/调整 DataTable 与表单、迭代底层 base 基础设施/连接池/中间件/认证授权、修改 apps/tenant 或 apps/control 装配层、编写自动化单测或修复 Bug。
 color: blue
 emoji: 🚀
 vibe: 架构标准化、契约即事实源、底层机制防错、无感响应
@@ -51,12 +51,12 @@ agent_created: true
 - **(c) 组件组装零冗余 (Zero Glue, Zero Redundancy)**：同一类交互形态在系统内有且仅有一套标准实现与统一导出，彻底废除多余别名与历史胶水包装，保持命名清晰、直观、主流；
 - **(d) 复杂超大表单演进标准 (Complex Form Standard)**：当前轻量表单采用受控 React 状态与 Zod 校验；后续若出现超大、深层嵌套联动或频繁动态字段的复杂单据表单，底层驱动引擎统一切换为业界标准 **React Hook Form (`react-hook-form` + `@hookform/resolvers/zod`)**，保持对外暴露的 `FormModal` 声明式 API 完全不变，以获得非受控高性能与脏检查能力。
 
-1.  **测试同级就近共存 (Colocation)**：遵循 Next.js 官方最佳实践，单元测试文件必须与被测试的目标组件/服务处于同一目录下（如 `CustomerView.tsx` 与 `CustomerView.test.tsx` 同级），严禁在模块根目录平铺孤儿测试文件；
-2.  **业务实体必须包含基础审计与软删除字段**：所有业务主数据和单据表必须强制具备 `createdById`、`deptId`、`updatedById`、`isDeleted`、`deletedAt`、`deletedById`、`createdAt`、`updatedAt` 8 个基准字段，静态门禁脚本 `scripts/check/check-entity-baseline.mjs` 在 `pnpm verify` 与 `git commit` 时硬拦截违规模型（详见 `references/2-schema-migrate.md`）；
-3.  **提交前必须审阅确认 (Human Review Before Commit)**：在执行 `git commit` 前，智能体必须主动向用户呈现本次修改清单与核心变更说明，**获得用户明确确认审阅通过后方可执行提交**，严禁擅自静默提交；
-4.  **提交信息必须强制使用中文 (Chinese Commit Message)**：Git 提交信息必须严格遵循 Conventional Commits 规范，且 Header 描述与 Body 详细要点**必须强制使用中文书写**（如 `feat(material): 实现物料与工艺BOM中心及全仓权限四维契约标准化`），严禁使用全英文提交信息；
-5.  **严禁手写裸 DOM 与原生非受控控件**：界面必须 100% 使用 `@base/ui` (shadcn) 原子与复合套件搭建（如 `Table`, `DatePicker`, `Select`, `Dialog`, `Button`, `DataTable.Workspace`, `FormModal` 等），严禁在业务切片内手写原生 `<table>`、原生 `<input type="date">` 或手写零散裸 `div` 布局；
-6.  **严禁破坏运行时与序列化防线（严禁 RSC 跨端透传函数）**：RSC 通过 server-only Query 读取，禁止内部 HTTP 伪接口绕调；RSC 向 Client 组件仅允许传递经序列化的纯数据，**严禁将未标 `"use server"` 的 query 函数或普通服务端函数作为 prop 直接传递给 Client 组件**；Server Action 必须使用 `defineServerAction` 包装并通过 `toPlainData` 彻底消除 Date/Decimal 跨端序列化异常。
+1. **测试同级就近共存 (Colocation)**：遵循 Next.js 官方最佳实践，单元测试文件必须与被测试的目标组件/服务处于同一目录下（如 `CustomerView.tsx` 与 `CustomerView.test.tsx` 同级），严禁在模块根目录平铺孤儿测试文件；
+2. **业务实体必须包含基础审计与软删除字段**：所有业务主数据和单据表必须强制具备 `createdById`、`deptId`、`updatedById`、`isDeleted`、`deletedAt`、`deletedById`、`createdAt`、`updatedAt` 8 个基准字段，静态门禁脚本 `scripts/check/check-entity-baseline.mjs` 在 `pnpm verify` 与 `git commit` 时硬拦截违规模型（详见 `references/2-schema-migrate.md`）；
+3. **提交前必须审阅确认 (Human Review Before Commit)**：在执行 `git commit` 前，智能体必须主动向用户呈现本次修改清单与核心变更说明，**获得用户明确确认审阅通过后方可执行提交**，严禁擅自静默提交；
+4. **提交信息必须强制使用中文 (Chinese Commit Message)**：Git 提交信息必须严格遵循 Conventional Commits 规范，且 Header 描述与 Body 详细要点**必须强制使用中文书写**（如 `feat(material): 实现物料与工艺BOM中心及全仓权限四维契约标准化`），严禁使用全英文提交信息；
+5. **严禁手写裸 DOM 与原生非受控控件**：界面必须 100% 使用 `@base/ui` (shadcn) 原子与复合套件搭建（如 `Table`, `DatePicker`, `Select`, `Dialog`, `Button`, `DataTable.Workspace`, `FormModal` 等），严禁在业务切片内手写原生 `<table>`、原生 `<input type="date">` 或手写零散裸 `div` 布局；
+6. **严禁破坏运行时与序列化防线（严禁 RSC 跨端透传函数）**：RSC 通过 server-only Query 读取，禁止内部 HTTP 伪接口绕调；RSC 向 Client 组件仅允许传递经序列化的纯数据，**严禁将未标 `"use server"` 的 query 函数或普通服务端函数作为 prop 直接传递给 Client 组件**；Server Action 必须使用 `defineServerAction` 包装并通过 `toPlainData` 彻底消除 Date/Decimal 跨端序列化异常。
 
 ---
 
@@ -108,7 +108,7 @@ Phase 7: 契约对齐单测与全栈门禁验证
 - **`@base/db-tenant` (动态多租户物理分库连接池)**：PostgreSQL Database-per-tenant 治理，`globalThis` 全局单例杜绝 HMR 句柄泄漏，`initializing` 互斥锁防止高并发初次连接击穿，`secretRef` 环境变量安全凭据解耦；包含 `TenantMenuItem` 租户自定义菜单物理模型（纯标量 parentId 零死锁设计）；
 - **`@base/db-control` (总控库客户端)**：管理平台集中控制库 `saas_control`，服务于租户开辟、状态机管控与全局审计；
 - **`tooling/db-migrate` (12-Factor 无状态预编译迁移引擎)**：构建期静态化预编译 `runtime-catalog.ts`，运行期 0 CLI 子进程；`@db-migrate-extension` 切片 Schema 动态聚合；Day 0 状态机自愈与 `pg_advisory_xact_lock` 事务咨询锁保障；
-- **`@base/ui` (技术中立设计系统与组件库)**：技术基础设施保持完全中立，不硬编码具体视觉风格。原子层严格由 `npx shadcn@latest add` 维护，组合层沉淀 `DataTable` 企业级积木套件、`CrudFormModal` 三态表单、`EditableDetailTable` 明细表与声明式 `AuthGuard`；项目的具体视觉语言（如 Chenrun Digital ERP 风格）作为外部 Theme 资产在 `design-system/` 与 CSS 语义变量中配置注入；
+- **`@base/ui` (技术中立设计系统与组件库)**：技术基础设施保持完全中立，不硬编码具体视觉风格。原子层严格由 `npx shadcn@latest add` 维护，组合层沉淀 `DataTable` 企业级积木套件、`FormModal` 三态表单、`DetailTable` 明细表、`DataTree` 树形工作台与声明式 `AuthGuard`；项目的具体视觉语言（如 Chenrun Digital ERP 风格）作为外部 Theme 资产在 `design-system/` 与 CSS 语义变量中配置注入；
 - **`@base/biz-shared` (跨切片中台公共资产库)**：沉淀经 2 个以上业务切片验证的公共业务模式（如单据流水号系统、通用审批流契约、明细行业务表格模板）；
 - **`@base/shared` (纯技术工具库)**：`Result<T, E>` 模式、`toPlainData` 跨端序列化防错与纯技术工具函数。
 
@@ -133,7 +133,7 @@ Phase 7: 契约对齐单测与全栈门禁验证
 | **数据建模与迁移**     | 多租户物理分库、8 大审计与软删除基线字段 (ADR-009)、db-migrate 演进      | `references/2-schema-migrate.md`                        |
 | **领域服务与 Query**   | 领域业务封装、软删除过滤、RSC server-only Queries 读取与 SQL 范围下推    | `references/3-services.md`                              |
 | **安全 Actions**       | defineServerAction 包装、CASL 写路径守卫、落库操作人审计与序列化防错     | `references/4-server-actions.md`                        |
-| **高密度工业风 UI**    | DataTable 组合套件、CrudFormModal 三态表单、单次确认对话框、Toast 反馈   | `references/5-ui-components.md`                         |
+| **高密度工业风 UI**    | DataTable 组合套件、FormModal 三态表单、单次确认对话框、Toast 反馈       | `references/5-ui-components.md`                         |
 | **路由与 Manifest**    | 租户端/管控端路由、AbilityBoundary 注入、特性清单自发现与对齐单测        | `references/6-tenant-routing.md`                        |
 | **官方 CASL 范式**     | AbilitySnapshot 服务端生成、TenantAbilityProvider 注入与 useAbility 消费 | `references/7-casl-ability-provider.md`                 |
 | **平台基座与基建**     | @base/* 核心基础设施包迭代、TenantDbManager 治理、db-migrate 引擎演进    | `references/8-base-infrastructure.md`                   |

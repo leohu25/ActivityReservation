@@ -55,17 +55,10 @@ test("DataTable: 默认占位符升级为中立语义且支持 Enter 快捷键",
   assert.match(html, /输入关键字搜索\.\.\./);
 });
 
-test("DataTable: 传入 searchContract 能够自动生成语义化占位符", () => {
+test("DataTable: 传入 keywordPlaceholder 能够自定义渲染占位符", () => {
   interface RecordItem {
     id: string;
   }
-  const contract = {
-    direct: [
-      { field: "orderId", label: "订单号" },
-      { field: "salesPerson", label: "销售员" },
-    ],
-    relations: [{ targetField: "customerCode", label: "客户" }],
-  };
 
   const html = renderToString(
     <DataTable<RecordItem>
@@ -73,9 +66,9 @@ test("DataTable: 传入 searchContract 能够自动生成语义化占位符", ()
       data={[{ id: "1" }]}
       columns={[]}
       rowKey={(r) => r.id}
-      searchContract={contract}
+      keywordPlaceholder="搜索订单号、销售员、客户..."
     />,
   );
 
-  assert.match(html, /输入 订单号 \/ 销售员 \/ 客户\.\.\./);
+  assert.match(html, /搜索订单号、销售员、客户\.\.\./);
 });

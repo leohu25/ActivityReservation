@@ -121,7 +121,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider     = "postgresql"
+  relationMode = "prisma"
 }
 `;
 }

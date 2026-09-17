@@ -424,43 +424,7 @@ for (const pkg of workspacePackages) {
         violations.push({
           file: relPath,
           line: 1,
-          rule: `严禁对外键编码 [${match[1]}] 直接执行 contains 文本检索！前端用户展示与搜索的是业务名称，必须在契约中定义 SearchContract 并使用 executeSearchContract 进行参数化穿透关联查询。`,
-          code: match[0],
-        });
-      }
-    }
-  }
-}
-
-// 规则 10：严禁在业务视图组件中硬编码 keywordPlaceholder
-// 必须在契约中定义 searchContract 并直接传递给 <DataTable searchContract={...} />，由框架自动推导生成占位符
-const forbiddenHardcodedPlaceholderRegex =
-  /<DataTable\b[^>]*\bkeywordPlaceholder\s*=\s*["'][^"']+["']/g;
-
-for (const pkg of workspacePackages) {
-  if (
-    pkg.name?.startsWith(featurePackagePrefix) ||
-    pkg.name === "@base/feature-tenant-admin"
-  ) {
-    const pkgFiles = allFiles.filter((f) => {
-      const rel = path.relative(workspaceRoot, f).replace(/\\/g, "/");
-      return rel.startsWith(pkg.relDir + "/") && rel.endsWith(".tsx");
-    });
-
-    for (const filePath of pkgFiles) {
-      const relPath = path
-        .relative(workspaceRoot, filePath)
-        .replace(/\\/g, "/");
-      const content = fs.readFileSync(filePath, "utf-8");
-
-      let match;
-      while (
-        (match = forbiddenHardcodedPlaceholderRegex.exec(content)) !== null
-      ) {
-        violations.push({
-          file: relPath,
-          line: 1,
-          rule: "严禁手写硬编码 keywordPlaceholder！所有业务列表必须在对应 contract.ts 中定义 searchContract 并通过 <DataTable searchContract={...} /> 自动绑定占位符与后端检索逻辑。",
+          rule: `严禁对外键编码 [${match[1]}] 直接执行 contains 文本检索！前端用户展示与搜索的是业务名称，必须通过 Prisma 原生关联字段 (如 customer: { customerName: { contains: ... } }) 或参数化反查进行关联查询。`,
           code: match[0],
         });
       }

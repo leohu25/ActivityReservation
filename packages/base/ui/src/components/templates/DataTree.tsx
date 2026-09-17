@@ -283,9 +283,3 @@ export function DataTree<TNode extends HierarchyNodeData>({
     </Card>
   );
 }
-
-/** @deprecated 推荐使用语义更对仗的 DataTree 模板组件 */
-export const HierarchyWorkspace = DataTree;
-export type HierarchyWorkspaceProps<TNode extends HierarchyNodeData> =
-  DataTreeProps<TNode>;
-export type HierarchyNodeAction<TNode> = DataTreeNodeAction<TNode>;

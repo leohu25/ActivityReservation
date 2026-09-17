@@ -4,8 +4,6 @@ CREATE TABLE "tenant_menu_item" (
     "parent_id" TEXT,
     "item_type" TEXT NOT NULL DEFAULT 'PAGE',
     "page_key" TEXT,
-    "external_url" TEXT,
-    "open_in_new_tab" BOOLEAN NOT NULL DEFAULT false,
     "custom_label" TEXT,
     "custom_icon" TEXT,
     "sort_order" INTEGER NOT NULL DEFAULT 0,
@@ -28,14 +26,15 @@ CREATE INDEX "tenant_menu_item_parent_id_sort_order_idx" ON "tenant_menu_item"("
 -- CreateIndex
 CREATE INDEX "tenant_menu_item_is_deleted_idx" ON "tenant_menu_item"("is_deleted");
 
+-- AddForeignKey
+ALTER TABLE "tenant_menu_item" ADD CONSTRAINT "tenant_menu_item_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "tenant_menu_item"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
 -- Comments Migration
 COMMENT ON TABLE "tenant_menu_item" IS '租户动态导航菜单配置模型 (支持现场层级调整、自定义别名与跨切片灵活编排)';
 COMMENT ON COLUMN "tenant_menu_item"."id" IS '节点主键ID';
 COMMENT ON COLUMN "tenant_menu_item"."parent_id" IS '父节点ID (空表示顶级大菜单/顶级单页)';
-COMMENT ON COLUMN "tenant_menu_item"."item_type" IS '节点类型: GROUP(大菜单/目录分组) | PAGE(具体功能页面) | LINK(外部链接)';
+COMMENT ON COLUMN "tenant_menu_item"."item_type" IS '节点类型: GROUP(大菜单/目录分组) | PAGE(具体功能页面)';
 COMMENT ON COLUMN "tenant_menu_item"."page_key" IS '关联的标准页面键名 (若 itemType="PAGE"，对应 StandardPageDescriptor.pageKey)';
-COMMENT ON COLUMN "tenant_menu_item"."external_url" IS '外部跳转 URL (若 itemType="LINK"，如 "https://bi.company.com")';
-COMMENT ON COLUMN "tenant_menu_item"."open_in_new_tab" IS '是否在新标签页打开';
 COMMENT ON COLUMN "tenant_menu_item"."custom_label" IS '自定义显示别名 (现场实施重命名；空则使用页面契约 defaultLabel)';
 COMMENT ON COLUMN "tenant_menu_item"."custom_icon" IS '自定义图标名称 (空则使用页面契约 defaultIcon)';
 COMMENT ON COLUMN "tenant_menu_item"."sort_order" IS '排序权重 (升序排列)';

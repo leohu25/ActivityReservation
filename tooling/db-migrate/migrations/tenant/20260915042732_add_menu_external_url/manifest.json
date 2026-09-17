@@ -1,0 +1,12 @@
+{
+  "formatVersion": 1,
+  "scope": "tenant",
+  "version": "20260915042732",
+  "name": "add_menu_external_url",
+  "previousVersion": "20260915035330",
+  "checksum": "cbefc2954a7e9423d8d47478b9fbb813ea9c1eac8ac31756ea60ae1db24eeb42",
+  "schemaChecksum": "ad43e0f9570ee22750ccc86d1a20c247311fb1efbf461c4d607fac4a512f1ab0",
+  "createdAt": "2026-09-15T04:27:32.768Z",
+  "risks": [],
+  "rollbackSupported": true
+}

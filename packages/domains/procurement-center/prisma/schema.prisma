@@ -4,7 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider     = "postgresql"
+  relationMode = "prisma"
 }
 
 // 关联的基础部门模型扩展 (真实 owner 位于 db-tenant)
@@ -49,7 +50,7 @@ model PurchaseOrder {
   /// 订单最后更新时间
   updatedAt    DateTime    @updatedAt @map("updated_at")
 
-  department   Department  @relation(fields: [deptId], references: [id], onDelete: Restrict)
+  department   Department  @relation(fields: [deptId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([deptId])
   @@index([createdById])

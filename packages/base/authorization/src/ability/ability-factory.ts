@@ -155,7 +155,7 @@ export function parsePersistedPermissions(
 
   const candidate = value as Record<string, unknown>;
 
-  // 判断是否为四层扩展结构 (携带 statement 属性)
+  // 标准四层权限结构 (包含 statement 属性)
   if ("statement" in candidate) {
     const statement = parseStatementObject(record.role, candidate.statement);
     const dataScopes: RoleDataScopeConfig[] = [];
@@ -203,7 +203,7 @@ export function parsePersistedPermissions(
     return { statement, dataScopes, fieldPolicies };
   }
 
-  // 向后兼容处理：直接作为纯功能权限语句
+  // 基础纯功能权限语句模式
   const statement = parseStatementObject(record.role, candidate);
   return { statement, dataScopes: [], fieldPolicies: [] };
 }

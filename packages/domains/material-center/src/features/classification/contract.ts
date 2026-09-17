@@ -3,7 +3,6 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
-import type { SearchContract } from "@base/shared";
 
 export { StandardAction };
 
@@ -170,23 +169,3 @@ export const itemGradePageContract: FeaturePagePermissionDescriptor = {
     sensitive: f.isSensitive,
   })),
 } as const;
-
-/** 商品分类搜索契约 */
-export const itemCategorySearchContract: SearchContract = {
-  direct: [
-    { field: "categoryCode", label: "分类编码" },
-    { field: "categoryName", label: "分类名称" },
-  ],
-} as const;
-
-/** 商品品种搜索契约 */
-export const itemVarietySearchContract: SearchContract = {
-  direct: [
-    { field: "varietyCode", label: "品种编码" },
-    { field: "varietyName", label: "品种名称" },
-    { field: "description", label: "描述" },
-  ],
-} as const;
-
-/** @deprecated Use the independent entity descriptors above. */
-export const categoryClassificationPageContract = itemCategoryPageContract;

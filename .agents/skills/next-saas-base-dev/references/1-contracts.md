@@ -239,66 +239,39 @@ assertCustomerAbility(
 
 ---
 
-## 模块 1.1：搜索契约体系 (SearchContract - 搜索防注入与关联穿透 SSoT)
+## 模块 1.1：Prisma 原生关系过滤与安全搜索范式
 
-在复杂业务单据（如销售订单、采购单、出入库流水）中，数据库底层往往只存储外键编码（如 `customerCode` / `storeCode`），而业务用户在界面输入框搜索的是**关联对象的名称**（如客户名称“李四”、门店名称“总店”）。
+在复杂业务单据（如销售订单、采购单、出入库流水）中，数据库底层往往存储外键编码（如 `customerCode` / `storeCode`），而业务用户在界面输入框搜索的是**关联对象的名称**（如客户名称“李四”、门店名称“总店”）。
 
-为杜绝前后端割裂、漏穿透、手写重复代码与 SQL 注入风险，框架推行 **SearchContract 搜索契约单一事实源**：
+为遵循 Prisma 官方最佳实践并消除私有 DSL 历史包袱，框架推行 **Prisma 官方原生嵌套关系过滤（范式 A）**：
 
-```ts
-import type { SearchContract } from "@base/shared";
-
-// 在 contract.ts 中显式声明
-export const salesOrderSearchContract: SearchContract = {
-  // 1. 主表直接搜索字段
-  direct: [
-    { field: "orderId", label: "订单号" },
-    { field: "salesPerson", label: "销售员" },
-  ],
-  // 2. 跨表穿透关联反查配置
-  relations: [
-    {
-      targetField: "customerCode",
-      relationModel: "customer",
-      searchField: "customerName",
-      label: "客户",
-    },
-    {
-      targetField: "storeCode",
-      relationModel: "customerStore",
-      searchField: "storeName",
-      label: "门店",
-    },
-  ],
-} as const;
-```
-
-### 极简开箱即用三端闭环
-
-1. **前端输入框 (`@base/ui`)**：
-   无需手写 `keywordPlaceholder`，直接传入 `searchContract`，输入框自动推导生成精准的占位符（如 `输入 订单号 / 销售员 / 客户 / 门店...`），并原生支持 Enter 回车查询：
-
-   ```tsx
-   <DataTable {...table.bindProps} searchContract={salesOrderSearchContract} />
-   ```
+1. **Schema 声明关系**：
+   在切片 Schema 中声明对关联实体的 `@relation`。
 
 2. **后端查询服务 (`service.ts`)**：
-   无需手写反查代码，直接调用 `@base/shared` 导出的通用安全引擎 `executeSearchContract`：
+   直接使用 Prisma 官方强类型嵌套过滤：
 
    ```ts
    if (params.keyword) {
-     where.OR = await executeSearchContract(
-       client,
-       salesOrderSearchContract,
-       params.keyword,
-     );
+     const q = sanitizeSearchKeyword(params.keyword);
+     where.OR = [
+       { orderId: { contains: q, mode: "insensitive" } },
+       { salesPerson: { contains: q, mode: "insensitive" } },
+       { customer: { customerName: { contains: q, mode: "insensitive" } } },
+       { store: { storeName: { contains: q, mode: "insensitive" } } },
+     ];
    }
    ```
 
-   底层自动完成：
-   - 强类型防 SQL 注入、超长截断与不可见控制字符清洗；
-   - 自动并发反查关联外键，并加上 `take: 100` 熔断防护；
-   - 自动生成符合 Prisma 参数化 Prepared Statement 标准的 `OR` 条件。
+3. **前端输入框 (`@base/ui`)**：
+   使用清晰直观的 `keywordPlaceholder` 属性声明提示文案：
 
-3. **门禁静态强拦截 (`scripts/check/check-redlines.mjs`)**：
-   严禁在单据 Service 中对外键编码直接使用 `contains` 文本检索；违反规则将在 `pre-commit` 门禁时物理级硬拦截！
+   ```tsx
+   <DataTable
+     {...table.bindProps}
+     keywordPlaceholder="搜索订单号、销售员、客户、门店..."
+   />
+   ```
+
+4. **门禁静态强拦截 (`scripts/check/check-redlines.mjs`)**：
+   严禁在单据 Service 中对外键编码直接使用 `contains` 文本检索；必须通过关联模型字段或参数化查询进行关联过滤。

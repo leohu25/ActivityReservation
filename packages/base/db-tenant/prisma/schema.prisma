@@ -6,7 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider     = "postgresql"
+  relationMode = "prisma"
 }
 
 /// 部门拓扑模型 (用于数据范围 DEPT / DEPT_TREE 判定)
@@ -97,9 +98,9 @@ model EmployeeProfile {
   /// 档案最后更新时间
   updatedAt         DateTime         @updatedAt @map("updated_at")
 
-  department        Department?      @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  position          Position?        @relation(fields: [positionId], references: [id], onDelete: SetNull)
-  manager           EmployeeProfile? @relation("EmployeeManager", fields: [managerEmployeeId], references: [id], onDelete: SetNull)
+  department        Department?      @relation(fields: [departmentId], references: [id], onDelete: SetNull, onUpdate: SetNull)
+  position          Position?        @relation(fields: [positionId], references: [id], onDelete: SetNull, onUpdate: SetNull)
+  manager           EmployeeProfile? @relation("EmployeeManager", fields: [managerEmployeeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   subordinates      EmployeeProfile[] @relation("EmployeeManager")
 
   @@index([departmentId])

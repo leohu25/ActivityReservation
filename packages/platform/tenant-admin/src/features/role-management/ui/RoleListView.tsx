@@ -14,7 +14,7 @@ import { ShieldAlert, ShieldCheck, KeyRound, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useAbility } from "@base/authorization";
 import type { TenantRoleItem } from "../types";
-import { RoleSubject, roleSearchContract } from "../contract";
+import { RoleSubject } from "../contract";
 import { deleteRoleAction, listRolesAction } from "../actions";
 import { CreateRoleModal } from "./CreateRoleModal";
 import { EditRoleModal } from "./EditRoleModal";
@@ -286,7 +286,7 @@ export function RoleListView({
           refreshRoles();
         }}
         showKeywordFilter
-        searchContract={roleSearchContract}
+        keywordPlaceholder="搜索角色编码、角色名称、描述..."
         keywordValue={keyword}
         onKeywordChange={setKeyword}
         onSearch={handleSearch}

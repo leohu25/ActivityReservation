@@ -33,7 +33,6 @@ import {
 } from "../actions";
 import { CategoryFormModal } from "./CategoryFormModal";
 import { TagFormModal } from "./TagFormModal";
-import { customerTagSearchContract } from "../contract";
 import type { CustomerCategoryItem, CustomerTagItem } from "../types";
 
 /** 递归统计分类树所有节点总数 */
@@ -488,7 +487,7 @@ export function CategoryTagView({
             : undefined
         }
         createText="新增标签"
-        searchContract={customerTagSearchContract}
+        keywordPlaceholder="搜索标签编码、名称、说明..."
         keywordValue={tagKeyword}
         onKeywordChange={setTagKeyword}
         showKeywordFilter={true}

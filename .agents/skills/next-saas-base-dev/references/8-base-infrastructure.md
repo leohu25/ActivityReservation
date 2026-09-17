@@ -24,7 +24,7 @@ graph TD
         AuthzCore["@base/authorization<br>(CASL 四层权限闭环引擎与 Provider)"]
         DBControl["@base/db-control<br>(总控集中库 Prisma Client)"]
         DBTenant["@base/db-tenant<br>(多租户物理分库动态连接池 TenantDbManager)"]
-        UI["@base/ui<br>(工业风高密度 UI、DataTable、CrudFormModal)"]
+        UI["@base/ui<br>(工业风高密度 UI、DataTable、FormModal)"]
         Shared["@base/shared<br>(Result 模式、toPlainData 序列化防错、通用工具)"]
     end
 
@@ -97,7 +97,7 @@ graph TD
   - **原子组件层 (`src/shadcn/`)**：严格锁定由 `npx shadcn@latest add` 生成的纯标准官方组件，**绝对禁止手写或破坏原子组件结构**；
   - **企业级组合套件 (`src/components/`)**：
     - `DataTable.*` 系列：涵盖自增序号、动态列配置 (`ColumnSettings`)、多维筛选条 (`FilterBar`)、紧凑数字分页 (`Pagination`)、单次确认对话框 (`ConfirmDialog`) 与一体化白卡卡片容器 (`DataTable.Root`)；
-    - `CrudFormModal`：基于 Zod Schema 驱动的增改查三态受控模态表单，自动处理运行时校验、字段三态锁定与统一错误回显；
+    - `FormModal`：基于 Zod Schema 驱动的增改查三态受控模态表单，自动处理运行时校验、字段三态锁定与统一错误回显；
     - `AuthGuard` & `AuthField`：声明式权限守卫与敏感字段渲染器。
 
 ### 6. `@base/biz-shared` — 跨切片中台公共资产库 (Level 2)

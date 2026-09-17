@@ -1,7 +1,6 @@
 import type { TenantPrismaClient, TenantPrisma } from "@base/db-tenant";
-import { MasterDataStatus, executeSearchContract } from "@base/shared";
+import { MasterDataStatus } from "@base/shared";
 import type { PrismaQueryCondition } from "@base/authorization";
-import { storeSearchContract } from "./contract";
 import type {
   CreateStoreInput,
   ListStoreFilter,
@@ -90,18 +89,16 @@ export class CustomerStoreService {
       andConditions.push({ status: filter.status });
     }
     if (filter.keyword) {
-      // SAFETY: TenantPrismaClient dynamic delegates correspond to runtime models indexed by relation names
-      const dbClient = client as unknown as Record<string, unknown>;
-      const keywordOr = await executeSearchContract(
-        dbClient,
-        storeSearchContract,
-        filter.keyword,
-      );
-      if (keywordOr.length > 0) {
-        andConditions.push({
-          OR: keywordOr as TenantPrisma.CustomerStoreWhereInput[],
-        });
-      }
+      const q = filter.keyword.trim().slice(0, 100);
+      andConditions.push({
+        OR: [
+          { storeCode: { contains: q, mode: "insensitive" } },
+          { storeName: { contains: q, mode: "insensitive" } },
+          { address: { contains: q, mode: "insensitive" } },
+          { contactPerson: { contains: q, mode: "insensitive" } },
+          { customer: { customerName: { contains: q, mode: "insensitive" } } },
+        ],
+      });
     }
 
     const where = { AND: andConditions };

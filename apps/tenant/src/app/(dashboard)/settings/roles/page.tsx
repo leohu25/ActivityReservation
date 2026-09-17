@@ -52,26 +52,17 @@ export default async function SettingsRolesPage() {
     );
   }
 
-  const roleList = currentMember.role
-    .split(",")
-    .map((r) => r.trim())
-    .filter(Boolean);
-
   // 官方 CASL：layout 已注入 AbilityProvider；这里用同一套快照做 RSC 门禁
   const rolePerms = await getTenantSubjectPermissions("RoleManagement");
   const canReadRoles = rolePerms.actions.includes("read");
-  // 过渡兜底：历史 admin 可能尚未保存 statement，避免锁死配置页
-  const isTenantAdmin =
-    canReadRoles || roleList.includes("owner") || roleList.includes("admin");
 
-  if (!isTenantAdmin) {
+  if (!canReadRoles) {
     return (
       <Card className="border-rose-200 bg-rose-50/50 p-6 text-rose-800 shadow-xs dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-200">
         <div className="flex items-center gap-2 font-bold text-sm">
           <AlertCircle className="size-4 shrink-0 text-rose-600 dark:text-rose-400" />
           <span>
-            权限不足 (403)：仅企业管理员 (owner / admin)
-            允许访问并配置角色与权限
+            权限不足 (403)：仅具备角色管理权限的成员允许访问并配置角色与权限
           </span>
         </div>
       </Card>

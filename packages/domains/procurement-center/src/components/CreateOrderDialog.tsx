@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import type { FieldAccessMode } from "@base/authorization";
+import { useOptionalAbility, type FieldAccessMode } from "@base/authorization";
 import { FieldPolicy } from "@base/shared";
 import {
   Button,
   FormModal,
   deriveFieldMode,
-  useOptionalAbility,
   toast,
   z,
   type FormFieldSchema,
@@ -38,9 +37,7 @@ export const createOrderZodSchema = z.object({
     .number()
     .int("采购数量必须为大于 0 的有效整数")
     .positive("采购数量必须为大于 0 的有效整数"),
-  costPrice: z.coerce
-    .number()
-    .min(0, "采购成本价必须为有效非负数值"),
+  costPrice: z.coerce.number().min(0, "采购成本价必须为有效非负数值"),
 });
 
 export const DEFAULT_CREATE_ORDER_VALUES: CreateOrderFormData = {
@@ -78,7 +75,10 @@ export function CreateOrderDialog({
     const list: FormFieldSchema[] = [];
 
     // 若有显式指定字段策略优先使用；若有权限上下文走 deriveFieldMode；否则默认开放 EDITABLE
-    const getMode = (field: string, explicitMode?: FieldAccessMode): FieldAccessMode => {
+    const getMode = (
+      field: string,
+      explicitMode?: FieldAccessMode,
+    ): FieldAccessMode => {
       if (explicitMode) {
         return explicitMode;
       }
@@ -193,4 +193,3 @@ export function CreateOrderDialog({
 }
 
 export { CreateOrderDialog as CreateOrderModal };
-

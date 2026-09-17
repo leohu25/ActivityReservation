@@ -45,24 +45,16 @@ export default async function SettingsCompanyPage() {
     );
   }
 
-  const roleList = currentMember.role
-    .split(",")
-    .map((r) => r.trim())
-    .filter(Boolean);
-
   const companyPerms = await getTenantSubjectPermissions("CompanyProfile");
   const canReadCompany = companyPerms.actions.includes("read");
-  // 过渡兜底：历史 admin 无 statement 时避免锁死
-  const isTenantAdmin =
-    canReadCompany || roleList.includes("owner") || roleList.includes("admin");
 
-  if (!isTenantAdmin) {
+  if (!canReadCompany) {
     return (
       <Card className="border-rose-200 bg-rose-50/50 p-6 text-rose-800 shadow-xs dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-200">
         <div className="flex items-center gap-2 font-bold text-sm">
           <AlertCircle className="size-4 shrink-0 text-rose-600 dark:text-rose-400" />
           <span>
-            权限不足 (403)：仅企业管理员 (owner / admin) 允许访问并修改企业信息
+            权限不足 (403)：仅具备企业档案查看权限的成员允许访问企业信息
           </span>
         </div>
       </Card>

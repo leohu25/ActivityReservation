@@ -114,7 +114,10 @@ function mergeExtension(owner: string, extension: SchemaBlock): string {
   return `model ${modelName} {\n${lines.join("\n")}\n}`;
 }
 
-function canonicalHeader(): string {
+function canonicalHeader(scope?: MigrationScope): string {
+  if (scope === "tenant") {
+    return `// Generated canonical schema. Do not edit directly.\ndatasource db {\n  provider     = "postgresql"\n  relationMode = "prisma"\n}\n\ngenerator client {\n  provider = "prisma-client-js"\n}\n`;
+  }
   return `// Generated canonical schema. Do not edit directly.\ndatasource db {\n  provider = "postgresql"\n}\n\ngenerator client {\n  provider = "prisma-client-js"\n}\n`;
 }
 
@@ -170,7 +173,7 @@ export function buildCanonicalSchema(
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return [
-    canonicalHeader(),
+    canonicalHeader(scope),
     ...enums.map((b) => b.content),
     ...models.map((b) => b.content),
   ].join("\n\n");

@@ -10,4 +10,3 @@ export * from "./validation";
 export * from "./migration";
 export * from "./export";
 export * from "./query/keyword-search";
-export * from "./query/keyword-search-engine";

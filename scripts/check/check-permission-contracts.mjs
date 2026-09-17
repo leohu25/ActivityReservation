@@ -123,19 +123,14 @@ for (const file of contractFiles) {
   )) {
     const aliasName = match[1];
     const targetName = match[2];
-    const explicitlyDeprecated = source
-      .slice(Math.max(0, match.index - 120), match.index)
-      .includes("@deprecated");
-    if (!explicitlyDeprecated) {
-      fail(
-        file,
-        match.index,
-        "subject",
-        "independent declaration",
-        `${aliasName} = ${targetName}`,
-        "declare an independent PascalCase subject, or mark a compatibility alias @deprecated",
-      );
-    }
+    fail(
+      file,
+      match.index,
+      "subject",
+      "independent declaration",
+      `${aliasName} = ${targetName}`,
+      "严禁声明 Subject 别名兼容层，必须为每个业务实体独立声明规范的 PascalCase Subject",
+    );
   }
   for (const match of source.matchAll(
     /export const (\w+Resource)\s*=\s*"([^"]+)"\s*;/g,

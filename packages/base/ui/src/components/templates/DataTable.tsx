@@ -37,7 +37,6 @@ import {
 import type { ColumnDef } from "../composite/table/DataTableContext";
 import type { DataTableRootProps } from "../composite/table/DataTableRoot";
 import type { DataTableContentProps } from "../composite/table/DataTableContent";
-import { type SearchContract, generateSearchPlaceholder } from "@base/shared";
 
 export interface DataTableStatusOption {
   readonly value: string;
@@ -78,9 +77,9 @@ export interface DataTableProps<TData> extends Omit<
   /** 提供 options 则展示状态筛选；hideStatusFilter 可强制关闭 */
   statusOptions?: readonly DataTableStatusOption[];
   hideStatusFilter?: boolean;
-  /** 统一定义的搜索契约 (SSoT)；传入后将自动生成 keywordPlaceholder 并与后端检索规则强绑定 */
-  searchContract?: SearchContract<any> | null;
+  /** 输入框搜索提示文案，默认「输入关键字搜索...」 */
   keywordPlaceholder?: string;
+  searchPlaceholder?: string;
   keywordValue?: string;
   statusValue?: string;
   onKeywordChange?: (value: string) => void;
@@ -143,8 +142,8 @@ export function DataTable<TData>({
   showKeywordFilter = true,
   statusOptions,
   hideStatusFilter = false,
-  searchContract,
   keywordPlaceholder,
+  searchPlaceholder,
   keywordValue,
   statusValue,
   onKeywordChange,
@@ -165,8 +164,7 @@ export function DataTable<TData>({
     !hideStatusFilter && !!statusOptions && statusOptions.length > 0;
 
   const resolvedPlaceholder =
-    keywordPlaceholder ??
-    generateSearchPlaceholder(searchContract, "输入关键字搜索...");
+    searchPlaceholder ?? keywordPlaceholder ?? "输入关键字搜索...";
 
   return (
     <DataTableRoot<TData>

@@ -14,22 +14,20 @@ import {
 import { CheckCircle2, XCircle, Loader2, AlertTriangle } from "lucide-react";
 import { auditOrderAction } from "../actions";
 import type {
-  ProcurementFieldVisibility,
+  ProcurementOrderFieldVisibility,
   ProcurementOrderItem,
 } from "../types";
 
 export interface AuditOrderModalProps {
   readonly order: ProcurementOrderItem;
   readonly isOpen: boolean;
-  readonly fieldVisibility: ProcurementFieldVisibility;
+  readonly fieldVisibility: ProcurementOrderFieldVisibility;
   readonly onClose: () => void;
   readonly onAudited?: () => void;
   readonly inline?: boolean;
 }
 
 export function AuditOrderModal({
-
-
   order,
   isOpen,
   fieldVisibility,
@@ -163,9 +161,7 @@ export function AuditOrderModal({
         variant="outline"
         size="sm"
         disabled={
-          isPending ||
-          order.isSelfAuditBlocked ||
-          !order.canAuditThisOrder
+          isPending || order.isSelfAuditBlocked || !order.canAuditThisOrder
         }
         onClick={() => handleAudit("REJECT")}
         className="border-rose-200 text-rose-700 hover:bg-rose-50 dark:border-rose-900/50 dark:text-rose-400 dark:hover:bg-rose-950/40"
@@ -182,9 +178,7 @@ export function AuditOrderModal({
         variant="default"
         size="sm"
         disabled={
-          isPending ||
-          order.isSelfAuditBlocked ||
-          !order.canAuditThisOrder
+          isPending || order.isSelfAuditBlocked || !order.canAuditThisOrder
         }
         onClick={() => handleAudit("APPROVE")}
         className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/25"

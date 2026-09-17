@@ -24,7 +24,6 @@ import {
   CustomerAction,
   CustomerField,
   customerPageContract,
-  customerSearchContract,
   MasterDataStatus,
 } from "../contract";
 import type {
@@ -46,10 +45,6 @@ interface Props {
   /** 下拉选项数据源：统一 Options 命名 */
   categoryOptions?: CustomerCategoryItem[];
   tagOptions?: CustomerTagItem[];
-  /** @deprecated 使用 categoryOptions */
-  categories?: CustomerCategoryItem[];
-  /** @deprecated 使用 tagOptions */
-  tags?: CustomerTagItem[];
 }
 
 const SETTLEMENT_LABELS: Record<string, string> = {
@@ -68,11 +63,9 @@ export function CustomerView({
   initialStatus = "",
   categoryOptions,
   tagOptions,
-  categories,
-  tags,
 }: Props) {
-  const resolvedCategoryOptions = categoryOptions ?? categories ?? [];
-  const resolvedTagOptions = tagOptions ?? tags ?? [];
+  const resolvedCategoryOptions = categoryOptions ?? [];
+  const resolvedTagOptions = tagOptions ?? [];
   // 官方范式：Ability 一律来自上层 AbilityProvider（customer layout）
   const ability = useAbility();
   const { navigateList, router } = useListUrlNav();
@@ -349,7 +342,7 @@ export function CustomerView({
           setModalState({ open: true, mode: "create", record: null })
         }
         contentProps={{ selectable: true }}
-        searchContract={customerSearchContract}
+        keywordPlaceholder="搜索客户编码、名称、联系人、电话..."
         keywordValue={keyword}
         onKeywordChange={setKeyword}
         statusOptions={[

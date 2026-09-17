@@ -36,7 +36,6 @@ import {
 import {
   SalesOrderField,
   salesOrderPageContract,
-  salesOrderSearchContract,
   SalesOrderAction,
 } from "../contract";
 import type { SalesOrderListItem, SalesOrderDetail } from "../types";
@@ -450,7 +449,7 @@ export function SalesOrderView({
         onExport={handleExport}
         onCreate={() => setCreateModalOpen(true)}
         contentProps={{ selectable: true }}
-        searchContract={salesOrderSearchContract}
+        keywordPlaceholder="搜索订单号、销售员、客户、门店..."
         keywordValue={keyword}
         onKeywordChange={setKeyword}
         statusOptions={[

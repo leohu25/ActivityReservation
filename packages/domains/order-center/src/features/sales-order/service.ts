@@ -1,7 +1,6 @@
 import type { TenantPrismaClient, TenantPrisma } from "@base/db-tenant";
 import { formatBusinessDocNo } from "@base/biz-shared";
-import { MasterDataStatus, executeSearchContract } from "@base/shared";
-import { salesOrderSearchContract } from "./contract";
+import { MasterDataStatus } from "@base/shared";
 import type {
   CreateSalesOrderInput,
   AddOrderFeeInput,
@@ -624,13 +623,13 @@ export async function listSalesOrders(
   }
 
   if (params.keyword) {
-    // SAFETY: TenantPrismaClient dynamic delegates correspond to runtime models indexed by relation names
-    const dbClient = client as unknown as Record<string, unknown>;
-    where.OR = await executeSearchContract(
-      dbClient,
-      salesOrderSearchContract,
-      params.keyword,
-    );
+    const q = params.keyword.trim().slice(0, 100);
+    where.OR = [
+      { orderId: { contains: q, mode: "insensitive" } },
+      { salesPerson: { contains: q, mode: "insensitive" } },
+      { customer: { customerName: { contains: q, mode: "insensitive" } } },
+      { store: { storeName: { contains: q, mode: "insensitive" } } },
+    ];
   }
 
   const [total, orders] = await Promise.all([

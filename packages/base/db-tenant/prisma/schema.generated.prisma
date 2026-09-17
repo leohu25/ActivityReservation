@@ -6,7 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider     = "postgresql"
+  relationMode = "prisma"
 }
 
 
@@ -67,8 +68,8 @@ model BomHeader {
   /// 更新时间
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
-  outputItem         ItemMaster      @relation("BomOutputItem", fields: [outputItemCode], references: [itemCode])
-  productionLine     ProductionLine? @relation(fields: [productionLineId], references: [id])
+  outputItem         ItemMaster      @relation("BomOutputItem", fields: [outputItemCode], references: [itemCode], onUpdate: Restrict)
+  productionLine     ProductionLine? @relation(fields: [productionLineId], references: [id], onUpdate: Restrict)
   processes          BomProcess[]
 
   @@index([outputItemCode, bomType, status])
@@ -97,7 +98,7 @@ model BomInputItem {
   /// 外部子件挂载的子BOM编号
   childBomId     String?    @map("child_bom_id") @db.VarChar(50)
 
-  bomProcess     BomProcess @relation(fields: [bomProcessId], references: [id], onDelete: Cascade)
+  bomProcess     BomProcess @relation(fields: [bomProcessId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([bomProcessId])
   @@map("bom_input_item")
@@ -161,7 +162,7 @@ model BomOutputItem {
   /// 下游流转工序seq_no（留空代表最终品）
   nextProcessSeq Int?       @map("next_process_seq")
 
-  bomProcess     BomProcess @relation(fields: [bomProcessId], references: [id], onDelete: Cascade)
+  bomProcess     BomProcess @relation(fields: [bomProcessId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([bomProcessId])
   @@map("bom_output_item")
@@ -193,9 +194,9 @@ model BomProcess {
   /// 工序操作图文说明
   operatingInstructions String?   @map("operating_instructions") @db.Text
 
-  bom                   BomHeader      @relation(fields: [bomId], references: [id], onDelete: Cascade)
-  process               ProcessMaster  @relation(fields: [processId], references: [id])
-  spec                  ProcessSpec?   @relation(fields: [specId], references: [id])
+  bom                   BomHeader      @relation(fields: [bomId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  process               ProcessMaster  @relation(fields: [processId], references: [id], onUpdate: Restrict)
+  spec                  ProcessSpec?   @relation(fields: [specId], references: [id], onUpdate: Restrict)
   inputs                BomInputItem[]
   outputs               BomOutputItem[]
 
@@ -233,62 +234,34 @@ model CompanyProfile {
 }
 
 model Customer {
-  /// 客户全局唯一编码（系统自增生成，格式 CUST-YYYYMMDD-XXXX）
   customerCode     String   @id @map("customer_code") @db.VarChar(30)
-  /// 客户企业名称
   customerName     String   @map("customer_name") @db.VarChar(100)
-  /// 所属客户分类编码
   categoryCode     String   @map("category_code") @db.VarChar(20)
-  /// 核心联系人姓名
   contactPerson    String   @map("contact_person") @db.VarChar(50)
-  /// 联系电话
   contactPhone     String   @map("contact_phone") @db.VarChar(20)
-  /// 结算方式：MONTHLY(月结) / CASH(现结) / PREPAID(预付)
   settlementMethod String   @map("settlement_method") @db.VarChar(20)
-  /// 默认税率(%)，如 9.00 表示 9%
   defaultTaxRate   Decimal? @map("default_tax_rate") @db.Decimal(5, 2)
-  /// 授信信用额度(元)
   creditLimit      Decimal? @map("credit_limit") @db.Decimal(12, 2)
-  /// 客户标签摘要缓存（冗余字段，方便快速搜索展示）
   customerTags     String?  @map("customer_tags") @db.VarChar(200)
-  /// 负责销售经理 / 业务员姓名或工号
   salesPerson      String?  @map("sales_person") @db.VarChar(50)
-  /// 默认发货仓库标识
   defaultWarehouse String?  @map("default_warehouse") @db.VarChar(50)
-  /// 付款周期：WEEKLY(周结) / BIWEEKLY(半月结) / MONTHLY(月结)
   paymentCycle     String?  @map("payment_cycle") @db.VarChar(20)
-  /// 服务收货时间窗口（如：早8:00-10:00）
   serviceTime      String?  @map("service_time") @db.VarChar(50)
-  /// 最近下单履约时间（系统只读自动更新）
   lastOrderTime    DateTime? @map("last_order_time")
-  /// 客户状态：ACTIVE(正常) / DISABLED(停用)
   status           String   @default("ACTIVE") @db.VarChar(10)
-  /// 创建人用户ID
   createdById      String   @map("created_by_id") @db.VarChar(50)
-  /// 归属部门ID (用于数据范围判定)
   deptId           String?  @map("dept_id") @db.VarChar(50)
-  /// 最后更新人用户ID
   updatedById      String?  @map("updated_by_id") @db.VarChar(50)
-  /// 软删除标记
   isDeleted        Boolean  @default(false) @map("is_deleted")
-  /// 软删除时间
   deletedAt        DateTime? @map("deleted_at")
-  /// 软删除操作人用户ID
   deletedById      String?  @map("deleted_by_id") @db.VarChar(50)
-  /// 创建时间
   createdAt        DateTime @default(now()) @map("created_at")
-  /// 更新时间
   updatedAt        DateTime @updatedAt @map("updated_at")
-
-  /// 所属分类关联
-  category         CustomerCategory @relation(fields: [categoryCode], references: [categoryCode], onDelete: Restrict)
-  /// 客户关联的多标签记录
+  category         CustomerCategory @relation(fields: [categoryCode], references: [categoryCode], onDelete: Restrict, onUpdate: Restrict)
   tagAssignments   CustomerTagAssignment[]
-  /// 该客户下属的多个门店列表
   stores           CustomerStore[]
-  /// 针对该客户的专属报价单列表
   quotes           CustomerQuote[]
-
+  salesOrders  SalesOrder[]
   @@index([categoryCode])
   @@index([status])
   @@map("customer")
@@ -311,7 +284,7 @@ model CustomerCategory {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   /// 自引用：父级分类
-  parent       CustomerCategory?  @relation("CategoryHierarchy", fields: [parentCode], references: [categoryCode], onDelete: Restrict)
+  parent       CustomerCategory?  @relation("CategoryHierarchy", fields: [parentCode], references: [categoryCode], onDelete: Restrict, onUpdate: Restrict)
   /// 自引用：子级分类列表
   children     CustomerCategory[] @relation("CategoryHierarchy")
   /// 该分类下的客户档案列表
@@ -365,9 +338,9 @@ model CustomerQuote {
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
   /// 关联客户档案
-  customer        Customer?      @relation(fields: [customerCode], references: [customerCode], onDelete: Restrict)
+  customer        Customer?      @relation(fields: [customerCode], references: [customerCode], onDelete: Restrict, onUpdate: Restrict)
   /// 关联门店档案
-  store           CustomerStore? @relation(fields: [storeCode], references: [storeCode], onDelete: Restrict)
+  store           CustomerStore? @relation(fields: [storeCode], references: [storeCode], onDelete: Restrict, onUpdate: Restrict)
   /// 报价单包含的商品明细列表
   items           CustomerQuoteItem[]
 
@@ -403,7 +376,7 @@ model CustomerQuoteItem {
   remark            String?  @db.VarChar(200)
 
   /// 所属报价单主表关联
-  quote             CustomerQuote @relation(fields: [quoteId], references: [quoteId], onDelete: Cascade)
+  quote             CustomerQuote @relation(fields: [quoteId], references: [quoteId], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([quoteId])
   @@index([itemCode])
@@ -411,56 +384,31 @@ model CustomerQuoteItem {
 }
 
 model CustomerStore {
-  /// 门店全局唯一编码（系统自动生成，格式 STOR-YYYYMMDD-XXXX）
   storeCode       String   @id @map("store_code") @db.VarChar(30)
-  /// 所属客户编码（外键关联 Customer）
   customerCode    String   @map("customer_code") @db.VarChar(30)
-  /// 门店详细名称（如：海淀中关村一店）
   storeName       String   @map("store_name") @db.VarChar(100)
-  /// 门店配送收货详细地址
   address         String   @db.VarChar(200)
-  /// 门店现场联系人
   contactPerson   String   @map("contact_person") @db.VarChar(50)
-  /// 门店联系电话
   contactPhone    String   @map("contact_phone") @db.VarChar(20)
-  /// 配送时段：MORNING(早) / NOON(中) / EVENING(晚)
   deliveryPeriod  String?  @map("delivery_period") @db.VarChar(50)
-  /// 默认配送路线编码
   defaultRoute    String?  @map("default_route") @db.VarChar(50)
-  /// 默认配送司机名称或工号
   defaultDriver   String?  @map("default_driver") @db.VarChar(50)
-  /// 门店标签摘要（如 VIP门店、商圈旗舰）
   storeTags       String?  @map("store_tags") @db.VarChar(200)
-  /// 所属区域编码（必填，用于区域报价匹配与物流调度）
   regionCode      String   @map("region_code") @db.VarChar(50)
-  /// 结款财务联系人（门店现场收货人≠结款人时使用）
   billingContact  String?  @map("billing_contact") @db.VarChar(50)
-  /// 结款财务联系人电话
   billingPhone    String?  @map("billing_phone") @db.VarChar(20)
-  /// 门店状态：ACTIVE(正常) / DISABLED(停用)
   status          String   @default("ACTIVE") @db.VarChar(10)
-  /// 创建人用户ID
   createdById     String   @map("created_by_id") @db.VarChar(50)
-  /// 归属部门ID
   deptId          String?  @map("dept_id") @db.VarChar(50)
-  /// 最后更新人用户ID
   updatedById     String?  @map("updated_by_id") @db.VarChar(50)
-  /// 软删除标记
   isDeleted       Boolean  @default(false) @map("is_deleted")
-  /// 软删除时间
   deletedAt       DateTime? @map("deleted_at")
-  /// 软删除操作人用户ID
   deletedById     String?  @map("deleted_by_id") @db.VarChar(50)
-  /// 创建时间
   createdAt       DateTime @default(now()) @map("created_at")
-  /// 更新时间
   updatedAt       DateTime @updatedAt @map("updated_at")
-
-  /// 所属客户
-  customer        Customer @relation(fields: [customerCode], references: [customerCode], onDelete: Restrict)
-  /// 针对该门店的独立报价单列表
+  customer        Customer @relation(fields: [customerCode], references: [customerCode], onDelete: Restrict, onUpdate: Restrict)
   quotes          CustomerQuote[]
-
+  salesOrders SalesOrder[]
   @@index([customerCode])
   @@index([regionCode])
   @@index([status])
@@ -497,8 +445,8 @@ model CustomerTagAssignment {
   /// 关联打标时间
   createdAt    DateTime @default(now()) @map("created_at")
 
-  customer     Customer    @relation(fields: [customerCode], references: [customerCode], onDelete: Cascade)
-  tag          CustomerTag @relation(fields: [tagCode], references: [tagCode], onDelete: Cascade)
+  customer     Customer    @relation(fields: [customerCode], references: [customerCode], onDelete: Cascade, onUpdate: Cascade)
+  tag          CustomerTag @relation(fields: [tagCode], references: [tagCode], onDelete: Cascade, onUpdate: Cascade)
 
   @@id([customerCode, tagCode])
   @@map("customer_tag_assignment")
@@ -555,9 +503,9 @@ model EmployeeProfile {
   /// 档案最后更新时间
   updatedAt         DateTime         @updatedAt @map("updated_at")
 
-  department        Department?      @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  position          Position?        @relation(fields: [positionId], references: [id], onDelete: SetNull)
-  manager           EmployeeProfile? @relation("EmployeeManager", fields: [managerEmployeeId], references: [id], onDelete: SetNull)
+  department        Department?      @relation(fields: [departmentId], references: [id], onDelete: SetNull, onUpdate: SetNull)
+  position          Position?        @relation(fields: [positionId], references: [id], onDelete: SetNull, onUpdate: SetNull)
+  manager           EmployeeProfile? @relation("EmployeeManager", fields: [managerEmployeeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   subordinates      EmployeeProfile[] @relation("EmployeeManager")
 
   @@index([departmentId])
@@ -602,7 +550,7 @@ model ItemCategory {
   /// 更新时间
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  parent         ItemCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  parent         ItemCategory?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   children       ItemCategory[] @relation("CategoryTree")
   items          ItemMaster[]
 
@@ -738,9 +686,9 @@ model ItemMaster {
   /// 更新时间
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
-  category           ItemCategory     @relation(fields: [categoryId], references: [id])
-  variety            ItemVariety?     @relation(fields: [varietyId], references: [id])
-  grade              ItemGrade?       @relation(fields: [gradeId], references: [id])
+  category           ItemCategory     @relation(fields: [categoryId], references: [id], onUpdate: Restrict)
+  variety            ItemVariety?     @relation(fields: [varietyId], references: [id], onUpdate: Restrict)
+  grade              ItemGrade?       @relation(fields: [gradeId], references: [id], onUpdate: Restrict)
   conversions        UnitConversion[]
   bomsAsOutput       BomHeader[]      @relation("BomOutputItem")
 
@@ -891,7 +839,7 @@ model ProcessSpec {
   /// 更新时间
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  process         ProcessMaster @relation(fields: [processId], references: [id])
+  process         ProcessMaster @relation(fields: [processId], references: [id], onUpdate: Restrict)
   bomProcesses    BomProcess[]
 
   @@unique([processId, specCode])
@@ -969,7 +917,7 @@ model PurchaseOrder {
   /// 订单最后更新时间
   updatedAt    DateTime    @updatedAt @map("updated_at")
 
-  department   Department  @relation(fields: [deptId], references: [id], onDelete: Restrict)
+  department   Department  @relation(fields: [deptId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([deptId])
   @@index([createdById])
@@ -1056,6 +1004,10 @@ model SalesOrder {
   items               SalesOrderItem[]
   /// 订单费用明细
   fees                SalesOrderFee[]
+  /// 关联客户企业（逻辑外键，无物理约束）
+  customer            Customer?       @relation(fields: [customerCode], references: [customerCode], onUpdate: Restrict)
+  /// 关联履约门店（逻辑外键，无物理约束）
+  store               CustomerStore?  @relation(fields: [storeCode], references: [storeCode], onUpdate: Restrict)
 
   @@index([customerCode])
   @@index([storeCode])
@@ -1095,7 +1047,7 @@ model SalesOrderFee {
   updatedAt            DateTime  @updatedAt @map("updated_at")
 
   /// 关联销售订单主表
-  order                SalesOrder @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+  order                SalesOrder @relation(fields: [orderId], references: [orderId], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([orderId])
   @@index([auditStatus])
@@ -1133,7 +1085,7 @@ model SalesOrderItem {
   remark               String?   @db.VarChar(200)
 
   /// 关联销售订单主表
-  order                SalesOrder @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+  order                SalesOrder @relation(fields: [orderId], references: [orderId], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([orderId])
   @@index([itemCode])
@@ -1214,9 +1166,9 @@ model UnitConversion {
   /// 更新时间
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  fromUnit       UnitOfMeasure @relation("FromUnit", fields: [fromUnitId], references: [id])
-  toUnit         UnitOfMeasure @relation("ToUnit", fields: [toUnitId], references: [id])
-  item           ItemMaster?   @relation(fields: [itemCode], references: [itemCode])
+  fromUnit       UnitOfMeasure @relation("FromUnit", fields: [fromUnitId], references: [id], onUpdate: Restrict)
+  toUnit         UnitOfMeasure @relation("ToUnit", fields: [toUnitId], references: [id], onUpdate: Restrict)
+  item           ItemMaster?   @relation(fields: [itemCode], references: [itemCode], onUpdate: Restrict)
 
   @@unique([itemCode, fromUnitId, toUnitId])
   @@index([createdById])

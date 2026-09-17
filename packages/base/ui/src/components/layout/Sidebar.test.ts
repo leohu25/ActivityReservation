@@ -167,7 +167,7 @@ test("Sidebar 支持通过 can 回调执行功能权限过滤", () => {
   assert.ok(html.includes("组织架构"));
 });
 
-test("Sidebar 兼容扁平 navItems 传参模式", () => {
+test("Sidebar 支持扁平 navItems 传参模式", () => {
   const customItems = [
     { id: "custom-1", label: "自定义单页", href: "/custom/page" },
   ];

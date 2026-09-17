@@ -4,7 +4,26 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider     = "postgresql"
+  relationMode = "prisma"
+}
+
+// 关联的基础客户模型扩展 (真实 owner 位于 customer-center)
+// @db-migrate-extension Customer
+model Customer {
+  customerCode String       @id @map("customer_code") @db.VarChar(30)
+  salesOrders  SalesOrder[]
+
+  @@map("customer")
+}
+
+// 关联的基础门店模型扩展 (真实 owner 位于 customer-center)
+// @db-migrate-extension CustomerStore
+model CustomerStore {
+  storeCode   String       @id @map("store_code") @db.VarChar(30)
+  salesOrders SalesOrder[]
+
+  @@map("customer_store")
 }
 
 /// 销售订单单头：按 客户 + 门店 + 商品 + 数量 + 交货日期 维度的销售需求主单
@@ -86,6 +105,10 @@ model SalesOrder {
   items               SalesOrderItem[]
   /// 订单费用明细
   fees                SalesOrderFee[]
+  /// 关联客户企业（逻辑外键，无物理约束）
+  customer            Customer?       @relation(fields: [customerCode], references: [customerCode], onUpdate: Restrict)
+  /// 关联履约门店（逻辑外键，无物理约束）
+  store               CustomerStore?  @relation(fields: [storeCode], references: [storeCode], onUpdate: Restrict)
 
   @@index([customerCode])
   @@index([storeCode])
@@ -132,7 +155,7 @@ model SalesOrderItem {
   remark               String?   @db.VarChar(200)
 
   /// 关联销售订单主表
-  order                SalesOrder @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+  order                SalesOrder @relation(fields: [orderId], references: [orderId], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([orderId])
   @@index([itemCode])
@@ -165,7 +188,7 @@ model SalesOrderFee {
   updatedAt            DateTime  @updatedAt @map("updated_at")
 
   /// 关联销售订单主表
-  order                SalesOrder @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+  order                SalesOrder @relation(fields: [orderId], references: [orderId], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([orderId])
   @@index([auditStatus])

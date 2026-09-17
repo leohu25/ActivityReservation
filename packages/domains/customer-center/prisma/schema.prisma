@@ -4,7 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider     = "postgresql"
+  relationMode = "prisma"
 }
 
 /// 客户分类表：支持多级层级树结构（如餐饮连锁、企事业单位、生鲜超市）
@@ -25,7 +26,7 @@ model CustomerCategory {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   /// 自引用：父级分类
-  parent       CustomerCategory?  @relation("CategoryHierarchy", fields: [parentCode], references: [categoryCode], onDelete: Restrict)
+  parent       CustomerCategory?  @relation("CategoryHierarchy", fields: [parentCode], references: [categoryCode], onDelete: Restrict, onUpdate: Restrict)
   /// 自引用：子级分类列表
   children     CustomerCategory[] @relation("CategoryHierarchy")
   /// 该分类下的客户档案列表
@@ -107,7 +108,7 @@ model Customer {
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   /// 所属分类关联
-  category         CustomerCategory @relation(fields: [categoryCode], references: [categoryCode], onDelete: Restrict)
+  category         CustomerCategory @relation(fields: [categoryCode], references: [categoryCode], onDelete: Restrict, onUpdate: Restrict)
   /// 客户关联的多标签记录
   tagAssignments   CustomerTagAssignment[]
   /// 该客户下属的多个门店列表
@@ -129,8 +130,8 @@ model CustomerTagAssignment {
   /// 关联打标时间
   createdAt    DateTime @default(now()) @map("created_at")
 
-  customer     Customer    @relation(fields: [customerCode], references: [customerCode], onDelete: Cascade)
-  tag          CustomerTag @relation(fields: [tagCode], references: [tagCode], onDelete: Cascade)
+  customer     Customer    @relation(fields: [customerCode], references: [customerCode], onDelete: Cascade, onUpdate: Cascade)
+  tag          CustomerTag @relation(fields: [tagCode], references: [tagCode], onDelete: Cascade, onUpdate: Cascade)
 
   @@id([customerCode, tagCode])
   @@map("customer_tag_assignment")
@@ -184,7 +185,7 @@ model CustomerStore {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   /// 所属客户
-  customer        Customer @relation(fields: [customerCode], references: [customerCode], onDelete: Restrict)
+  customer        Customer @relation(fields: [customerCode], references: [customerCode], onDelete: Restrict, onUpdate: Restrict)
   /// 针对该门店的独立报价单列表
   quotes          CustomerQuote[]
 
@@ -240,9 +241,9 @@ model CustomerQuote {
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
   /// 关联客户档案
-  customer        Customer?      @relation(fields: [customerCode], references: [customerCode], onDelete: Restrict)
+  customer        Customer?      @relation(fields: [customerCode], references: [customerCode], onDelete: Restrict, onUpdate: Restrict)
   /// 关联门店档案
-  store           CustomerStore? @relation(fields: [storeCode], references: [storeCode], onDelete: Restrict)
+  store           CustomerStore? @relation(fields: [storeCode], references: [storeCode], onDelete: Restrict, onUpdate: Restrict)
   /// 报价单包含的商品明细列表
   items           CustomerQuoteItem[]
 
@@ -279,7 +280,7 @@ model CustomerQuoteItem {
   remark            String?  @db.VarChar(200)
 
   /// 所属报价单主表关联
-  quote             CustomerQuote @relation(fields: [quoteId], references: [quoteId], onDelete: Cascade)
+  quote             CustomerQuote @relation(fields: [quoteId], references: [quoteId], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([quoteId])
   @@index([itemCode])

@@ -10,7 +10,7 @@ import {
 } from "@base/ui";
 import { Package } from "lucide-react";
 import type { ItemMasterListItem } from "../types";
-import { ItemMasterSubject, itemMasterSearchContract } from "../contract";
+import { ItemMasterSubject } from "../contract";
 import { toggleItemStatusAction, deleteItemMasterAction } from "../actions";
 import { MasterDataStatus } from "@base/shared";
 import { ItemMasterFormModal } from "./ItemMasterFormModal";
@@ -244,7 +244,7 @@ export function ItemMasterView({
           setModalState({ open: true, mode: "create", record: null })
         }
         createText="新建商品"
-        searchContract={itemMasterSearchContract}
+        keywordPlaceholder="搜索商品编码、名称、拼音码、条码..."
         keywordValue={keyword}
         onKeywordChange={setKeyword}
         statusOptions={[

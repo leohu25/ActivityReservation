@@ -17,7 +17,7 @@ packages/ui/src/
 │   └── templates/                  # Layer 3: 业务模板层 (Templates / 完整业务容器，负责布局编排与协议闭环)
 │       ├── DataTable.tsx           # 全功能数据列表工作台模板 (搜索、高级筛选、分页、列配置、Action 权限接管)
 │       ├── FormModal.tsx           # 全功能表单弹窗模板 (三态切换、Zod 强校验、字段三态动态豁免、内置明细表)
-│       ├── HierarchyWorkspace.tsx  # 多级树形维护工作台模板 (层级树、同级上下移排序、Action Schema 受控动作)
+│       ├── DataTree.tsx            # 多级树形维护工作台模板 (层级树、同级上下移排序、Action Schema 受控动作)
 │       ├── MasterDetailShell.tsx   # 企业级主从 (Master-Detail) 联动布局骨架
 │       ├── PageShell.tsx           # 非列表标准页面容器 (统一页头、描述、快捷操作与反馈横幅)
 │       └── DashboardShell.tsx      # 应用级后台主框架外壳 (侧边栏布局与自适应滚动)
@@ -33,7 +33,7 @@ packages/ui/src/
    - **模板层 (Templates)**：完整业务工作区，通过 Action Schema 或契约声明自动闭环权限与交互。
 2. **复杂场景优先使用标准模板**：
    - 扁平数据列表与 CRUD 工作台统一使用 `DataTable`；
-   - 多级分类、组织架构等层级数据维护统一使用 `HierarchyWorkspace`；
+   - 多级分类、组织架构等层级数据维护统一使用 `DataTree`；
    - 数据录入、信息修改及详情查看弹窗统一使用 `FormModal`；
    - 避免在业务切片内手写重复的 Dialog 遮罩拼装、原生表格布局或样板表单逻辑。
 3. **底层原子组件保持纯粹中立**：

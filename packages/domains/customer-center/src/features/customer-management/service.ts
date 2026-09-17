@@ -1,7 +1,6 @@
-import { MasterDataStatus, executeSearchContract } from "@base/shared";
+import { MasterDataStatus } from "@base/shared";
 import type { TenantPrismaClient, TenantPrisma } from "@base/db-tenant";
 import type { PrismaQueryCondition } from "@base/authorization";
-import { customerSearchContract } from "./contract";
 import type {
   CreateCustomerInput,
   ListCustomerFilter,
@@ -83,18 +82,15 @@ export class CustomerService {
       andConditions.push({ status: filter.status });
     }
     if (filter.keyword) {
-      // SAFETY: TenantPrismaClient dynamic delegates correspond to runtime models indexed by relation names
-      const dbClient = client as unknown as Record<string, unknown>;
-      const keywordOr = await executeSearchContract(
-        dbClient,
-        customerSearchContract,
-        filter.keyword,
-      );
-      if (keywordOr.length > 0) {
-        andConditions.push({
-          OR: keywordOr as TenantPrisma.CustomerWhereInput[],
-        });
-      }
+      const q = filter.keyword.trim().slice(0, 100);
+      andConditions.push({
+        OR: [
+          { customerCode: { contains: q, mode: "insensitive" } },
+          { customerName: { contains: q, mode: "insensitive" } },
+          { contactPerson: { contains: q, mode: "insensitive" } },
+          { contactPhone: { contains: q, mode: "insensitive" } },
+        ],
+      });
     }
     if (filter.tagCode) {
       andConditions.push({

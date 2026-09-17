@@ -5,19 +5,12 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
-import type { SearchContract } from "@base/shared";
 
 // 1. 实体与资源标识 (CASL Subject & Resource) (SSoT)
 export const ProcurementOrderSubject = "PurchaseOrder";
 export type ProcurementOrderSubject = typeof ProcurementOrderSubject;
 export const ProcurementOrderResource = "procurement.order";
 export type ProcurementOrderResource = typeof ProcurementOrderResource;
-
-// @deprecated Compatibility aliases; new authorization code uses canonical names.
-export const OrderSubject = ProcurementOrderSubject;
-export const OrderResource = ProcurementOrderResource;
-// @deprecated Compatibility alias.
-export const ProcurementSubject = ProcurementOrderSubject;
 
 // 单据业务状态枚举
 export const ProcurementOrderStatus = {
@@ -41,12 +34,6 @@ export const ProcurementOrderField = {
 
 export type ProcurementOrderField =
   (typeof ProcurementOrderField)[keyof typeof ProcurementOrderField];
-
-// 兼容别名导出
-export const OrderField = ProcurementOrderField;
-export type OrderField = ProcurementOrderField;
-export const ProcurementField = ProcurementOrderField;
-export type ProcurementField = ProcurementOrderField;
 
 // 3. 受控字段元数据定义
 export const procurementOrderConfigurableFields = [
@@ -137,17 +124,6 @@ export const procurementOrderPageContract: FeaturePagePermissionDescriptor = {
     sensitive: f.isSensitive,
   })),
 } as const;
-
-/** 采购订单搜索契约 (SSoT) */
-export const procurementOrderSearchContract: SearchContract = {
-  direct: [
-    { field: "orderNo", label: "采购单号" },
-    { field: "supplierName", label: "供应商" },
-  ],
-} as const;
-
-// 兼容别名导出
-export const orderPageContract = procurementOrderPageContract;
 
 /**
  * 契约级字段可见性辅助工具
