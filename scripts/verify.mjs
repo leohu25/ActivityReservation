@@ -134,6 +134,16 @@ const checks = [
     args: [path.join(WORKSPACE_ROOT, "scripts/check/check-relation-mode.mjs")],
   },
   {
+    label: "迁移不可变",
+    cmd: nodePath,
+    args: [
+      path.join(
+        WORKSPACE_ROOT,
+        "scripts/check/check-migration-immutability.mjs",
+      ),
+    ],
+  },
+  {
     label: "门禁单测",
     cmd: nodePath,
     args: [
@@ -146,6 +156,10 @@ const checks = [
         "scripts/check/check-ui-permission-guards.test.mjs",
       ),
       path.join(WORKSPACE_ROOT, "scripts/check/check-relation-mode.test.mjs"),
+      path.join(
+        WORKSPACE_ROOT,
+        "scripts/check/check-migration-immutability.test.mjs",
+      ),
     ],
   },
 ];

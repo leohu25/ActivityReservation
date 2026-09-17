@@ -106,3 +106,14 @@ pnpm run db:migrate:catalog
 # 4. (开发重构/上线前专用) 将所有增量演进完整压平进全新 Day 0 基线快照
 pnpm run db:migrate:baseline:reset
 ```
+
+### 迁移历史不可变规则（Append-Only）
+
+一旦迁移或基线工件已经提交到 Git，普通开发提交中严禁修改、删除、重命名或搬移：
+
+- `tooling/db-migrate/migrations/**`
+- `tooling/db-migrate/baselines/**`
+
+数据库结构需要修复时必须新增迁移，禁止重写历史。`scripts/check/check-migration-immutability.mjs` 会检查 Git 暂存区，并由 `scripts/verify.mjs` 和 pre-commit 钩子在提交前硬拦截。新增迁移目录允许提交，`generated/runtime-catalog.ts` 可随新增迁移正常更新。
+
+`baseline:reset` 属于需要同步重建对应数据库的受控操作，不是普通提交的豁免开关；执行前必须单独确认影响范围并建立专用重置流程。
