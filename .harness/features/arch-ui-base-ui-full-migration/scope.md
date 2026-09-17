@@ -19,6 +19,10 @@
 
 - `tsconfig.base.json`
 
+### @ 4ae27b6c 联动修改自动登记
+
+- `.harness/context/design-system.md`
+
 ## 范围约束
 
 - 仅允许与 shadcn Radix → Base UI 迁移、调用点适配、对应测试修复直接相关的修改。

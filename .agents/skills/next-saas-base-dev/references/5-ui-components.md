@@ -8,7 +8,7 @@
 
 | 层级                                  | 目录位置                             | 典型代表                                                                                               | 职责与依赖规范                                                                                                     |
 | ------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| **1. 原子层 (Atoms)**                 | `packages/ui/.../shadcn/`            | `Button`, `Input`, `Dialog`, `Card`, `Badge`, `Select`, `Table` 等                                     | Radix / shadcn 官方无头原语封装，纯 UI 渲染基石，**业务禁止手写修改，不包含任何权限逻辑**。                        |
+| **1. 原子层 (Atoms)**                 | `packages/ui/.../shadcn/`            | `Button`, `Input`, `Dialog`, `Card`, `Badge`, `Select`, `Table` 等                                     | Base UI (`@base-ui/react`) / shadcn 官方无头原语封装，纯 UI 渲染基石，**业务禁止手写修改，不包含任何权限逻辑**。   |
 | **2. 分子层 (Molecules / Composite)** | `composite/`、`layout/`、`feedback/` | `ActionButton`, `ActionGroup`, `AuthGuard`, `DataTableRowActions`, `DetailTable`, `AuthorizedField` 等 | 组合原子组件，注入中立业务规则（如 CASL 权限判定、Zod 校验、二次确认防误删）。**依赖原子组件，不绑特定业务领域**。 |
 | **3. 模板层 (Templates)**             | `templates/`                         | `DataTable`, `FormModal`, `DataTree`, `DashboardShell`, `PageShell` 等                                 | 开箱即用的完整业务工作区/容器，负责整体布局编排、上下文生命周期与 Action Schema 协议闭环。**依赖分子与原子组件**。 |
 

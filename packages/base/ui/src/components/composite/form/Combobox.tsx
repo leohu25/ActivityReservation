@@ -30,8 +30,6 @@ export interface ComboboxProps {
   readonly className?: string;
   readonly popoverClassName?: string;
   readonly popoverWidth?: number | string;
-  /** 兼容历史属性 */
-  readonly modal?: boolean;
 }
 
 /**

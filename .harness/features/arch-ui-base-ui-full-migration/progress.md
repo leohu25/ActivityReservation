@@ -17,9 +17,11 @@
 - [x] 完成 `@base/ui` 类型检查与单测 (13/13 tests pass)
 - [x] 完成全仓所有 16 个包类型检查与单测 (32/32 tasks pass via `pnpm turbo run check test`)
 - [x] 修复客户表单模态框客户分类 Combobox 弹窗脱焦、白屏及位置漂移问题
+- [x] 重新执行官方 CLI 全量覆盖原子组件，建立 100% 官方原汁原味零污染纯净基线
+- [x] 彻底清理全仓 Radix UI 依赖（移除 `@radix-ui/react-slot` 与 `radix-ui`，全仓生产源码零 `@radix-ui` 引用）
+- [x] 移除遗留历史 `form.tsx`，表单与字段控制统一由 Base UI 原生 `field.tsx` 与复合层 `FormFields` / `FormModal` 承接
 - [ ] 向用户提交修改清单，获得明确审阅确认后再提交
 
 ## 已知基线问题
 
 - `node scripts/init.mjs` 在 Control DB 基线检查阶段失败：`Command "db:platform:ensure" not found`。该问题发生于本特性代码实施之前，需作为环境/脚本基线阻塞单独记录，不得误算为 Base UI 迁移回归。
-- shadcn CLI `add --all` 当前会因官方 registry 的 `questionnaire.json` 缺失而中止；迁移需使用明确组件清单或官方迁移技能逐组件推进。

@@ -18,7 +18,7 @@
 本架构严格对齐 shadcn/ui 官方正统设计哲学，并服务于现代 Modular Monorepo 平台基座：
 
 1. **符合 shadcn/ui 官方正统范式**：
-   - shadcn 的核心是 **“代码所有权 + 语义设计令牌 (Semantic Tokens)”**。它底层由 Radix UI Primitives 提供无样式的无障碍状态机，上层仅消费 `bg-background`、`text-foreground`、`bg-primary`、`border-border`、`rounded-(--radius)` 等抽象语义令牌。
+   - shadcn 的核心是 **“代码所有权 + 语义设计令牌 (Semantic Tokens)”**。它底层由官方推荐的 Base UI (`@base-ui/react`) Primitives 提供无样式的无障碍状态机，上层仅消费 `bg-background`、`text-foreground`、`bg-primary`、`border-border`、`rounded-(--radius)` 等抽象语义令牌。
    - 组件内部绝不写死 `#2563EB` 等具体十六进制色值，任何风格都只是配置表。
 2. **支持不同业务系统构建个性化样式**：
    - 同一套中立的 `@base/ui` 基础设施，既可支撑**租户端数据平面**运行稳重、高密度的“工业 ERP 风”；

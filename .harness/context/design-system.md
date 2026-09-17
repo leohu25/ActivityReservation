@@ -1,7 +1,7 @@
 # 宸润数智 ERP 设计系统规范与 shadcn/ui 实施宪法 (Chenrun Modern Industrial Design System)
 
 > **设计系统定位**：专为数字化中央厨房、高端离散制造与生鲜供应链量身打造的**现代轻量科技数智风 (Clean Crisp Modern Industrial Cockpit)**。
-> **强制 UI 框架**：**全工程统一强制采用 `shadcn/ui` (基于 Tailwind CSS v4 + CVA + Radix 原生语义 + Lucide 图标)**。
+> **强制 UI 框架**：**全工程统一强制采用 `shadcn/ui` (基于 Tailwind CSS v4 + CVA + Base UI 原生语义 + Lucide 图标)**。
 > **AI 协同法则**：所有 AI 智能体（Coordinator, Implementer, Reviewer）在生成或重构前端 UI 页面与组件时，**必须无条件遵循本规范与 shadcn/ui 组件规范**，禁止随意引入第三方未经审核的 UI 库或散写内联样式。
 
 ---
@@ -34,61 +34,61 @@
 ```css
 :root {
   /* 基础画布与文字 */
-  --background: #F4F7FB;          /* 极浅冷灰蓝底色 */
-  --foreground: #0F172A;          /* Slate-900 主文本 */
-  
+  --background: #f4f7fb; /* 极浅冷灰蓝底色 */
+  --foreground: #0f172a; /* Slate-900 主文本 */
+
   /* 卡片与浮层 */
-  --card: #FFFFFF;                /* 纯白卡片表面 */
-  --card-foreground: #0F172A;
-  --popover: #FFFFFF;
-  --popover-foreground: #0F172A;
-  
+  --card: #ffffff; /* 纯白卡片表面 */
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
   /* 品牌主色 (科技皇家蓝) */
-  --primary: #1864F5;             /* 核心品牌蓝 (主操作、激活项、当前节点) */
-  --primary-foreground: #FFFFFF;
-  
+  --primary: #1864f5; /* 核心品牌蓝 (主操作、激活项、当前节点) */
+  --primary-foreground: #ffffff;
+
   /* 次级与静音色 */
-  --secondary: #F1F5F9;           /* Slate-100 次级色块 */
-  --secondary-foreground: #0F172A;
-  --muted: #F8FAFC;
-  --muted-foreground: #64748B;    /* Slate-500 辅助文字 */
-  
+  --secondary: #f1f5f9; /* Slate-100 次级色块 */
+  --secondary-foreground: #0f172a;
+  --muted: #f8fafc;
+  --muted-foreground: #64748b; /* Slate-500 辅助文字 */
+
   /* 交互强调与微背景 */
-  --accent: #EFF6FF;              /* Blue-50 浅蓝背景 */
-  --accent-foreground: #1864F5;
-  
+  --accent: #eff6ff; /* Blue-50 浅蓝背景 */
+  --accent-foreground: #1864f5;
+
   /* 告警破坏色 */
-  --destructive: #EF4444;         /* 危险红 */
-  --destructive-foreground: #FFFFFF;
-  
+  --destructive: #ef4444; /* 危险红 */
+  --destructive-foreground: #ffffff;
+
   /* 边框与输入框 */
-  --border: #E8EEF5;              /* 细腻浅冷灰边框 */
-  --input: #E2E8F0;
-  --ring: #1864F5;
-  --radius: 1rem;                 /* 默认 16px 大圆角 */
+  --border: #e8eef5; /* 细腻浅冷灰边框 */
+  --input: #e2e8f0;
+  --ring: #1864f5;
+  --radius: 1rem; /* 默认 16px 大圆角 */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0B0F19;
-    --foreground: #F8FAFC;
+    --background: #0b0f19;
+    --foreground: #f8fafc;
     --card: #111827;
-    --card-foreground: #F8FAFC;
+    --card-foreground: #f8fafc;
     --popover: #111827;
-    --popover-foreground: #F8FAFC;
-    --primary: #3B82F6;
-    --primary-foreground: #FFFFFF;
-    --secondary: #1F2937;
-    --secondary-foreground: #F8FAFC;
-    --muted: #1F2937;
-    --muted-foreground: #94A3B8;
-    --accent: #1E293B;
-    --accent-foreground: #60A5FA;
-    --destructive: #DC2626;
-    --destructive-foreground: #FFFFFF;
-    --border: #1F2937;
+    --popover-foreground: #f8fafc;
+    --primary: #3b82f6;
+    --primary-foreground: #ffffff;
+    --secondary: #1f2937;
+    --secondary-foreground: #f8fafc;
+    --muted: #1f2937;
+    --muted-foreground: #94a3b8;
+    --accent: #1e293b;
+    --accent-foreground: #60a5fa;
+    --destructive: #dc2626;
+    --destructive-foreground: #ffffff;
+    --border: #1f2937;
     --input: #374151;
-    --ring: #3B82F6;
+    --ring: #3b82f6;
   }
 }
 ```
@@ -99,13 +99,13 @@
 
 针对中央厨房、食品加工与数字化制造，在 shadcn/ui 的基础上预设 5 类标准化语义微徽章与背景色彩：
 
-| 业务领域 | 语义用途 | 强调色 (Text/Icon) | 浅色底 (Background) | 边框 (Border) | 实际应用场景 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **达成 / 合格 / 正常** | `success` | `#059669` (Emerald-600) | `#ECFDF5` (Emerald-50) | `#A7F3D0` | 达成率 94.2%、质检合格、系统正常 |
-| **预警 / 缺口 / 临期** | `warning` | `#D97706` (Amber-600) | `#FFFBEB` (Amber-50) | `#FDE68A` | 原料缺口 186kg、采购待处理 |
-| **紧急 / 超期 / 阻断** | `destructive` | `#DC2626` (Red-600) | `#FEF2F2` (Red-50) | `#FECACA` | 批次临期、高优待办、阻断异常 |
-| **计划 / 审核 / 工艺** | `process` | `#6366F1` (Indigo-600) | `#EEF2FF` (Indigo-50) | `#C7D2FE` | 生产执行流程节点、生产任务确认 |
-| **物流 / 履约 / 调度** | `dispatch` | `#0284C7` (Sky-600) | `#F0F9FF` (Sky-50) | `#BAE6FD` | 鄞州一线装车、履约交付节点 |
+| 业务领域               | 语义用途      | 强调色 (Text/Icon)      | 浅色底 (Background)    | 边框 (Border) | 实际应用场景                     |
+| :--------------------- | :------------ | :---------------------- | :--------------------- | :------------ | :------------------------------- |
+| **达成 / 合格 / 正常** | `success`     | `#059669` (Emerald-600) | `#ECFDF5` (Emerald-50) | `#A7F3D0`     | 达成率 94.2%、质检合格、系统正常 |
+| **预警 / 缺口 / 临期** | `warning`     | `#D97706` (Amber-600)   | `#FFFBEB` (Amber-50)   | `#FDE68A`     | 原料缺口 186kg、采购待处理       |
+| **紧急 / 超期 / 阻断** | `destructive` | `#DC2626` (Red-600)     | `#FEF2F2` (Red-50)     | `#FECACA`     | 批次临期、高优待办、阻断异常     |
+| **计划 / 审核 / 工艺** | `process`     | `#6366F1` (Indigo-600)  | `#EEF2FF` (Indigo-50)  | `#C7D2FE`     | 生产执行流程节点、生产任务确认   |
+| **物流 / 履约 / 调度** | `dispatch`    | `#0284C7` (Sky-600)     | `#F0F9FF` (Sky-50)     | `#BAE6FD`     | 鄞州一线装车、履约交付节点       |
 
 ---
 
@@ -114,15 +114,20 @@
 所有组件统一从 `@base/ui` 导出，严禁直接手写散乱类名：
 
 ```tsx
-import { 
-  Button, 
-  Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter,
-  Badge, 
-  Input, 
-  WelcomeHero, 
-  MetricCard, 
-  ProcessStepper, 
-  ExceptionList 
+import {
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+  Badge,
+  Input,
+  WelcomeHero,
+  MetricCard,
+  ProcessStepper,
+  ExceptionList,
 } from "@base/ui";
 ```
 
