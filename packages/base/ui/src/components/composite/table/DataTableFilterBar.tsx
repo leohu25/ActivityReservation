@@ -59,11 +59,7 @@ export function DataTableFilterBar({
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
         {children}
         {hasSearchBtn && onSearch ? (
-          <Button
-            size="sm"
-            className="h-10 gap-1.5 px-4 text-sm shadow-xs"
-            onClick={onSearch}
-          >
+          <Button className="gap-1.5 shadow-xs" onClick={onSearch}>
             <Search data-icon="inline-start" />
             {searchText}
           </Button>
@@ -71,8 +67,7 @@ export function DataTableFilterBar({
         {hasResetBtn && onReset ? (
           <Button
             variant="outline"
-            size="sm"
-            className="h-10 gap-1.5 border-border bg-card px-4 text-sm shadow-xs hover:bg-muted/40"
+            className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
             onClick={onReset}
           >
             <RotateCcw data-icon="inline-start" />
@@ -84,11 +79,13 @@ export function DataTableFilterBar({
       {onAdvancedFilter ? (
         <Button
           variant="outline"
-          size="sm"
-          className="h-10 gap-1.5 border-dashed border-border bg-card px-3 text-sm font-normal shadow-xs hover:bg-muted/40"
+          className="gap-1.5 border-dashed border-border bg-card font-normal shadow-xs hover:bg-muted/40"
           onClick={onAdvancedFilter}
         >
-          <SlidersHorizontal data-icon="inline-start" className="text-muted-foreground" />
+          <SlidersHorizontal
+            data-icon="inline-start"
+            className="text-muted-foreground"
+          />
           {advancedText}
           {advancedActiveCount > 0 ? (
             <span className="ml-0.5 inline-flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
@@ -103,4 +100,3 @@ export function DataTableFilterBar({
 
 export const TableFilterBar = DataTableFilterBar;
 export type TableFilterBarProps = DataTableFilterBarProps;
-

@@ -97,6 +97,7 @@ export default async function DashboardLayout({
     <DashboardShell
       header={<TopHeader user={user} orgSwitcherSlot={orgBadgeSlot} />}
       sidebar={<Sidebar sections={navSections} />}
+      navSections={navSections}
     >
       {children}
     </DashboardShell>

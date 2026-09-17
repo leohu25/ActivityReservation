@@ -107,7 +107,6 @@ test("DataTable.Header: 渲染分类小标、品牌竖条标题与说明文案",
       rowKey={(item) => item.id}
     >
       <DataTable.Header
-        category="BUSINESS WORKSPACE"
         title="采购订单待办理"
         description="归集日采购、周采购和请购需求"
         actions={<span>操作区</span>}
@@ -116,7 +115,6 @@ test("DataTable.Header: 渲染分类小标、品牌竖条标题与说明文案",
     </DataTable.Root>,
   );
 
-  assert.match(html, /BUSINESS WORKSPACE/);
   assert.match(html, /采购订单待办理/);
   assert.match(html, /归集日采购/);
   assert.match(html, /操作区/);

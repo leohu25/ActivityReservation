@@ -60,9 +60,8 @@ export function DataTableColumnSettings({
         render={
           <Button
             variant="outline"
-            size="sm"
             className={cn(
-              "h-9 gap-1.5 border-border bg-card px-2.5 text-sm font-normal shadow-xs hover:bg-muted/40",
+              "gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40",
               className,
             )}
           />
@@ -74,18 +73,20 @@ export function DataTableColumnSettings({
         </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52 p-1.5">
-        <div className="flex items-center justify-between px-2 py-1.5">
-          <DropdownMenuLabel className="p-0 text-xs font-medium text-muted-foreground">
-            显示列
-          </DropdownMenuLabel>
-          <button
-            type="button"
-            onClick={resetColumnVisibility}
-            className="text-[11px] text-primary hover:underline"
-          >
-            重置
-          </button>
-        </div>
+        <DropdownMenuGroup>
+          <div className="flex items-center justify-between px-2 py-1.5">
+            <DropdownMenuLabel className="p-0 text-xs font-medium text-muted-foreground">
+              显示列
+            </DropdownMenuLabel>
+            <button
+              type="button"
+              onClick={resetColumnVisibility}
+              className="text-[11px] text-primary hover:underline"
+            >
+              重置
+            </button>
+          </div>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator className="my-1" />
         <div className="max-h-72 overflow-y-auto py-0.5">
           <DropdownMenuGroup>

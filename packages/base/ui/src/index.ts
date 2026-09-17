@@ -22,6 +22,8 @@ export {
 } from "./components/composite/form";
 export * from "./components/composite/icon";
 export * from "./components/layout/TopHeader";
+export * from "./components/layout/TabBar";
+export * from "./components/layout/BreadcrumbBar";
 export {
   Sidebar,
   type NavItem,

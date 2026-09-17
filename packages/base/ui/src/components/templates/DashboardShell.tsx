@@ -2,21 +2,34 @@
 
 import React from "react";
 import { SidebarProvider, SidebarInset } from "../shadcn/sidebar";
+import { TabBar } from "../layout/TabBar";
+import { BreadcrumbBar } from "../layout/BreadcrumbBar";
+import type { NavSection } from "../layout/Sidebar";
 
 export interface DashboardShellProps {
   readonly children: React.ReactNode;
   readonly header: React.ReactNode;
   readonly sidebar: React.ReactNode;
+  /** 授权导航菜单，用于 TabBar 与 BreadcrumbBar 自动提取页面名称与拓扑链路 */
+  readonly navSections?: readonly NavSection[];
+  /** 是否隐藏顶部多标签页，默认 false */
+  readonly hideTabBar?: boolean;
+  /** 是否隐藏面包屑，默认 false */
+  readonly hideBreadcrumbs?: boolean;
 }
 
 /**
  * ERP 统一后台主容器 Shell
- * 基于官方 shadcn SidebarProvider + SidebarInset 组合。
+ * 基于官方 shadcn SidebarProvider + SidebarInset 组合，
+ * 内置多标签页切换栏 (TabBar) 与动态层级面包屑导航 (BreadcrumbBar)。
  */
 export function DashboardShell({
   children,
   header,
   sidebar,
+  navSections = [],
+  hideTabBar = false,
+  hideBreadcrumbs = false,
 }: DashboardShellProps) {
   return (
     <SidebarProvider className="h-svh overflow-hidden">
@@ -24,8 +37,16 @@ export function DashboardShell({
         {header}
         <div className="flex min-h-0 flex-1 overflow-hidden">
           {sidebar}
-          <SidebarInset className="min-w-0 flex-1 overflow-y-auto bg-background p-6 md:p-8">
-            {children}
+          <SidebarInset className="min-w-0 flex-1 flex flex-col overflow-hidden bg-background">
+            {!hideTabBar ? <TabBar sections={navSections} /> : null}
+            <div className="min-w-0 flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-3">
+              {!hideBreadcrumbs ? (
+                <div className="pb-1">
+                  <BreadcrumbBar sections={navSections} />
+                </div>
+              ) : null}
+              <div className="min-w-0 flex-1">{children}</div>
+            </div>
           </SidebarInset>
         </div>
       </div>

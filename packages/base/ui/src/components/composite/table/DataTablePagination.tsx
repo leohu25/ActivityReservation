@@ -162,6 +162,7 @@ export function DataTablePagination({
             <PaginationItem>
               <PaginationPrevious
                 href="#"
+                text="上一页"
                 aria-disabled={!canPreviousPage}
                 className={cn(
                   "h-7 gap-0 px-2 text-xs",
@@ -196,6 +197,7 @@ export function DataTablePagination({
             <PaginationItem>
               <PaginationNext
                 href="#"
+                text="下一页"
                 aria-disabled={!canNextPage}
                 className={cn(
                   "h-7 gap-0 px-2 text-xs",

@@ -378,7 +378,7 @@ export function CustomerView({
                 });
               }}
             >
-              <SelectTrigger className="h-10 border-0 bg-transparent shadow-none focus:ring-0">
+              <SelectTrigger className="border-0 bg-transparent shadow-none focus:ring-0">
                 <SelectValue placeholder="全部" />
               </SelectTrigger>
               <SelectContent>

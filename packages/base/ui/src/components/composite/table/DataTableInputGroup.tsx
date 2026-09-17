@@ -24,7 +24,7 @@ export function DataTableInputGroup({
     <div
       data-slot="data-table-input-group"
       className={cn(
-        "relative flex h-9 min-w-fit items-stretch overflow-hidden rounded-lg border border-input bg-card shadow-xs transition-colors focus-within:border-ring focus-within:ring-1 focus-within:ring-ring",
+        "relative flex h-8 min-w-fit items-stretch overflow-hidden rounded-lg border border-input bg-card shadow-xs transition-colors focus-within:border-ring focus-within:ring-1 focus-within:ring-ring",
         // 右侧如果是 Select，抹平边框、圆角与阴影，保证高度 100% 垂直居中，优化内边距与图标尺寸避免文字挤压
         "[&_[data-slot=select-trigger]]:h-full [&_[data-slot=select-trigger]]:min-w-[5.5rem] [&_[data-slot=select-trigger]]:flex-1 [&_[data-slot=select-trigger]]:rounded-none [&_[data-slot=select-trigger]]:border-0 [&_[data-slot=select-trigger]]:bg-transparent [&_[data-slot=select-trigger]]:shadow-none [&_[data-slot=select-trigger]]:focus:ring-0 [&_[data-slot=select-trigger]]:focus-visible:ring-0 [&_[data-slot=select-trigger]]:text-xs [&_[data-slot=select-trigger]]:px-2.5 [&_[data-slot=select-trigger]]:gap-1.5 [&_[data-slot=select-trigger]_svg]:size-3.5",
         // 右侧如果是普通 Input，抹平边框、圆角与阴影，高度 100%，对齐 text-xs

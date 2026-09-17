@@ -266,7 +266,6 @@ export function RoleListView({
   return (
     <div className="space-y-4">
       <DataTable
-        category="ORGANIZATION & ROLES"
         title="企业角色管理"
         description="管理租户下的所有组织角色字典与完整生命周期，支持角色新增、重命名与描述编辑、安全删除，并直达权限配置中心编排权限矩阵"
         rowKey={(r) => r.role}

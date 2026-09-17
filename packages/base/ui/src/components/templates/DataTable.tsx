@@ -47,8 +47,6 @@ export interface DataTableProps<TData> extends Omit<
   DataTableRootProps<TData>,
   "children"
 > {
-  /** 分类小标，默认 BUSINESS WORKSPACE */
-  category?: string;
   title: string;
   description?: string;
 
@@ -109,7 +107,6 @@ export interface DataTableProps<TData> extends Omit<
  * 纯中立、无业务胶水代码。
  */
 export function DataTable<TData>({
-  category = "BUSINESS WORKSPACE",
   title,
   description,
   data,
@@ -183,7 +180,6 @@ export function DataTable<TData>({
       className={className}
     >
       <DataTableHeader
-        category={category}
         title={title}
         description={description}
         actions={
@@ -191,7 +187,6 @@ export function DataTable<TData>({
             {showRefresh ? (
               <Button
                 variant="outline"
-                size="sm"
                 onClick={onRefresh}
                 className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
               >
@@ -207,7 +202,6 @@ export function DataTable<TData>({
               <DataTableActionButton
                 action="export"
                 variant="outline"
-                size="sm"
                 onClick={onExport}
                 className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
               >
@@ -226,7 +220,6 @@ export function DataTable<TData>({
             {showCreate ? (
               <DataTableActionButton
                 action="create"
-                size="sm"
                 onClick={onCreate}
                 className="gap-1.5 shadow-xs"
               >

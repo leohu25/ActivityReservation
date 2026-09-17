@@ -2,11 +2,13 @@
 
 import * as React from "react";
 import { format } from "date-fns";
+import { zhCN } from "date-fns/locale";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "cn";
-import { Button } from "./button";
-import { Calendar } from "./calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "./popover";
+import { Button } from "../../shadcn/button";
+import { Calendar } from "../../shadcn/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "../../shadcn/popover";
+import type { Locale } from "date-fns";
 
 export interface DatePickerProps {
   readonly value?: string | Date | null;
@@ -15,11 +17,14 @@ export interface DatePickerProps {
   readonly disabled?: boolean;
   readonly className?: string;
   readonly "aria-invalid"?: boolean;
+  /** 语言包，默认中文 zhCN */
+  readonly locale?: Locale;
 }
 
 /**
- * 现代数智工业风 DatePicker 组件 (基于 shadcn Calendar + Popover + Button)
- * 接收或返回 YYYY-MM-DD 格式字符串或 Date 对象，彻底告别丑陋的原生 `<input type="date" />`
+ * 现代工业风复合 DatePicker 组件 (基于 shadcn 官方纯净 Calendar + Popover + Button)
+ * 封装官方推荐的组合模式 (Composition Pattern)，内置 zhCN 中文本地化，
+ * 接收/返回 YYYY-MM-DD 格式字符串或 Date 对象。
  */
 export function DatePicker({
   value,
@@ -28,6 +33,7 @@ export function DatePicker({
   disabled = false,
   className,
   "aria-invalid": ariaInvalid,
+  locale = zhCN,
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -69,7 +75,7 @@ export function DatePicker({
             disabled={disabled}
             aria-invalid={ariaInvalid}
             className={cn(
-              "w-full justify-start text-left font-normal h-9 px-3 text-xs bg-transparent hover:bg-muted/50 border-input shadow-xs",
+              "w-full justify-start text-left font-normal h-8 px-2.5 text-xs bg-transparent hover:bg-muted/50 border-input shadow-xs",
               !selectedDate && "text-muted-foreground",
               ariaInvalid && "border-destructive ring-destructive/20",
               className,
@@ -80,7 +86,7 @@ export function DatePicker({
         <CalendarIcon className="mr-2 size-3.5 text-muted-foreground shrink-0" />
         {selectedDate ? (
           <span className="font-mono text-foreground text-xs">
-            {format(selectedDate, "yyyy-MM-dd")}
+            {format(selectedDate, "yyyy-MM-dd", { locale })}
           </span>
         ) : (
           <span>{placeholder}</span>
@@ -91,6 +97,7 @@ export function DatePicker({
           mode="single"
           selected={selectedDate}
           onSelect={handleSelect}
+          locale={locale}
         />
       </PopoverContent>
     </Popover>
