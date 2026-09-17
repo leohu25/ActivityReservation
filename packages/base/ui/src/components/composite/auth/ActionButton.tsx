@@ -88,16 +88,16 @@ export function ActionButton({
     return (
       <TooltipProvider>
         <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-block cursor-not-allowed">
-              <Button
-                disabled
-                className={cn("pointer-events-none opacity-50", className)}
-                {...props}
-              >
-                {children}
-              </Button>
-            </span>
+          <TooltipTrigger
+            render={<span className="inline-block cursor-not-allowed" />}
+          >
+            <Button
+              disabled
+              className={cn("pointer-events-none opacity-50", className)}
+              {...props}
+            >
+              {children}
+            </Button>
           </TooltipTrigger>
           <TooltipContent>{unauthorizedTooltip}</TooltipContent>
         </Tooltip>

@@ -493,6 +493,7 @@ export function BomFlowEditorModal({
               <Select
                 value={outputItemCode}
                 onValueChange={(val) => {
+                  if (!val) return;
                   setOutputItemCode(val);
                   const found = items.find((i) => i.itemCode === val);
                   if (found?.baseUnit) {
@@ -544,9 +545,15 @@ export function BomFlowEditorModal({
               </label>
               <Select
                 value={bomType}
-                onValueChange={(val: "SINGLE" | "COMPOSITE" | "PACKAGING") =>
-                  setBomType(val)
-                }
+                onValueChange={(val) => {
+                  if (
+                    val === "SINGLE" ||
+                    val === "COMPOSITE" ||
+                    val === "PACKAGING"
+                  ) {
+                    setBomType(val);
+                  }
+                }}
               >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
@@ -700,9 +707,9 @@ export function BomFlowEditorModal({
                   </span>
                   <Select
                     value={currentStep.processId}
-                    onValueChange={(val) =>
-                      handleProcessChange(currentStep.id, val)
-                    }
+                    onValueChange={(val) => {
+                      if (val) handleProcessChange(currentStep.id, val);
+                    }}
                   >
                     <SelectTrigger className="h-7 text-xs w-36">
                       <SelectValue />

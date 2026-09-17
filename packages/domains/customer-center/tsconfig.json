@@ -18,8 +18,13 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@/components/shadcn/*": ["../../base/ui/src/components/shadcn/*"],
+      "@/hooks/*": ["../../base/ui/src/hooks/*"],
+      "@base/ui": ["../../base/ui/src/index.ts"],
+      "@base/ui/*": ["../../base/ui/src/*"]
     }
   },
   "include": ["src/**/*", "prisma/**/*"],

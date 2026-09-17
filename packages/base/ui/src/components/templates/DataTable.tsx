@@ -272,7 +272,9 @@ export function DataTable<TData>({
                 >
                   <Select
                     value={statusValue ?? statusAllValue}
-                    onValueChange={(v) => onStatusChange?.(v)}
+                    onValueChange={(value) =>
+                      onStatusChange?.(value ?? statusAllValue)
+                    }
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder={statusAllLabel} />

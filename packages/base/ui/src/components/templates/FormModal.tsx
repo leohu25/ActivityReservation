@@ -629,7 +629,7 @@ export function FormModal<
         )}
       >
         <DialogHeader className="gap-2 text-left">
-          <DialogTitle asChild>{brandHeader}</DialogTitle>
+          <DialogTitle render={<div />}>{brandHeader}</DialogTitle>
           <DialogDescription className="sr-only">
             {typeof renderedTitle === "string" ? renderedTitle : "表单详情"}
           </DialogDescription>

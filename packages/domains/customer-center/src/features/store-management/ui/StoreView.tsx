@@ -352,7 +352,7 @@ export function StoreView({
             <Select
               value={selectedCust || "ALL"}
               onValueChange={(v) => {
-                const next = v === "ALL" ? "" : v;
+                const next = !v || v === "ALL" ? "" : v;
                 setSelectedCust(next);
                 setPage(1);
                 navigateList({

@@ -78,13 +78,11 @@ export function HierarchyTree<T extends HierarchyNodeData>({
             className="group flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-card p-2.5 transition-colors hover:bg-muted/40 shadow-xs"
           >
             <div className="flex min-w-0 flex-1 items-center gap-2">
-              <CollapsibleTrigger asChild>
-                <button
-                  type="button"
-                  className="size-5 rounded flex items-center justify-center text-muted-foreground hover:bg-muted"
-                >
-                  <ChevronRightIcon className="size-3.5 transition-transform group-data-[state=open]:rotate-90" />
-                </button>
+              <CollapsibleTrigger
+                render={<button type="button" />}
+                className="size-5 rounded flex items-center justify-center text-muted-foreground hover:bg-muted"
+              >
+                <ChevronRightIcon className="size-3.5 transition-transform group-data-[state=open]:rotate-90" />
               </CollapsibleTrigger>
               {titleContent}
               {renderExtra && renderExtra(node, depth)}

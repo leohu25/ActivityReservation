@@ -174,8 +174,11 @@ export function CustomerFormModal({
       {
         name: "categoryCode",
         label: "客户分类",
-        type: "select" as const,
+        type: "combobox" as const,
         required: true,
+        placeholder: "请选择或搜索客户分类",
+        searchPlaceholder: "输入分类名称或编码过滤...",
+        emptyText: "未找到对应客户分类",
         options: resolvedCategoryOptions.map((c) => ({
           value: c.categoryCode,
           label: `${c.categoryName} (${c.categoryCode})`,

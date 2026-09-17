@@ -55,7 +55,9 @@ export function NodePropertyForm({
             <div className="col-span-9 space-y-1">
               <Select
                 value={selectedNode.pageKey || ""}
-                onValueChange={onSelectPageKey}
+                onValueChange={(val) => {
+                  if (val) onSelectPageKey(val);
+                }}
               >
                 <SelectTrigger className="h-8 text-xs font-medium">
                   <SelectValue placeholder="选择要绑定的业务功能页面..." />

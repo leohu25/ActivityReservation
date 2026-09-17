@@ -16,7 +16,7 @@ import { AlertTriangle, Loader2 } from "lucide-react";
 
 export interface ConfirmDialogProps {
   /** 触发弹窗的元素，如删除按钮 */
-  trigger?: ReactNode;
+  trigger?: React.ReactElement;
   /** 弹窗标题 */
   title: string;
   /** 详细警告说明 */
@@ -67,7 +67,7 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+      {trigger && <DialogTrigger render={trigger} />}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2">

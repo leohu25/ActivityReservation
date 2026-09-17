@@ -19,7 +19,11 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@/components/shadcn/*": [
+        "../../packages/base/ui/src/components/shadcn/*"
+      ],
+      "@/hooks/*": ["../../packages/base/ui/src/hooks/*"]
     }
   },
   "include": [

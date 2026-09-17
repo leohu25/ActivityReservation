@@ -55,12 +55,16 @@ export function OverviewView({ stats }: OverviewViewProps): React.JSX.Element {
             </CardDescription>
           </div>
 
-          <Button asChild size="sm" className="gap-2 shrink-0">
-            <Link href="/tenants">
-              <span>进入租户运维中枢</span>
-              <ArrowRight className="size-3.5" />
-            </Link>
-          </Button>
+          <Button
+            render={
+              <Link href="/tenants">
+                <span>进入租户运维中枢</span>
+                <ArrowRight className="size-3.5" />
+              </Link>
+            }
+            size="sm"
+            className="gap-2 shrink-0"
+          />
         </CardHeader>
       </Card>
 

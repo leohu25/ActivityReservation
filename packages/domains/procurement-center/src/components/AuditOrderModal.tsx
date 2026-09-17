@@ -214,7 +214,7 @@ export function AuditOrderModal({
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle asChild>{titleContent}</DialogTitle>
+          <DialogTitle render={titleContent} />
           <DialogDescription className="sr-only">
             采购单审核审批
           </DialogDescription>

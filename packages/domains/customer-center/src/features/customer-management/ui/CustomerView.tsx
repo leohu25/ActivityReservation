@@ -366,7 +366,7 @@ export function CustomerView({
             <Select
               value={selectedCat || "ALL"}
               onValueChange={(next) => {
-                const value = next === "ALL" ? "" : next;
+                const value = !next || next === "ALL" ? "" : next;
                 setSelectedCat(value);
                 setPage(1);
                 navigateList({

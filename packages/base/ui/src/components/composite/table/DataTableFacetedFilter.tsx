@@ -2,11 +2,7 @@
 
 import React, { type ReactNode } from "react";
 import { Check, PlusCircle } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "../../shadcn/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "../../shadcn/popover";
 import { Button } from "../../shadcn/button";
 import { Badge } from "../../shadcn/badge";
 import { cn } from "../../../lib/utils";
@@ -70,56 +66,55 @@ export function DataTableFacetedFilter({
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className={cn(
-            "h-8 border-dashed border-border/80 text-xs font-normal gap-1.5 px-2.5",
-            className,
-          )}
-        >
-          {icon || <PlusCircle className="size-3.5 text-muted-foreground" />}
-          <span>{title}</span>
-          {selectedSet.size > 0 && (
-            <>
-              <div className="h-4 w-[1px] bg-border mx-1" />
-              <Badge
-                variant="secondary"
-                size="sm"
-                className="rounded-sm px-1 font-normal lg:hidden"
-              >
-                {selectedSet.size}
-              </Badge>
-              <div className="hidden lg:flex gap-1">
-                {selectedSet.size > 2 ? (
-                  <Badge
-                    variant="secondary"
-                    size="sm"
-                    className="rounded-sm px-1 font-normal text-[10px]"
-                  >
-                    已选 {selectedSet.size} 项
-                  </Badge>
-                ) : (
-                  options.flatMap((opt) =>
-                    selectedSet.has(opt.value)
-                      ? [
-                          <Badge
-                            variant="secondary"
-                            size="sm"
-                            key={opt.value}
-                            className="rounded-sm px-1 font-normal text-[10px]"
-                          >
-                            {opt.label}
-                          </Badge>,
-                        ]
-                      : [],
-                  )
-                )}
-              </div>
-            </>
-          )}
-        </Button>
+      <PopoverTrigger
+        render={
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn(
+              "h-8 border-dashed border-border/80 text-xs font-normal gap-1.5 px-2.5",
+              className,
+            )}
+          />
+        }
+      >
+        {icon || <PlusCircle className="size-3.5 text-muted-foreground" />}
+        <span>{title}</span>
+        {selectedSet.size > 0 && (
+          <>
+            <div className="h-4 w-[1px] bg-border mx-1" />
+            <Badge
+              variant="secondary"
+              className="rounded-sm px-1 font-normal lg:hidden"
+            >
+              {selectedSet.size}
+            </Badge>
+            <div className="hidden lg:flex gap-1">
+              {selectedSet.size > 2 ? (
+                <Badge
+                  variant="secondary"
+                  className="rounded-sm px-1 font-normal text-[10px]"
+                >
+                  已选 {selectedSet.size} 项
+                </Badge>
+              ) : (
+                options.flatMap((opt) =>
+                  selectedSet.has(opt.value)
+                    ? [
+                        <Badge
+                          variant="secondary"
+                          key={opt.value}
+                          className="rounded-sm px-1 font-normal text-[10px]"
+                        >
+                          {opt.label}
+                        </Badge>,
+                      ]
+                    : [],
+                )
+              )}
+            </div>
+          </>
+        )}
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-1" align="start">
         <div className="flex flex-col gap-1 p-1">

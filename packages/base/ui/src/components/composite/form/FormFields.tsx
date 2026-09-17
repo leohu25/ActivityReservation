@@ -199,9 +199,14 @@ function renderFieldControl(
   const isInvalid = Boolean(fieldError);
 
   if (field.type === "select") {
+    const selectValue =
+      value !== undefined && value !== null && value !== ""
+        ? String(value)
+        : undefined;
+
     return (
       <Select
-        value={String(value ?? "")}
+        value={selectValue}
         onValueChange={setValue}
         disabled={field.disabled}
       >

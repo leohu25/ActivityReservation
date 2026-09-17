@@ -44,12 +44,12 @@ export function ThemeToggle({
 
   return (
     <ToggleGroup
-      type="single"
       variant="outline"
       size="sm"
-      value={theme ?? "system"}
+      value={[theme ?? "system"]}
       onValueChange={(value) => {
-        if (value) setTheme(value);
+        const nextTheme = value[0];
+        if (nextTheme) setTheme(String(nextTheme));
       }}
       aria-label="主题模式切换"
       className={cn("bg-muted/50 p-0.5", className)}

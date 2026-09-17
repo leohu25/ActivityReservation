@@ -67,29 +67,31 @@ export function IconPicker({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={disabled}
-          className={cn(
-            "h-8 px-2.5 justify-start text-xs font-normal gap-2 border-border/80 hover:bg-muted/30",
-            className,
-          )}
-        >
-          <div className="flex size-5 items-center justify-center rounded bg-primary/10 text-primary shrink-0">
-            <DynamicNavIcon
-              name={value}
-              className="size-3.5"
-              fallbackType={fallbackType}
-            />
-          </div>
-          <span className="truncate flex-1 text-left">
-            {currentIconItem
-              ? `${currentIconItem.label} (${currentIconItem.name})`
-              : value || "选择图标..."}
-          </span>
-        </Button>
+      <PopoverTrigger
+        render={
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={disabled}
+            className={cn(
+              "h-8 px-2.5 justify-start text-xs font-normal gap-2 border-border/80 hover:bg-muted/30",
+              className,
+            )}
+          />
+        }
+      >
+        <div className="flex size-5 items-center justify-center rounded bg-primary/10 text-primary shrink-0">
+          <DynamicNavIcon
+            name={value}
+            className="size-3.5"
+            fallbackType={fallbackType}
+          />
+        </div>
+        <span className="truncate flex-1 text-left">
+          {currentIconItem
+            ? `${currentIconItem.label} (${currentIconItem.name})`
+            : value || "选择图标..."}
+        </span>
       </PopoverTrigger>
 
       <PopoverContent

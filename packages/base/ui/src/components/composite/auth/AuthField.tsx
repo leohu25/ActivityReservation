@@ -114,7 +114,7 @@ export function AuthField({
         <FieldLabel>
           <span>{label}</span>
           {isReadOnly ? (
-            <Badge variant="secondary" size="sm">
+            <Badge variant="secondary" className="h-4 px-1.5 py-0 text-[10px]">
               只读
             </Badge>
           ) : null}

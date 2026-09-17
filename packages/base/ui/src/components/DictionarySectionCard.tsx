@@ -15,7 +15,12 @@ import {
   InputGroupInput,
 } from "./shadcn/input-group";
 import { Badge } from "./shadcn/badge";
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "./shadcn/empty";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "./shadcn/empty";
 import { Separator } from "./shadcn/separator";
 import { cn } from "../lib/utils";
 
@@ -69,7 +74,9 @@ export function DictionarySectionCard({
   });
 
   return (
-    <Card className={cn("flex flex-col gap-0 border bg-card shadow-xs", className)}>
+    <Card
+      className={cn("flex flex-col gap-0 border bg-card shadow-xs", className)}
+    >
       <CardHeader className="gap-3 border-b pb-3">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
@@ -133,7 +140,10 @@ export function DictionarySectionCard({
                         {item.name}
                       </span>
                       {item.typeTag ? (
-                        <Badge variant="outline" size="sm" className="text-[11px]">
+                        <Badge
+                          variant="outline"
+                          className="h-4 px-1.5 py-0 text-[10px]"
+                        >
                           {item.typeTag}
                         </Badge>
                       ) : null}
@@ -151,7 +161,10 @@ export function DictionarySectionCard({
                   </div>
 
                   <div className="flex shrink-0 items-center gap-2">
-                    <Badge variant={isActive ? "success" : "secondary"} size="sm">
+                    <Badge
+                      variant={isActive ? "default" : "secondary"}
+                      className="h-4 px-1.5 py-0 text-[10px]"
+                    >
                       {isActive ? "启用" : "停用"}
                     </Badge>
                     {item.actions}

@@ -52,27 +52,28 @@ export function DataTableFilterDrawer({
 }: DataTableFilterDrawerProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className={cn(
-            "h-8 border-dashed border-border/80 text-xs font-normal gap-1.5 px-2.5",
-            className,
-          )}
-        >
-          <SlidersHorizontal className="size-3.5 text-muted-foreground" />
-          <span>{triggerText}</span>
-          {activeCount > 0 && (
-            <Badge
-              variant="default"
-              size="sm"
-              className="size-4 p-0 text-[10px] rounded-full justify-center ml-0.5"
-            >
-              {activeCount}
-            </Badge>
-          )}
-        </Button>
+      <SheetTrigger
+        render={
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn(
+              "h-8 border-dashed border-border/80 text-xs font-normal gap-1.5 px-2.5",
+              className,
+            )}
+          />
+        }
+      >
+        <SlidersHorizontal className="size-3.5 text-muted-foreground" />
+        <span>{triggerText}</span>
+        {activeCount > 0 && (
+          <Badge
+            variant="default"
+            className="size-4 p-0 text-[10px] rounded-full justify-center ml-0.5"
+          >
+            {activeCount}
+          </Badge>
+        )}
       </SheetTrigger>
       <SheetContent className="sm:max-w-md flex flex-col justify-between">
         <div>
@@ -99,26 +100,30 @@ export function DataTableFilterDrawer({
             </Button>
           )}
           <div className="flex items-center gap-2">
-            <SheetClose asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="text-xs"
-              >
-                取消
-              </Button>
-            </SheetClose>
-            {onApply ? (
-              <SheetClose asChild>
+            <SheetClose
+              render={
                 <Button
                   type="button"
+                  variant="outline"
                   size="sm"
                   className="text-xs"
-                  onClick={onApply}
-                >
-                  应用筛选
-                </Button>
+                />
+              }
+            >
+              取消
+            </SheetClose>
+            {onApply ? (
+              <SheetClose
+                render={
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="text-xs"
+                    onClick={onApply}
+                  />
+                }
+              >
+                应用筛选
               </SheetClose>
             ) : null}
           </div>

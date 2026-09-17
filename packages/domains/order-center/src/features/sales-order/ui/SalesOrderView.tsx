@@ -473,7 +473,7 @@ export function SalesOrderView({
               <Select
                 value={fulfillmentStatus || "ALL"}
                 onValueChange={(next) => {
-                  const val = next === "ALL" ? "" : next;
+                  const val = !next || next === "ALL" ? "" : next;
                   setFulfillmentStatus(val);
                   setPage(1);
                   navigateList({ page: 1, fulfillmentStatus: val });
@@ -501,7 +501,7 @@ export function SalesOrderView({
               <Select
                 value={orderType || "ALL"}
                 onValueChange={(next) => {
-                  const val = next === "ALL" ? "" : next;
+                  const val = !next || next === "ALL" ? "" : next;
                   setOrderType(val);
                   setPage(1);
                   navigateList({ page: 1, orderType: val });

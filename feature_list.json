@@ -367,6 +367,15 @@
       "status": "completed",
       "owner": "coordinator",
       "evidence": "1. 全仓配置 relationMode = 'prisma' 并生成全新迁移 20260917020253_drop_all_foreign_keys_and_use_logical_relations，一次性 DROP 掉全部 29 个存量物理外键，达成数据库物理层零外键约束与零死锁；2. 业务切片全面升级为 Prisma 原生嵌套关系过滤与强类型 Where 拼装；3. 物理彻底删除 keyword-search-engine.ts 并净化门禁脚本；4. 全仓 pnpm check (18/18)、pnpm test (16/16 包 250+ 单测) 与全套架构门禁 100% 通过。"
+    },
+    {
+      "id": "arch-ui-base-ui-full-migration",
+      "name": "【UI基座范式升级】全量迁移 shadcn 原子组件至 Base UI",
+      "description": "趁业务规模尚小，将 @base/ui 及全仓调用点从 Radix UI 渐进式全量迁移至 shadcn 官方 Base UI 实现：1. 将 packages/base/ui/components.json 明确切换为 Base UI；2. 按组件族迁移原子组件并保留项目语义样式与必要扩展；3. 将 asChild、onOpenChange、Portal、状态属性等 Radix API 全量改造为 Base UI 契约；4. 以官方 Combobox 取代历史 Popover+Command 自封装并治理空数据状态；5. 迁移复合组件、模板及双端/业务调用点；6. 删除无残留的 Radix 依赖并完成类型、单测、构建与浏览器交互回归。",
+      "dependencies": ["arch-ui-three-tier-and-monolith-breakdown"],
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "1. 将 packages/base/ui/components.json 切换为 base-nova 风格；2. 通过 official CLI 重新全量生成 44 个 Base UI 原子组件（保持 100% 纯净，零人工修改）；3. 在复合层 (@base/ui/composite) 平滑封装 Badge 与 Combobox，无缝承接原有 size/variant 契约及表单接口；4. 全面消除 Radix 专有 asChild、position='item-aligned' 与 onValueChange 空值兼容问题；5. 全 Monorepo 16 个包 pnpm turbo run check test 全部通过 (32/32 tasks pass, 250+ 单测通过)；6. 彻底解决 CustomerFormModal 中客户分类下拉脱焦、白屏及位置漂移问题。"
     }
   ]
 }

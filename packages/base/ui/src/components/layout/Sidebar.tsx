@@ -261,20 +261,21 @@ function NavGroupItem({
   if (state === "collapsed") {
     return (
       <SidebarMenuItem>
-        <HoverCard openDelay={50} closeDelay={150}>
-          <HoverCardTrigger asChild>
-            <SidebarMenuButton isActive={childActive}>
-              {renderNavIcon(item.icon, "group")}
-              <span className="group-data-[collapsible=icon]:hidden">
-                {item.label}
-              </span>
-            </SidebarMenuButton>
+        <HoverCard>
+          <HoverCardTrigger
+            delay={50}
+            closeDelay={150}
+            render={<SidebarMenuButton isActive={childActive} />}
+          >
+            {renderNavIcon(item.icon, "group")}
+            <span className="group-data-[collapsible=icon]:hidden">
+              {item.label}
+            </span>
           </HoverCardTrigger>
           <HoverCardContent
             side="right"
             align="start"
             sideOffset={10}
-            collisionPadding={8}
             className="max-h-[min(28rem,calc(100svh-2rem))] w-56 overflow-y-auto rounded-lg border border-sidebar-border bg-popover p-2 shadow-lg"
           >
             <div className="mb-1 px-2 py-1.5 text-xs font-semibold text-muted-foreground">
@@ -297,12 +298,14 @@ function NavGroupItem({
       className="group/collapsible"
     >
       <SidebarMenuItem>
-        <CollapsibleTrigger asChild>
-          <SidebarMenuButton isActive={childActive} tooltip={item.label}>
-            {renderNavIcon(item.icon, "group")}
-            <span>{item.label}</span>
-            <ChevronDown className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
-          </SidebarMenuButton>
+        <CollapsibleTrigger
+          render={
+            <SidebarMenuButton isActive={childActive} tooltip={item.label} />
+          }
+        >
+          {renderNavIcon(item.icon, "group")}
+          <span>{item.label}</span>
+          <ChevronDown className="ml-auto transition-transform duration-200 group-data-open/collapsible:rotate-180" />
         </CollapsibleTrigger>
         {item.badge ? <SidebarMenuBadge>{item.badge}</SidebarMenuBadge> : null}
         <CollapsibleContent>
@@ -312,32 +315,25 @@ function NavGroupItem({
               return (
                 <SidebarMenuSubItem key={child.id}>
                   <SidebarMenuSubButton
-                    asChild
+                    render={
+                      external ? (
+                        <a
+                          href={child.href ?? "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        />
+                      ) : (
+                        <Link href={child.href ?? "#"} />
+                      )
+                    }
                     isActive={isPathActive(currentPath, child.href)}
                   >
-                    {external ? (
-                      <a
-                        href={child.href ?? "#"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <span>{child.label}</span>
-                        {child.badge ? (
-                          <span className="ml-auto text-[10px] font-normal text-muted-foreground">
-                            {child.badge}
-                          </span>
-                        ) : null}
-                      </a>
-                    ) : (
-                      <Link href={child.href ?? "#"}>
-                        <span>{child.label}</span>
-                        {child.badge ? (
-                          <span className="ml-auto text-[10px] font-normal text-muted-foreground">
-                            {child.badge}
-                          </span>
-                        ) : null}
-                      </Link>
-                    )}
+                    <span>{child.label}</span>
+                    {child.badge ? (
+                      <span className="ml-auto text-[10px] font-normal text-muted-foreground">
+                        {child.badge}
+                      </span>
+                    ) : null}
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
               );
@@ -417,22 +413,23 @@ export function Sidebar({
 
     return (
       <SidebarMenuItem key={item.id}>
-        <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
-          {external ? (
-            <a
-              href={item.href ?? "#"}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {renderNavIcon(item.icon, "external")}
-              <span>{item.label}</span>
-            </a>
-          ) : (
-            <Link href={item.href ?? "#"}>
-              {renderNavIcon(item.icon, "page")}
-              <span>{item.label}</span>
-            </Link>
-          )}
+        <SidebarMenuButton
+          render={
+            external ? (
+              <a
+                href={item.href ?? "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+              />
+            ) : (
+              <Link href={item.href ?? "#"} />
+            )
+          }
+          isActive={isActive}
+          tooltip={item.label}
+        >
+          {renderNavIcon(item.icon, external ? "external" : "page")}
+          <span>{item.label}</span>
         </SidebarMenuButton>
         {item.badge ? <SidebarMenuBadge>{item.badge}</SidebarMenuBadge> : null}
       </SidebarMenuItem>

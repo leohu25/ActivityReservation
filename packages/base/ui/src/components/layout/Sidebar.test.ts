@@ -137,8 +137,8 @@ test("Sidebar 依据当前路由自动展开所属父级分组并高亮对应子
   assert.ok(html.includes("基础设置"));
   assert.ok(html.includes("安全设置"));
 
-  // 官方 SidebarMenuSubButton 激活态
-  assert.ok(html.includes('data-active="true"'));
+  // 官方 Base UI SidebarMenuSubButton 激活态通过 presence attribute "data-active" 表达
+  assert.ok(html.includes("data-active"));
 });
 
 test("Sidebar 支持通过 can 回调执行功能权限过滤", () => {

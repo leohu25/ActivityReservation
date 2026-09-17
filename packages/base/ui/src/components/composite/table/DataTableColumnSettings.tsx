@@ -56,20 +56,22 @@ export function DataTableColumnSettings({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className={cn(
-            "h-9 gap-1.5 border-border bg-card px-2.5 text-sm font-normal shadow-xs hover:bg-muted/40",
-            className,
-          )}
-        >
-          <Columns3 className="size-3.5 text-muted-foreground" />
-          <span>
-            {label} {visibleCount}/{panelColumns.length}
-          </span>
-        </Button>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn(
+              "h-9 gap-1.5 border-border bg-card px-2.5 text-sm font-normal shadow-xs hover:bg-muted/40",
+              className,
+            )}
+          />
+        }
+      >
+        <Columns3 className="size-3.5 text-muted-foreground" />
+        <span>
+          {label} {visibleCount}/{panelColumns.length}
+        </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52 p-1.5">
         <div className="flex items-center justify-between px-2 py-1.5">

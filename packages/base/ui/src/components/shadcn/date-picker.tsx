@@ -61,28 +61,30 @@ export function DatePicker({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={disabled}
-          aria-invalid={ariaInvalid}
-          className={cn(
-            "w-full justify-start text-left font-normal h-9 px-3 text-xs bg-transparent hover:bg-muted/50 border-input shadow-xs",
-            !selectedDate && "text-muted-foreground",
-            ariaInvalid && "border-destructive ring-destructive/20",
-            className,
-          )}
-        >
-          <CalendarIcon className="mr-2 size-3.5 text-muted-foreground shrink-0" />
-          {selectedDate ? (
-            <span className="font-mono text-foreground text-xs">
-              {format(selectedDate, "yyyy-MM-dd")}
-            </span>
-          ) : (
-            <span>{placeholder}</span>
-          )}
-        </Button>
+      <PopoverTrigger
+        render={
+          <Button
+            type="button"
+            variant="outline"
+            disabled={disabled}
+            aria-invalid={ariaInvalid}
+            className={cn(
+              "w-full justify-start text-left font-normal h-9 px-3 text-xs bg-transparent hover:bg-muted/50 border-input shadow-xs",
+              !selectedDate && "text-muted-foreground",
+              ariaInvalid && "border-destructive ring-destructive/20",
+              className,
+            )}
+          />
+        }
+      >
+        <CalendarIcon className="mr-2 size-3.5 text-muted-foreground shrink-0" />
+        {selectedDate ? (
+          <span className="font-mono text-foreground text-xs">
+            {format(selectedDate, "yyyy-MM-dd")}
+          </span>
+        ) : (
+          <span>{placeholder}</span>
+        )}
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0 z-50 shadow-md" align="start">
         <Calendar

@@ -254,15 +254,17 @@ export function DataTableRowActions<TRecord>({
       {/* 3. 只有显式指定 collapsed: true 的操作才进入 ... 折叠菜单 */}
       {showDropdown && (
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="size-7 p-0 text-muted-foreground hover:text-foreground"
-            >
-              <MoreHorizontal className="size-3.5" />
-              <span className="sr-only">打开操作菜单</span>
-            </Button>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="sm"
+                className="size-7 p-0 text-muted-foreground hover:text-foreground"
+              />
+            }
+          >
+            <MoreHorizontal className="size-3.5" />
+            <span className="sr-only">打开操作菜单</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[140px] text-xs">
             <DropdownMenuGroup>
