@@ -14,7 +14,7 @@ export interface DashboardShellProps {
   readonly navSections?: readonly NavSection[];
   /** 是否隐藏顶部多标签页，默认 false */
   readonly hideTabBar?: boolean;
-  /** 是否隐藏面包屑，默认 false */
+  /** 是否隐藏面包屑，默认 true (采用现代 ERP 页签二选一范式) */
   readonly hideBreadcrumbs?: boolean;
 }
 
@@ -29,17 +29,20 @@ export function DashboardShell({
   sidebar,
   navSections = [],
   hideTabBar = false,
-  hideBreadcrumbs = false,
+  hideBreadcrumbs = true,
 }: DashboardShellProps) {
   return (
-    <SidebarProvider className="h-svh overflow-hidden">
+    <SidebarProvider
+      style={{ "--sidebar-width": "13.5rem" } as React.CSSProperties}
+      className="h-svh overflow-hidden"
+    >
       <div className="flex h-svh w-full flex-col bg-background font-sans text-foreground overflow-hidden">
         {header}
         <div className="flex min-h-0 flex-1 overflow-hidden">
           {sidebar}
           <SidebarInset className="min-w-0 flex-1 flex flex-col overflow-hidden bg-background">
             {!hideTabBar ? <TabBar sections={navSections} /> : null}
-            <div className="min-w-0 flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-3">
+            <div className="min-w-0 flex-1 overflow-y-auto p-3.5 md:p-4.5 flex flex-col gap-3">
               {!hideBreadcrumbs ? (
                 <div className="pb-1">
                   <BreadcrumbBar sections={navSections} />

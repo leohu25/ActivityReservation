@@ -3,18 +3,7 @@
 import React, { type ReactNode, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ShieldCheck,
-  PackageCheck,
-  KeyRound,
-  LayoutDashboard,
-  Layers,
-  Users,
-  UserCheck,
-  Settings,
-  FileText,
-  ChevronDown,
-} from "lucide-react";
+import { Layers, ChevronDown } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -210,6 +199,7 @@ function FlyoutMenuLinks({
               "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sidebar-foreground",
             )}
           >
+            {renderNavIcon(child.icon, "external")}
             <span className="truncate">{child.label}</span>
             {child.badge ? (
               <span className="ml-auto text-[10px] font-normal text-muted-foreground">
@@ -229,6 +219,7 @@ function FlyoutMenuLinks({
                 : "text-sidebar-foreground",
             )}
           >
+            {renderNavIcon(child.icon, "page")}
             <span className="truncate">{child.label}</span>
             {child.badge ? (
               <span className="ml-auto text-[10px] font-normal text-muted-foreground">
@@ -328,7 +319,8 @@ function NavGroupItem({
                     }
                     isActive={isPathActive(currentPath, child.href)}
                   >
-                    <span>{child.label}</span>
+                    {renderNavIcon(child.icon, external ? "external" : "page")}
+                    <span className="truncate">{child.label}</span>
                     {child.badge ? (
                       <span className="ml-auto text-[10px] font-normal text-muted-foreground">
                         {child.badge}
@@ -446,7 +438,7 @@ export function Sidebar({
   return (
     <SidebarRoot
       collapsible="icon"
-      className="top-16 h-[calc(100svh-4rem)] border-r"
+      className="top-12 h-[calc(100svh-3rem)] border-r"
     >
       <SidebarHeader className="border-b border-sidebar-border/60">
         <div className="flex items-center gap-1.5 px-2 text-xs font-bold tracking-wider text-muted-foreground uppercase group-data-[collapsible=icon]:hidden">

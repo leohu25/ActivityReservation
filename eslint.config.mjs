@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     "**/dist/**",
     "**/.turbo/**",
     "**/next-env.d.ts",
+    "packages/base/ui/src/components/shadcn/**",
+    "packages/ui/src/components/shadcn/**",
   ]),
   // 全局架构红线与 Monorepo 单向流边界
   {

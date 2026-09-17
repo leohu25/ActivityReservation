@@ -65,6 +65,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
             {
               id: "org-employees",
               label: "员工管理",
+              icon: "UserCheck",
               href: "/organization/employees",
               requiredAction: StandardAction.READ,
               requiredSubject: EmployeeSubject,
@@ -72,6 +73,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
             {
               id: "org-departments",
               label: "部门管理",
+              icon: "Building2",
               href: "/organization/departments",
               requiredAction: StandardAction.READ,
               requiredSubject: DepartmentSubject,
@@ -79,6 +81,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
             {
               id: "org-positions",
               label: "岗位管理",
+              icon: "IdCard",
               href: "/organization/positions",
               requiredAction: StandardAction.READ,
               requiredSubject: PositionSubject,
@@ -86,6 +89,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
             {
               id: "org-roles",
               label: "角色管理",
+              icon: "Users",
               href: "/organization/roles",
               requiredAction: StandardAction.READ,
               requiredSubject: RoleSubject,
@@ -100,6 +104,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
             {
               id: "settings-roles",
               label: "角色权限管理",
+              icon: "KeyRound",
               href: "/settings/roles",
               requiredAction: StandardAction.READ,
               requiredSubject: RoleManagementSubject,
@@ -114,6 +119,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
             {
               id: "settings-company",
               label: "企业信息",
+              icon: "Building2",
               href: "/settings/company",
               requiredAction: StandardAction.READ,
               requiredSubject: CompanyProfileSubject,
@@ -121,6 +127,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
             {
               id: "settings-general",
               label: "基础设置",
+              icon: "Sliders",
               href: "/settings/general",
               requiredAction: StandardAction.READ,
               requiredSubject: GeneralSettingsSubject,
@@ -128,6 +135,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
             {
               id: "settings-security",
               label: "安全设置",
+              icon: "Lock",
               href: "/settings/security",
               requiredAction: StandardAction.READ,
               requiredSubject: SecuritySettingsSubject,
@@ -135,6 +143,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
             {
               id: "settings-navigation",
               label: "菜单导航设置",
+              icon: "FolderTree",
               href: "/settings/navigation",
               requiredAction: StandardAction.READ,
               requiredSubject: TenantMenuItemSubject,
@@ -149,6 +158,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
             {
               id: "audit-login",
               label: "登录审计",
+              icon: "FileCheck",
               href: "/audit/login",
               requiredAction: StandardAction.READ,
               requiredSubject: AuditLogLoginSubject,
@@ -156,6 +166,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
             {
               id: "audit-operations",
               label: "业务操作审计",
+              icon: "History",
               href: "/audit/operations",
               requiredAction: StandardAction.READ,
               requiredSubject: AuditLogOperationSubject,
@@ -163,6 +174,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
             {
               id: "audit-permissions",
               label: "权限变更审计",
+              icon: "ShieldCheck",
               href: "/audit/permissions",
               requiredAction: StandardAction.READ,
               requiredSubject: AuditLogPermissionSubject,

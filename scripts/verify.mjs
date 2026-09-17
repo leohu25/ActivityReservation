@@ -144,6 +144,13 @@ const checks = [
     ],
   },
   {
+    label: "shadcn不可变",
+    cmd: nodePath,
+    args: [
+      path.join(WORKSPACE_ROOT, "scripts/check/check-shadcn-immutability.mjs"),
+    ],
+  },
+  {
     label: "门禁单测",
     cmd: nodePath,
     args: [
@@ -159,6 +166,10 @@ const checks = [
       path.join(
         WORKSPACE_ROOT,
         "scripts/check/check-migration-immutability.test.mjs",
+      ),
+      path.join(
+        WORKSPACE_ROOT,
+        "scripts/check/check-shadcn-immutability.test.mjs",
       ),
     ],
   },

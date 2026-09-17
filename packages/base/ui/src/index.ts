@@ -15,6 +15,7 @@ export * from "./components/composite/table";
 export * from "./components/composite/tree";
 export * from "./components/composite/auth";
 export * from "./components/composite/form";
+export { Select, type SelectProps } from "./components/composite/form";
 export {
   Combobox,
   type ComboboxOption,

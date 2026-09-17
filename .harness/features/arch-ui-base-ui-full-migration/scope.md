@@ -23,6 +23,13 @@
 
 - `.harness/context/design-system.md`
 
+### @ 43eca584 联动修改自动登记
+
+- `.prettierignore`
+
+- `eslint.config.mjs`
+- `biome.json`
+
 ## 范围约束
 
 - 仅允许与 shadcn Radix → Base UI 迁移、调用点适配、对应测试修复直接相关的修改。

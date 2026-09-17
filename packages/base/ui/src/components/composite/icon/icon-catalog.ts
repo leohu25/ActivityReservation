@@ -27,9 +27,11 @@ import {
   Wrench,
   Warehouse,
   Sparkles,
+  Store,
   ShoppingCart,
   ShoppingBag,
   FileText,
+  FileSpreadsheet,
   Receipt,
   CreditCard,
   Wallet,
@@ -54,12 +56,7 @@ import {
 } from "lucide-react";
 
 export type IconCategory =
-  | "category"
-  | "org"
-  | "supply"
-  | "order"
-  | "report"
-  | "system";
+  "category" | "org" | "supply" | "order" | "report" | "system";
 
 export interface IconItem {
   readonly name: string;
@@ -156,6 +153,13 @@ export const ENTERPRISE_ICONS: readonly IconItem[] = [
     keywords: ["customer", "kehu", "yanzheng", "dangan"],
   },
   {
+    name: "Store",
+    label: "门店网点",
+    category: "org",
+    component: Store,
+    keywords: ["store", "mendian", "wangdian", "dianpu"],
+  },
+  {
     name: "Building2",
     label: "企业公司",
     category: "org",
@@ -247,6 +251,13 @@ export const ENTERPRISE_ICONS: readonly IconItem[] = [
     category: "supply",
     component: Factory,
     keywords: ["factory", "gongchang", "zhizao", "chejian"],
+  },
+  {
+    name: "FileSpreadsheet",
+    label: "工艺表格",
+    category: "supply",
+    component: FileSpreadsheet,
+    keywords: ["bom", "spreadsheet", "excel", "gongyi"],
   },
   {
     name: "Cpu",

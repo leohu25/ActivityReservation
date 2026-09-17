@@ -6,8 +6,8 @@ import { Switch } from "../../shadcn/switch";
 import { DatePicker } from "./DatePicker";
 import { RadioGroup, RadioGroupItem } from "../../shadcn/radio-group";
 import { Label } from "../../shadcn/label";
+import { Select } from "./Select";
 import {
-  Select,
   SelectContent,
   SelectGroup,
   SelectItem,

@@ -4,8 +4,8 @@ import * as React from "react";
 import { Download, Plus, RefreshCw } from "lucide-react";
 import { Button } from "../shadcn/button";
 import { Input } from "../shadcn/input";
+import { Select } from "../composite/form/Select";
 import {
-  Select,
   SelectContent,
   SelectGroup,
   SelectItem,

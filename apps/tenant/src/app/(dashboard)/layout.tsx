@@ -70,23 +70,14 @@ export default async function DashboardLayout({
   };
 
   const orgBadgeSlot = activeOrg ? (
-    <div className="flex items-center gap-2 rounded-xl border border-sidebar-border bg-muted/40 px-3 py-1.5 shadow-xs">
-      <div className="flex size-6 items-center justify-center rounded-lg bg-primary/10 text-primary">
-        <Building2 className="size-3.5" />
-      </div>
-      <div className="flex items-center gap-1.5 text-xs font-bold text-sidebar-foreground">
-        <span>{activeOrg.name}</span>
-        <span className="font-mono text-[10px] text-muted-foreground">
-          ({activeOrg.slug})
-        </span>
-      </div>
-      <Badge
-        variant="outline"
-        size="sm"
-        className="border-transparent bg-emerald-500/15 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
-      >
-        当前企业
-      </Badge>
+    <div className="flex items-center gap-1.5 rounded-md border border-sidebar-border/80 bg-muted/30 px-2 py-0.5 text-xs text-sidebar-foreground transition-colors">
+      <Building2 className="size-3 text-primary shrink-0" />
+      <span className="font-semibold text-xs truncate max-w-[130px]">
+        {activeOrg.name}
+      </span>
+      <span className="font-mono text-[10px] text-muted-foreground">
+        ({activeOrg.slug})
+      </span>
     </div>
   ) : null;
 
