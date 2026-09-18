@@ -1,5 +1,5 @@
 import type { TenantPrismaClient, TenantPrisma } from "@base/db-tenant";
-import { MasterDataStatus } from "@base/shared";
+import { MasterDataStatus, resolvePagination } from "@base/shared";
 import type { PrismaQueryCondition } from "@base/authorization";
 import type {
 	CreateStoreInput,
@@ -33,9 +33,9 @@ export class CustomerStoreService {
 		filter: ListStoreFilter = {},
 		accessibleWhere?: PrismaQueryCondition,
 	): Promise<ListStoresResult> {
-		const page = Math.max(1, filter.page ?? 1);
-		const pageSize = Math.min(100, Math.max(1, filter.pageSize ?? 10));
-		const skip = (page - 1) * pageSize;
+		const { page, pageSize, skip, take } = resolvePagination(filter, {
+			defaultPageSize: 10,
+		});
 
 		const andConditions: TenantPrisma.CustomerStoreWhereInput[] = [
 			{ isDeleted: false },
@@ -85,7 +85,7 @@ export class CustomerStoreService {
 				},
 				orderBy: { createdAt: "desc" },
 				skip,
-				take: pageSize,
+				take,
 			}),
 		]);
 

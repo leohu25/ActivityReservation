@@ -1,3 +1,8 @@
 import "server-only";
 
-export { listStoresQuery } from "./queries";
+export {
+	listStoresQuery,
+	getStoreQuery,
+	getStorePageOptionsQuery,
+	type StorePageOptions,
+} from "./queries";

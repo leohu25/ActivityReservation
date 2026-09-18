@@ -9,13 +9,14 @@ import {
 } from "../../assembly/context";
 import { CustomerStoreSubject } from "./contract";
 import { CustomerStoreService } from "./service";
-import type { CreateStoreInput, UpdateStoreInput } from "./types";
+import { parseCreateStoreInput, parseUpdateStoreInput } from "./schema";
 
 export const createStoreAction = defineServerAction(
-	async (input: CreateStoreInput) => {
+	async (raw: unknown) => {
 		const { client, ability, userId, employeeProfile } =
 			await getTenantCustomerContext();
 		assertCustomerAbility(ability, StandardAction.CREATE, CustomerStoreSubject);
+		const input = parseCreateStoreInput(raw);
 		const created = await CustomerStoreService.createStore(client, input, {
 			userId,
 			deptId: employeeProfile?.departmentId ?? null,
@@ -28,9 +29,10 @@ export const createStoreAction = defineServerAction(
 );
 
 export const updateStoreAction = defineServerAction(
-	async (id: string, input: UpdateStoreInput) => {
+	async (id: string, raw: unknown) => {
 		const { client, ability, userId } = await getTenantCustomerContext();
 		assertCustomerAbility(ability, StandardAction.UPDATE, CustomerStoreSubject);
+		const input = parseUpdateStoreInput(raw);
 		const updated = await CustomerStoreService.updateStore(client, id, input, {
 			userId,
 		});

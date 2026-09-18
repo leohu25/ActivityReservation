@@ -91,11 +91,13 @@ export async function getTenantDbContext(): Promise<TenantDbContext> {
    - 业务数据禁止物理 `delete`，统一执行软删除更新：`isDeleted: true`、`deletedAt: new Date()`、`deletedById: auditCtx.userId`；
    - 存在活跃下级或关联单据时，拦截删除操作，引导用户进行“停用”；
 4. **数据范围与软删除物理下推**：`listXxx` 查询必须在 SQL 条件中组合 `{ isDeleted: false }` 与 `accessibleWhere`，杜绝已删除或越权数据泄漏；
-5. **包内私有实现**：`service.ts` 是当前 Feature 内部实现细节，绝不向外部应用（`apps/tenant`）直接暴露，外部只调用 `queries.ts`（读）或 `actions.ts`（写）。
+5. **统一分页清洗与防御 (`resolvePagination`)**：严禁在各 Service 中机械手写 `Math.max(1, ...)` / `Math.min(100, ...)` / `skip = (page - 1) * pageSize` 样板代码。统一从 `@base/shared` 引入中立工具 `resolvePagination(filter, options)`，一行解构出 `{ page, pageSize, skip, take }`，自动完成非负清洗、最大页长边界防御（防 OOM 内存攻击）与 Prisma 查询参数直连；
+6. **包内私有实现**：`service.ts` 是当前 Feature 内部实现细节，绝不向外部应用（`apps/tenant`）直接暴露，外部只调用 `queries.ts`（读）或 `actions.ts`（写）。
 
 ```ts
 import type { TenantPrismaClient } from "@base/db-tenant";
 import type { PrismaQueryCondition } from "@base/authorization";
+import { resolvePagination } from "@base/shared";
 
 export class CustomerService {
   /**
@@ -106,6 +108,9 @@ export class CustomerService {
     filter: ListCustomerFilter = {},
     accessibleWhere?: PrismaQueryCondition,
   ) {
+    // 统一中立分页解析：一行搞定清洗、防 OOM 边界与 skip/take
+    const { page, pageSize, skip, take } = resolvePagination(filter, { defaultPageSize: 20 });
+
     const andConditions: any[] = [{ isDeleted: false }];
     if (accessibleWhere && Object.keys(accessibleWhere).length > 0) {
       andConditions.push(accessibleWhere);
@@ -113,7 +118,17 @@ export class CustomerService {
     // ... 合并其他业务筛选条件
     const where = { AND: andConditions };
 
-    return client.customer.findMany({ where, /* 分页与排序 */ });
+    const [total, items] = await Promise.all([
+      client.customer.count({ where }),
+      client.customer.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take,
+      }),
+    ]);
+
+    return { items, total, page, pageSize };
   }
 
   /**

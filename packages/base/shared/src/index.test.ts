@@ -20,6 +20,7 @@ import {
   defineServerAction,
   // 分页
   normalizePagination,
+  resolvePagination,
   createPaginatedResult,
   // 格式化
   formatCurrency,
@@ -113,6 +114,12 @@ test("分页工具：标准化清洗参数与包装 PaginatedResult", () => {
   const pOverflow = normalizePagination({ page: -5, pageSize: 999 });
   assert.equal(pOverflow.page, 1);
   assert.equal(pOverflow.pageSize, 100);
+
+  const custom = resolvePagination({ page: 2 }, { defaultPageSize: 10 });
+  assert.equal(custom.page, 2);
+  assert.equal(custom.pageSize, 10);
+  assert.equal(custom.skip, 10);
+  assert.equal(custom.take, 10);
 
   const result = createPaginatedResult(["A", "B", "C"], 25, {
     page: 2,

@@ -9,15 +9,15 @@ import {
 	type DetailTableColumn,
 } from "@base/ui";
 import { createQuoteAction, updateQuoteAction } from "../actions";
+import { CustomerQuoteSubject } from "../contract";
+import { createQuoteSchema } from "../schema";
 import type { CreateQuoteItemInput, QuoteListItem } from "../types";
-import type { CustomerListItem } from "../../customer-management/types";
-import type { StoreListItem } from "../../store-management/types";
 
 export interface QuoteFormModalProps {
 	readonly mode: "create" | "edit";
 	readonly record?: QuoteListItem | null;
-	readonly customers: readonly CustomerListItem[];
-	readonly stores: readonly StoreListItem[];
+	readonly customers: readonly { id: string; name: string }[];
+	readonly stores: readonly { id: string; name: string; customerId?: string }[];
 	readonly onClose: () => void;
 	readonly onSuccess?: () => void;
 }
@@ -350,6 +350,8 @@ export function QuoteFormModal({
 			open
 			onClose={onClose}
 			mode={isEdit ? "edit" : "create"}
+			subject={CustomerQuoteSubject}
+			schema={createQuoteSchema}
 			badge="QU"
 			title={
 				isEdit

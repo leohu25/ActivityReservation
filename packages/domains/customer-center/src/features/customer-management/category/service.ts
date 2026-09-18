@@ -1,5 +1,5 @@
 import type { TenantPrismaClient } from "@base/db-tenant";
-import { MasterDataStatus } from "@base/shared";
+import { MasterDataStatus, resolvePagination } from "@base/shared";
 import type {
 	CreateCategoryInput,
 	UpdateCategoryInput,
@@ -33,9 +33,9 @@ export class CustomerCategoryService {
 		page: number;
 		pageSize: number;
 	}> {
-		const page = Math.max(1, filter.page ?? 1);
-		const pageSize = Math.max(1, Math.min(100, filter.pageSize ?? 20));
-		const skip = (page - 1) * pageSize;
+		const { page, pageSize, skip, take } = resolvePagination(filter, {
+			defaultPageSize: 20,
+		});
 
 		const where: any = {};
 		if (filter.status) {
@@ -55,7 +55,7 @@ export class CustomerCategoryService {
 				where,
 				orderBy: { createdAt: "desc" },
 				skip,
-				take: pageSize,
+				take,
 			}),
 		]);
 

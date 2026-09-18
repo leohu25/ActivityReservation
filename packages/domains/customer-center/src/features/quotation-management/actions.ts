@@ -9,13 +9,14 @@ import {
 } from "../../assembly/context";
 import { CustomerQuoteStatus, CustomerQuoteSubject } from "./contract";
 import { CustomerQuoteService } from "./service";
-import type { CreateQuoteInput, UpdateQuoteInput } from "./types";
+import { parseCreateQuoteInput, parseUpdateQuoteInput } from "./schema";
 
 export const createQuoteAction = defineServerAction(
-	async (input: CreateQuoteInput) => {
+	async (raw: unknown) => {
 		const { client, ability, userId, employeeProfile } =
 			await getTenantCustomerContext();
 		assertCustomerAbility(ability, StandardAction.CREATE, CustomerQuoteSubject);
+		const input = parseCreateQuoteInput(raw);
 		const created = await CustomerQuoteService.createQuote(client, input, {
 			userId,
 			deptId: employeeProfile?.departmentId ?? null,
@@ -27,9 +28,10 @@ export const createQuoteAction = defineServerAction(
 );
 
 export const updateQuoteAction = defineServerAction(
-	async (id: string, input: UpdateQuoteInput) => {
+	async (id: string, raw: unknown) => {
 		const { client, ability, userId } = await getTenantCustomerContext();
 		assertCustomerAbility(ability, StandardAction.UPDATE, CustomerQuoteSubject);
+		const input = parseUpdateQuoteInput(raw);
 		const updated = await CustomerQuoteService.updateQuote(client, id, input, {
 			userId,
 		});

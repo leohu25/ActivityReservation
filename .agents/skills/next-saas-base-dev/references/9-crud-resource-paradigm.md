@@ -58,8 +58,9 @@ export const parseCreateXxxInput = (raw: unknown) => createXxxSchema.parse(raw);
 
 ### ③ service.ts
 
-- 事务 + 稳定发号（`SEQUENCE` / `pg_advisory_xact_lock`，**禁止** `count(*)+1`）
-- 软删除、业务约束、审计字段 `createdById`/`updatedById`/`deptId`
+- 统一分页清洗与防御：使用 `@base/shared` 的 `resolvePagination(filter, options)`，一行解构出 `{ page, pageSize, skip, take }`，严禁在各 Service 手写 `Math.max` / `Math.min` / `skip` 样板代码；
+- 事务 + 稳定发号（`SEQUENCE` / `pg_advisory_xact_lock`，**禁止** `count(*)+1`）；
+- 软删除、业务约束、审计字段 `createdById`/`updatedById`/`deptId`。
 
 ### ④ queries.ts（server-only）
 
@@ -201,7 +202,11 @@ export function XxxFormModal({
 }
 ```
 
-**禁止**业务手写 Dialog+Input 树或直接 RHF。
+- **单一度量源 (SSoT)**：直接消费 schema.ts 中的 createXxxSchema，严禁在 UI 层重复手写 Zod schema！
+- **纯净生命周期**：通过动态 key 驱动组件销毁与重置，保证每次打开状态干净，无旧数据残留；
+- **模式托管**：mode="view" 时 FormModal 自动接管全字段只读置灰与按钮隐藏，无需在字段上分散手写 disabled/required；
+- **Ability 上下文自动感知（严禁测试属性入侵）**：`FormModal` 自动从上下文 `useUiAbility()` 感知权限并驱动字段三态闭环，**严禁**在业务组件 props 中声明 `ability?: ...` 作为测试后门。单测统一在测试层使用 `<UiAbilityProvider ability={...}>` 注入；
+- **禁止**业务手写 Dialog+Input 树或直接 RHF。
 
 ### ⑦ ui/*View.tsx
 
@@ -330,6 +335,8 @@ export function XxxView({ data, total }: { data: XxxItem[]; total: number }) {
 - **权限 100% 声明式接管（严禁顶层手动计算 `ability.can`）**：
   - `DataTable` 根据 `subject` 自动判定并渲染顶部「新增」、「导出」按钮；
   - `DataTableRowActions` 自动根据当前用户 Ability 判定「查看/编辑/删除/扩展操作」的权限与显隐，外部无需手写多余三元判断或包装 div；
+- **零向后兼容胶水代码（Pure Controlled Props）**：
+  - View 组件严格只接收标准 `{ data, total, ...options }` 受控 props，严禁在组件内部维护 `initialXxx`、`legacyXxx`、`propData` 等向后兼容别名与兜底胶水代码；
 - **状态筛选语义规范**：
   - `statusOptions` / `statusValue` / `onStatusChange` 专用于实体状态（启用/停用等）；
   - 业务维度筛选（如分类、类型等）一律放入 `filterExtra`，严禁借用 statusOptions 槽位；

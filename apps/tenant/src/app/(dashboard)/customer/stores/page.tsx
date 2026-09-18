@@ -1,58 +1,40 @@
-import type { CustomerListItem } from "@base/feature-customer-center/customer-management";
-import { listCustomersQuery } from "@base/feature-customer-center/customer-management/server";
 import {
 	StoreView,
+	customerStoreSearchParams,
 	type StoreListItem,
 } from "@base/feature-customer-center/store-management";
-import { listStoresQuery } from "@base/feature-customer-center/store-management/server";
+import {
+	listStoresQuery,
+	getStorePageOptionsQuery,
+} from "@base/feature-customer-center/store-management/server";
 
-type SearchParams = Record<string, string | string[] | undefined>;
-
-function readOne(sp: SearchParams, key: string): string {
-	const value = sp[key];
-	if (Array.isArray(value)) return value[0] ?? "";
-	return value ?? "";
+interface PageProps {
+	searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-function readInt(sp: SearchParams, key: string, fallback: number): number {
-	const value = parseInt(readOne(sp, key), 10);
-	return Number.isFinite(value) && value > 0 ? value : fallback;
-}
+/**
+ * 门店档案页：标准 Next.js App Router Server Component。
+ * 契约解析 URL -> 并发取数 -> 渲染纯受控视图。
+ */
+export default async function StoresPage({ searchParams }: PageProps) {
+	const parsed = await customerStoreSearchParams.parse(searchParams);
 
-/** 门店档案页：路由只解析 URL 并装配 Feature Query 与 UI。 */
-export default async function StoresPage({
-	searchParams,
-}: {
-	searchParams: Promise<SearchParams>;
-}) {
-	const params = await searchParams;
-	const page = readInt(params, "page", 1);
-	const pageSize = Math.min(100, readInt(params, "pageSize", 10));
-	const keyword = readOne(params, "keyword");
-	const customerId = readOne(params, "customer");
-	const status = readOne(params, "status");
-
-	const [storePage, customerPage] = await Promise.all([
+	const [storePage, pageOptions] = await Promise.all([
 		listStoresQuery({
-			page,
-			pageSize,
-			keyword: keyword || undefined,
-			customerId: customerId || undefined,
-			status: status || undefined,
+			page: parsed.page,
+			pageSize: parsed.pageSize,
+			keyword: String(parsed.keyword ?? "") || undefined,
+			customerId: String(parsed.customerId ?? "") || undefined,
+			status: String(parsed.status ?? "") || undefined,
 		}),
-		listCustomersQuery({ page: 1, pageSize: 100 }),
+		getStorePageOptionsQuery(),
 	]);
 
 	return (
 		<StoreView
-			initialStores={storePage.items as StoreListItem[]}
-			initialTotal={storePage.total}
-			initialPage={page}
-			initialPageSize={pageSize}
-			initialKeyword={keyword}
-			initialCustomer={customerId}
-			initialStatus={status}
-			customers={customerPage.items as CustomerListItem[]}
+			data={storePage.items as StoreListItem[]}
+			total={storePage.total}
+			customerOptions={pageOptions.customerOptions}
 		/>
 	);
 }

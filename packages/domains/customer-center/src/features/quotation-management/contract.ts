@@ -3,6 +3,18 @@ import {
 	StandardAction,
 	type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
+import { defineListSearchParams } from "@base/ui";
+
+/**
+ * 列表 URL 契约（少即是多）：page/pageSize/keyword 由基座约定，业务只扩展默认值。
+ */
+export const customerQuoteSearchParams = defineListSearchParams({
+	quoteType: "",
+	status: "",
+});
+export type CustomerQuoteSearchParams = Awaited<
+	ReturnType<typeof customerQuoteSearchParams.parse>
+>;
 
 /** 门店报价单实体与资源标识 (SSoT) */
 export const CustomerQuoteSubject = "CustomerQuote";

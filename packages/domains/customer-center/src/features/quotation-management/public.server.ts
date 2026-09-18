@@ -1,3 +1,7 @@
 import "server-only";
 
-export { listQuotesQuery } from "./queries";
+export {
+	listQuotesQuery,
+	getQuotePageOptionsQuery,
+	type QuotePageOptions,
+} from "./queries";

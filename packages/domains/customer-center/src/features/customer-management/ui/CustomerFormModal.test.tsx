@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToString } from "react-dom/server";
+import { UiAbilityProvider } from "@base/ui";
 import {
 	CustomerFormModal,
 	DEFAULT_CUSTOMER_VALUES,
@@ -144,16 +145,17 @@ test("CustomerFormModal [CASL 字段权限 - 隐藏 (HIDDEN)]: 不可读字段�
 	};
 
 	const html = renderToString(
-		<CustomerFormModal
-			open={true}
-			inline={true}
-			mode="view"
-			record={mockCustomerRecord}
-			categoryOptions={mockCategories}
-			tagOptions={mockTags}
-			ability={restrictedAbility}
-			onClose={() => {}}
-		/>,
+		<UiAbilityProvider ability={restrictedAbility}>
+			<CustomerFormModal
+				open={true}
+				inline={true}
+				mode="view"
+				record={mockCustomerRecord}
+				categoryOptions={mockCategories}
+				tagOptions={mockTags}
+				onClose={() => {}}
+			/>
+		</UiAbilityProvider>,
 	);
 
 	// 允许的字段正常存在
@@ -182,16 +184,17 @@ test("CustomerFormModal [CASL 字段权限 - 只读 (READONLY)]: 可读不可写
 	};
 
 	const html = renderToString(
-		<CustomerFormModal
-			open={true}
-			inline={true}
-			mode="edit"
-			record={mockCustomerRecord}
-			categoryOptions={mockCategories}
-			tagOptions={mockTags}
-			ability={readonlyAbility}
-			onClose={() => {}}
-		/>,
+		<UiAbilityProvider ability={readonlyAbility}>
+			<CustomerFormModal
+				open={true}
+				inline={true}
+				mode="edit"
+				record={mockCustomerRecord}
+				categoryOptions={mockCategories}
+				tagOptions={mockTags}
+				onClose={() => {}}
+			/>
+		</UiAbilityProvider>,
 	);
 
 	// 字段标签正常展示

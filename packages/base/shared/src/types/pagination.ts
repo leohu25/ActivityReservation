@@ -26,24 +26,33 @@ export interface PaginatedResult<T> {
   readonly hasPrev: boolean;
 }
 
+export interface PaginationOptions {
+  readonly defaultPageSize?: number;
+  readonly maxPageSize?: number;
+}
+
 /**
  * 标准化并清洗分页参数（处理越界、负数与非法值）
  */
 export function normalizePagination(
   params?: PaginationParams,
+  options?: PaginationOptions,
 ): NormalizedPagination {
+  const defaultPageSize = options?.defaultPageSize ?? DEFAULT_PAGINATION.PAGE_SIZE;
+  const maxPageSize = options?.maxPageSize ?? DEFAULT_PAGINATION.MAX_PAGE_SIZE;
+
   const rawPage = params?.page ?? DEFAULT_PAGINATION.PAGE;
-  const rawPageSize = params?.pageSize ?? DEFAULT_PAGINATION.PAGE_SIZE;
+  const rawPageSize = params?.pageSize ?? defaultPageSize;
 
   const page = Math.max(1, Math.floor(Number.isFinite(rawPage) ? rawPage : 1));
   const boundedSize = Math.max(
     1,
     Math.min(
-      DEFAULT_PAGINATION.MAX_PAGE_SIZE,
+      maxPageSize,
       Math.floor(
         Number.isFinite(rawPageSize)
           ? rawPageSize
-          : DEFAULT_PAGINATION.PAGE_SIZE,
+          : defaultPageSize,
       ),
     ),
   );
@@ -55,6 +64,9 @@ export function normalizePagination(
     take: boundedSize,
   };
 }
+
+/** 语义化别名：resolvePagination 与 normalizePagination 等价 */
+export const resolvePagination = normalizePagination;
 
 /**
  * 构建标准化分页响应包

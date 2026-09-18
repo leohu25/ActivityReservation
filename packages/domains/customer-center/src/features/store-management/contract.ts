@@ -1,14 +1,34 @@
+import { MasterDataStatus } from "@base/shared";
 import {
 	STANDARD_DATA_SCOPES,
 	StandardAction,
 	type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
+import { defineListSearchParams } from "@base/ui";
+
+export { MasterDataStatus };
+
+/**
+ * 列表 URL 契约（少即是多）：page/pageSize/keyword 由基座约定，业务只扩展默认值。
+ */
+export const customerStoreSearchParams = defineListSearchParams({
+	customerId: "",
+	status: "",
+});
+export type CustomerStoreSearchParams = Awaited<
+	ReturnType<typeof customerStoreSearchParams.parse>
+>;
 
 /** 门店档案实体与资源标识 (SSoT) */
 export const CustomerStoreSubject = "CustomerStore";
 export type CustomerStoreSubject = typeof CustomerStoreSubject;
 export const CustomerStoreResource = "customer.store";
 export type CustomerStoreResource = typeof CustomerStoreResource;
+
+export const CustomerStoreAction = {
+	...StandardAction,
+	TOGGLE_STATUS: "toggle_status",
+} as const;
 
 /** 门店档案受控字段定义 */
 export const CustomerStoreField = {
@@ -76,6 +96,11 @@ export const storePageContract: FeaturePagePermissionDescriptor = {
 		{
 			action: StandardAction.UPDATE,
 			label: "修改门店",
+			supportedScopes: STANDARD_DATA_SCOPES,
+		},
+		{
+			action: CustomerStoreAction.TOGGLE_STATUS,
+			label: "启用/停用门店",
 			supportedScopes: STANDARD_DATA_SCOPES,
 		},
 		{ action: StandardAction.DELETE, label: "删除门店" },

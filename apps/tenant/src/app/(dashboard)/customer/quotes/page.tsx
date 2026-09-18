@@ -1,52 +1,39 @@
-import type { CustomerListItem } from "@base/feature-customer-center/customer-management";
-import { listCustomersQuery } from "@base/feature-customer-center/customer-management/server";
 import {
-  QuoteView,
-  type QuoteListItem,
+	QuoteView,
+	customerQuoteSearchParams,
+	type QuoteListItem,
 } from "@base/feature-customer-center/quotation-management";
-import { listQuotesQuery } from "@base/feature-customer-center/quotation-management/server";
-import type { StoreListItem } from "@base/feature-customer-center/store-management";
-import { listStoresQuery } from "@base/feature-customer-center/store-management/server";
+import {
+	listQuotesQuery,
+	getQuotePageOptionsQuery,
+} from "@base/feature-customer-center/quotation-management/server";
 
-type SearchParams = Record<string, string | string[] | undefined>;
-
-function readOne(sp: SearchParams, key: string): string {
-  const value = sp[key];
-  if (Array.isArray(value)) return value[0] ?? "";
-  return value ?? "";
+interface PageProps {
+	searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-function readInt(sp: SearchParams, key: string, fallback: number): number {
-  const value = parseInt(readOne(sp, key), 10);
-  return Number.isFinite(value) && value > 0 ? value : fallback;
-}
+/**
+ * 门店报价单页：标准 Next.js App Router Server Component。
+ * 契约解析 URL -> 并发取数 -> 渲染受控视图。
+ */
+export default async function QuotesPage({ searchParams }: PageProps) {
+	const parsed = await customerQuoteSearchParams.parse(searchParams);
 
-/** 报价单页：路由只解析 URL 并装配 Feature Query 与 UI。 */
-export default async function QuotesPage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
-  const params = await searchParams;
-  const page = readInt(params, "page", 1);
-  const pageSize = Math.min(100, readInt(params, "pageSize", 10));
-  const status = readOne(params, "status");
+	const [quotePage, pageOptions] = await Promise.all([
+		listQuotesQuery({
+			page: parsed.page,
+			pageSize: parsed.pageSize,
+			status: String(parsed.status ?? "") || undefined,
+		}),
+		getQuotePageOptionsQuery(),
+	]);
 
-  const [quotePage, customerPage, storePage] = await Promise.all([
-    listQuotesQuery({ page, pageSize, status: status || undefined }),
-    listCustomersQuery({ page: 1, pageSize: 100 }),
-    listStoresQuery({ page: 1, pageSize: 100 }),
-  ]);
-
-  return (
-    <QuoteView
-      initialQuotes={quotePage.items as QuoteListItem[]}
-      initialTotal={quotePage.total}
-      initialPage={page}
-      initialPageSize={pageSize}
-      initialStatus={status}
-      customers={customerPage.items as CustomerListItem[]}
-      stores={storePage.items as StoreListItem[]}
-    />
-  );
+	return (
+		<QuoteView
+			data={quotePage.items as QuoteListItem[]}
+			total={quotePage.total}
+			customerOptions={pageOptions.customerOptions}
+			storeOptions={pageOptions.storeOptions}
+		/>
+	);
 }

@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { StandardAction } from "@base/authorization";
 
 import { getAccessibleWhere, pickReadableFields } from "@base/authorization";
@@ -10,6 +11,29 @@ import {
 import { CustomerStoreSubject } from "./contract";
 import { CustomerStoreService } from "./service";
 import type { ListStoreFilter, StoreListItem } from "./types";
+
+export interface StorePageOptions {
+	customerOptions: Array<{ id: string; name: string; status: string }>;
+}
+
+export const getStorePageOptionsQuery = cache(
+	async (): Promise<StorePageOptions> => {
+		const { client, ability } = await getTenantCustomerContext();
+		assertCustomerAbility(ability, StandardAction.READ, CustomerStoreSubject);
+		const customers = await client.customer.findMany({
+			where: { isDeleted: false, status: "ACTIVE" },
+			select: {
+				id: true,
+				name: true,
+				status: true,
+			},
+			orderBy: { name: "asc" },
+		});
+		return toPlainData({
+			customerOptions: customers,
+		});
+	},
+);
 
 export async function listStoresQuery(filter: ListStoreFilter = {}) {
 	const { client, ability } = await getTenantCustomerContext();

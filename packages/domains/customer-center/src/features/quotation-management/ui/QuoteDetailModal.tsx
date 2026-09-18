@@ -9,6 +9,7 @@ import {
 } from "@base/ui";
 import { MapPin, Layers } from "lucide-react";
 import { formatDate } from "@base/shared";
+import { CustomerQuoteSubject } from "../contract";
 import type { QuoteListItem, QuoteItemDetail } from "../types";
 
 export interface QuoteDetailModalProps {
@@ -227,6 +228,7 @@ export function QuoteDetailModal({
 			open={open}
 			onClose={onClose}
 			mode="view"
+			subject={CustomerQuoteSubject}
 			badge="QD"
 			title={
 				<div className="flex items-center gap-3">

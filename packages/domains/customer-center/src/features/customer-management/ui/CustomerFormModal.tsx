@@ -8,7 +8,6 @@ import {
 	type FormModalSection,
 	toast,
 } from "@base/ui";
-import { useOptionalAbility } from "@base/authorization";
 import { CustomerSubject } from "../contract";
 import { createCustomerAction, updateCustomerAction } from "../actions";
 import { createCustomerSchema } from "../schema";
@@ -27,10 +26,6 @@ export interface CustomerFormModalProps {
 	readonly onClose: () => void;
 	readonly onSuccess?: () => void;
 	readonly inline?: boolean;
-	/** 可选 Ability 覆盖（单测或脱离 Provider 时使用，未传则读取上层 AbilityProvider） */
-	readonly ability?: {
-		can(action: string, subject: string, field?: string): boolean;
-	} | null;
 }
 
 export type CustomerFormData = {
@@ -77,11 +72,7 @@ export function CustomerFormModal({
 	onClose,
 	onSuccess,
 	inline,
-	ability: explicitAbility,
 }: CustomerFormModalProps) {
-	const contextAbility = useOptionalAbility();
-	const ability =
-		explicitAbility === undefined ? contextAbility : explicitAbility;
 	const resolvedCategoryOptions = categoryOptions ?? [];
 	const resolvedTagOptions = tagOptions ?? [];
 
@@ -326,7 +317,6 @@ export function CustomerFormModal({
 			inline={inline}
 			mode={mode}
 			subject={CustomerSubject}
-			ability={ability}
 			title={title}
 			description={description}
 			sections={sections}

@@ -118,6 +118,7 @@ graph TD
 - **核心工具**：
   - `Result<T, E>`：用于安全错误处理与 Railway Oriented 编程范式；
   - `toPlainData(data)`：底层消灭 Next.js RSC/Action 跨端序列化异常，安全转换 Decimal、Date 与嵌套对象；
+  - `resolvePagination(params, options)`：标准化清洗分页参数，自动完成非负纠偏、页长防 OOM 截断并生成 `skip` 与 `take`，彻底消灭各 Service 重复样板代码；
   - Radash, SuperJSON, Decimal.js 统一封装与导出。
 
 ---
