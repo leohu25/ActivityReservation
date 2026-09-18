@@ -15,7 +15,6 @@
 - `apps/tenant/package.json` / `packages/domains/customer-center/package.json`（引入 `nuqs`，`workspace:*` 依赖声明）
 - `packages/base/ui/**`（**仅允许**增强 `DataTable` / `FormModal` / `FormFieldSchema` 通用契约；**禁止**新增 `useTableUrlState` / `parseTableSearchParams` 等与 nuqs 同质的私有轮子）
 
-
 ### @ 09835030 联动修改自动登记
 
 - `packages/base/biz-shared/src/crud/actions.test.ts`
@@ -37,6 +36,15 @@
 - `packages/base/ui/src/lib/use-list-search.ts`
 - `packages/base/ui/src/lib/use-list-url-nav.ts`
 - `tsconfig.base.json`
+
+### @ e0f6bc90 联动修改自动登记
+
+- `packages/base/shared/src/utils/code-generator.test.ts`
+- `packages/base/shared/src/utils/retry.test.ts`
+
+- `packages/base/shared/src/utils/code-generator.ts`
+- `packages/base/shared/src/utils/index.ts`
+- `packages/base/shared/src/utils/retry.ts`
 
 ## 范围约束
 
