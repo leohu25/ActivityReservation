@@ -329,5 +329,4 @@ renderToString(
 6. 测试改为 Provider 包裹
 7. `pnpm --filter <pkg> check && test` 全绿
 
-**标杆**：`customer-center`、`procurement-center`（均已迁）。  
 **字段策略编译**：`snapshotToRawRules` 用 CASL `inverted` 规则实现 HIDDEN/READONLY，未声明字段默认放行（与 plain 语义一致）。

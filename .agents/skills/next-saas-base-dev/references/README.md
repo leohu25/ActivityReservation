@@ -1,7 +1,7 @@
 # next-saas-base-dev / references 索引
 
 > 根 `SKILL.md` 只做地图；**实现细节全部在本目录**。  
-> 标杆 SOP：[`9-crud-resource-paradigm.md`](./9-crud-resource-paradigm.md)（必读）
+> 核心范式：[`9-crud-resource-paradigm.md`](./9-crud-resource-paradigm.md)（标准 CRUD 最佳范式，必读）
 
 | 文档 | 内容 |
 | :--- | :--- |
@@ -14,7 +14,7 @@
 | `6-tenant-routing.md` | `createResourcePage`、manifest、单测 |
 | `7-casl-ability-provider.md` | AbilityProvider / subject |
 | `8-base-infrastructure.md` | `@base/*` 职责与依赖铁律 |
-| `9-crud-resource-paradigm.md` | **客户档案黄金标杆 8 步 SOP** |
+| `9-crud-resource-paradigm.md` | **标准资源 CRUD 最佳范式 (8 步 SOP)** |
 
 ## 现行约定速查
 
@@ -24,8 +24,8 @@
 | 列表 URL | `defineListSearchParams` + `useListSearch` |
 | 列表 UI | `DataTable` 默认 chrome + `filterExtra` |
 | 表单 | `FormModal` + schema/fields |
-| Actions | `@base/biz-shared` `createResourceActions`（平铺 export） |
-| Page | `createResourcePage` |
+| Actions | `defineServerAction` 直写平铺 export |
+| Page | 标准异步 Server Component（`searchParams.parse` -> 并发 Query -> 渲染 View） |
 | 刷新 | Action 内 `revalidatePath` |
 
 ## 作废 API（禁止新代码）

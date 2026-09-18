@@ -4,8 +4,8 @@ import { useState, useMemo, useCallback } from "react";
 import { MasterDataStatus, exportContractCsv } from "@base/shared";
 import { StandardAction, useAbility } from "@base/authorization";
 import {
+	CustomerCategoryAction,
 	CustomerCategoryField,
-	CustomerCategorySubject,
 	customerCategoryPageContract,
 	customerCategorySearchParams,
 } from "../contract";
@@ -17,7 +17,6 @@ import {
 	DataTableRowActions,
 	useListSearch,
 	toast,
-	useSafeRouter,
 } from "@base/ui";
 import { updateCategoryStatusAction, deleteCategoryAction } from "../actions";
 import { CategoryFormModal } from "./CategoryFormModal";
@@ -40,13 +39,7 @@ export function CategoryView({
 	categoryOptions = [],
 }: CategoryViewProps) {
 	const ability = useAbility();
-	const router = useSafeRouter();
 	const list = useListSearch(customerCategorySearchParams);
-
-	// CASL 权限位收敛（Fail-Closed）
-	const canCreate = ability.can(StandardAction.CREATE, CustomerCategorySubject);
-	const canUpdate = ability.can(StandardAction.UPDATE, CustomerCategorySubject);
-	const canDelete = ability.can(StandardAction.DELETE, CustomerCategorySubject);
 
 	// 弹窗状态管理（支持 create / edit / view 三态）
 	const [modalState, setModalState] = useState<{
@@ -68,24 +61,19 @@ export function CategoryView({
 		async (
 			fn: () => Promise<{ success: boolean; error?: string }>,
 			successText: string,
-			fallbackError: string,
 		) => {
 			try {
 				const res = await fn();
 				if (res.success) {
 					toast.success(successText);
-					router?.refresh();
-					return true;
 				} else {
-					toast.error(res.error || fallbackError);
-					return false;
+					toast.error(res.error || "操作失败");
 				}
 			} catch (err: unknown) {
 				toast.error(err instanceof Error ? err.message : "操作异常");
-				return false;
 			}
 		},
-		[router],
+		[],
 	);
 
 	const handleToggleStatus = useCallback(
@@ -97,7 +85,6 @@ export function CategoryView({
 			await runAction(
 				() => updateCategoryStatusAction(id, nextStatus),
 				nextStatus === MasterDataStatus.ACTIVE ? "分类已启用" : "分类已停用",
-				"变更分类状态失败",
 			);
 		},
 		[runAction],
@@ -108,7 +95,6 @@ export function CategoryView({
 			await runAction(
 				() => deleteCategoryAction(id),
 				"分类已成功删除",
-				"删除分类失败",
 			);
 		},
 		[runAction],
@@ -220,7 +206,7 @@ export function CategoryView({
 				align: "right",
 				cell: (c: CustomerCategoryItem) => {
 					const isActive = c.status === MasterDataStatus.ACTIVE;
-					const rowActions = (
+					return (
 						<DataTableRowActions
 							record={c}
 							onView={() =>
@@ -231,57 +217,46 @@ export function CategoryView({
 									defaultParentId: null,
 								})
 							}
-							onEdit={
-								canUpdate
-									? () =>
-											setModalState({
-												open: true,
-												mode: "edit",
-												record: c,
-												defaultParentId: null,
-											})
-									: undefined
+							onEdit={() =>
+								setModalState({
+									open: true,
+									mode: "edit",
+									record: c,
+									defaultParentId: null,
+								})
 							}
 							extraActions={[
-								...(canCreate
-									? [
-											{
-												label: "下级",
-												action: StandardAction.CREATE,
-												icon: <Plus className="size-3" />,
-												onClick: () =>
-													setModalState({
-														open: true,
-														mode: "create",
-														record: null,
-														defaultParentId: c.id,
-													}),
-											},
-										]
-									: []),
-								...(canUpdate
-									? [
-											{
-												label: isActive ? "停用" : "启用",
-												action: StandardAction.UPDATE,
-												variant: isActive
-													? ("destructive" as const)
-													: ("default" as const),
-												confirm: {
-													title: `确认${isActive ? "停用" : "启用"}分类 "${c.name}"？`,
-													description: isActive
-														? "停用后，该分类在新建/修改客户时将不再可选。"
-														: "启用后，该分类可在客户档案中正常选择使用。",
-													confirmText: isActive ? "确认停用" : "确认启用",
-													cancelText: "取消",
-												},
-												onClick: () =>
-													handleToggleStatus(c.id, c.status || "ACTIVE"),
-											},
-										]
-									: []),
+								{
+									label: "下级",
+									action: StandardAction.CREATE,
+									icon: <Plus className="size-3" />,
+									onClick: () =>
+										setModalState({
+											open: true,
+											mode: "create",
+											record: null,
+											defaultParentId: c.id,
+										}),
+								},
+								{
+									label: isActive ? "停用" : "启用",
+									action: CustomerCategoryAction.TOGGLE_STATUS,
+									variant: isActive
+										? ("destructive" as const)
+										: ("default" as const),
+									confirm: {
+										title: `确认${isActive ? "停用" : "启用"}分类 "${c.name}"？`,
+										description: isActive
+											? "停用后，该分类在新建/修改客户时将不再可选。"
+											: "启用后，该分类可在客户档案中正常选择使用。",
+										confirmText: isActive ? "确认停用" : "确认启用",
+										cancelText: "取消",
+									},
+									onClick: () =>
+										handleToggleStatus(c.id, c.status || "ACTIVE"),
+								},
 							]}
-							onDelete={canDelete ? () => handleDelete(c.id) : undefined}
+							onDelete={() => handleDelete(c.id)}
 							deleteConfirm={{
 								title: `确认删除分类 "${c.name}"？`,
 								description:
@@ -291,30 +266,10 @@ export function CategoryView({
 							}}
 						/>
 					);
-
-					return canDelete ? (
-						<span
-							title="删除分类"
-							className="inline-flex items-center justify-end"
-						>
-							{rowActions}
-						</span>
-					) : (
-						<div className="inline-flex items-center justify-end">
-							{rowActions}
-						</div>
-					);
 				},
 			},
 		],
-		[
-			canCreate,
-			canUpdate,
-			canDelete,
-			categoryMap,
-			handleToggleStatus,
-			handleDelete,
-		],
+		[categoryMap, handleToggleStatus, handleDelete],
 	);
 
 	return (
@@ -328,16 +283,13 @@ export function CategoryView({
 				description="按行业与业态构建客户分类体系与层级归属，支持快速延伸下级节点。"
 				total={total}
 				{...list.dataTableProps}
-				onCreate={
-					canCreate
-						? () =>
-								setModalState({
-									open: true,
-									mode: "create",
-									record: null,
-									defaultParentId: null,
-								})
-						: undefined
+				onCreate={() =>
+					setModalState({
+						open: true,
+						mode: "create",
+						record: null,
+						defaultParentId: null,
+					})
 				}
 				createText="新增一级根分类"
 				onExport={handleExport}
@@ -350,31 +302,29 @@ export function CategoryView({
 				onStatusChange={(v) => list.patch({ status: v || "" })}
 			/>
 
-			{modalState.open && (
-				<CategoryFormModal
-					mode={modalState.mode}
-					record={modalState.record}
-					defaultParentId={modalState.defaultParentId}
-					categories={categoryOptions.length > 0 ? categoryOptions : data}
-					onClose={() =>
-						setModalState({
-							open: false,
-							mode: "create",
-							record: null,
-							defaultParentId: null,
-						})
-					}
-					onSuccess={() => {
-						setModalState({
-							open: false,
-							mode: "create",
-							record: null,
-							defaultParentId: null,
-						});
-						router?.refresh();
-					}}
-				/>
-			)}
+			<CategoryFormModal
+				open={modalState.open}
+				mode={modalState.mode}
+				record={modalState.record}
+				defaultParentId={modalState.defaultParentId}
+				categories={categoryOptions.length > 0 ? categoryOptions : data}
+				onClose={() =>
+					setModalState({
+						open: false,
+						mode: "create",
+						record: null,
+						defaultParentId: null,
+					})
+				}
+				onSuccess={() =>
+					setModalState({
+						open: false,
+						mode: "create",
+						record: null,
+						defaultParentId: null,
+					})
+				}
+			/>
 		</>
 	);
 }

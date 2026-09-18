@@ -8,12 +8,14 @@ import { createCategorySchema, type CreateCategorySchema } from "../schema";
 import type { CustomerCategoryItem } from "../types";
 
 export interface CategoryFormModalProps {
+	readonly open?: boolean;
 	readonly mode: "create" | "edit" | "view";
 	readonly record?: CustomerCategoryItem | null;
 	readonly defaultParentId?: string | null;
 	readonly categories: readonly CustomerCategoryItem[];
 	readonly onClose: () => void;
 	readonly onSuccess?: () => void;
+	readonly inline?: boolean;
 }
 
 /** 递归压平分类树，供选择父级时使用 */
@@ -41,12 +43,14 @@ function flattenCategoryTree(
 
 /** 客户分类表单：标准 FormModal 驱动（支持 create / edit / view 模式） */
 export function CategoryFormModal({
+	open = true,
 	mode,
 	record,
 	defaultParentId,
 	categories,
 	onClose,
 	onSuccess,
+	inline,
 }: CategoryFormModalProps) {
 	const isEdit = mode === "edit";
 	const isView = mode === "view";
@@ -76,16 +80,14 @@ export function CategoryFormModal({
 				name: "name",
 				label: "分类名称",
 				type: "text" as const,
-				required: !isView,
-				disabled: isView,
+				required: true,
 				placeholder: "如: 连锁餐饮 / 企事业单位",
 			},
 			{
 				name: "parentId",
 				label: "父级分类",
 				type: "select" as const,
-				disabled: isView,
-				hint: isView ? undefined : "留空则作为一级根分类",
+				hint: "留空则作为一级根分类",
 				options: [
 					{ value: "", label: "(无父级 · 作为一级根分类)" },
 					...flatOptions.map((c) => ({
@@ -99,11 +101,10 @@ export function CategoryFormModal({
 				label: "业务描述说明",
 				type: "text" as const,
 				span: 2 as const,
-				disabled: isView,
 				placeholder: "分类适用范围与说明",
 			},
 		],
-		[flatOptions, isView],
+		[flatOptions],
 	);
 
 	const title = isView
@@ -116,7 +117,9 @@ export function CategoryFormModal({
 
 	return (
 		<FormModal<CreateCategorySchema>
-			open
+			key={`${mode}-${record?.id || "new"}-${defaultParentId || "root"}-${open ? "open" : "closed"}`}
+			open={open}
+			inline={inline}
 			onClose={onClose}
 			mode={mode}
 			subject={CustomerCategorySubject}

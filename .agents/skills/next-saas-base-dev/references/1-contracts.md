@@ -217,7 +217,7 @@ export function CustomerView({ data, total }: Props) {
 }
 ```
 
-完整注入链路与 layout 样板见 **`references/7-casl-ability-provider.md`**（标杆：`customer/layout.tsx` + `CustomerAbilityBoundary`）。
+完整注入链路与 layout 样板见 **`references/7-casl-ability-provider.md`**。
 
 ### 自定义扩展动作
 

@@ -106,7 +106,7 @@ export const createCustomerAction = defineServerAction(
 为了彻底解除底层 `shared/server` 基础设施对具体 Feature 业务契约的反向依赖，权限编译、部门拓扑解析与装配统一置于 Business Area 的装配层：
 
 ```ts
-// src/assembly/context.ts（以 customer-center 为标杆）
+// src/assembly/context.ts（业务切片标准装配层示例）
 import { getServerAuthRuntime } from "@base/auth";
 import { CaslAbilityFactory, type AppPrismaAbility } from "@base/authorization";
 import { resolveEmployeeTopology } from "@base/db-tenant";

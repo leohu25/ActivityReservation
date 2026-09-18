@@ -1,6 +1,6 @@
 ---
 name: next-saas-base-dev
-description: 现代多租户 SaaS 架构全栈工程开发与基建演进标准指南。本规范从企业级真实生产工程中严格提炼派生，是本模板项目及所有基于本基座衍生项目的核心开发宪法与权威事实源。在进行任何代码编写、功能开发、模块扩展、架构重构、组件封装或缺陷修复时必须优先加载并严格遵循本指南。涵盖两大核心领域：1. 业务特性垂直切片开发（packages/domains/* 与 packages/platform/*），严格遵循客户档案黄金标杆 CRUD 范式（细节见 references/9-crud-resource-paradigm.md）；2. 平台基座与基础设施框架演进（@base/* 与 tooling/db-migrate）。触发场景：开发/修改任何业务功能或特性切片、实现 CRUD、编写 Server Action/Query、调整 DataTable/FormModal、迭代 base 基础设施、修改 apps 装配层、修复 Bug。必须加载本技能并按 references 索引执行；禁止过时 API（见下方作废清单）。
+description: 现代多租户 SaaS 架构全栈工程开发与基建演进标准指南。本规范从企业级真实生产工程中严格提炼派生，是本模板项目及所有基于本基座衍生项目的核心开发宪法与权威事实源。在进行任何代码编写、功能开发、模块扩展、架构重构、组件封装或缺陷修复时必须优先加载并严格遵循本指南。涵盖两大核心领域：1. 业务特性垂直切片开发（packages/domains/* 与 packages/platform/*），严格遵循标准资源 CRUD 最佳范式（细节见 references/9-crud-resource-paradigm.md）；2. 平台基座与基础设施框架演进（@base/* 与 tooling/db-migrate）。触发场景：开发/修改任何业务功能或特性切片、实现 CRUD、编写 Server Action/Query、调整 DataTable/FormModal、迭代 base 基础设施、修改 apps 装配层、修复 Bug。必须加载本技能并按 references 索引执行；禁止过时 API（见下方作废清单）。
 color: blue
 emoji: 🚀
 vibe: 契约即事实源、约定大于配置、少即是多
@@ -12,9 +12,7 @@ agent_created: true
 > **本文件定位**：**地图与索引**。只保留分层、红线摘要、流水线索引与阅读导航。  
 > **具体开发细节一律在 `references/`**，禁止把实现示例堆进本文件。
 
-> **权威目标规格**：`docs/architecture/refactoring-architecture-and-official-patterns.md`  
-> **标杆实现**：`packages/domains/customer-center/src/features/customer-management/*`  
-> 与 `apps/tenant/src/app/(dashboard)/customer/customers/page.tsx`
+> **权威目标规格**：`docs/architecture/refactoring-architecture-and-official-patterns.md`
 
 ---
 
@@ -22,7 +20,7 @@ agent_created: true
 
 ```text
 apps/control | apps/tenant          双端装配
-packages/domains/*                  业务切片（customer-center 等）
+packages/domains/*                  业务领域垂直切片
 packages/platform/*                 平台业务（control-admin / tenant-admin）
 packages/base/ui                    UI 契约：DataTable / FormModal / list params
 packages/base/biz-shared            业务中台通用资产：单号发号器 / 审批契约
@@ -62,7 +60,8 @@ tooling/db-migrate                  12-Factor 迁移引擎
 
 ## 三、 赛道一：业务切片流水线（地图）
 
-**标杆 SOP 与示例** → [`references/9-crud-resource-paradigm.md`](./references/9-crud-resource-paradigm.md)（必读）
+**标准 CRUD 最佳范式与流程（通用模板，供参考）** → [`references/9-crud-resource-paradigm.md`](./references/9-crud-resource-paradigm.md)（必读）  
+> 注：8 步流程作为全仓通用的基准参考模板，覆盖绝大多数标准 CRUD 场景。面对主子表、多步骤向导、复杂审批流等高复杂度页面时，在坚守底线的前提下支持合规扩展与定制，切忌生搬硬套。
 
 ```text
 ① contract.ts     权限契约 + defineListSearchParams 扩展字段
@@ -102,7 +101,7 @@ tooling/db-migrate                  12-Factor 迁移引擎
 
 | 领域                      | 路径                                                                  |
 | :------------------------ | :-------------------------------------------------------------------- |
-| **CRUD 黄金标杆（必读）** | `references/9-crud-resource-paradigm.md`                              |
+| **标准 CRUD 最佳范式（必读）** | `references/9-crud-resource-paradigm.md`                              |
 | 切片包骨架                | `references/0-architecture-topology.md`                               |
 | 契约                      | `references/1-contracts.md`                                           |
 | Schema / 迁移             | `references/2-schema-migrate.md`                                      |

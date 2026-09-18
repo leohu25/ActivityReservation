@@ -1,9 +1,9 @@
-# 模块 9：客户档案黄金标杆 CRUD 范式（已固化）
+# 模块 9：标准资源 CRUD 最佳范式 (Standard CRUD Resource Paradigm)
 
-> **状态**：范式已定。新业务切片照抄本流程；差异走逃生舱，禁止另起平行壳/平行包。  
-> **标杆代码**：`packages/domains/customer-center/src/features/customer-management/*`  
-> **页面**：`apps/tenant/src/app/(dashboard)/customer/customers/page.tsx`  
-> **目标规格**：`docs/architecture/refactoring-architecture-and-official-patterns.md`
+> **定位与工程认知**：  
+> 1. **通用经验与基准模板**：本 8 步范式是全仓沉淀的**通用最佳基准模板（覆盖大部分标准 CRUD 场景）**，为团队提供统一的心智模型、清晰的阶段流线与开箱即用的代码参考；  
+> 2. **包容差异与务实扩展**：不同页面的业务复杂度天然存在差异（如主子表明细、复杂多步骤表单、特殊状态机等）。**本范式仅供通用参考，绝非教条主义枷锁**。在坚守核心底线（安全隔离、契约单一度量源、声明式权限）的前提下，各业务切片完全支持根据实际复杂度进行针对性的流程扩展与架构变体；  
+> 3. **核心心智**：契约驱动（SSoT）、声明式权限托管、单向数据流、少即是多。
 
 ---
 
@@ -127,18 +127,78 @@ export const deleteXxxAction = defineServerAction(async (id: string) => {
 ### ⑥ ui/*FormModal.tsx
 
 ```tsx
-import { FormModal, z } from "@base/ui";
-<FormModal
-  open={open}
-  mode={mode}
-  subject={XxxSubject}
-  title="..."
-  schema={createXxxSchema}
-  sections={[{ title: "基础信息", columns: 2, fields: [{ name, label, type: "text", required: true }, /* select/number/custom */] }]}
-  initialValues={...}
-  onClose={...}
-  onSubmit={async (values) => { /* create/update action */ }}
-/>
+import { FormModal, type FormModalMode, type FormModalSection, toast } from "@base/ui";
+import { XxxSubject } from "../contract";
+import { createXxxSchema, type CreateXxxSchema } from "../schema";
+import { createXxxAction, updateXxxAction } from "../actions";
+
+export interface XxxFormModalProps {
+  readonly open: boolean;
+  readonly mode: FormModalMode;
+  readonly record?: XxxItem | null;
+  readonly onClose: () => void;
+  readonly onSuccess?: () => void;
+  readonly inline?: boolean;
+}
+
+/**
+ * 通用 CRUD 三态模态框（新增/编辑/只读详情）
+ * - 单一度量源 (SSoT)：直接消费 schema.ts 中的 createXxxSchema，严禁在 UI 层重复手写 Zod schema！
+ * - 纯净生命周期：通过动态 key 驱动组件销毁与重置，保证每次打开状态干净，无旧数据残留；
+ * - 模式托管：mode="view" 时 FormModal 自动接管全字段只读置灰与按钮隐藏，无需在字段上分散手写 disabled/required。
+ */
+export function XxxFormModal({
+  open,
+  mode,
+  record,
+  onClose,
+  onSuccess,
+  inline,
+}: XxxFormModalProps) {
+  const isEdit = mode === "edit";
+
+  const initialValues = useMemo<CreateXxxSchema>(() => ({
+    name: record?.name || "",
+    status: record?.status || "ACTIVE",
+  }), [record]);
+
+  const sections: FormModalSection[] = useMemo(() => [
+    {
+      title: "基础信息",
+      columns: 2,
+      fields: [
+        { name: "name", label: "名称", type: "text", required: true, placeholder: "请输入名称" },
+      ],
+    },
+  ], []);
+
+  return (
+    <FormModal<CreateXxxSchema>
+      key={`${mode}-${record?.id || "new"}-${open ? "open" : "closed"}`}
+      open={open}
+      inline={inline}
+      mode={mode}
+      subject={XxxSubject}
+      title={mode === "create" ? "新建数据" : isEdit ? `编辑: ${record?.name}` : `详情: ${record?.name}`}
+      schema={createXxxSchema}
+      sections={sections}
+      initialValues={initialValues}
+      onClose={onClose}
+      onSubmit={async (values) => {
+        if (isEdit && record) {
+          const res = await updateXxxAction(record.id, values);
+          if (!res.success) throw new Error(res.error || "更新失败");
+          toast.success("修改已保存");
+        } else {
+          const res = await createXxxAction(values);
+          if (!res.success) throw new Error(res.error || "创建失败");
+          toast.success("创建成功");
+        }
+        onSuccess?.();
+      }}
+    />
+  );
+}
 ```
 
 **禁止**业务手写 Dialog+Input 树或直接 RHF。
@@ -146,39 +206,137 @@ import { FormModal, z } from "@base/ui";
 ### ⑦ ui/*View.tsx
 
 ```tsx
-import { DataTable, useListSearch } from "@base/ui";
+import { useState, useMemo, useCallback } from "react";
+import {
+  DataTable,
+  DataTableRowActions,
+  DataTableInputGroup,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  useListSearch,
+  toast,
+  type ColumnDef,
+} from "@base/ui";
+import { exportContractCsv, MasterDataStatus } from "@base/shared";
+import { useAbility } from "@base/authorization";
+import { xxxPageContract, xxxSearchParams, XxxField, XxxAction } from "../contract";
+import { updateXxxStatusAction, deleteXxxAction } from "../actions";
+import { XxxFormModal } from "./XxxFormModal";
 
-const list = useListSearch(xxxSearchParams);
+export function XxxView({ data, total }: { data: XxxItem[]; total: number }) {
+  const ability = useAbility();
+  const list = useListSearch(xxxSearchParams);
+  const [modalState, setModalState] = useState<{
+    open: boolean;
+    mode: "create" | "edit" | "view";
+    record?: XxxItem | null;
+  }>({ open: false, mode: "create", record: null });
 
-<DataTable
-  {...list.dataTableProps}
-  data={data}
-  columns={columns}
-  total={total}
-  subject={xxxPageContract.subject}
-  title="..."
-  onExport={...}
-  onCreate={() => setModal({ open: true, mode: "create" })}
-  statusOptions={[...]}
-  statusValue={String(list.params.status ?? "")}
-  onStatusChange={(v) => list.patch({ status: v || "" })}
-  filterExtra={/* 扩展筛选，并排展示 */}
-/>
+  // 1. 健壮的异步操作封装（统一 try...catch 兜底）
+  const runAction = useCallback(
+    async (fn: () => Promise<{ success: boolean; error?: string }>, successText: string) => {
+      try {
+        const res = await fn();
+        if (res.success) toast.success(successText);
+        else toast.error(res.error || "操作失败");
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "操作异常");
+      }
+    },
+    [],
+  );
+
+  const handleToggleStatus = useCallback(
+    (id: string, currentStatus: string) => {
+      const nextStatus = currentStatus === MasterDataStatus.ACTIVE ? MasterDataStatus.DISABLED : MasterDataStatus.ACTIVE;
+      void runAction(
+        () => updateXxxStatusAction(id, nextStatus),
+        nextStatus === MasterDataStatus.ACTIVE ? "已启用" : "已停用",
+      );
+    },
+    [runAction],
+  );
+
+  const handleDelete = useCallback(
+    (id: string) => {
+      void runAction(() => deleteXxxAction(id), "删除成功");
+    },
+    [runAction],
+  );
+
+  // 2. 列定义记忆化与声明式权限托管
+  const columns: ColumnDef<XxxItem>[] = useMemo(
+    () => [
+      { id: "name", field: XxxField.NAME, header: "名称" },
+      {
+        id: "actions",
+        header: "操作",
+        width: 120,
+        align: "right",
+        cell: (record) => (
+          <DataTableRowActions
+            record={record}
+            onView={() => setModalState({ open: true, mode: "view", record })}
+            onEdit={() => setModalState({ open: true, mode: "edit", record })}
+            onDelete={() => handleDelete(record.id)}
+            extraActions={[
+              {
+                label: record.status === MasterDataStatus.ACTIVE ? "停用" : "启用",
+                action: XxxAction.TOGGLE_STATUS,
+                onClick: () => handleToggleStatus(record.id, record.status),
+              },
+            ]}
+          />
+        ),
+      },
+    ],
+    [handleDelete, handleToggleStatus],
+  );
+
+  return (
+    <>
+      <DataTable<XxxItem>
+        {...list.dataTableProps}
+        data={data}
+        columns={columns}
+        total={total}
+        subject={xxxPageContract.subject}
+        title={xxxPageContract.label}
+        onCreate={() => setModalState({ open: true, mode: "create" })}
+        statusOptions={[
+          { value: MasterDataStatus.ACTIVE, label: "正常" },
+          { value: MasterDataStatus.DISABLED, label: "已停用" },
+        ]}
+        statusValue={String(list.params.status ?? "")}
+        onStatusChange={(v) => list.patch({ status: v || "" })}
+        filterExtra={/* 扩展业务维度筛选 */}
+      />
+
+      <XxxFormModal
+        open={modalState.open}
+        mode={modalState.mode}
+        record={modalState.record}
+        onClose={() => setModalState({ open: false, mode: "create", record: null })}
+        onSuccess={() => setModalState({ open: false, mode: "create", record: null })}
+      />
+    </>
+  );
+}
 ```
 
-- **按钮全量由模板接管（严禁手写）**：
-  - 展开 `{...list.dataTableProps}`，`DataTable` 自动渲染内置「查询」与「重置」按钮，并支持回车即搜；
-  - 顶部工具栏自动渲染「刷新」、「导出」、「新增」按钮，严禁业务视图内自行手写查询/重置/刷新按钮；
-- **行操作（DataTableRowActions）与详情闭环**：
-  - `DataTableRowActions` 默认 `hideView = false`；
-  - **若需要详情**：传入 `onView={() => setModal({ open: true, mode: "view", record })}`，且 `FormModal` 必须支持 `mode: "view"`（全字段只读展示）；
-  - **若无需详情**：必须显式传入 `hideView={true}`，**严禁漏传 `onView` 导致操作列出现置灰不可点击的「详情」按钮**；
-- **分页器绝不可缺失**：
-  - 所有标准列表与字典均需配备分页（`DataTablePagination`），由 `total`、`page`、`pageSize`、`onPageChange` 驱动；
-  - **严禁配置 `showPagination={false}`** 导致页面失去分页能力；
-- **多实体聚合页布局规范**：
-  - 聚合页（如分类+标签同页）**严禁左右并排挤压展示**（会导致表格变形与换行错乱）；
-  - 必须在顶部使用**横向平铺的 Tab 导航**，切换后每个实体独占 100% 全宽 DataTable 视图。
+- **权限 100% 声明式接管（严禁顶层手动计算 `ability.can`）**：
+  - `DataTable` 根据 `subject` 自动判定并渲染顶部「新增」、「导出」按钮；
+  - `DataTableRowActions` 自动根据当前用户 Ability 判定「查看/编辑/删除/扩展操作」的权限与显隐，外部无需手写多余三元判断或包装 div；
+- **状态筛选语义规范**：
+  - `statusOptions` / `statusValue` / `onStatusChange` 专用于实体状态（启用/停用等）；
+  - 业务维度筛选（如分类、类型等）一律放入 `filterExtra`，严禁借用 statusOptions 槽位；
+- **行操作与详情闭环**：
+  - 若需要详情，传入 `onView`，且 `FormModal` 必须支持 `mode: "view"`；若无需详情，必须显式配置 `hideView={true}`，严禁漏传；
+- **分页器与多实体布局**：
+  - 分页器严禁禁用（严禁 `showPagination={false}`）；多实体聚合页严禁左右并排挤压，必须在顶部使用横向 Tab 导航。
 
 ### ⑧ apps page.tsx
 
@@ -229,14 +387,30 @@ export default async function XxxPage({ searchParams }: PageProps) {
 
 ---
 
-## 4. 定制与红线
+## 4. 复杂业务应对与扩展指南（逃生舱）
 
-**逃生舱**：自定义 List、`onBeforeCreate`、自定义 columns/Form、`filterExtra`。
+本流程作为通用模板，主要覆盖单实体的标准增删改查。当遇到复杂度更高的业务页面时，推荐按以下合规方式扩展，无需削足适履：
 
-**红线**：见 SKILL.md；尤其禁止过时 URL hook、业务手写表单壳、Promise props、`count()+1`、`use server` 导出嵌套对象。
+| 复杂场景 | 推荐扩展范式 | 规范底线 |
+| :--- | :--- | :--- |
+| **超长字段 / 多阶段录入** | 扩展为多步骤向导（Wizard 弹窗/抽屉），或独立的完整编辑页面（如 `[id]/page.tsx`） | 依然直接消费 `schema.ts`（支持分步 schema），禁止在前端散落非校验状态 |
+| **主子表 / 行明细嵌套** | 主表维持 `DataTable`，子表在 Modal/Drawer 内部使用内嵌表格或受控明细列表 | 明细数据与主数据在单个事务内原子提交，保持纯数据输入 |
+| **复杂复合筛选** | 充分利用 `DataTable` 的 `filterExtra` 插槽，搭配 `DataTableInputGroup`、日期范围、级联选择器 | URL 参数仍收敛于 `contract.ts` 的 `defineListSearchParams`，保持可分享性 |
+| **批量操作 / 数据导入** | 启用 `contentProps={{ selectable: true }}`，利用 `selectedRows` 触发批量 Action | 批量写操作同样经 `defineServerAction` 并在后端做循环事务安全校验 |
+| **轻量字典 / 配置项** | 简化 `queries.ts`（无需 `accessibleWhere`），保留轻量 CRUD 闭环 | UI 与 FormModal 保持与主实体一致的受控生命周期与模式接管 |
+
+---
+
+## 5. 红线与底线
+
+无论业务如何复杂定制，以下原则始终不可突破：
+1. **禁止绕过权限**：写操作按钮必须受控于 CASL（优先由 `DataTable` 自动托管，自定义栏位用 `<AuthGuard>`）；
+2. **禁止破坏序列化**：RSC 向客户端传递纯数据（`toPlainData` 防腐），严禁直接透传函数或未受控 Prisma 对象；
+3. **禁止裸写原生 HTML 控件**：100% 使用 `@base/ui` 原子套件构建界面；
+4. **禁止二次手写 Zod**：表单校验一律直接导入 `schema.ts` 唯一定义源。
 
 ---
 
 ## 5. 存量迁移（DEBT）
 
-`StoreView` / `QuoteView` / `RoleListView` 等仍用旧 hook 的，按本模块迁移；迁完删除 `@deprecated` API。
+凡仍使用旧版 URL hook、手动计算权限或手绘表单的存量视图，按本标准最佳范式重构对齐；迁完删除 `@deprecated` API。

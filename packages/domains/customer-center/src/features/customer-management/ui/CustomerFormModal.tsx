@@ -2,7 +2,6 @@
 
 import React, { useMemo } from "react";
 import {
-	z,
 	FormModal,
 	TagMultiSelect,
 	type FormModalMode,
@@ -12,6 +11,7 @@ import {
 import { useOptionalAbility } from "@base/authorization";
 import { CustomerSubject } from "../contract";
 import { createCustomerAction, updateCustomerAction } from "../actions";
+import { createCustomerSchema } from "../schema";
 import type {
 	CustomerCategoryItem,
 	CustomerTagItem,
@@ -46,21 +46,8 @@ export type CustomerFormData = {
 	tagIds: string[];
 };
 
-export const customerFormZodSchema = z.object({
-	name: z.string().min(1, "客户企业名称为必填项"),
-	categoryId: z.string().min(1, "请选择客户分类"),
-	contactPerson: z.string().min(1, "联系人姓名为必填项"),
-	contactPhone: z
-		.string()
-		.min(1, "联系人电话为必填项")
-		.regex(/^1[3-9]\d{9}$/, "请输入合法的11位手机号码"),
-	settlementMethod: z.enum(["MONTHLY", "CASH", "PREPAID"]),
-	defaultTaxRate: z.number().nullable().optional(),
-	creditLimit: z.number().nullable().optional(),
-	salesPerson: z.string().optional(),
-	serviceTime: z.string().optional(),
-	tagIds: z.array(z.string()).optional(),
-});
+/** 统一使用 schema.ts 的单一度量源（SSoT） */
+export const customerFormZodSchema = createCustomerSchema;
 
 export const DEFAULT_CUSTOMER_VALUES: CustomerFormData = {
 	name: "",
@@ -344,7 +331,7 @@ export function CustomerFormModal({
 			description={description}
 			sections={sections}
 			initialValues={initialValues}
-			schema={customerFormZodSchema}
+			schema={createCustomerSchema}
 			onClose={onClose}
 			onSubmit={handleSubmit}
 			submitText={mode === "create" ? "立即创建客户" : "保存修改"}

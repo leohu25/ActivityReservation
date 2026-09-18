@@ -197,38 +197,42 @@ export async function listCustomersQuery(filter: ListCustomerFilter = {}) {
 
 ```ts
 import "server-only";
+import { cache } from "react";
 import { toPlainData } from "@base/shared";
 import { StandardAction } from "@base/authorization";
-import { getTenantCustomerContext, assertCustomerAbility } from "../../assembly/context";
-import { CustomerSubject } from "./contract";
-import { CustomerCategoryTagService } from "./classification/service";
-import type { CustomerCategoryItem, CustomerTagItem } from "./classification/types";
+import { getTenantXxxContext, assertXxxAbility } from "../../assembly/context";
+import { XxxSubject } from "./contract";
+import { CategoryService } from "./category/service";
+import { TagService } from "./tag/service";
+import type { CategoryItem, TagItem } from "./types";
 
-export interface CustomerPageOptions {
-  categoryOptions: CustomerCategoryItem[];
-  tagOptions: CustomerTagItem[];
+export interface XxxPageOptions {
+  categoryOptions: CategoryItem[];
+  tagOptions: TagItem[];
 }
 
 /**
- * 客户档案页面所需下拉选项聚合查询 (BFF 模式)
- * 校验宿主 CustomerSubject 读权限，一次性聚合当前租户 ACTIVE 状态的分类与标签
+ * 宿主页面所需下拉选项聚合查询 (BFF 模式)
+ * 校验宿主 XxxSubject 读权限，一次性并发聚合当前租户 ACTIVE 状态的关联选项
  */
-export async function getCustomerPageOptionsQuery(): Promise<CustomerPageOptions> {
-  const { client, ability } = await getTenantCustomerContext();
-  assertCustomerAbility(ability, StandardAction.READ, CustomerSubject);
+export const getXxxPageOptionsQuery = cache(
+  async (): Promise<XxxPageOptions> => {
+    const { client, ability } = await getTenantXxxContext();
+    assertXxxAbility(ability, StandardAction.READ, XxxSubject);
 
-  const [categoryOptions, tagOptions] = await Promise.all([
-    CustomerCategoryTagService.listCategories(client, { status: "ACTIVE" }),
-    CustomerCategoryTagService.listTags(client, { status: "ACTIVE" }),
-  ]);
+    const [categoryOptions, tagOptions] = await Promise.all([
+      CategoryService.listCategories(client, { status: "ACTIVE" }),
+      TagService.listTags(client, { status: "ACTIVE" }),
+    ]);
 
-  return toPlainData({ categoryOptions, tagOptions });
-}
+    return toPlainData({ categoryOptions, tagOptions });
+  },
+);
 ```
 
 ---
 
-## 查询层约定（已固化，与标杆对齐）
+## 查询层约定（已固化通用标准）
 
 1. `queries.ts` 首行 `import "server-only"`。
 2. 租户上下文与 Ability：经 `assembly/context.ts`，并用 **React `cache()`** 无参记忆化（见 `9-crud-resource-paradigm.md`）。

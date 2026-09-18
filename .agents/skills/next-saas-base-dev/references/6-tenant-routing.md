@@ -48,42 +48,40 @@ export default async function CustomerLayout({
 ```
 
 ```tsx
-// apps/tenant/src/app/(dashboard)/customer/customers/page.tsx
+// apps/tenant/src/app/(dashboard)/<domain>/<resources>/page.tsx
 import {
-  CustomerView,
-  customerSearchParams,
-  type CustomerListItem,
-} from "@base/feature-customer-center/customer-management";
+  XxxView,
+  xxxSearchParams,
+  type XxxListItem,
+} from "@base/feature-<domain>/<resource>";
 import {
-  listCustomersQuery,
-  getCustomerPageOptionsQuery,
-} from "@base/feature-customer-center/customer-management/server";
+  listXxxQuery,
+  getXxxPageOptionsQuery,
+} from "@base/feature-<domain>/<resource>/server";
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-/** 客户档案页：标准 Next.js App Router Server Component 装配，零过度封装 */
-export default async function CustomersPage({ searchParams }: PageProps) {
-  const parsed = await customerSearchParams.parse(searchParams);
+/** 标准 Next.js App Router Server Component 装配，零过度封装 */
+export default async function XxxPage({ searchParams }: PageProps) {
+  const parsed = await xxxSearchParams.parse(searchParams);
 
-  const [customerPage, pageOptions] = await Promise.all([
-    listCustomersQuery({
+  const [pageResult, pageOptions] = await Promise.all([
+    listXxxQuery({
       page: parsed.page,
       pageSize: parsed.pageSize,
       keyword: String(parsed.keyword ?? "") || undefined,
-      categoryCode: String(parsed.category ?? "") || undefined,
       status: String(parsed.status ?? "") || undefined,
     }),
-    getCustomerPageOptionsQuery(),
+    getXxxPageOptionsQuery(),
   ]);
 
   return (
-    <CustomerView
-      data={customerPage.items as CustomerListItem[]}
-      total={customerPage.total}
-      categoryOptions={pageOptions.categoryOptions}
-      tagOptions={pageOptions.tagOptions}
+    <XxxView
+      data={pageResult.items as XxxListItem[]}
+      total={pageResult.total}
+      options={pageOptions}
     />
   );
 }

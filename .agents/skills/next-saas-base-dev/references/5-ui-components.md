@@ -581,9 +581,9 @@ const columns: ColumnDef<CustomerItem>[] = createColumnsFromSchema(entitySchema,
 ## 4. 响应式无感更新模式 (No Reload)
 
 ```tsx
-// ✅ 已固化标杆（禁止镜像 state / router.refresh）
-export function CustomerView({ data, total, categoryOptions }: Props) {
-  const list = useListSearch(customerSearchParams);
+// ✅ 标准响应式视图（禁止镜像 state / router.refresh）
+export function XxxView({ data, total, options }: Props) {
+  const list = useListSearch(xxxSearchParams);
   const [modal, setModal] = useState({ open: false, mode: "create" as const });
 
   return (
@@ -593,15 +593,15 @@ export function CustomerView({ data, total, categoryOptions }: Props) {
         data={data}
         columns={columns}
         total={total}
-        subject={customerPageContract.subject}
+        subject={xxxPageContract.subject}
         onExport={handleExport}
         onCreate={() => setModal({ open: true, mode: "create" })}
         filterExtra={/* 扩展筛选 */}
       />
-      <CustomerFormModal open={modal.open} mode={modal.mode} ... />
+      <XxxFormModal open={modal.open} mode={modal.mode} ... />
     </>
   );
 }
-// 删除/状态变更：调用 createResourceActions 导出的 Action；
+// 删除/状态变更：调用 Server Action；
 // Action 内 revalidatePath 自愈，客户端不 router.refresh()
 ```

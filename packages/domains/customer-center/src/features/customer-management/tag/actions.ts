@@ -7,7 +7,7 @@ import {
 	assertCustomerAbility,
 	getTenantCustomerContext,
 } from "../../../assembly/context";
-import { CustomerTagSubject } from "./contract";
+import { CustomerTagAction, CustomerTagSubject } from "./contract";
 import { parseCreateTagInput, parseUpdateTagInput } from "./schema";
 import { CustomerTagService } from "./service";
 import type {
@@ -72,7 +72,11 @@ export const deleteTagAction = defineServerAction(async (id: string) => {
 export const updateTagStatusAction = defineServerAction(
 	async (id: string, status: CustomerTagStatus) => {
 		const { client, ability, userId } = await getTenantCustomerContext();
-		assertCustomerAbility(ability, StandardAction.UPDATE, CustomerTagSubject);
+		assertCustomerAbility(
+			ability,
+			CustomerTagAction.TOGGLE_STATUS,
+			CustomerTagSubject,
+		);
 
 		const updated = await CustomerTagService.updateTagStatus(
 			client,

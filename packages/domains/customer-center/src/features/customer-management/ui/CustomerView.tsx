@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Store } from "lucide-react";
 import {
 	DataTable,
@@ -70,31 +70,44 @@ export function CustomerView({
 		record?: CustomerListItem | null;
 	}>({ open: false, mode: "create", record: null });
 
-	const runAction = async (
-		fn: () => Promise<{ success: boolean; error?: string }>,
-		successText: string,
-	) => {
-		const res = await fn();
-		if (res.success) toast.success(successText);
-		else toast.error(res.error || "操作失败");
-	};
+	const runAction = useCallback(
+		async (
+			fn: () => Promise<{ success: boolean; error?: string }>,
+			successText: string,
+		) => {
+			try {
+				const res = await fn();
+				if (res.success) toast.success(successText);
+				else toast.error(res.error || "操作失败");
+			} catch (err: unknown) {
+				toast.error(err instanceof Error ? err.message : "操作异常");
+			}
+		},
+		[],
+	);
 
-	const handleToggleStatus = (id: string, currentStatus: string) => {
-		const nextStatus =
-			currentStatus === MasterDataStatus.ACTIVE
-				? MasterDataStatus.DISABLED
-				: MasterDataStatus.ACTIVE;
-		void runAction(
-			() => updateCustomerStatusAction(id, nextStatus),
-			nextStatus === MasterDataStatus.ACTIVE ? "客户已启用" : "客户已停用",
-		);
-	};
+	const handleToggleStatus = useCallback(
+		(id: string, currentStatus: string) => {
+			const nextStatus =
+				currentStatus === MasterDataStatus.ACTIVE
+					? MasterDataStatus.DISABLED
+					: MasterDataStatus.ACTIVE;
+			void runAction(
+				() => updateCustomerStatusAction(id, nextStatus),
+				nextStatus === MasterDataStatus.ACTIVE ? "客户已启用" : "客户已停用",
+			);
+		},
+		[runAction],
+	);
 
-	const handleDelete = (id: string) => {
-		void runAction(() => deleteCustomerAction(id), "客户已成功删除");
-	};
+	const handleDelete = useCallback(
+		(id: string) => {
+			void runAction(() => deleteCustomerAction(id), "客户已成功删除");
+		},
+		[runAction],
+	);
 
-	const handleExport = () => {
+	const handleExport = useCallback(() => {
 		exportContractCsv(data, customerPageContract.configurableFields ?? [], {
 			subject: customerPageContract.subject,
 			ability,
@@ -107,140 +120,143 @@ export function CustomerView({
 					c.status === MasterDataStatus.ACTIVE ? "正常" : "已停用",
 			},
 		});
-	};
+	}, [data, ability]);
 
-	const columns: ColumnDef<CustomerListItem>[] = [
-		{
-			id: "name",
-			field: CustomerField.NAME,
-			header: "客户名称",
-			cell: (c) => (
-				<div>
-					<div className="font-medium text-foreground">{c.name}</div>
-					{c.customerTags && (
-						<div className="mt-1 flex flex-wrap gap-1">
-							{c.customerTags.split(",").map((t: string) => (
-								<Badge key={t} variant="secondary" size="sm">
-									{t}
-								</Badge>
-							))}
-						</div>
-					)}
-				</div>
-			),
-		},
-		{
-			id: "category",
-			field: CustomerField.CATEGORY,
-			header: "分类",
-			width: 130,
-			cell: (c) => (
-				<Badge variant="outline" size="sm">
-					{c.category?.name || c.categoryId}
-				</Badge>
-			),
-		},
-		{
-			id: "contact",
-			header: "联系人 / 电话",
-			field: CustomerField.CONTACT_PHONE,
-			width: 160,
-			cell: (c) => (
-				<div className="text-xs">
-					<div className="font-medium text-foreground">{c.contactPerson}</div>
-					<div className="font-mono text-muted-foreground">
-						{c.contactPhone}
-					</div>
-				</div>
-			),
-		},
-		{
-			id: "settlement",
-			header: "结算 / 税率",
-			field: CustomerField.SETTLEMENT_METHOD,
-			width: 130,
-			cell: (c) => (
-				<div className="text-xs">
+	const columns: ColumnDef<CustomerListItem>[] = useMemo(
+		() => [
+			{
+				id: "name",
+				field: CustomerField.NAME,
+				header: "客户名称",
+				cell: (c) => (
 					<div>
-						{SETTLEMENT_LABELS[c.settlementMethod] || c.settlementMethod}
+						<div className="font-medium text-foreground">{c.name}</div>
+						{c.customerTags && (
+							<div className="mt-1 flex flex-wrap gap-1">
+								{c.customerTags.split(",").map((t: string) => (
+									<Badge key={t} variant="secondary" size="sm">
+										{t}
+									</Badge>
+								))}
+							</div>
+						)}
 					</div>
-					<div className="text-muted-foreground">
-						税率: {c.defaultTaxRate ? `${c.defaultTaxRate}%` : "未设"}
+				),
+			},
+			{
+				id: "category",
+				field: CustomerField.CATEGORY,
+				header: "分类",
+				width: 130,
+				cell: (c) => (
+					<Badge variant="outline" size="sm">
+						{c.category?.name || c.categoryId}
+					</Badge>
+				),
+			},
+			{
+				id: "contact",
+				header: "联系人 / 电话",
+				field: CustomerField.CONTACT_PHONE,
+				width: 160,
+				cell: (c) => (
+					<div className="text-xs">
+						<div className="font-medium text-foreground">{c.contactPerson}</div>
+						<div className="font-mono text-muted-foreground">
+							{c.contactPhone}
+						</div>
 					</div>
-				</div>
-			),
-		},
-		{
-			id: "stores",
-			header: "下属门店",
-			width: 100,
-			align: "center",
-			cell: (c) => (
-				<span className="inline-flex items-center gap-1 font-mono text-xs font-medium text-muted-foreground">
-					<Store className="size-3.5" />
-					{c._count?.stores || 0}
-				</span>
-			),
-		},
-		{
-			id: "status",
-			field: CustomerField.STATUS,
-			header: "状态",
-			width: 90,
-			align: "center",
-			cell: (c) => (
-				<Badge
-					variant={
-						c.status === MasterDataStatus.ACTIVE ? "success" : "secondary"
-					}
-					size="sm"
-				>
-					{c.status === MasterDataStatus.ACTIVE ? "正常" : "已停用"}
-				</Badge>
-			),
-		},
-		{
-			id: "actions",
-			header: "操作",
-			width: 90,
-			align: "right",
-			cell: (c) => (
-				<DataTableRowActions
-					record={c}
-					onView={() => setModalState({ open: true, mode: "view", record: c })}
-					onEdit={() => setModalState({ open: true, mode: "edit", record: c })}
-					extraActions={[
-						{
-							label:
-								c.status === MasterDataStatus.ACTIVE ? "停用客户" : "启用客户",
-							action: CustomerAction.TOGGLE_STATUS,
-							collapsed: true,
-							variant:
-								c.status === MasterDataStatus.ACTIVE
-									? "destructive"
-									: "default",
-							onClick: () => handleToggleStatus(c.id, c.status),
-							confirm:
-								c.status === MasterDataStatus.ACTIVE
-									? {
-											title: `确认停用客户 "${c.name}"？`,
-											description:
-												"警告：停用该客户将导致其名下所有关联门店强制同步停用！",
-											confirmText: "确认停用",
-											cancelText: "取消",
-										}
-									: undefined,
-						},
-					]}
-					onDelete={() => handleDelete(c.id)}
-					deleteConfirm={{
-						title: `确认删除客户 "${c.name}"？`,
-						description: "删除后该客户的所有主数据及门店关联将不可恢复。",
-					}}
-				/>
-			),
-		},
-	];
+				),
+			},
+			{
+				id: "settlement",
+				header: "结算 / 税率",
+				field: CustomerField.SETTLEMENT_METHOD,
+				width: 130,
+				cell: (c) => (
+					<div className="text-xs">
+						<div>
+							{SETTLEMENT_LABELS[c.settlementMethod] || c.settlementMethod}
+						</div>
+						<div className="text-muted-foreground">
+							税率: {c.defaultTaxRate ? `${c.defaultTaxRate}%` : "未设"}
+						</div>
+					</div>
+				),
+			},
+			{
+				id: "stores",
+				header: "下属门店",
+				width: 100,
+				align: "center",
+				cell: (c) => (
+					<span className="inline-flex items-center gap-1 font-mono text-xs font-medium text-muted-foreground">
+						<Store className="size-3.5" />
+						{c._count?.stores || 0}
+					</span>
+				),
+			},
+			{
+				id: "status",
+				field: CustomerField.STATUS,
+				header: "状态",
+				width: 90,
+				align: "center",
+				cell: (c) => (
+					<Badge
+						variant={
+							c.status === MasterDataStatus.ACTIVE ? "success" : "secondary"
+						}
+						size="sm"
+					>
+						{c.status === MasterDataStatus.ACTIVE ? "正常" : "已停用"}
+					</Badge>
+				),
+			},
+			{
+				id: "actions",
+				header: "操作",
+				width: 90,
+				align: "right",
+				cell: (c) => (
+					<DataTableRowActions
+						record={c}
+						onView={() => setModalState({ open: true, mode: "view", record: c })}
+						onEdit={() => setModalState({ open: true, mode: "edit", record: c })}
+						extraActions={[
+							{
+								label:
+									c.status === MasterDataStatus.ACTIVE ? "停用客户" : "启用客户",
+								action: CustomerAction.TOGGLE_STATUS,
+								collapsed: true,
+								variant:
+									c.status === MasterDataStatus.ACTIVE
+										? "destructive"
+										: "default",
+								onClick: () => handleToggleStatus(c.id, c.status),
+								confirm:
+									c.status === MasterDataStatus.ACTIVE
+										? {
+												title: `确认停用客户 "${c.name}"？`,
+												description:
+													"警告：停用该客户将导致其名下所有关联门店强制同步停用！",
+												confirmText: "确认停用",
+												cancelText: "取消",
+											}
+										: undefined,
+							},
+						]}
+						onDelete={() => handleDelete(c.id)}
+						deleteConfirm={{
+							title: `确认删除客户 "${c.name}"？`,
+							description: "删除后该客户的所有主数据及门店关联将不可恢复。",
+						}}
+					/>
+				),
+			},
+		],
+		[handleToggleStatus, handleDelete],
+	);
 
 	return (
 		<>

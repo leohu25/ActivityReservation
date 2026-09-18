@@ -41,7 +41,7 @@ function renderWithAbility(ui: React.ReactElement, actions: readonly string[]) {
 	);
 }
 
-test("TagView: 仅拥有 read 权限时隐藏新增/编辑/删除等写操作", () => {
+test("TagView: 仅拥有 read 权限时隐藏新增、编辑、停用与删除等写操作", () => {
 	const html = renderWithAbility(
 		<TagView data={mockTags} total={mockTags.length} />,
 		["read"],
@@ -49,17 +49,18 @@ test("TagView: 仅拥有 read 权限时隐藏新增/编辑/删除等写操作", 
 
 	assert.doesNotMatch(html, /新增标签/);
 	assert.doesNotMatch(html, />编辑</);
-	assert.doesNotMatch(html, /title="删除标签"/);
+	assert.doesNotMatch(html, />停用</);
+	assert.doesNotMatch(html, />删除</);
 });
 
-test("TagView: 拥有完整 CRUD 权限时展示新增、编辑、停用与删除", () => {
+test("TagView: 拥有完整 CRUD 与状态变更权限时展示新增、编辑、停用与删除", () => {
 	const html = renderWithAbility(
 		<TagView data={mockTags} total={mockTags.length} />,
-		["read", "create", "update", "delete"],
+		["read", "create", "update", "delete", "toggle_status"],
 	);
 
 	assert.match(html, /新增标签/);
 	assert.match(html, />编辑</);
 	assert.match(html, />停用</);
-	assert.match(html, /title="删除标签"/);
+	assert.match(html, />删除</);
 });

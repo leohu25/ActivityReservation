@@ -7,7 +7,7 @@ import {
 	assertCustomerAbility,
 	getTenantCustomerContext,
 } from "../../../assembly/context";
-import { CustomerCategorySubject } from "./contract";
+import { CustomerCategoryAction, CustomerCategorySubject } from "./contract";
 import { parseCreateCategoryInput, parseUpdateCategoryInput } from "./schema";
 import { CustomerCategoryService } from "./service";
 import type {
@@ -95,7 +95,7 @@ export const updateCategoryStatusAction = defineServerAction(
 		const { client, ability, userId } = await getTenantCustomerContext();
 		assertCustomerAbility(
 			ability,
-			StandardAction.UPDATE,
+			CustomerCategoryAction.TOGGLE_STATUS,
 			CustomerCategorySubject,
 		);
 

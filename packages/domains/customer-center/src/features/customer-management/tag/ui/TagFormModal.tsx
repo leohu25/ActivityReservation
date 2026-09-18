@@ -8,18 +8,22 @@ import { createTagSchema, type CreateTagSchema } from "../schema";
 import type { CustomerTagItem } from "../types";
 
 export interface TagFormModalProps {
+	readonly open?: boolean;
 	readonly mode: "create" | "edit" | "view";
 	readonly record?: CustomerTagItem | null;
 	readonly onClose: () => void;
 	readonly onSuccess?: () => void;
+	readonly inline?: boolean;
 }
 
 /** 客户业务标签表单：标准 FormModal 驱动（支持 create / edit / view 模式） */
 export function TagFormModal({
+	open = true,
 	mode,
 	record,
 	onClose,
 	onSuccess,
+	inline,
 }: TagFormModalProps) {
 	const isEdit = mode === "edit";
 	const isView = mode === "view";
@@ -39,16 +43,14 @@ export function TagFormModal({
 				name: "name",
 				label: "标签名称",
 				type: "text" as const,
-				required: !isView,
-				disabled: isView,
+				required: true,
 				placeholder: "如: VIP专属、早间必达",
 			},
 			{
 				name: "tagType",
 				label: "标签业务类型",
 				type: "select" as const,
-				required: !isView,
-				disabled: isView,
+				required: true,
 				options: [
 					{ value: "DELIVERY", label: "配送策略 (DELIVERY)" },
 					{ value: "SETTLEMENT", label: "结算方式 (SETTLEMENT)" },
@@ -61,11 +63,10 @@ export function TagFormModal({
 				label: "业务描述说明",
 				type: "text" as const,
 				span: 2 as const,
-				disabled: isView,
 				placeholder: "标签打标规则与适用场景",
 			},
 		],
-		[isView],
+		[],
 	);
 
 	const title = isView
@@ -76,7 +77,9 @@ export function TagFormModal({
 
 	return (
 		<FormModal<CreateTagSchema>
-			open
+			key={`${mode}-${record?.id || "new"}-${open ? "open" : "closed"}`}
+			open={open}
+			inline={inline}
 			onClose={onClose}
 			mode={mode}
 			subject={CustomerTagSubject}
