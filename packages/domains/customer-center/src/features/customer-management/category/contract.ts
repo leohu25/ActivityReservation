@@ -26,9 +26,8 @@ export const CustomerCategoryAction = {
 } as const;
 
 export const CustomerCategoryField = {
-	CATEGORY_CODE: "categoryCode",
-	CATEGORY_NAME: "categoryName",
-	PARENT_CODE: "parentCode",
+	NAME: "name",
+	PARENT_ID: "parentId",
 	DESCRIPTION: "description",
 	STATUS: "status",
 } as const;
@@ -36,18 +35,13 @@ export const CustomerCategoryField = {
 /** 客户分类受控字段元数据定义 */
 export const customerCategoryConfigurableFields = [
 	{
-		field: CustomerCategoryField.CATEGORY_CODE,
-		label: "分类编码",
-		sensitive: false,
-	},
-	{
-		field: CustomerCategoryField.CATEGORY_NAME,
+		field: CustomerCategoryField.NAME,
 		label: "分类名称",
 		sensitive: false,
 	},
 	{
-		field: CustomerCategoryField.PARENT_CODE,
-		label: "父级分类编码",
+		field: CustomerCategoryField.PARENT_ID,
+		label: "父级分类",
 		sensitive: false,
 	},
 	{

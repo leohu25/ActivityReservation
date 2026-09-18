@@ -62,7 +62,7 @@ export async function listCustomersQuery(filter: ListCustomerFilter = {}) {
 		);
 		// SAFETY: readable 由 pickReadableFields 按 CASL 授权裁剪，在此附加上层实体唯一标识 id 后映射为展示模型
 		return {
-			id: item.customerCode,
+			id: item.id,
 			...readable,
 		} as unknown as CustomerListItem;
 	});

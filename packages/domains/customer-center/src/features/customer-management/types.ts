@@ -14,14 +14,14 @@ export interface CustomerPageOptions {
 }
 
 export interface CreateCustomerInput {
-	customerName: string;
-	categoryCode: string;
+	name: string;
+	categoryId: string;
 	contactPerson: string;
 	contactPhone: string;
 	settlementMethod: "MONTHLY" | "CASH" | "PREPAID";
 	defaultTaxRate?: number | null;
 	creditLimit?: number | null;
-	tagCodes?: string[];
+	tagIds?: string[];
 	salesPerson?: string | null;
 	defaultWarehouse?: string | null;
 	paymentCycle?: string | null;
@@ -33,20 +33,19 @@ export interface UpdateCustomerInput extends Partial<CreateCustomerInput> {
 }
 
 export interface ListCustomerFilter {
-	categoryCode?: string;
+	categoryId?: string;
 	status?: string;
 	keyword?: string;
-	tagCode?: string;
+	tagId?: string;
 	page?: number;
 	pageSize?: number;
 }
 
 export interface CustomerListItem {
-	/** 实体唯一主键标识（稳定 rowKey 与行操作目标，不受业务字段隐藏策略影响） */
-	id?: string;
-	customerCode: string;
-	customerName: string;
-	categoryCode: string;
+	/** 实体唯一主键标识（稳定 rowKey 与行操作目标） */
+	id: string;
+	name: string;
+	categoryId: string;
 	category?: CustomerCategoryItem | null;
 	contactPerson: string;
 	contactPhone: string;

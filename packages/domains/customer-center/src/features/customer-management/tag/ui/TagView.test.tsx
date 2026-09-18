@@ -14,8 +14,8 @@ import type { CustomerTagItem } from "../types";
 
 const mockTags: CustomerTagItem[] = [
 	{
-		tagCode: "TAG_DELIVERY_COLD",
-		tagName: "冷链专送",
+		id: "TAG_DELIVERY_COLD",
+		name: "冷链专送",
 		tagType: "DELIVERY",
 		status: "ACTIVE",
 		description: "需全程冷链",

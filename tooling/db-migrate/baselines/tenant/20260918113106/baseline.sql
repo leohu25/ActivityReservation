@@ -119,9 +119,9 @@ CREATE TABLE "company_profile" (
 
 -- CreateTable
 CREATE TABLE "customer" (
-    "customer_code" VARCHAR(30) NOT NULL,
-    "customer_name" VARCHAR(100) NOT NULL,
-    "category_code" VARCHAR(20) NOT NULL,
+    "id" VARCHAR(36) NOT NULL,
+    "name" VARCHAR(100) NOT NULL,
+    "category_id" VARCHAR(36) NOT NULL,
     "contact_person" VARCHAR(50) NOT NULL,
     "contact_phone" VARCHAR(20) NOT NULL,
     "settlement_method" VARCHAR(20) NOT NULL,
@@ -143,27 +143,28 @@ CREATE TABLE "customer" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "customer_pkey" PRIMARY KEY ("customer_code")
+    CONSTRAINT "customer_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "customer_category" (
-    "category_code" VARCHAR(20) NOT NULL,
-    "category_name" VARCHAR(50) NOT NULL,
-    "parent_code" VARCHAR(20),
+    "id" VARCHAR(36) NOT NULL,
+    "name" VARCHAR(50) NOT NULL,
+    "parent_id" VARCHAR(36),
     "description" VARCHAR(200),
     "status" VARCHAR(10) NOT NULL DEFAULT 'ACTIVE',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "customer_category_pkey" PRIMARY KEY ("category_code")
+    CONSTRAINT "customer_category_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "customer_quote" (
-    "quote_id" VARCHAR(30) NOT NULL,
-    "customer_code" VARCHAR(30),
-    "store_code" VARCHAR(30),
+    "id" VARCHAR(36) NOT NULL,
+    "quote_no" VARCHAR(30) NOT NULL,
+    "customer_id" VARCHAR(36),
+    "store_id" VARCHAR(36),
     "region_code" VARCHAR(50),
     "quote_date" DATE NOT NULL,
     "effective_date" DATE NOT NULL,
@@ -183,13 +184,13 @@ CREATE TABLE "customer_quote" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "customer_quote_pkey" PRIMARY KEY ("quote_id")
+    CONSTRAINT "customer_quote_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "customer_quote_item" (
-    "quote_detail_id" VARCHAR(50) NOT NULL,
-    "quote_id" VARCHAR(30) NOT NULL,
+    "id" VARCHAR(36) NOT NULL,
+    "quote_id" VARCHAR(36) NOT NULL,
     "item_code" VARCHAR(50) NOT NULL,
     "item_name" VARCHAR(100) NOT NULL,
     "sales_unit" VARCHAR(20) NOT NULL,
@@ -200,14 +201,14 @@ CREATE TABLE "customer_quote_item" (
     "max_qty" DECIMAL(10,2),
     "remark" VARCHAR(200),
 
-    CONSTRAINT "customer_quote_item_pkey" PRIMARY KEY ("quote_detail_id")
+    CONSTRAINT "customer_quote_item_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "customer_store" (
-    "store_code" VARCHAR(30) NOT NULL,
-    "customer_code" VARCHAR(30) NOT NULL,
-    "store_name" VARCHAR(100) NOT NULL,
+    "id" VARCHAR(36) NOT NULL,
+    "customer_id" VARCHAR(36) NOT NULL,
+    "name" VARCHAR(100) NOT NULL,
     "address" VARCHAR(200) NOT NULL,
     "contact_person" VARCHAR(50) NOT NULL,
     "contact_phone" VARCHAR(20) NOT NULL,
@@ -228,29 +229,29 @@ CREATE TABLE "customer_store" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "customer_store_pkey" PRIMARY KEY ("store_code")
+    CONSTRAINT "customer_store_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "customer_tag" (
-    "tag_code" VARCHAR(20) NOT NULL,
-    "tag_name" VARCHAR(50) NOT NULL,
+    "id" VARCHAR(36) NOT NULL,
+    "name" VARCHAR(50) NOT NULL,
     "tag_type" VARCHAR(20) NOT NULL,
     "description" VARCHAR(200),
     "status" VARCHAR(10) NOT NULL DEFAULT 'ACTIVE',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "customer_tag_pkey" PRIMARY KEY ("tag_code")
+    CONSTRAINT "customer_tag_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "customer_tag_assignment" (
-    "customer_code" VARCHAR(30) NOT NULL,
-    "tag_code" VARCHAR(20) NOT NULL,
+    "customer_id" VARCHAR(36) NOT NULL,
+    "tag_id" VARCHAR(36) NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "customer_tag_assignment_pkey" PRIMARY KEY ("customer_code","tag_code")
+    CONSTRAINT "customer_tag_assignment_pkey" PRIMARY KEY ("customer_id","tag_id")
 );
 
 -- CreateTable
@@ -495,9 +496,10 @@ CREATE TABLE "purchase_order" (
 
 -- CreateTable
 CREATE TABLE "sales_order" (
-    "order_id" VARCHAR(30) NOT NULL,
-    "customer_code" VARCHAR(30) NOT NULL,
-    "store_code" VARCHAR(30) NOT NULL,
+    "id" VARCHAR(36) NOT NULL,
+    "order_no" VARCHAR(30) NOT NULL,
+    "customer_id" VARCHAR(36) NOT NULL,
+    "store_id" VARCHAR(36) NOT NULL,
     "order_date" DATE NOT NULL,
     "delivery_date" DATE NOT NULL,
     "sales_person" VARCHAR(50),
@@ -531,13 +533,13 @@ CREATE TABLE "sales_order" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "sales_order_pkey" PRIMARY KEY ("order_id")
+    CONSTRAINT "sales_order_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "sales_order_fee" (
-    "fee_id" VARCHAR(50) NOT NULL,
-    "order_id" VARCHAR(30) NOT NULL,
+    "id" VARCHAR(36) NOT NULL,
+    "order_id" VARCHAR(36) NOT NULL,
     "fee_type" VARCHAR(20) NOT NULL,
     "fee_amount" DECIMAL(10,2) NOT NULL,
     "remark" VARCHAR(200),
@@ -548,13 +550,13 @@ CREATE TABLE "sales_order_fee" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "sales_order_fee_pkey" PRIMARY KEY ("fee_id")
+    CONSTRAINT "sales_order_fee_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "sales_order_item" (
-    "order_detail_id" VARCHAR(50) NOT NULL,
-    "order_id" VARCHAR(30) NOT NULL,
+    "id" VARCHAR(36) NOT NULL,
+    "order_id" VARCHAR(36) NOT NULL,
     "item_code" VARCHAR(50) NOT NULL,
     "item_name" VARCHAR(100) NOT NULL,
     "sales_unit" VARCHAR(20) NOT NULL,
@@ -568,7 +570,7 @@ CREATE TABLE "sales_order_item" (
     "subtotal_amount" DECIMAL(12,2) NOT NULL,
     "remark" VARCHAR(200),
 
-    CONSTRAINT "sales_order_item_pkey" PRIMARY KEY ("order_detail_id")
+    CONSTRAINT "sales_order_item_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -666,16 +668,28 @@ CREATE INDEX "bom_output_item_bom_process_id_idx" ON "bom_output_item"("bom_proc
 CREATE INDEX "bom_process_bom_id_seq_no_idx" ON "bom_process"("bom_id", "seq_no");
 
 -- CreateIndex
-CREATE INDEX "customer_category_code_idx" ON "customer"("category_code");
+CREATE INDEX "customer_category_id_idx" ON "customer"("category_id");
 
 -- CreateIndex
 CREATE INDEX "customer_status_idx" ON "customer"("status");
 
 -- CreateIndex
-CREATE INDEX "customer_quote_customer_code_idx" ON "customer_quote"("customer_code");
+CREATE INDEX "customer_is_deleted_idx" ON "customer"("is_deleted");
 
 -- CreateIndex
-CREATE INDEX "customer_quote_store_code_idx" ON "customer_quote"("store_code");
+CREATE INDEX "customer_category_parent_id_idx" ON "customer_category"("parent_id");
+
+-- CreateIndex
+CREATE INDEX "customer_category_status_idx" ON "customer_category"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "customer_quote_quote_no_key" ON "customer_quote"("quote_no");
+
+-- CreateIndex
+CREATE INDEX "customer_quote_customer_id_idx" ON "customer_quote"("customer_id");
+
+-- CreateIndex
+CREATE INDEX "customer_quote_store_id_idx" ON "customer_quote"("store_id");
 
 -- CreateIndex
 CREATE INDEX "customer_quote_region_code_idx" ON "customer_quote"("region_code");
@@ -684,19 +698,28 @@ CREATE INDEX "customer_quote_region_code_idx" ON "customer_quote"("region_code")
 CREATE INDEX "customer_quote_status_idx" ON "customer_quote"("status");
 
 -- CreateIndex
+CREATE INDEX "customer_quote_is_deleted_idx" ON "customer_quote"("is_deleted");
+
+-- CreateIndex
 CREATE INDEX "customer_quote_item_quote_id_idx" ON "customer_quote_item"("quote_id");
 
 -- CreateIndex
 CREATE INDEX "customer_quote_item_item_code_idx" ON "customer_quote_item"("item_code");
 
 -- CreateIndex
-CREATE INDEX "customer_store_customer_code_idx" ON "customer_store"("customer_code");
+CREATE INDEX "customer_store_customer_id_idx" ON "customer_store"("customer_id");
 
 -- CreateIndex
 CREATE INDEX "customer_store_region_code_idx" ON "customer_store"("region_code");
 
 -- CreateIndex
 CREATE INDEX "customer_store_status_idx" ON "customer_store"("status");
+
+-- CreateIndex
+CREATE INDEX "customer_store_is_deleted_idx" ON "customer_store"("is_deleted");
+
+-- CreateIndex
+CREATE INDEX "customer_tag_status_idx" ON "customer_tag"("status");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "department_code_key" ON "department"("code");
@@ -819,10 +842,13 @@ CREATE INDEX "purchase_order_is_deleted_idx" ON "purchase_order"("is_deleted");
 CREATE INDEX "purchase_order_status_idx" ON "purchase_order"("status");
 
 -- CreateIndex
-CREATE INDEX "sales_order_customer_code_idx" ON "sales_order"("customer_code");
+CREATE UNIQUE INDEX "sales_order_order_no_key" ON "sales_order"("order_no");
 
 -- CreateIndex
-CREATE INDEX "sales_order_store_code_idx" ON "sales_order"("store_code");
+CREATE INDEX "sales_order_customer_id_idx" ON "sales_order"("customer_id");
+
+-- CreateIndex
+CREATE INDEX "sales_order_store_id_idx" ON "sales_order"("store_id");
 
 -- CreateIndex
 CREATE INDEX "sales_order_order_date_idx" ON "sales_order"("order_date");
@@ -972,17 +998,18 @@ COMMENT ON COLUMN "company_profile"."currency" IS '结算本位币种 (默认 CN
 COMMENT ON COLUMN "company_profile"."created_at" IS '记录创建时间';
 COMMENT ON COLUMN "company_profile"."updated_at" IS '记录更新时间';
 COMMENT ON TABLE "customer_category" IS '客户分类表：支持多级层级树结构（如餐饮连锁、企事业单位、生鲜超市）';
-COMMENT ON COLUMN "customer_category"."category_code" IS '分类编码（唯一主键标识，如 CUST_CAT_001）';
-COMMENT ON COLUMN "customer_category"."category_name" IS '分类名称（如：机关食堂、品牌连锁）';
-COMMENT ON COLUMN "customer_category"."parent_code" IS '父级分类编码（支持多级分类树，根级为空）';
+COMMENT ON COLUMN "customer_category"."id" IS '分类主键ID (UUID/CUID)';
+COMMENT ON COLUMN "customer_category"."name" IS '分类名称（如：机关食堂、品牌连锁）';
+COMMENT ON COLUMN "customer_category"."parent_id" IS '父级分类主键ID（支持多级分类树，根级为空）';
 COMMENT ON COLUMN "customer_category"."description" IS '分类业务描述';
 COMMENT ON COLUMN "customer_category"."status" IS '状态：ACTIVE(启用) / DISABLED(停用)';
 COMMENT ON COLUMN "customer_category"."created_at" IS '创建时间';
 COMMENT ON COLUMN "customer_category"."updated_at" IS '更新时间';
 COMMENT ON TABLE "customer_quote" IS '门店报价单主表：按客户+门店+区域维护的商品定价单头';
-COMMENT ON COLUMN "customer_quote"."quote_id" IS '报价单唯一单号（系统自动生成，格式 QUOT-YYYYMMDD-XXXX）';
-COMMENT ON COLUMN "customer_quote"."customer_code" IS '适用客户编码（与 storeCode、regionCode 构成维度优先级）';
-COMMENT ON COLUMN "customer_quote"."store_code" IS '适用门店编码（为空则适用于该客户下属所有门店）';
+COMMENT ON COLUMN "customer_quote"."id" IS '报价单主键ID (UUID/CUID)';
+COMMENT ON COLUMN "customer_quote"."quote_no" IS '报价单业务单号（对外沟通展示与防重，格式 QUOT-YYYYMMDD-XXXX）';
+COMMENT ON COLUMN "customer_quote"."customer_id" IS '适用客户主键ID（与 storeId、regionCode 构成维度优先级）';
+COMMENT ON COLUMN "customer_quote"."store_id" IS '适用门店主键ID（为空则适用于该客户下属所有门店）';
 COMMENT ON COLUMN "customer_quote"."region_code" IS '适用区域编码（客户与门店均为空时，作为该区域通用报价单）';
 COMMENT ON COLUMN "customer_quote"."quote_date" IS '报价单拟定日期';
 COMMENT ON COLUMN "customer_quote"."effective_date" IS '价格生效日期';
@@ -1002,8 +1029,8 @@ COMMENT ON COLUMN "customer_quote"."deleted_by_id" IS '软删除操作人用户I
 COMMENT ON COLUMN "customer_quote"."created_at" IS '创建时间';
 COMMENT ON COLUMN "customer_quote"."updated_at" IS '更新时间';
 COMMENT ON TABLE "customer_quote_item" IS '门店报价单明细表：具体商品的含税与不含税单价及起订限制';
-COMMENT ON COLUMN "customer_quote_item"."quote_detail_id" IS '报价明细行主键唯一标识';
-COMMENT ON COLUMN "customer_quote_item"."quote_id" IS '所属报价单单号';
+COMMENT ON COLUMN "customer_quote_item"."id" IS '报价明细行主键ID (UUID/CUID)';
+COMMENT ON COLUMN "customer_quote_item"."quote_id" IS '所属报价单主表ID';
 COMMENT ON COLUMN "customer_quote_item"."item_code" IS '商品档案唯一编码（关联物料商品中心）';
 COMMENT ON COLUMN "customer_quote_item"."item_name" IS '商品名称（如：特级上海青(净菜)）';
 COMMENT ON COLUMN "customer_quote_item"."sales_unit" IS '销售计量单位（如：kg、箱、袋）';
@@ -1014,16 +1041,16 @@ COMMENT ON COLUMN "customer_quote_item"."min_qty" IS '最小起订量限制';
 COMMENT ON COLUMN "customer_quote_item"."max_qty" IS '最大限购量限制';
 COMMENT ON COLUMN "customer_quote_item"."remark" IS '明细备注说明';
 COMMENT ON TABLE "customer_tag" IS '客户标签字典表：用于筛选、统计、报价与配送策略';
-COMMENT ON COLUMN "customer_tag"."tag_code" IS '标签编码（如 TAG_DELIVERY_MORNING）';
-COMMENT ON COLUMN "customer_tag"."tag_name" IS '标签名称（如：早间配送、VIP客户、学校食堂）';
+COMMENT ON COLUMN "customer_tag"."id" IS '标签主键ID (UUID/CUID)';
+COMMENT ON COLUMN "customer_tag"."name" IS '标签名称（如：早间配送、VIP客户、学校食堂）';
 COMMENT ON COLUMN "customer_tag"."tag_type" IS '标签类型：DELIVERY(配送) / SETTLEMENT(结算) / CREDIT(信用) / OTHER(其他)';
 COMMENT ON COLUMN "customer_tag"."description" IS '标签业务说明';
 COMMENT ON COLUMN "customer_tag"."status" IS '状态：ACTIVE(启用) / DISABLED(停用)';
 COMMENT ON COLUMN "customer_tag"."created_at" IS '创建时间';
 COMMENT ON COLUMN "customer_tag"."updated_at" IS '更新时间';
 COMMENT ON TABLE "customer_tag_assignment" IS '客户与标签多对多关联表';
-COMMENT ON COLUMN "customer_tag_assignment"."customer_code" IS '客户编码';
-COMMENT ON COLUMN "customer_tag_assignment"."tag_code" IS '标签编码';
+COMMENT ON COLUMN "customer_tag_assignment"."customer_id" IS '客户主键ID';
+COMMENT ON COLUMN "customer_tag_assignment"."tag_id" IS '标签主键ID';
 COMMENT ON COLUMN "customer_tag_assignment"."created_at" IS '关联打标时间';
 COMMENT ON TABLE "employee_profile" IS '租户内员工档案模型 (对应 Control DB Member.id，组织人事与数据范围事实源)';
 COMMENT ON COLUMN "employee_profile"."id" IS '员工档案主键ID';
@@ -1201,9 +1228,10 @@ COMMENT ON COLUMN "purchase_order"."deleted_by_id" IS '软删除操作人';
 COMMENT ON COLUMN "purchase_order"."created_at" IS '订单创建时间';
 COMMENT ON COLUMN "purchase_order"."updated_at" IS '订单最后更新时间';
 COMMENT ON TABLE "sales_order" IS '销售订单单头：按 客户 + 门店 + 商品 + 数量 + 交货日期 维度的销售需求主单';
-COMMENT ON COLUMN "sales_order"."order_id" IS '销售订单唯一单号（系统自动生成，格式 SO-YYYYMMDD-XXXX）';
-COMMENT ON COLUMN "sales_order"."customer_code" IS '客户编码（关联 Customer）';
-COMMENT ON COLUMN "sales_order"."store_code" IS '门店编码（关联 CustomerStore）';
+COMMENT ON COLUMN "sales_order"."id" IS '销售订单主键ID';
+COMMENT ON COLUMN "sales_order"."order_no" IS '销售订单唯一单号（系统自动生成，格式 SO-YYYYMMDD-XXXX）';
+COMMENT ON COLUMN "sales_order"."customer_id" IS '客户主键ID（关联 Customer.id）';
+COMMENT ON COLUMN "sales_order"."store_id" IS '门店主键ID（关联 CustomerStore.id）';
 COMMENT ON COLUMN "sales_order"."order_date" IS '下单日期';
 COMMENT ON COLUMN "sales_order"."delivery_date" IS '交货日期';
 COMMENT ON COLUMN "sales_order"."sales_person" IS '负责销售员';
@@ -1237,8 +1265,8 @@ COMMENT ON COLUMN "sales_order"."deleted_by_id" IS '软删除操作人用户ID';
 COMMENT ON COLUMN "sales_order"."created_at" IS '创建时间';
 COMMENT ON COLUMN "sales_order"."updated_at" IS '更新时间';
 COMMENT ON TABLE "sales_order_fee" IS '销售订单附加费用明细：快递费、材料费、包装费等，独立复核';
-COMMENT ON COLUMN "sales_order_fee"."fee_id" IS '费用主键（自动生成，格式 SOF-YYYYMMDD-XXXX-XX）';
-COMMENT ON COLUMN "sales_order_fee"."order_id" IS '关联订单号';
+COMMENT ON COLUMN "sales_order_fee"."id" IS '费用主键ID';
+COMMENT ON COLUMN "sales_order_fee"."order_id" IS '关联订单主键ID';
 COMMENT ON COLUMN "sales_order_fee"."fee_type" IS '费用类型：EXPRESS(快递费) / MATERIAL(材料费) / PACKAGING(包装费) / FREIGHT(运费) / OTHER(其他)';
 COMMENT ON COLUMN "sales_order_fee"."fee_amount" IS '费用金额（正数为应收，负数为折让）';
 COMMENT ON COLUMN "sales_order_fee"."remark" IS '费用说明/备注';
@@ -1249,8 +1277,8 @@ COMMENT ON COLUMN "sales_order_fee"."audited_at" IS '复核时间';
 COMMENT ON COLUMN "sales_order_fee"."created_at" IS '创建时间';
 COMMENT ON COLUMN "sales_order_fee"."updated_at" IS '更新时间';
 COMMENT ON TABLE "sales_order_item" IS '销售订单明细行：具体采购的商品、数量、单价与履约进度';
-COMMENT ON COLUMN "sales_order_item"."order_detail_id" IS '订单明细主键（自动生成，格式 SOD-YYYYMMDD-XXXX-XX）';
-COMMENT ON COLUMN "sales_order_item"."order_id" IS '所属销售订单号';
+COMMENT ON COLUMN "sales_order_item"."id" IS '订单明细主键ID';
+COMMENT ON COLUMN "sales_order_item"."order_id" IS '所属销售订单主键ID';
 COMMENT ON COLUMN "sales_order_item"."item_code" IS '商品档案唯一编码';
 COMMENT ON COLUMN "sales_order_item"."item_name" IS '商品名称';
 COMMENT ON COLUMN "sales_order_item"."sales_unit" IS '销售单位（如：kg、箱、袋）';

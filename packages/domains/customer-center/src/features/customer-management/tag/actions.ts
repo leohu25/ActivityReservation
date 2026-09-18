@@ -36,13 +36,13 @@ export const createTagAction = defineServerAction(
 );
 
 export const updateTagAction = defineServerAction(
-	async (tagCode: string, rawInput: UpdateTagInput) => {
+	async (id: string, rawInput: UpdateTagInput) => {
 		const { client, ability, userId, employeeProfile } =
 			await getTenantCustomerContext();
 		assertCustomerAbility(ability, StandardAction.UPDATE, CustomerTagSubject);
 
 		const input = parseUpdateTagInput(rawInput);
-		const updated = await CustomerTagService.updateTag(client, tagCode, input, {
+		const updated = await CustomerTagService.updateTag(client, id, input, {
 			userId,
 			deptId: employeeProfile?.departmentId ?? null,
 		});
@@ -54,12 +54,12 @@ export const updateTagAction = defineServerAction(
 	"修改业务标签失败",
 );
 
-export const deleteTagAction = defineServerAction(async (tagCode: string) => {
+export const deleteTagAction = defineServerAction(async (id: string) => {
 	const { client, ability, userId, employeeProfile } =
 		await getTenantCustomerContext();
 	assertCustomerAbility(ability, StandardAction.DELETE, CustomerTagSubject);
 
-	const deleted = await CustomerTagService.deleteTag(client, tagCode, {
+	const deleted = await CustomerTagService.deleteTag(client, id, {
 		userId,
 		deptId: employeeProfile?.departmentId ?? null,
 	});
@@ -70,13 +70,13 @@ export const deleteTagAction = defineServerAction(async (tagCode: string) => {
 }, "删除业务标签失败");
 
 export const updateTagStatusAction = defineServerAction(
-	async (tagCode: string, status: CustomerTagStatus) => {
+	async (id: string, status: CustomerTagStatus) => {
 		const { client, ability, userId } = await getTenantCustomerContext();
 		assertCustomerAbility(ability, StandardAction.UPDATE, CustomerTagSubject);
 
 		const updated = await CustomerTagService.updateTagStatus(
 			client,
-			tagCode,
+			id,
 			status,
 			{ userId },
 		);

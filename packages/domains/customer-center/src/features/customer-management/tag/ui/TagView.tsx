@@ -82,13 +82,13 @@ export function TagView({ data, total }: TagViewProps) {
 	);
 
 	const handleToggleStatus = useCallback(
-		async (code: string, currentStatus: string) => {
+		async (id: string, currentStatus: string) => {
 			const nextStatus =
 				currentStatus === MasterDataStatus.ACTIVE
 					? MasterDataStatus.DISABLED
 					: MasterDataStatus.ACTIVE;
 			await runAction(
-				() => updateTagStatusAction(code, nextStatus),
+				() => updateTagStatusAction(id, nextStatus),
 				nextStatus === MasterDataStatus.ACTIVE ? "标签已启用" : "标签已停用",
 				"变更标签状态失败",
 			);
@@ -97,9 +97,9 @@ export function TagView({ data, total }: TagViewProps) {
 	);
 
 	const handleDelete = useCallback(
-		async (code: string) => {
+		async (id: string) => {
 			await runAction(
-				() => deleteTagAction(code),
+				() => deleteTagAction(id),
 				"标签已成功删除",
 				"删除标签失败",
 			);
@@ -124,27 +124,16 @@ export function TagView({ data, total }: TagViewProps) {
 	const columns: ColumnDef<CustomerTagItem>[] = useMemo(
 		() => [
 			{
-				id: "tagName",
-				field: CustomerTagField.TAG_NAME,
+				id: "name",
+				field: CustomerTagField.NAME,
 				header: "标签名称",
 				width: 180,
 				lockVisible: true,
 				cell: (t: CustomerTagItem) => (
 					<div className="flex items-center gap-1.5 font-medium text-foreground text-xs">
 						<TagIcon className="size-3.5 text-primary/70 shrink-0" />
-						<span>{t.tagName}</span>
+						<span>{t.name}</span>
 					</div>
-				),
-			},
-			{
-				id: "tagCode",
-				field: CustomerTagField.TAG_CODE,
-				header: "标签编码",
-				width: 160,
-				cell: (t: CustomerTagItem) => (
-					<span className="font-mono text-xs font-bold text-primary">
-						{t.tagCode}
-					</span>
 				),
 			},
 			{
@@ -222,10 +211,10 @@ export function TagView({ data, total }: TagViewProps) {
 											})
 									: undefined
 							}
-							onDelete={canDelete ? () => handleDelete(t.tagCode) : undefined}
+							onDelete={canDelete ? () => handleDelete(t.id) : undefined}
 							deleteConfirm={{
-								title: `确认删除业务标签 "${t.tagName}"？`,
-								description: `删除后编码为 ${t.tagCode} 的标签将彻底移除，客户关联将被解除。`,
+								title: `确认删除业务标签 "${t.name}"？`,
+								description: `删除后标签将彻底移除，客户关联将被解除。`,
 								confirmText: "确认删除",
 								cancelText: "取消",
 							}}
@@ -239,7 +228,7 @@ export function TagView({ data, total }: TagViewProps) {
 													? ("destructive" as const)
 													: ("default" as const),
 												confirm: {
-													title: `确认${isActive ? "停用" : "启用"}标签 "${t.tagName}"？`,
+													title: `确认${isActive ? "停用" : "启用"}标签 "${t.name}"？`,
 													description: isActive
 														? "停用后，新建或打标客户时将不可再选用该标签。"
 														: "启用后，该标签恢复正常打标使用。",
@@ -248,7 +237,7 @@ export function TagView({ data, total }: TagViewProps) {
 												},
 												onClick: () =>
 													handleToggleStatus(
-														t.tagCode,
+														t.id,
 														t.status || MasterDataStatus.ACTIVE,
 													),
 											},
@@ -281,7 +270,7 @@ export function TagView({ data, total }: TagViewProps) {
 			<DataTable<CustomerTagItem>
 				data={data}
 				columns={columns}
-				rowKey={(t: CustomerTagItem) => t.tagCode}
+				rowKey={(t: CustomerTagItem) => t.id}
 				subject={customerTagPageContract.subject}
 				title="业务标签字典"
 				description="维护配送策略、结算方式、信用分级等策略性业务标签。"
@@ -299,7 +288,7 @@ export function TagView({ data, total }: TagViewProps) {
 				}
 				createText="新增标签"
 				onExport={handleExport}
-				keywordPlaceholder="搜索标签编码、名称、说明..."
+				keywordPlaceholder="搜索标签名称、说明..."
 				statusOptions={[
 					{ value: "DELIVERY", label: "配送策略" },
 					{ value: "SETTLEMENT", label: "结算方式" },

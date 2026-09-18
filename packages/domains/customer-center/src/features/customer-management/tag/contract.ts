@@ -27,8 +27,7 @@ export const CustomerTagAction = {
 } as const;
 
 export const CustomerTagField = {
-	TAG_CODE: "tagCode",
-	TAG_NAME: "tagName",
+	NAME: "name",
 	TAG_TYPE: "tagType",
 	DESCRIPTION: "description",
 	STATUS: "status",
@@ -36,8 +35,7 @@ export const CustomerTagField = {
 
 /** 客户标签受控字段元数据定义 */
 export const customerTagConfigurableFields = [
-	{ field: CustomerTagField.TAG_CODE, label: "标签编码", sensitive: false },
-	{ field: CustomerTagField.TAG_NAME, label: "标签名称", sensitive: false },
+	{ field: CustomerTagField.NAME, label: "标签名称", sensitive: false },
 	{ field: CustomerTagField.TAG_TYPE, label: "标签业务类型", sensitive: false },
 	{
 		field: CustomerTagField.DESCRIPTION,

@@ -53,8 +53,16 @@ export function CategoryView({
 		open: boolean;
 		mode: "create" | "edit" | "view";
 		record?: CustomerCategoryItem | null;
-		defaultParentCode?: string | null;
-	}>({ open: false, mode: "create", record: null, defaultParentCode: null });
+		defaultParentId?: string | null;
+	}>({ open: false, mode: "create", record: null, defaultParentId: null });
+
+	const categoryMap = useMemo(() => {
+		const map = new Map<string, string>();
+		for (const c of categoryOptions.length > 0 ? categoryOptions : data) {
+			map.set(c.id, c.name);
+		}
+		return map;
+	}, [categoryOptions, data]);
 
 	const runAction = useCallback(
 		async (
@@ -81,13 +89,13 @@ export function CategoryView({
 	);
 
 	const handleToggleStatus = useCallback(
-		async (code: string, currentStatus: string) => {
+		async (id: string, currentStatus: string) => {
 			const nextStatus =
 				currentStatus === MasterDataStatus.ACTIVE
 					? MasterDataStatus.DISABLED
 					: MasterDataStatus.ACTIVE;
 			await runAction(
-				() => updateCategoryStatusAction(code, nextStatus),
+				() => updateCategoryStatusAction(id, nextStatus),
 				nextStatus === MasterDataStatus.ACTIVE ? "分类已启用" : "分类已停用",
 				"变更分类状态失败",
 			);
@@ -96,9 +104,9 @@ export function CategoryView({
 	);
 
 	const handleDelete = useCallback(
-		async (code: string) => {
+		async (id: string) => {
 			await runAction(
-				() => deleteCategoryAction(code),
+				() => deleteCategoryAction(id),
 				"分类已成功删除",
 				"删除分类失败",
 			);
@@ -125,22 +133,22 @@ export function CategoryView({
 	const columns: ColumnDef<CustomerCategoryItem>[] = useMemo(
 		() => [
 			{
-				id: "categoryName",
-				field: CustomerCategoryField.CATEGORY_NAME,
+				id: "name",
+				field: CustomerCategoryField.NAME,
 				header: "分类名称",
 				width: 260,
 				lockVisible: true,
 				cell: (c: CustomerCategoryItem) => (
 					<div className="flex items-center gap-1.5 py-0.5">
-						{c.parentCode ? (
+						{c.parentId ? (
 							<CornerDownRight className="size-3.5 text-muted-foreground/70 shrink-0 select-none" />
 						) : (
 							<Folder className="size-3.5 text-primary/70 shrink-0 select-none" />
 						)}
 						<span className="font-medium text-foreground text-xs">
-							{c.categoryName}
+							{c.name}
 						</span>
-						{!c.parentCode && (
+						{!c.parentId && (
 							<Badge
 								variant="outline"
 								size="sm"
@@ -153,36 +161,28 @@ export function CategoryView({
 				),
 			},
 			{
-				id: "categoryCode",
-				field: CustomerCategoryField.CATEGORY_CODE,
-				header: "分类编码",
-				width: 170,
-				cell: (c: CustomerCategoryItem) => (
-					<span className="font-mono text-xs font-bold text-primary">
-						{c.categoryCode}
-					</span>
-				),
-			},
-			{
-				id: "parentCode",
-				field: CustomerCategoryField.PARENT_CODE,
+				id: "parentId",
+				field: CustomerCategoryField.PARENT_ID,
 				header: "上级分类归属",
-				width: 150,
-				cell: (c: CustomerCategoryItem) => (
-					<span className="text-xs text-muted-foreground">
-						{c.parentCode ? (
-							<Badge
-								variant="secondary"
-								size="sm"
-								className="font-normal text-[11px]"
-							>
-								{c.parentCode}
-							</Badge>
-						) : (
-							<span className="text-muted-foreground/50">— 一级根节点 —</span>
-						)}
-					</span>
-				),
+				width: 180,
+				cell: (c: CustomerCategoryItem) => {
+					const parentName = c.parentId ? categoryMap.get(c.parentId) : null;
+					return (
+						<span className="text-xs text-muted-foreground">
+							{c.parentId ? (
+								<Badge
+									variant="secondary"
+									size="sm"
+									className="font-normal text-[11px]"
+								>
+									{parentName || c.parentId}
+								</Badge>
+							) : (
+								<span className="text-muted-foreground/50">— 一级根节点 —</span>
+							)}
+						</span>
+					);
+				},
 			},
 			{
 				id: "description",
@@ -228,7 +228,7 @@ export function CategoryView({
 									open: true,
 									mode: "view",
 									record: c,
-									defaultParentCode: null,
+									defaultParentId: null,
 								})
 							}
 							onEdit={
@@ -238,7 +238,7 @@ export function CategoryView({
 												open: true,
 												mode: "edit",
 												record: c,
-												defaultParentCode: null,
+												defaultParentId: null,
 											})
 									: undefined
 							}
@@ -254,7 +254,7 @@ export function CategoryView({
 														open: true,
 														mode: "create",
 														record: null,
-														defaultParentCode: c.categoryCode,
+														defaultParentId: c.id,
 													}),
 											},
 										]
@@ -268,7 +268,7 @@ export function CategoryView({
 													? ("destructive" as const)
 													: ("default" as const),
 												confirm: {
-													title: `确认${isActive ? "停用" : "启用"}分类 "${c.categoryName}"？`,
+													title: `确认${isActive ? "停用" : "启用"}分类 "${c.name}"？`,
 													description: isActive
 														? "停用后，该分类在新建/修改客户时将不再可选。"
 														: "启用后，该分类可在客户档案中正常选择使用。",
@@ -276,19 +276,14 @@ export function CategoryView({
 													cancelText: "取消",
 												},
 												onClick: () =>
-													handleToggleStatus(
-														c.categoryCode,
-														c.status || "ACTIVE",
-													),
+													handleToggleStatus(c.id, c.status || "ACTIVE"),
 											},
 										]
 									: []),
 							]}
-							onDelete={
-								canDelete ? () => handleDelete(c.categoryCode) : undefined
-							}
+							onDelete={canDelete ? () => handleDelete(c.id) : undefined}
 							deleteConfirm={{
-								title: `确认删除分类 "${c.categoryName}"？`,
+								title: `确认删除分类 "${c.name}"？`,
 								description:
 									"删除后该分类将彻底移除。若该分类下存在子级分类或有关联客户档案，系统将自动拦截并禁止删除。",
 								confirmText: "确认删除",
@@ -312,7 +307,14 @@ export function CategoryView({
 				},
 			},
 		],
-		[canCreate, canUpdate, canDelete, handleToggleStatus, handleDelete],
+		[
+			canCreate,
+			canUpdate,
+			canDelete,
+			categoryMap,
+			handleToggleStatus,
+			handleDelete,
+		],
 	);
 
 	return (
@@ -320,7 +322,7 @@ export function CategoryView({
 			<DataTable<CustomerCategoryItem>
 				data={data}
 				columns={columns}
-				rowKey={(c: CustomerCategoryItem) => c.categoryCode}
+				rowKey={(c: CustomerCategoryItem) => c.id}
 				subject={customerCategoryPageContract.subject}
 				title="客户分类管理"
 				description="按行业与业态构建客户分类体系与层级归属，支持快速延伸下级节点。"
@@ -333,13 +335,13 @@ export function CategoryView({
 									open: true,
 									mode: "create",
 									record: null,
-									defaultParentCode: null,
+									defaultParentId: null,
 								})
 						: undefined
 				}
 				createText="新增一级根分类"
 				onExport={handleExport}
-				keywordPlaceholder="搜索分类编码、名称、描述..."
+				keywordPlaceholder="搜索分类名称、描述..."
 				statusOptions={[
 					{ value: MasterDataStatus.ACTIVE, label: "正常" },
 					{ value: MasterDataStatus.DISABLED, label: "已停用" },
@@ -352,14 +354,14 @@ export function CategoryView({
 				<CategoryFormModal
 					mode={modalState.mode}
 					record={modalState.record}
-					defaultParentCode={modalState.defaultParentCode}
+					defaultParentId={modalState.defaultParentId}
 					categories={categoryOptions.length > 0 ? categoryOptions : data}
 					onClose={() =>
 						setModalState({
 							open: false,
 							mode: "create",
 							record: null,
-							defaultParentCode: null,
+							defaultParentId: null,
 						})
 					}
 					onSuccess={() => {
@@ -367,7 +369,7 @@ export function CategoryView({
 							open: false,
 							mode: "create",
 							record: null,
-							defaultParentCode: null,
+							defaultParentId: null,
 						});
 						router?.refresh();
 					}}

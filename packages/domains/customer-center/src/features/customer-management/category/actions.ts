@@ -44,7 +44,7 @@ export const createCategoryAction = defineServerAction(
 );
 
 export const updateCategoryAction = defineServerAction(
-	async (categoryCode: string, rawInput: UpdateCategoryInput) => {
+	async (id: string, rawInput: UpdateCategoryInput) => {
 		const { client, ability, userId, employeeProfile } =
 			await getTenantCustomerContext();
 		assertCustomerAbility(
@@ -56,7 +56,7 @@ export const updateCategoryAction = defineServerAction(
 		const input = parseUpdateCategoryInput(rawInput);
 		const updated = await CustomerCategoryService.updateCategory(
 			client,
-			categoryCode,
+			id,
 			input,
 			{
 				userId,
@@ -71,34 +71,27 @@ export const updateCategoryAction = defineServerAction(
 	"修改客户分类失败",
 );
 
-export const deleteCategoryAction = defineServerAction(
-	async (categoryCode: string) => {
-		const { client, ability, userId, employeeProfile } =
-			await getTenantCustomerContext();
-		assertCustomerAbility(
-			ability,
-			StandardAction.DELETE,
-			CustomerCategorySubject,
-		);
+export const deleteCategoryAction = defineServerAction(async (id: string) => {
+	const { client, ability, userId, employeeProfile } =
+		await getTenantCustomerContext();
+	assertCustomerAbility(
+		ability,
+		StandardAction.DELETE,
+		CustomerCategorySubject,
+	);
 
-		const deleted = await CustomerCategoryService.deleteCategory(
-			client,
-			categoryCode,
-			{
-				userId,
-				deptId: employeeProfile?.departmentId ?? null,
-			},
-		);
+	const deleted = await CustomerCategoryService.deleteCategory(client, id, {
+		userId,
+		deptId: employeeProfile?.departmentId ?? null,
+	});
 
-		revalidatePath("/customer/categories");
-		revalidatePath("/customer/customers");
-		return deleted;
-	},
-	"删除客户分类失败",
-);
+	revalidatePath("/customer/categories");
+	revalidatePath("/customer/customers");
+	return deleted;
+}, "删除客户分类失败");
 
 export const updateCategoryStatusAction = defineServerAction(
-	async (categoryCode: string, status: CustomerCategoryStatus) => {
+	async (id: string, status: CustomerCategoryStatus) => {
 		const { client, ability, userId } = await getTenantCustomerContext();
 		assertCustomerAbility(
 			ability,
@@ -108,7 +101,7 @@ export const updateCategoryStatusAction = defineServerAction(
 
 		const updated = await CustomerCategoryService.updateCategoryStatus(
 			client,
-			categoryCode,
+			id,
 			status,
 			{ userId },
 		);

@@ -11,8 +11,8 @@ datasource db {
 // 关联的基础客户模型扩展 (真实 owner 位于 customer-center)
 // @db-migrate-extension Customer
 model Customer {
-  customerCode String       @id @map("customer_code") @db.VarChar(30)
-  salesOrders  SalesOrder[]
+  id          String       @id @db.VarChar(36)
+  salesOrders SalesOrder[]
 
   @@map("customer")
 }
@@ -20,7 +20,7 @@ model Customer {
 // 关联的基础门店模型扩展 (真实 owner 位于 customer-center)
 // @db-migrate-extension CustomerStore
 model CustomerStore {
-  storeCode   String       @id @map("store_code") @db.VarChar(30)
+  id          String       @id @db.VarChar(36)
   salesOrders SalesOrder[]
 
   @@map("customer_store")
@@ -28,12 +28,14 @@ model CustomerStore {
 
 /// 销售订单单头：按 客户 + 门店 + 商品 + 数量 + 交货日期 维度的销售需求主单
 model SalesOrder {
+  /// 销售订单主键ID
+  id                  String    @id @default(cuid()) @db.VarChar(36)
   /// 销售订单唯一单号（系统自动生成，格式 SO-YYYYMMDD-XXXX）
-  orderId             String    @id @map("order_id") @db.VarChar(30)
-  /// 客户编码（关联 Customer）
-  customerCode        String    @map("customer_code") @db.VarChar(30)
-  /// 门店编码（关联 CustomerStore）
-  storeCode           String    @map("store_code") @db.VarChar(30)
+  orderNo             String    @unique @map("order_no") @db.VarChar(30)
+  /// 客户主键ID（关联 Customer.id）
+  customerId          String    @map("customer_id") @db.VarChar(36)
+  /// 门店主键ID（关联 CustomerStore.id）
+  storeId             String    @map("store_id") @db.VarChar(36)
   /// 下单日期
   orderDate           DateTime  @map("order_date") @db.Date
   /// 交货日期
@@ -106,12 +108,12 @@ model SalesOrder {
   /// 订单费用明细
   fees                SalesOrderFee[]
   /// 关联客户企业（逻辑外键，无物理约束）
-  customer            Customer?       @relation(fields: [customerCode], references: [customerCode], onUpdate: Restrict)
+  customer            Customer?       @relation(fields: [customerId], references: [id], onUpdate: Restrict)
   /// 关联履约门店（逻辑外键，无物理约束）
-  store               CustomerStore?  @relation(fields: [storeCode], references: [storeCode], onUpdate: Restrict)
+  store               CustomerStore?  @relation(fields: [storeId], references: [id], onUpdate: Restrict)
 
-  @@index([customerCode])
-  @@index([storeCode])
+  @@index([customerId])
+  @@index([storeId])
   @@index([orderDate])
   @@index([deliveryDate])
   @@index([status])
@@ -125,10 +127,10 @@ model SalesOrder {
 
 /// 销售订单明细行：具体采购的商品、数量、单价与履约进度
 model SalesOrderItem {
-  /// 订单明细主键（自动生成，格式 SOD-YYYYMMDD-XXXX-XX）
-  orderDetailId        String    @id @map("order_detail_id") @db.VarChar(50)
-  /// 所属销售订单号
-  orderId              String    @map("order_id") @db.VarChar(30)
+  /// 订单明细主键ID
+  id                   String    @id @default(cuid()) @db.VarChar(36)
+  /// 所属销售订单主键ID
+  orderId              String    @map("order_id") @db.VarChar(36)
   /// 商品档案唯一编码
   itemCode             String    @map("item_code") @db.VarChar(50)
   /// 商品名称
@@ -155,7 +157,7 @@ model SalesOrderItem {
   remark               String?   @db.VarChar(200)
 
   /// 关联销售订单主表
-  order                SalesOrder @relation(fields: [orderId], references: [orderId], onDelete: Cascade, onUpdate: Cascade)
+  order                SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([orderId])
   @@index([itemCode])
@@ -164,10 +166,10 @@ model SalesOrderItem {
 
 /// 销售订单附加费用明细：快递费、材料费、包装费等，独立复核
 model SalesOrderFee {
-  /// 费用主键（自动生成，格式 SOF-YYYYMMDD-XXXX-XX）
-  feeId                String    @id @map("fee_id") @db.VarChar(50)
-  /// 关联订单号
-  orderId              String    @map("order_id") @db.VarChar(30)
+  /// 费用主键ID
+  id                   String    @id @default(cuid()) @db.VarChar(36)
+  /// 关联订单主键ID
+  orderId              String    @map("order_id") @db.VarChar(36)
   /// 费用类型：EXPRESS(快递费) / MATERIAL(材料费) / PACKAGING(包装费) / FREIGHT(运费) / OTHER(其他)
   feeType              String    @map("fee_type") @db.VarChar(20)
   /// 费用金额（正数为应收，负数为折让）
@@ -188,7 +190,7 @@ model SalesOrderFee {
   updatedAt            DateTime  @updatedAt @map("updated_at")
 
   /// 关联销售订单主表
-  order                SalesOrder @relation(fields: [orderId], references: [orderId], onDelete: Cascade, onUpdate: Cascade)
+  order                SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([orderId])
   @@index([auditStatus])

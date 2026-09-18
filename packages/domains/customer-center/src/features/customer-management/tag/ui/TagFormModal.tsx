@@ -26,8 +26,7 @@ export function TagFormModal({
 
 	const initialValues: CreateTagSchema = useMemo(
 		() => ({
-			tagCode: record?.tagCode || "",
-			tagName: record?.tagName || "",
+			name: record?.name || "",
 			tagType: record?.tagType || "DELIVERY",
 			description: record?.description || "",
 		}),
@@ -36,19 +35,8 @@ export function TagFormModal({
 
 	const fields: FormFieldSchema[] = useMemo(
 		() => [
-			...(isEdit || isView
-				? ([
-						{
-							name: "tagCode",
-							label: "标签编码 (唯一标识)",
-							type: "text" as const,
-							disabled: true,
-							hint: isView ? undefined : "标签唯一标识由系统自动生成，不可修改",
-						},
-					] as FormFieldSchema[])
-				: []),
 			{
-				name: "tagName",
+				name: "name",
 				label: "标签名称",
 				type: "text" as const,
 				required: !isView,
@@ -77,13 +65,13 @@ export function TagFormModal({
 				placeholder: "标签打标规则与适用场景",
 			},
 		],
-		[isEdit, isView],
+		[isView],
 	);
 
 	const title = isView
-		? `查看标签: ${record?.tagName || record?.tagCode}`
+		? `查看标签: ${record?.name || record?.id}`
 		: isEdit
-			? `编辑标签: ${record?.tagName}`
+			? `编辑标签: ${record?.name}`
 			: "新建业务标签";
 
 	return (
@@ -98,7 +86,7 @@ export function TagFormModal({
 					? "查看业务标签详细配置与打标规则"
 					: isEdit
 						? "修改业务标签名称、类型及打标业务规则"
-						: "标签编码由系统自动生成（格式：TAG_YYYYMMDD_XXXX），无需人工维护"
+						: "填写业务标签名称与类型"
 			}
 			schema={createTagSchema}
 			fields={fields}
@@ -110,8 +98,8 @@ export function TagFormModal({
 					return;
 				}
 				if (isEdit && record) {
-					const res = await updateTagAction(record.tagCode, {
-						tagName: values.tagName,
+					const res = await updateTagAction(record.id, {
+						name: values.name,
 						tagType: values.tagType,
 						description: values.description || null,
 					});
@@ -119,10 +107,10 @@ export function TagFormModal({
 						toast.error(res.error || "修改标签失败");
 						throw new Error(res.error || "修改标签失败");
 					}
-					toast.success("业务标签修改成功");
+					toast.success("标签已成功更新");
 				} else {
 					const res = await createTagAction({
-						tagName: values.tagName,
+						name: values.name,
 						tagType: values.tagType,
 						description: values.description || null,
 					});

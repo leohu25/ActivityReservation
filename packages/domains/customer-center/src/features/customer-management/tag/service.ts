@@ -1,9 +1,5 @@
 import type { TenantPrismaClient } from "@base/db-tenant";
-import {
-	MasterDataStatus,
-	generateDateSerialCode,
-	retryOnUniqueConflict,
-} from "@base/shared";
+import { MasterDataStatus } from "@base/shared";
 import type {
 	CreateTagInput,
 	UpdateTagInput,
@@ -16,45 +12,10 @@ export interface TagAuditContext {
 	deptId?: string | null;
 }
 
-type TagTxClient = Parameters<
-	Parameters<TenantPrismaClient["$transaction"]>[0]
->[0];
-
 /**
  * 客户业务标签领域服务
  */
 export class CustomerTagService {
-	/**
-	 * 自动生成标签唯一编码: TAG_YYYYMMDD_XXXX
-	 * 调用方必须持有 advisory lock 避免并发冲突
-	 */
-	static async generateTagCode(
-		client:
-			| TenantPrismaClient
-			| TagTxClient
-			| { customerTag: TenantPrismaClient["customerTag"] },
-	): Promise<string> {
-		const today = new Date();
-		const yyyy = today.getFullYear();
-		const mm = String(today.getMonth() + 1).padStart(2, "0");
-		const dd = String(today.getDate()).padStart(2, "0");
-		const prefix = `TAG_${yyyy}${mm}${dd}_`;
-
-		const latest = await client.customerTag.findFirst({
-			where: { tagCode: { startsWith: prefix } },
-			orderBy: { tagCode: "desc" },
-			select: { tagCode: true },
-		});
-
-		return generateDateSerialCode({
-			prefix: "TAG",
-			separator: "_",
-			digits: 4,
-			latestCode: latest?.tagCode,
-			now: today,
-		});
-	}
-
 	/**
 	 * 分页查询标签列表（服务端分页：count + skip/take）
 	 */
@@ -87,8 +48,7 @@ export class CustomerTagService {
 		if (filter.keyword && filter.keyword.trim().length > 0) {
 			const kw = filter.keyword.trim();
 			where.OR = [
-				{ tagCode: { contains: kw, mode: "insensitive" } },
-				{ tagName: { contains: kw, mode: "insensitive" } },
+				{ name: { contains: kw, mode: "insensitive" } },
 				{ description: { contains: kw, mode: "insensitive" } },
 			];
 		}
@@ -141,46 +101,21 @@ export class CustomerTagService {
 	}
 
 	/**
-	 * 创建标签（事务 + advisory lock 稳定发号 + p-retry 重试保护）
+	 * 创建标签
 	 */
 	static async createTag(
 		client: TenantPrismaClient,
 		input: CreateTagInput,
 		_auditCtx?: TagAuditContext,
 	) {
-		return await retryOnUniqueConflict(
-			async () => {
-				const execute = async (tx: TagTxClient | TenantPrismaClient) => {
-					if ("$executeRaw" in tx && typeof tx.$executeRaw === "function") {
-						await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('customer_tag_code'))`;
-					}
-
-					const tagCode =
-						input.tagCode && input.tagCode.trim().length > 0
-							? input.tagCode.trim()
-							: await CustomerTagService.generateTagCode(tx);
-
-					return tx.customerTag.create({
-						data: {
-							tagCode,
-							tagName: input.tagName,
-							tagType: input.tagType,
-							description: input.description,
-							status: MasterDataStatus.ACTIVE,
-						},
-					});
-				};
-
-				if (
-					"$transaction" in client &&
-					typeof client.$transaction === "function"
-				) {
-					return await client.$transaction((tx) => execute(tx));
-				}
-				return await execute(client);
+		return client.customerTag.create({
+			data: {
+				name: input.name,
+				tagType: input.tagType,
+				description: input.description,
+				status: MasterDataStatus.ACTIVE,
 			},
-			{ retries: 3 },
-		);
+		});
 	}
 
 	/**
@@ -188,21 +123,21 @@ export class CustomerTagService {
 	 */
 	static async updateTag(
 		client: TenantPrismaClient,
-		tagCode: string,
+		id: string,
 		input: UpdateTagInput,
 		_auditCtx?: TagAuditContext,
 	) {
 		const existing = await client.customerTag.findUnique({
-			where: { tagCode },
+			where: { id },
 		});
 		if (!existing) {
-			throw new Error(`标签 [${tagCode}] 不存在`);
+			throw new Error(`标签 [${id}] 不存在`);
 		}
 
 		return client.customerTag.update({
-			where: { tagCode },
+			where: { id },
 			data: {
-				...(input.tagName !== undefined && { tagName: input.tagName }),
+				...(input.name !== undefined && { name: input.name }),
 				...(input.tagType !== undefined && { tagType: input.tagType }),
 				...(input.description !== undefined && {
 					description: input.description,
@@ -216,19 +151,19 @@ export class CustomerTagService {
 	 */
 	static async updateTagStatus(
 		client: TenantPrismaClient,
-		tagCode: string,
+		id: string,
 		status: CustomerTagStatus,
 		_auditCtx?: TagAuditContext,
 	) {
 		const existing = await client.customerTag.findUnique({
-			where: { tagCode },
+			where: { id },
 		});
 		if (!existing) {
-			throw new Error(`标签 [${tagCode}] 不存在`);
+			throw new Error(`标签 [${id}] 不存在`);
 		}
 
 		return client.customerTag.update({
-			where: { tagCode },
+			where: { id },
 			data: { status },
 		});
 	}
@@ -238,12 +173,12 @@ export class CustomerTagService {
 	 */
 	static async deleteTag(
 		client: TenantPrismaClient,
-		tagCode: string,
+		id: string,
 		_auditCtx?: TagAuditContext,
 	) {
 		if (client.customerTagAssignment) {
 			const assignmentCount = await client.customerTagAssignment.count({
-				where: { tagCode },
+				where: { tagId: id },
 			});
 			if (assignmentCount > 0) {
 				throw new Error(
@@ -253,14 +188,14 @@ export class CustomerTagService {
 		}
 
 		const existing = await client.customerTag.findUnique({
-			where: { tagCode },
+			where: { id },
 		});
 		if (!existing) {
-			throw new Error(`标签 [${tagCode}] 不存在`);
+			throw new Error(`标签 [${id}] 不存在`);
 		}
 
 		return client.customerTag.delete({
-			where: { tagCode },
+			where: { id },
 		});
 	}
 }

@@ -39,5 +39,6 @@ test("category.contract: 客户分类契约基本元数据完整性", () => {
 	assert.ok(actionNames.includes(StandardAction.DELETE));
 	assert.ok(actionNames.includes(CustomerCategoryAction.TOGGLE_STATUS));
 
-	assert.equal(CustomerCategoryField.CATEGORY_CODE, "categoryCode");
+	assert.equal(CustomerCategoryField.NAME, "name");
+	assert.equal(CustomerCategoryField.PARENT_ID, "parentId");
 });

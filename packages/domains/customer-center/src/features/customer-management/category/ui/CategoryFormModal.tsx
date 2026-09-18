@@ -10,7 +10,7 @@ import type { CustomerCategoryItem } from "../types";
 export interface CategoryFormModalProps {
 	readonly mode: "create" | "edit" | "view";
 	readonly record?: CustomerCategoryItem | null;
-	readonly defaultParentCode?: string | null;
+	readonly defaultParentId?: string | null;
 	readonly categories: readonly CustomerCategoryItem[];
 	readonly onClose: () => void;
 	readonly onSuccess?: () => void;
@@ -20,16 +20,16 @@ export interface CategoryFormModalProps {
 function flattenCategoryTree(
 	list: readonly CustomerCategoryItem[],
 	depth = 0,
-): { categoryCode: string; categoryName: string; depth: number }[] {
+): { id: string; name: string; depth: number }[] {
 	const result: {
-		categoryCode: string;
-		categoryName: string;
+		id: string;
+		name: string;
 		depth: number;
 	}[] = [];
 	for (const item of list) {
 		result.push({
-			categoryCode: item.categoryCode,
-			categoryName: `${"— ".repeat(depth)}${item.categoryName}`,
+			id: item.id,
+			name: `${"— ".repeat(depth)}${item.name}`,
 			depth,
 		});
 		if (item.children && item.children.length > 0) {
@@ -43,7 +43,7 @@ function flattenCategoryTree(
 export function CategoryFormModal({
 	mode,
 	record,
-	defaultParentCode,
+	defaultParentId,
 	categories,
 	onClose,
 	onSuccess,
@@ -55,7 +55,7 @@ export function CategoryFormModal({
 		() =>
 			flattenCategoryTree(
 				(isEdit || isView) && record
-					? categories.filter((c) => c.categoryCode !== record.categoryCode)
+					? categories.filter((c) => c.id !== record.id)
 					: categories,
 			),
 		[categories, isEdit, isView, record],
@@ -63,29 +63,17 @@ export function CategoryFormModal({
 
 	const initialValues: CreateCategorySchema = useMemo(
 		() => ({
-			categoryCode: record?.categoryCode || "",
-			categoryName: record?.categoryName || "",
-			parentCode: record?.parentCode || defaultParentCode || "",
+			name: record?.name || "",
+			parentId: record?.parentId || defaultParentId || "",
 			description: record?.description || "",
 		}),
-		[record, defaultParentCode],
+		[record, defaultParentId],
 	);
 
 	const fields: FormFieldSchema[] = useMemo(
 		() => [
-			...(isEdit || isView
-				? ([
-						{
-							name: "categoryCode",
-							label: "分类编码",
-							type: "text" as const,
-							disabled: true,
-							hint: "分类唯一编码，由系统自动生成",
-						},
-					] as FormFieldSchema[])
-				: []),
 			{
-				name: "categoryName",
+				name: "name",
 				label: "分类名称",
 				type: "text" as const,
 				required: !isView,
@@ -93,7 +81,7 @@ export function CategoryFormModal({
 				placeholder: "如: 连锁餐饮 / 企事业单位",
 			},
 			{
-				name: "parentCode",
+				name: "parentId",
 				label: "父级分类",
 				type: "select" as const,
 				disabled: isView,
@@ -101,8 +89,8 @@ export function CategoryFormModal({
 				options: [
 					{ value: "", label: "(无父级 · 作为一级根分类)" },
 					...flatOptions.map((c) => ({
-						value: c.categoryCode,
-						label: `${c.categoryName} (${c.categoryCode})`,
+						value: c.id,
+						label: c.name,
 					})),
 				],
 			},
@@ -115,15 +103,15 @@ export function CategoryFormModal({
 				placeholder: "分类适用范围与说明",
 			},
 		],
-		[flatOptions, isEdit, isView],
+		[flatOptions, isView],
 	);
 
 	const title = isView
-		? `查看分类: ${record?.categoryName || record?.categoryCode}`
+		? `查看分类: ${record?.name || record?.id}`
 		: isEdit
-			? `编辑分类: ${record?.categoryName}`
-			: defaultParentCode
-				? `新增下级分类 (归属于: ${defaultParentCode})`
+			? `编辑分类: ${record?.name}`
+			: defaultParentId
+				? `新增下级分类`
 				: "新增一级根分类";
 
 	return (
@@ -138,7 +126,7 @@ export function CategoryFormModal({
 					? "查看分类基本信息、上级归属及业务说明"
 					: isEdit
 						? "更新分类名称、上级归属及业务说明"
-						: "分类编码由系统自动生成（格式：CAT_YYYYMMDD_XXXX），无需人工维护"
+						: "填写分类名称与上级归属"
 			}
 			schema={createCategorySchema}
 			fields={fields}
@@ -150,9 +138,9 @@ export function CategoryFormModal({
 					return;
 				}
 				if (isEdit && record) {
-					const res = await updateCategoryAction(record.categoryCode, {
-						categoryName: values.categoryName,
-						parentCode: values.parentCode || null,
+					const res = await updateCategoryAction(record.id, {
+						name: values.name,
+						parentId: values.parentId || null,
 						description: values.description || null,
 					});
 					if (!res.success) {
@@ -162,8 +150,8 @@ export function CategoryFormModal({
 					toast.success("分类已成功更新");
 				} else {
 					const res = await createCategoryAction({
-						categoryName: values.categoryName,
-						parentCode: values.parentCode || null,
+						name: values.name,
+						parentId: values.parentId || null,
 						description: values.description || null,
 					});
 					if (!res.success) {

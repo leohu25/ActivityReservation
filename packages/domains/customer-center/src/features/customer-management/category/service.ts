@@ -1,9 +1,5 @@
 import type { TenantPrismaClient } from "@base/db-tenant";
-import {
-	MasterDataStatus,
-	generateDateSerialCode,
-	retryOnUniqueConflict,
-} from "@base/shared";
+import { MasterDataStatus } from "@base/shared";
 import type {
 	CreateCategoryInput,
 	UpdateCategoryInput,
@@ -16,45 +12,10 @@ export interface CategoryAuditContext {
 	deptId?: string | null;
 }
 
-type CategoryTxClient = Parameters<
-	Parameters<TenantPrismaClient["$transaction"]>[0]
->[0];
-
 /**
  * 客户分类领域服务
  */
 export class CustomerCategoryService {
-	/**
-	 * 自动生成分类唯一编码: CAT_YYYYMMDD_XXXX
-	 * 调用方必须持有 advisory lock 避免并发冲突
-	 */
-	static async generateCategoryCode(
-		client:
-			| TenantPrismaClient
-			| CategoryTxClient
-			| { customerCategory: TenantPrismaClient["customerCategory"] },
-	): Promise<string> {
-		const today = new Date();
-		const yyyy = today.getFullYear();
-		const mm = String(today.getMonth() + 1).padStart(2, "0");
-		const dd = String(today.getDate()).padStart(2, "0");
-		const prefix = `CAT_${yyyy}${mm}${dd}_`;
-
-		const latest = await client.customerCategory.findFirst({
-			where: { categoryCode: { startsWith: prefix } },
-			orderBy: { categoryCode: "desc" },
-			select: { categoryCode: true },
-		});
-
-		return generateDateSerialCode({
-			prefix: "CAT",
-			separator: "_",
-			digits: 4,
-			latestCode: latest?.categoryCode,
-			now: today,
-		});
-	}
-
 	/**
 	 * 分页查询分类列表（服务端分页：count + skip/take）
 	 */
@@ -83,8 +44,7 @@ export class CustomerCategoryService {
 		if (filter.keyword && filter.keyword.trim().length > 0) {
 			const kw = filter.keyword.trim();
 			where.OR = [
-				{ categoryCode: { contains: kw, mode: "insensitive" } },
-				{ categoryName: { contains: kw, mode: "insensitive" } },
+				{ name: { contains: kw, mode: "insensitive" } },
 				{ description: { contains: kw, mode: "insensitive" } },
 			];
 		}
@@ -143,10 +103,10 @@ export class CustomerCategoryService {
 
 		const map = new Map<string, CustomerCategoryItem>();
 		for (const item of list) {
-			map.set(item.categoryCode, {
-				categoryCode: item.categoryCode,
-				categoryName: item.categoryName,
-				parentCode: item.parentCode ?? null,
+			map.set(item.id, {
+				id: item.id,
+				name: item.name,
+				parentId: item.parentId ?? null,
 				description: item.description ?? null,
 				status: item.status ?? MasterDataStatus.ACTIVE,
 				children: [],
@@ -155,9 +115,9 @@ export class CustomerCategoryService {
 
 		const tree: CustomerCategoryItem[] = [];
 		for (const item of list) {
-			const node = map.get(item.categoryCode)!;
-			if (item.parentCode && map.has(item.parentCode)) {
-				map.get(item.parentCode)!.children!.push(node);
+			const node = map.get(item.id)!;
+			if (item.parentId && map.has(item.parentId)) {
+				map.get(item.parentId)!.children!.push(node);
 			} else {
 				tree.push(node);
 			}
@@ -167,55 +127,30 @@ export class CustomerCategoryService {
 	}
 
 	/**
-	 * 创建分类（事务 + advisory lock + p-retry 重试保护）
+	 * 创建分类
 	 */
 	static async createCategory(
 		client: TenantPrismaClient,
 		input: CreateCategoryInput,
 		_auditCtx?: CategoryAuditContext,
 	) {
-		return await retryOnUniqueConflict(
-			async () => {
-				const execute = async (tx: CategoryTxClient | TenantPrismaClient) => {
-					if ("$executeRaw" in tx && typeof tx.$executeRaw === "function") {
-						await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('customer_category_code'))`;
-					}
+		if (input.parentId) {
+			const parent = await client.customerCategory.findUnique({
+				where: { id: input.parentId },
+			});
+			if (!parent) {
+				throw new Error(`指定的父级分类 [${input.parentId}] 不存在`);
+			}
+		}
 
-					if (input.parentCode) {
-						const parent = await tx.customerCategory.findUnique({
-							where: { categoryCode: input.parentCode },
-						});
-						if (!parent) {
-							throw new Error(`指定的父级分类 [${input.parentCode}] 不存在`);
-						}
-					}
-
-					const categoryCode =
-						input.categoryCode && input.categoryCode.trim().length > 0
-							? input.categoryCode.trim()
-							: await CustomerCategoryService.generateCategoryCode(tx);
-
-					return tx.customerCategory.create({
-						data: {
-							categoryCode,
-							categoryName: input.categoryName,
-							parentCode: input.parentCode || null,
-							description: input.description,
-							status: MasterDataStatus.ACTIVE,
-						},
-					});
-				};
-
-				if (
-					"$transaction" in client &&
-					typeof client.$transaction === "function"
-				) {
-					return await client.$transaction((tx) => execute(tx));
-				}
-				return await execute(client);
+		return client.customerCategory.create({
+			data: {
+				name: input.name,
+				parentId: input.parentId || null,
+				description: input.description,
+				status: MasterDataStatus.ACTIVE,
 			},
-			{ retries: 3 },
-		);
+		});
 	}
 
 	/**
@@ -223,37 +158,37 @@ export class CustomerCategoryService {
 	 */
 	static async updateCategory(
 		client: TenantPrismaClient,
-		categoryCode: string,
+		id: string,
 		input: UpdateCategoryInput,
 		_auditCtx?: CategoryAuditContext,
 	) {
 		const existing = await client.customerCategory.findUnique({
-			where: { categoryCode },
+			where: { id },
 		});
 		if (!existing) {
-			throw new Error(`分类 [${categoryCode}] 不存在`);
+			throw new Error(`分类 [${id}] 不存在`);
 		}
 
-		if (input.parentCode) {
-			if (input.parentCode === categoryCode) {
+		if (input.parentId) {
+			if (input.parentId === id) {
 				throw new Error("父级分类不能选择自身");
 			}
 			const parent = await client.customerCategory.findUnique({
-				where: { categoryCode: input.parentCode },
+				where: { id: input.parentId },
 			});
 			if (!parent) {
-				throw new Error(`指定的父级分类 [${input.parentCode}] 不存在`);
+				throw new Error(`指定的父级分类 [${input.parentId}] 不存在`);
 			}
 		}
 
 		return client.customerCategory.update({
-			where: { categoryCode },
+			where: { id },
 			data: {
-				...(input.categoryName !== undefined && {
-					categoryName: input.categoryName,
+				...(input.name !== undefined && {
+					name: input.name,
 				}),
-				...(input.parentCode !== undefined && {
-					parentCode: input.parentCode || null,
+				...(input.parentId !== undefined && {
+					parentId: input.parentId || null,
 				}),
 				...(input.description !== undefined && {
 					description: input.description,
@@ -267,19 +202,19 @@ export class CustomerCategoryService {
 	 */
 	static async updateCategoryStatus(
 		client: TenantPrismaClient,
-		categoryCode: string,
+		id: string,
 		status: CustomerCategoryStatus,
 		_auditCtx?: CategoryAuditContext,
 	) {
 		const existing = await client.customerCategory.findUnique({
-			where: { categoryCode },
+			where: { id },
 		});
 		if (!existing) {
-			throw new Error(`分类 [${categoryCode}] 不存在`);
+			throw new Error(`分类 [${id}] 不存在`);
 		}
 
 		return client.customerCategory.update({
-			where: { categoryCode },
+			where: { id },
 			data: { status },
 		});
 	}
@@ -289,12 +224,12 @@ export class CustomerCategoryService {
 	 */
 	static async deleteCategory(
 		client: TenantPrismaClient,
-		categoryCode: string,
+		id: string,
 		_auditCtx?: CategoryAuditContext,
 	) {
 		if (client.customerCategory?.count) {
 			const childCount = await client.customerCategory.count({
-				where: { parentCode: categoryCode },
+				where: { parentId: id },
 			});
 			if (childCount > 0) {
 				throw new Error(
@@ -305,7 +240,7 @@ export class CustomerCategoryService {
 
 		if (client.customer?.count) {
 			const customerCount = await client.customer.count({
-				where: { categoryCode, isDeleted: false },
+				where: { categoryId: id, isDeleted: false },
 			});
 			if (customerCount > 0) {
 				throw new Error(
@@ -316,15 +251,15 @@ export class CustomerCategoryService {
 
 		if (client.customerCategory?.findUnique) {
 			const existing = await client.customerCategory.findUnique({
-				where: { categoryCode },
+				where: { id },
 			});
 			if (!existing) {
-				throw new Error(`分类 [${categoryCode}] 不存在`);
+				throw new Error(`分类 [${id}] 不存在`);
 			}
 		}
 
 		return client.customerCategory.delete({
-			where: { categoryCode },
+			where: { id },
 		});
 	}
 }

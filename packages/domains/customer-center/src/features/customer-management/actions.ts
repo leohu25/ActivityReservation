@@ -35,17 +35,14 @@ export const createCustomerAction = defineServerAction(
 );
 
 export const updateCustomerAction = defineServerAction(
-	async (customerCode: string, rawInput: UpdateCustomerInput) => {
+	async (id: string, rawInput: UpdateCustomerInput) => {
 		const { client, ability, userId } = await getTenantCustomerContext();
 		assertCustomerAbility(ability, StandardAction.UPDATE, CustomerSubject);
 
 		const input = parseUpdateCustomerInput(rawInput);
-		const updated = await CustomerService.updateCustomer(
-			client,
-			customerCode,
-			input,
-			{ userId },
-		);
+		const updated = await CustomerService.updateCustomer(client, id, input, {
+			userId,
+		});
 
 		revalidatePath("/customer/customers");
 		return updated;
@@ -53,23 +50,20 @@ export const updateCustomerAction = defineServerAction(
 	"更新客户失败",
 );
 
-export const deleteCustomerAction = defineServerAction(
-	async (customerCode: string) => {
-		const { client, ability, userId } = await getTenantCustomerContext();
-		assertCustomerAbility(ability, StandardAction.DELETE, CustomerSubject);
+export const deleteCustomerAction = defineServerAction(async (id: string) => {
+	const { client, ability, userId } = await getTenantCustomerContext();
+	assertCustomerAbility(ability, StandardAction.DELETE, CustomerSubject);
 
-		const deleted = await CustomerService.deleteCustomer(client, customerCode, {
-			userId,
-		});
+	const deleted = await CustomerService.deleteCustomer(client, id, {
+		userId,
+	});
 
-		revalidatePath("/customer/customers");
-		return deleted;
-	},
-	"删除客户失败",
-);
+	revalidatePath("/customer/customers");
+	return deleted;
+}, "删除客户失败");
 
 export const updateCustomerStatusAction = defineServerAction(
-	async (customerCode: string, status: CustomerStatus) => {
+	async (id: string, status: CustomerStatus) => {
 		const { client, ability, userId } = await getTenantCustomerContext();
 		assertCustomerAbility(
 			ability,
@@ -79,7 +73,7 @@ export const updateCustomerStatusAction = defineServerAction(
 
 		const updated = await CustomerService.updateCustomerStatus(
 			client,
-			customerCode,
+			id,
 			status,
 			{ userId },
 		);

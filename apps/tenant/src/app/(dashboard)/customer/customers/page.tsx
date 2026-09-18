@@ -24,7 +24,7 @@ export default async function CustomersPage({ searchParams }: PageProps) {
 			page: parsed.page,
 			pageSize: parsed.pageSize,
 			keyword: String(parsed.keyword ?? "") || undefined,
-			categoryCode: String(parsed.category ?? "") || undefined,
+			categoryId: String(parsed.categoryId ?? "") || undefined,
 			status: String(parsed.status ?? "") || undefined,
 		}),
 		getCustomerPageOptionsQuery(),

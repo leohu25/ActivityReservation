@@ -77,6 +77,7 @@
 | `pnpm db:migrate:baseline`                | 为已有数据库打基线：`--scope platform/tenant`                                                          | 存量库接入管理                 |
 | `pnpm db:migrate:baseline:reset:tenant`   | 重置租户基线：`--scope tenant --reset`                                                                 | 租户基线异常重建 (谨慎)        |
 | `pnpm db:migrate:baseline:reset:platform` | 重置平台基线：`--scope platform --reset`                                                               | 平台基线异常重建 (谨慎)        |
+| `pnpm db:tenant:reset`                    | 本地开发一键清空并重置租户物理库为最新 Baseline（自动灌装最新 DDL、迁移账本与组织种子）                | 本地开发重置基线后一键刷新     |
 
 ### `db:migrate:check`（4 项静态一致性门禁）
 

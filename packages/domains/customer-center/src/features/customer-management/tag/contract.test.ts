@@ -41,5 +41,6 @@ test("tag.contract: 客户标签契约基本元数据完整性", () => {
 	assert.ok(actionNames.includes(StandardAction.DELETE));
 	assert.ok(actionNames.includes(CustomerTagAction.TOGGLE_STATUS));
 
-	assert.equal(CustomerTagField.TAG_CODE, "tagCode");
+	assert.equal(CustomerTagField.NAME, "name");
+	assert.equal(CustomerTagField.TAG_TYPE, "tagType");
 });

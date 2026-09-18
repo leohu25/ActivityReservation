@@ -2,14 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { CustomerService } from "./service";
 
-test("CustomerService 自动递增编码并级联停用门店", async () => {
-	const today = new Date();
-	const prefix = `CUST-${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}-`;
-	const code = await CustomerService.generateCustomerCode({
-		customer: { findFirst: async () => ({ customerCode: `${prefix}0008` }) },
-	} as never);
-	assert.equal(code, `${prefix}0009`);
-
+test("CustomerService updateCustomerStatus 级联停用门店", async () => {
 	let storesStatus = "";
 	await CustomerService.updateCustomerStatus(
 		{
@@ -25,7 +18,7 @@ test("CustomerService 自动递增编码并级联停用门店", async () => {
 					},
 				}),
 		} as never,
-		"CUST-001",
+		"cust-001",
 		"DISABLED",
 		{ userId: "u-admin" },
 	);
@@ -40,16 +33,15 @@ test("CustomerService 创建客户时注入 createdById 与 deptId 基础审计�
 				$executeRaw: async () => 0,
 				$queryRaw: async () => [],
 				customerCategory: {
-					findUnique: async () => ({ categoryCode: "CAT-1" }),
+					findUnique: async () => ({ id: "cat-1", name: "分类1" }),
 				},
 				customerTag: {
 					findMany: async () => [],
 				},
 				customer: {
-					findFirst: async () => null,
 					create: async ({ data }: { data: any }) => {
 						createdData = data;
-						return { customerCode: data.customerCode, ...data };
+						return { id: "cust-new-1", ...data };
 					},
 				},
 			}),
@@ -58,8 +50,8 @@ test("CustomerService 创建客户时注入 createdById 与 deptId 基础审计�
 	await CustomerService.createCustomer(
 		mockClient as never,
 		{
-			customerName: "测试企业客户",
-			categoryCode: "CAT-1",
+			name: "测试企业客户",
+			categoryId: "cat-1",
 			contactPerson: "张三",
 			contactPhone: "13800138000",
 			settlementMethod: "MONTHLY",
@@ -71,6 +63,8 @@ test("CustomerService 创建客户时注入 createdById 与 deptId 基础审计�
 	);
 
 	assert.ok(createdData);
+	assert.equal(createdData.name, "测试企业客户");
+	assert.equal(createdData.categoryId, "cat-1");
 	assert.equal(createdData.createdById, "user-creator-123");
 	assert.equal(createdData.updatedById, "user-creator-123");
 	assert.equal(createdData.deptId, "dept-sales-456");
@@ -125,12 +119,12 @@ test("CustomerService deleteCustomer 执行软删除并记录审计信息", asyn
 		customer: {
 			update: async ({ where, data }: { where: any; data: any }) => {
 				updatedRecord = { where, data };
-				return { customerCode: where.customerCode, ...data };
+				return { id: where.id, ...data };
 			},
 		},
 	};
 
-	await CustomerService.deleteCustomer(mockClient as never, "CUST-001", {
+	await CustomerService.deleteCustomer(mockClient as never, "cust-001", {
 		userId: "user-remover-999",
 	});
 
@@ -147,7 +141,7 @@ test("CustomerService 拒绝删除有关联活跃门店或报价单的客户", a
 				customerStore: { count: async () => 1 },
 				customerQuote: { count: async () => 0 },
 			} as never,
-			"CUST-001",
+			"cust-001",
 		),
 		/禁止删除/,
 	);

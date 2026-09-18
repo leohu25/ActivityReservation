@@ -46,6 +46,24 @@
 - `packages/base/shared/src/utils/index.ts`
 - `packages/base/shared/src/utils/retry.ts`
 
+### @ c7d26802 联动修改自动登记
+
+- `.archive/domains/order-center/prisma/schema.prisma`
+- `tooling/db-migrate/baselines/tenant/20260917031400/baseline.sql`
+- `tooling/db-migrate/baselines/tenant/20260917031400/manifest.json`
+- `tooling/db-migrate/baselines/tenant/20260917031400/schema.prisma`
+- `tooling/db-migrate/generated/runtime-catalog.ts`
+- `tooling/db-migrate/baselines/tenant/20260918105431/baseline.sql`
+- `tooling/db-migrate/baselines/tenant/20260918105431/manifest.json`
+- `tooling/db-migrate/baselines/tenant/20260918105431/schema.prisma`
+
+- `tooling/db-migrate/src/cli.ts`
+- `tooling/db-migrate/src/runtime/local-reset.ts`
+
+- `tooling/db-migrate/baselines/tenant/20260918113106/baseline.sql`
+- `tooling/db-migrate/baselines/tenant/20260918113106/manifest.json`
+- `tooling/db-migrate/baselines/tenant/20260918113106/schema.prisma`
+
 ## 范围约束
 
 - 聚焦客户中心 `customer-management` 及对应路由，作为全仓 CRUD 黄金标杆。

@@ -238,9 +238,9 @@ model CompanyProfile {
 }
 
 model Customer {
-  customerCode     String   @id @map("customer_code") @db.VarChar(30)
-  customerName     String   @map("customer_name") @db.VarChar(100)
-  categoryCode     String   @map("category_code") @db.VarChar(20)
+  id               String   @id @default(cuid()) @db.VarChar(36)
+  name             String   @map("name") @db.VarChar(100)
+  categoryId       String   @map("category_id") @db.VarChar(36)
   contactPerson    String   @map("contact_person") @db.VarChar(50)
   contactPhone     String   @map("contact_phone") @db.VarChar(20)
   settlementMethod String   @map("settlement_method") @db.VarChar(20)
@@ -261,51 +261,56 @@ model Customer {
   deletedById      String?  @map("deleted_by_id") @db.VarChar(50)
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
-  category         CustomerCategory @relation(fields: [categoryCode], references: [categoryCode], onDelete: Restrict, onUpdate: Restrict)
+  category         CustomerCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   tagAssignments   CustomerTagAssignment[]
   stores           CustomerStore[]
   quotes           CustomerQuote[]
-  salesOrders  SalesOrder[]
-  @@index([categoryCode])
+  salesOrders SalesOrder[]
+  @@index([categoryId])
   @@index([status])
+  @@index([isDeleted])
   @@map("customer")
 }
 
 /// 客户分类表：支持多级层级树结构（如餐饮连锁、企事业单位、生鲜超市）
 model CustomerCategory {
-  /// 分类编码（唯一主键标识，如 CUST_CAT_001）
-  categoryCode String   @id @map("category_code") @db.VarChar(20)
+  /// 分类主键ID (UUID/CUID)
+  id          String   @id @default(cuid()) @db.VarChar(36)
   /// 分类名称（如：机关食堂、品牌连锁）
-  categoryName String   @map("category_name") @db.VarChar(50)
-  /// 父级分类编码（支持多级分类树，根级为空）
-  parentCode   String?  @map("parent_code") @db.VarChar(20)
+  name        String   @map("name") @db.VarChar(50)
+  /// 父级分类主键ID（支持多级分类树，根级为空）
+  parentId    String?  @map("parent_id") @db.VarChar(36)
   /// 分类业务描述
-  description  String?  @db.VarChar(200)
+  description String?  @db.VarChar(200)
   /// 状态：ACTIVE(启用) / DISABLED(停用)
-  status       String   @default("ACTIVE") @db.VarChar(10)
+  status      String   @default("ACTIVE") @db.VarChar(10)
   /// 创建时间
-  createdAt    DateTime @default(now()) @map("created_at")
+  createdAt   DateTime @default(now()) @map("created_at")
   /// 更新时间
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   /// 自引用：父级分类
-  parent       CustomerCategory?  @relation("CategoryHierarchy", fields: [parentCode], references: [categoryCode], onDelete: Restrict, onUpdate: Restrict)
+  parent      CustomerCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   /// 自引用：子级分类列表
-  children     CustomerCategory[] @relation("CategoryHierarchy")
+  children    CustomerCategory[] @relation("CategoryHierarchy")
   /// 该分类下的客户档案列表
-  customers    Customer[]
+  customers   Customer[]
 
+  @@index([parentId])
+  @@index([status])
   @@map("customer_category")
 }
 
 /// 门店报价单主表：按客户+门店+区域维护的商品定价单头
 model CustomerQuote {
-  /// 报价单唯一单号（系统自动生成，格式 QUOT-YYYYMMDD-XXXX）
-  quoteId         String    @id @map("quote_id") @db.VarChar(30)
-  /// 适用客户编码（与 storeCode、regionCode 构成维度优先级）
-  customerCode    String?   @map("customer_code") @db.VarChar(30)
-  /// 适用门店编码（为空则适用于该客户下属所有门店）
-  storeCode       String?   @map("store_code") @db.VarChar(30)
+  /// 报价单主键ID (UUID/CUID)
+  id              String    @id @default(cuid()) @db.VarChar(36)
+  /// 报价单业务单号（对外沟通展示与防重，格式 QUOT-YYYYMMDD-XXXX）
+  quoteNo         String    @unique @map("quote_no") @db.VarChar(30)
+  /// 适用客户主键ID（与 storeId、regionCode 构成维度优先级）
+  customerId      String?   @map("customer_id") @db.VarChar(36)
+  /// 适用门店主键ID（为空则适用于该客户下属所有门店）
+  storeId         String?   @map("store_id") @db.VarChar(36)
   /// 适用区域编码（客户与门店均为空时，作为该区域通用报价单）
   regionCode      String?   @map("region_code") @db.VarChar(50)
   /// 报价单拟定日期
@@ -344,25 +349,26 @@ model CustomerQuote {
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
   /// 关联客户档案
-  customer        Customer?      @relation(fields: [customerCode], references: [customerCode], onDelete: Restrict, onUpdate: Restrict)
+  customer        Customer?      @relation(fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   /// 关联门店档案
-  store           CustomerStore? @relation(fields: [storeCode], references: [storeCode], onDelete: Restrict, onUpdate: Restrict)
+  store           CustomerStore? @relation(fields: [storeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   /// 报价单包含的商品明细列表
   items           CustomerQuoteItem[]
 
-  @@index([customerCode])
-  @@index([storeCode])
+  @@index([customerId])
+  @@index([storeId])
   @@index([regionCode])
   @@index([status])
+  @@index([isDeleted])
   @@map("customer_quote")
 }
 
 /// 门店报价单明细表：具体商品的含税与不含税单价及起订限制
 model CustomerQuoteItem {
-  /// 报价明细行主键唯一标识
-  quoteDetailId     String   @id @map("quote_detail_id") @db.VarChar(50)
-  /// 所属报价单单号
-  quoteId           String   @map("quote_id") @db.VarChar(30)
+  /// 报价明细行主键ID (UUID/CUID)
+  id                String   @id @default(cuid()) @db.VarChar(36)
+  /// 所属报价单主表ID
+  quoteId           String   @map("quote_id") @db.VarChar(36)
   /// 商品档案唯一编码（关联物料商品中心）
   itemCode          String   @map("item_code") @db.VarChar(50)
   /// 商品名称（如：特级上海青(净菜)）
@@ -383,7 +389,7 @@ model CustomerQuoteItem {
   remark            String?  @db.VarChar(200)
 
   /// 所属报价单主表关联
-  quote             CustomerQuote @relation(fields: [quoteId], references: [quoteId], onDelete: Cascade, onUpdate: Cascade)
+  quote             CustomerQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([quoteId])
   @@index([itemCode])
@@ -391,9 +397,9 @@ model CustomerQuoteItem {
 }
 
 model CustomerStore {
-  storeCode       String   @id @map("store_code") @db.VarChar(30)
-  customerCode    String   @map("customer_code") @db.VarChar(30)
-  storeName       String   @map("store_name") @db.VarChar(100)
+  id              String   @id @default(cuid()) @db.VarChar(36)
+  customerId      String   @map("customer_id") @db.VarChar(36)
+  name            String   @map("name") @db.VarChar(100)
   address         String   @db.VarChar(200)
   contactPerson   String   @map("contact_person") @db.VarChar(50)
   contactPhone    String   @map("contact_phone") @db.VarChar(20)
@@ -413,21 +419,22 @@ model CustomerStore {
   deletedById     String?  @map("deleted_by_id") @db.VarChar(50)
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
-  customer        Customer @relation(fields: [customerCode], references: [customerCode], onDelete: Restrict, onUpdate: Restrict)
+  customer        Customer @relation(fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   quotes          CustomerQuote[]
   salesOrders SalesOrder[]
-  @@index([customerCode])
+  @@index([customerId])
   @@index([regionCode])
   @@index([status])
+  @@index([isDeleted])
   @@map("customer_store")
 }
 
 /// 客户标签字典表：用于筛选、统计、报价与配送策略
 model CustomerTag {
-  /// 标签编码（如 TAG_DELIVERY_MORNING）
-  tagCode     String   @id @map("tag_code") @db.VarChar(20)
+  /// 标签主键ID (UUID/CUID)
+  id          String   @id @default(cuid()) @db.VarChar(36)
   /// 标签名称（如：早间配送、VIP客户、学校食堂）
-  tagName     String   @map("tag_name") @db.VarChar(50)
+  name        String   @map("name") @db.VarChar(50)
   /// 标签类型：DELIVERY(配送) / SETTLEMENT(结算) / CREDIT(信用) / OTHER(其他)
   tagType     String   @map("tag_type") @db.VarChar(20)
   /// 标签业务说明
@@ -442,22 +449,23 @@ model CustomerTag {
   /// 关联的客户标签记录
   assignments CustomerTagAssignment[]
 
+  @@index([status])
   @@map("customer_tag")
 }
 
 /// 客户与标签多对多关联表
 model CustomerTagAssignment {
-  /// 客户编码
-  customerCode String   @map("customer_code") @db.VarChar(30)
-  /// 标签编码
-  tagCode      String   @map("tag_code") @db.VarChar(20)
+  /// 客户主键ID
+  customerId String   @map("customer_id") @db.VarChar(36)
+  /// 标签主键ID
+  tagId      String   @map("tag_id") @db.VarChar(36)
   /// 关联打标时间
-  createdAt    DateTime @default(now()) @map("created_at")
+  createdAt  DateTime @default(now()) @map("created_at")
 
-  customer     Customer    @relation(fields: [customerCode], references: [customerCode], onDelete: Cascade, onUpdate: Cascade)
-  tag          CustomerTag @relation(fields: [tagCode], references: [tagCode], onDelete: Cascade, onUpdate: Cascade)
+  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tag        CustomerTag @relation(fields: [tagId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  @@id([customerCode, tagCode])
+  @@id([customerId, tagId])
   @@map("customer_tag_assignment")
 }
 
@@ -947,12 +955,14 @@ model PurchaseOrder {
 
 /// 销售订单单头：按 客户 + 门店 + 商品 + 数量 + 交货日期 维度的销售需求主单
 model SalesOrder {
+  /// 销售订单主键ID
+  id                  String    @id @default(cuid()) @db.VarChar(36)
   /// 销售订单唯一单号（系统自动生成，格式 SO-YYYYMMDD-XXXX）
-  orderId             String    @id @map("order_id") @db.VarChar(30)
-  /// 客户编码（关联 Customer）
-  customerCode        String    @map("customer_code") @db.VarChar(30)
-  /// 门店编码（关联 CustomerStore）
-  storeCode           String    @map("store_code") @db.VarChar(30)
+  orderNo             String    @unique @map("order_no") @db.VarChar(30)
+  /// 客户主键ID（关联 Customer.id）
+  customerId          String    @map("customer_id") @db.VarChar(36)
+  /// 门店主键ID（关联 CustomerStore.id）
+  storeId             String    @map("store_id") @db.VarChar(36)
   /// 下单日期
   orderDate           DateTime  @map("order_date") @db.Date
   /// 交货日期
@@ -1025,12 +1035,12 @@ model SalesOrder {
   /// 订单费用明细
   fees                SalesOrderFee[]
   /// 关联客户企业（逻辑外键，无物理约束）
-  customer            Customer?       @relation(fields: [customerCode], references: [customerCode], onUpdate: Restrict)
+  customer            Customer?       @relation(fields: [customerId], references: [id], onUpdate: Restrict)
   /// 关联履约门店（逻辑外键，无物理约束）
-  store               CustomerStore?  @relation(fields: [storeCode], references: [storeCode], onUpdate: Restrict)
+  store               CustomerStore?  @relation(fields: [storeId], references: [id], onUpdate: Restrict)
 
-  @@index([customerCode])
-  @@index([storeCode])
+  @@index([customerId])
+  @@index([storeId])
   @@index([orderDate])
   @@index([deliveryDate])
   @@index([status])
@@ -1044,10 +1054,10 @@ model SalesOrder {
 
 /// 销售订单附加费用明细：快递费、材料费、包装费等，独立复核
 model SalesOrderFee {
-  /// 费用主键（自动生成，格式 SOF-YYYYMMDD-XXXX-XX）
-  feeId                String    @id @map("fee_id") @db.VarChar(50)
-  /// 关联订单号
-  orderId              String    @map("order_id") @db.VarChar(30)
+  /// 费用主键ID
+  id                   String    @id @default(cuid()) @db.VarChar(36)
+  /// 关联订单主键ID
+  orderId              String    @map("order_id") @db.VarChar(36)
   /// 费用类型：EXPRESS(快递费) / MATERIAL(材料费) / PACKAGING(包装费) / FREIGHT(运费) / OTHER(其他)
   feeType              String    @map("fee_type") @db.VarChar(20)
   /// 费用金额（正数为应收，负数为折让）
@@ -1068,7 +1078,7 @@ model SalesOrderFee {
   updatedAt            DateTime  @updatedAt @map("updated_at")
 
   /// 关联销售订单主表
-  order                SalesOrder @relation(fields: [orderId], references: [orderId], onDelete: Cascade, onUpdate: Cascade)
+  order                SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([orderId])
   @@index([auditStatus])
@@ -1077,10 +1087,10 @@ model SalesOrderFee {
 
 /// 销售订单明细行：具体采购的商品、数量、单价与履约进度
 model SalesOrderItem {
-  /// 订单明细主键（自动生成，格式 SOD-YYYYMMDD-XXXX-XX）
-  orderDetailId        String    @id @map("order_detail_id") @db.VarChar(50)
-  /// 所属销售订单号
-  orderId              String    @map("order_id") @db.VarChar(30)
+  /// 订单明细主键ID
+  id                   String    @id @default(cuid()) @db.VarChar(36)
+  /// 所属销售订单主键ID
+  orderId              String    @map("order_id") @db.VarChar(36)
   /// 商品档案唯一编码
   itemCode             String    @map("item_code") @db.VarChar(50)
   /// 商品名称
@@ -1107,7 +1117,7 @@ model SalesOrderItem {
   remark               String?   @db.VarChar(200)
 
   /// 关联销售订单主表
-  order                SalesOrder @relation(fields: [orderId], references: [orderId], onDelete: Cascade, onUpdate: Cascade)
+  order                SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([orderId])
   @@index([itemCode])

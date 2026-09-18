@@ -19,49 +19,7 @@ export interface CustomerAuditContext {
 	deptId?: string | null;
 }
 
-import { generateDateSerialCode, retryOnUniqueConflict } from "@base/shared";
-
-type CustomerTxClient = Parameters<
-	Parameters<TenantPrismaClient["$transaction"]>[0]
->[0];
-
 export class CustomerService {
-	/**
-	 * 生成客户编码: CUST-YYYYMMDD-XXXX。
-	 * 调用方必须在事务内先持有 advisory lock，避免并发读 max(code) 撞号。
-	 * 禁止 count(*)+1。
-	 */
-	static async generateCustomerCode(
-		client:
-			| TenantPrismaClient
-			| CustomerTxClient
-			| { customer: TenantPrismaClient["customer"] },
-	): Promise<string> {
-		const today = new Date();
-		const yyyy = today.getFullYear();
-		const mm = String(today.getMonth() + 1).padStart(2, "0");
-		const dd = String(today.getDate()).padStart(2, "0");
-		const datePrefix = `CUST-${yyyy}${mm}${dd}-`;
-
-		const latest = await client.customer.findFirst({
-			where: {
-				customerCode: {
-					startsWith: datePrefix,
-				},
-			},
-			orderBy: { customerCode: "desc" },
-			select: { customerCode: true },
-		});
-
-		return generateDateSerialCode({
-			prefix: "CUST",
-			separator: "-",
-			digits: 4,
-			latestCode: latest?.customerCode,
-			now: today,
-		});
-	}
-
 	/**
 	 * 查询客户列表（服务端分页：count + skip/take，禁止全量返回）
 	 * 严格注入 accessibleWhere 数据范围过滤与 isDeleted: false 软删除物理过滤 (Fail-Closed)
@@ -83,8 +41,8 @@ export class CustomerService {
 			andConditions.push(accessibleWhere as TenantPrisma.CustomerWhereInput);
 		}
 
-		if (filter.categoryCode) {
-			andConditions.push({ categoryCode: filter.categoryCode });
+		if (filter.categoryId) {
+			andConditions.push({ categoryId: filter.categoryId });
 		}
 		if (filter.status) {
 			andConditions.push({ status: filter.status });
@@ -93,18 +51,17 @@ export class CustomerService {
 			const q = filter.keyword.trim().slice(0, 100);
 			andConditions.push({
 				OR: [
-					{ customerCode: { contains: q, mode: "insensitive" } },
-					{ customerName: { contains: q, mode: "insensitive" } },
+					{ name: { contains: q, mode: "insensitive" } },
 					{ contactPerson: { contains: q, mode: "insensitive" } },
 					{ contactPhone: { contains: q, mode: "insensitive" } },
 				],
 			});
 		}
-		if (filter.tagCode) {
+		if (filter.tagId) {
 			andConditions.push({
 				tagAssignments: {
 					some: {
-						tagCode: filter.tagCode,
+						tagId: filter.tagId,
 					},
 				},
 			});
@@ -144,9 +101,9 @@ export class CustomerService {
 	/**
 	 * 获取客户详情（默认过滤软删除记录）
 	 */
-	static async getCustomer(client: TenantPrismaClient, customerCode: string) {
+	static async getCustomer(client: TenantPrismaClient, id: string) {
 		const customer = await client.customer.findUnique({
-			where: { customerCode },
+			where: { id },
 			include: {
 				category: true,
 				tagAssignments: {
@@ -165,143 +122,127 @@ export class CustomerService {
 	}
 
 	/**
-	 * 创建客户档案：事务 + advisory lock 发号 + P2002 指数退避重试。
+	 * 创建客户档案
 	 */
 	static async createCustomer(
 		client: TenantPrismaClient,
 		input: CreateCustomerInput,
 		auditCtx: CustomerAuditContext,
 	) {
-		return await retryOnUniqueConflict(
-			async () => {
-				return await client.$transaction(
-					async (tx) => {
-						// Postgres advisory lock：同事务提交时自动释放，兼容事务级连接池
-						await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('customer_code'))`;
+		const execute = async (tx: TenantPrismaClient) => {
+			const category = await tx.customerCategory.findUnique({
+				where: { id: input.categoryId },
+			});
+			if (!category) {
+				throw new Error(`分类 [${input.categoryId}] 不存在`);
+			}
 
-						const category = await tx.customerCategory.findUnique({
-							where: { categoryCode: input.categoryCode },
-						});
-						if (!category) {
-							throw new Error(`分类 [${input.categoryCode}] 不存在`);
-						}
+			let customerTagsStr = "";
+			if (input.tagIds && input.tagIds.length > 0) {
+				const tags = await tx.customerTag.findMany({
+					where: { id: { in: input.tagIds } },
+					select: { name: true },
+				});
+				customerTagsStr = tags.map((t) => t.name).join(",");
+			}
 
-						const customerCode = await CustomerService.generateCustomerCode(tx);
-
-						let customerTagsStr = "";
-						if (input.tagCodes && input.tagCodes.length > 0) {
-							const tags = await tx.customerTag.findMany({
-								where: { tagCode: { in: input.tagCodes } },
-								select: { tagName: true },
-							});
-							customerTagsStr = tags.map((t) => t.tagName).join(",");
-						}
-
-						return tx.customer.create({
-							data: {
-								customerCode,
-								customerName: input.customerName,
-								categoryCode: input.categoryCode,
-								contactPerson: input.contactPerson,
-								contactPhone: input.contactPhone,
-								settlementMethod: input.settlementMethod,
-								defaultTaxRate:
-									input.defaultTaxRate === undefined
-										? null
-										: input.defaultTaxRate,
-								creditLimit:
-									input.creditLimit === undefined ? null : input.creditLimit,
-								customerTags: customerTagsStr || null,
-								salesPerson: input.salesPerson || null,
-								defaultWarehouse: input.defaultWarehouse || null,
-								paymentCycle: input.paymentCycle || null,
-								serviceTime: input.serviceTime || null,
-								status: "ACTIVE",
-								createdById: auditCtx.userId,
-								updatedById: auditCtx.userId,
-								deptId: auditCtx.deptId ?? null,
-								isDeleted: false,
-								tagAssignments: input.tagCodes?.length
-									? {
-											create: input.tagCodes.map((tagCode) => ({
-												tag: { connect: { tagCode } },
-											})),
-										}
-									: undefined,
-							},
-							include: {
-								category: true,
-								tagAssignments: {
-									include: {
-										tag: true,
-									},
-								},
-							},
-						});
+			return tx.customer.create({
+				data: {
+					name: input.name,
+					categoryId: input.categoryId,
+					contactPerson: input.contactPerson,
+					contactPhone: input.contactPhone,
+					settlementMethod: input.settlementMethod,
+					defaultTaxRate:
+						input.defaultTaxRate === undefined ? null : input.defaultTaxRate,
+					creditLimit:
+						input.creditLimit === undefined ? null : input.creditLimit,
+					customerTags: customerTagsStr || null,
+					salesPerson: input.salesPerson || null,
+					defaultWarehouse: input.defaultWarehouse || null,
+					paymentCycle: input.paymentCycle || null,
+					serviceTime: input.serviceTime || null,
+					status: "ACTIVE",
+					createdById: auditCtx.userId,
+					updatedById: auditCtx.userId,
+					deptId: auditCtx.deptId ?? null,
+					isDeleted: false,
+					tagAssignments: input.tagIds?.length
+						? {
+								create: input.tagIds.map((tagId) => ({
+									tag: { connect: { id: tagId } },
+								})),
+							}
+						: undefined,
+				},
+				include: {
+					category: true,
+					tagAssignments: {
+						include: {
+							tag: true,
+						},
 					},
-					{
-						maxWait: 5000,
-						timeout: 10000,
-						isolationLevel: "ReadCommitted",
-					},
-				);
-			},
-			{ retries: 3 },
-		);
+				},
+			});
+		};
+
+		if ("$transaction" in client && typeof client.$transaction === "function") {
+			return await client.$transaction((tx) =>
+				execute(tx as TenantPrismaClient),
+			);
+		}
+		return await execute(client);
 	}
 
 	/**
 	 * 更新客户档案
 	 */
-	/**
-	 * 更新客户档案
-	 */
 	static async updateCustomer(
 		client: TenantPrismaClient,
-		customerCode: string,
+		id: string,
 		input: UpdateCustomerInput,
 		auditCtx?: { userId: string },
 	) {
 		const existing = await client.customer.findUnique({
-			where: { customerCode },
+			where: { id },
 		});
 		if (!existing || existing.isDeleted) {
-			throw new Error(`客户 [${customerCode}] 不存在`);
+			throw new Error(`客户 [${id}] 不存在`);
 		}
 
 		// 若需要更新标签
-		if (input.tagCodes !== undefined) {
+		if (input.tagIds !== undefined) {
 			await client.customerTagAssignment.deleteMany({
-				where: { customerCode },
+				where: { customerId: id },
 			});
-			if (input.tagCodes.length > 0) {
+			if (input.tagIds.length > 0) {
 				await client.customerTagAssignment.createMany({
-					data: input.tagCodes.map((tagCode) => ({
-						customerCode,
-						tagCode,
+					data: input.tagIds.map((tagId) => ({
+						customerId: id,
+						tagId,
 					})),
 				});
 			}
 		}
 
 		let customerTagsStr: string | undefined;
-		if (input.tagCodes !== undefined) {
-			if (input.tagCodes.length > 0) {
+		if (input.tagIds !== undefined) {
+			if (input.tagIds.length > 0) {
 				const tags = await client.customerTag.findMany({
-					where: { tagCode: { in: input.tagCodes } },
-					select: { tagName: true },
+					where: { id: { in: input.tagIds } },
+					select: { name: true },
 				});
-				customerTagsStr = tags.map((t) => t.tagName).join(",");
+				customerTagsStr = tags.map((t) => t.name).join(",");
 			} else {
 				customerTagsStr = "";
 			}
 		}
 
 		return client.customer.update({
-			where: { customerCode },
+			where: { id },
 			data: {
-				customerName: input.customerName,
-				categoryCode: input.categoryCode,
+				name: input.name,
+				categoryId: input.categoryId,
 				contactPerson: input.contactPerson,
 				contactPhone: input.contactPhone,
 				settlementMethod: input.settlementMethod,
@@ -331,13 +272,13 @@ export class CustomerService {
 	 */
 	static async updateCustomerStatus(
 		client: TenantPrismaClient,
-		customerCode: string,
+		id: string,
 		status: "ACTIVE" | "DISABLED",
 		auditCtx?: { userId: string },
 	) {
 		return client.$transaction(async (tx) => {
 			const updated = await tx.customer.update({
-				where: { customerCode },
+				where: { id },
 				data: {
 					status,
 					updatedById: auditCtx?.userId ?? null,
@@ -347,7 +288,7 @@ export class CustomerService {
 			// 铁律：停用客户，下属所有门店强制同时停用
 			if (status === MasterDataStatus.DISABLED) {
 				await tx.customerStore.updateMany({
-					where: { customerCode },
+					where: { customerId: id },
 					data: {
 						status: MasterDataStatus.DISABLED,
 						updatedById: auditCtx?.userId ?? null,
@@ -364,11 +305,11 @@ export class CustomerService {
 	 */
 	static async deleteCustomer(
 		client: TenantPrismaClient,
-		customerCode: string,
+		id: string,
 		auditCtx?: { userId: string },
 	) {
 		const storeCount = await client.customerStore.count({
-			where: { customerCode, isDeleted: false },
+			where: { customerId: id, isDeleted: false },
 		});
 		if (storeCount > 0) {
 			throw new Error(
@@ -377,7 +318,7 @@ export class CustomerService {
 		}
 
 		const quoteCount = await client.customerQuote.count({
-			where: { customerCode, isDeleted: false },
+			where: { customerId: id, isDeleted: false },
 		});
 		if (quoteCount > 0) {
 			throw new Error(`该客户已存在关联报价单记录，禁止删除，请进行“停用”操作`);
@@ -385,7 +326,7 @@ export class CustomerService {
 
 		// 执行软删除：标记 isDeleted 为 true，记录删除时间与删除人
 		return client.customer.update({
-			where: { customerCode },
+			where: { id },
 			data: {
 				isDeleted: true,
 				deletedAt: new Date(),

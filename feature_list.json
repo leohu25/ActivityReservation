@@ -391,9 +391,9 @@
       "name": "【客户中心标杆重构】对齐 Next.js 官方规范与 FormModal/DataTable 契约式 CRUD",
       "description": "以客户中心 (@base/feature-customer-center) 为唯一 0→1 黄金标杆，按 docs/architecture/refactoring-architecture-and-official-patterns.md (v2.1) 固化 CRUD 范式：1. URL：引入 nuqs，search-params.ts 强类型契约 + NuqsAdapter + useQueryStates，禁止 useTableUrlState/parseTableSearchParams；2. 列表 UI：DataTable 纯受控 + URL-as-State，剔除 Client data/page 镜像 state；3. 弹窗 UI：FormModal + Zod + FormFieldSchema/sections + subject（Element-UI 式声明式契约），禁止业务层手写 Dialog/Input 树或直接 useForm；4. 服务端：React cache 记忆化租户上下文、DTO 投影、Promise.all 并行、defineServerAction + assertEditableFields + revalidatePath；5. 发号禁止 count()+1，采用 sequence/稳定 ID；6. 页面：customerSearchParamsCache.parse + Suspense 骨架流式装配；7. 对照 .agents/skills/vercel-react-best-practices 做 P1c 性能门禁。验收以架构文档质量门禁为准，不以行数 KPI 卡刀。",
       "dependencies": ["arch-ui-shadcn-official-standardization"],
-      "status": "in_progress",
+      "status": "completed",
       "owner": "implementer",
-      "evidence": "【范式已固化】客户档案为 customer-center 唯一黄金标杆：contract(defineListSearchParams)+schema+service+queries+createResourceActions+FormModal+DataTable(useListSearch)+createResourcePage；分层 @base/ui 组件/list params、@base/biz-shared createResource*、@base/shared defineServerAction；不单开 @base/crud。验证：ui 4/4、biz-shared 2/2、customer-center 44/44、tenant check 通过。待人工审阅 commit 后按同一范式迁移 Store/Quote。"
+      "evidence": "【范式已固化】客户档案为 customer-center 唯一黄金标杆：1. 完成主数据全面瘦身去编码，客户/门店/分类/标签全部统一由 cuid id 主键驱动，外键一律 xxxId；2. 单据表 CustomerQuote 保留 quoteNo 唯一业务号；3. 彻底移除各模块日期流水发号器与排他锁；4. 重构 Category, Tag, Customer, Store, Quote 领域服务、Actions、Queries、Zod 与 FormModal/DataTable 界面；5. 落地 pnpm db:tenant:reset 本地一键重置租户库工具（含环境白名单与交互式二次确认）；6. 验证：customer-center 51/51 单测通过、全仓 15 包 check 与 13 套件 200+ 单测全绿。"
     }
   ]
 }

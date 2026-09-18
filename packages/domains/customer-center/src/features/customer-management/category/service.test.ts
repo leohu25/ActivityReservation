@@ -8,16 +8,16 @@ test("CustomerCategoryService 构建多级分类树", async () => {
 		customerCategory: {
 			findMany: async () => [
 				{
-					categoryCode: "ROOT",
-					categoryName: "根分类",
-					parentCode: null,
+					id: "ROOT",
+					name: "根分类",
+					parentId: null,
 					description: null,
 					status: MasterDataStatus.ACTIVE,
 				},
 				{
-					categoryCode: "CHILD",
-					categoryName: "子分类",
-					parentCode: "ROOT",
+					id: "CHILD",
+					name: "子分类",
+					parentId: "ROOT",
 					description: null,
 					status: MasterDataStatus.ACTIVE,
 				},
@@ -25,7 +25,7 @@ test("CustomerCategoryService 构建多级分类树", async () => {
 		},
 	} as never);
 	assert.equal(tree.length, 1);
-	assert.equal(tree[0]?.children?.[0]?.categoryCode, "CHILD");
+	assert.equal(tree[0]?.children?.[0]?.id, "CHILD");
 });
 
 test("CustomerCategoryService deleteCategory 拦截有子分类或关联客户的删除", async () => {

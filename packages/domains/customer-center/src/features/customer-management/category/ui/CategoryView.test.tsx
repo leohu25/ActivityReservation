@@ -14,9 +14,9 @@ import type { CustomerCategoryItem } from "../types";
 
 const mockCategories: CustomerCategoryItem[] = [
 	{
-		categoryCode: "CAT_VIP",
-		categoryName: "VIP 战略客户",
-		parentCode: null,
+		id: "CAT_VIP",
+		name: "VIP 战略客户",
+		parentId: null,
 		status: "ACTIVE",
 		description: "大宗年采客户",
 	},
