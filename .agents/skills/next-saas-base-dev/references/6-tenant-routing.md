@@ -49,35 +49,48 @@ export default async function CustomerLayout({
 
 ```tsx
 // apps/tenant/src/app/(dashboard)/customer/customers/page.tsx
-import { CustomerView } from "@base/feature-customer-center/customer-management";
+import { createResourcePage } from "@base/biz-shared";
+import {
+  CustomerView,
+  customerSearchParams,
+  customerPageContract,
+  CustomerSubject,
+  type CustomerListItem,
+} from "@base/feature-customer-center/customer-management";
 import {
   listCustomersQuery,
-  getCategoryTreeQuery,
-  listTagsQuery,
+  getCustomerPageOptionsQuery,
 } from "@base/feature-customer-center/customer-management/server";
 
-export default async function CustomersPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const sp = await searchParams;
-  // 直接通过 server-only queries 纯服务端获取数据，不绕调 Server Actions
-  const [custRes, categories, tags] = await Promise.all([
-    listCustomersQuery({ page: 1, pageSize: 20 }),
-    getCategoryTreeQuery(),
-    listTagsQuery(),
-  ]);
-
-  return (
+export default createResourcePage<CustomerListItem, { categoryOptions: []; tagOptions: [] }>({
+  search: customerSearchParams,
+  subject: CustomerSubject,
+  pageContract: customerPageContract,
+  title: "客户档案",
+  rowKey: (c) => c.id || c.customerCode,
+  columns: [],
+  List: ({ data, total, options }) => (
     <CustomerView
-      initialCustomers={custRes.items}
-      initialTotal={custRes.total}
-      categories={categories}
-      tags={tags}
+      data={data}
+      total={total}
+      categoryOptions={options?.categoryOptions}
+      tagOptions={options?.tagOptions}
     />
-  );
-}
+  ),
+  query: {
+    list: async (parsed) => {
+      const r = await listCustomersQuery({
+        page: parsed.page,
+        pageSize: parsed.pageSize,
+        keyword: String(parsed.keyword ?? "") || undefined,
+        categoryCode: String(parsed.category ?? "") || undefined,
+        status: String(parsed.status ?? "") || undefined,
+      });
+      return { items: r.items as CustomerListItem[], total: r.total };
+    },
+    options: async () => getCustomerPageOptionsQuery(),
+  },
+});
 ```
 
 ---
@@ -149,6 +162,7 @@ export const customerManifest: TenantFeatureManifest = {
 
 ```tsx
 import { TenantAbilityProvider } from "@base/authorization";
+import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import { CustomerView } from "./CustomerView";
 
 test("CustomerView 与 customerPageContract 契约 100% 对齐", () => {
@@ -160,11 +174,14 @@ test("CustomerView 与 customerPageContract 契约 100% 对齐", () => {
         fieldPolicies: {},
       }}
     >
-      <CustomerView
-        initialCustomers={mockCustomers}
-        categories={[]}
-        tags={[]}
-      />
+      <NuqsTestingAdapter>
+        <CustomerView
+          data={mockCustomers}
+          total={mockCustomers.length}
+          categoryOptions={[]}
+          tagOptions={[]}
+        />
+      </NuqsTestingAdapter>
     </TenantAbilityProvider>,
   );
 

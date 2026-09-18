@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getServerAuthRuntime } from "@base/auth";
 import { CaslAbilityFactory, type AppPrismaAbility } from "@base/authorization";
 import { resolveEmployeeTopology } from "@base/db-tenant";
@@ -13,12 +14,11 @@ export interface TenantCustomerContext extends TenantDbContext {
 }
 
 /**
- * 业务区域 (Business Area) 装配层：
- * 组合底座租户 DB 上下文与 Customer Center 全域 PermissionCatalog，
- * 解析当前操作人的部门架构树并调用 createPrismaAbilityForTenant 注入数据范围条件，
- * 编译出具备完整 CASL 权限树与行级数据范围能力的运行时实例。
+ * 业务区域装配层：组合租户 DB 上下文与 Customer Center 权限目录。
+ * React.cache() 无参记忆化：同请求内 Query/Action 共享同一 Ability 实例。
  */
-export async function getTenantCustomerContext(): Promise<TenantCustomerContext> {
+export const getTenantCustomerContext = cache(
+  async (): Promise<TenantCustomerContext> => {
   const dbCtx = await getTenantDbContext();
   const runtime = getServerAuthRuntime();
 
@@ -63,6 +63,6 @@ export async function getTenantCustomerContext(): Promise<TenantCustomerContext>
     ...dbCtx,
     ability,
   };
-}
+});
 
 export { assertCustomerAbility };

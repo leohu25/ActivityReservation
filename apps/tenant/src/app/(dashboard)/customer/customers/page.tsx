@@ -1,62 +1,54 @@
+import { createResourcePage } from "@base/biz-shared";
 import {
-        CustomerView,
-        type CustomerListItem,
+  CustomerView,
+  customerSearchParams,
+  customerPageContract,
+  CustomerSubject,
+  type CustomerListItem,
 } from "@base/feature-customer-center/customer-management";
 import {
-        listCustomersQuery,
-        getCustomerPageOptionsQuery,
+  listCustomersQuery,
+  getCustomerPageOptionsQuery,
 } from "@base/feature-customer-center/customer-management/server";
+import type { CustomerCategoryItem, CustomerTagItem } from "@base/feature-customer-center/customer-management";
 
-type SearchParams = Record<string, string | string[] | undefined>;
-
-function readOne(sp: SearchParams, key: string): string {
-        const value = sp[key];
-        if (Array.isArray(value)) return value[0] ?? "";
-        return value ?? "";
-}
-
-function readInt(sp: SearchParams, key: string, fallback: number): number {
-        const value = parseInt(readOne(sp, key), 10);
-        return Number.isFinite(value) && value > 0 ? value : fallback;
-}
-
-/** 客户档案页：路由只解析 URL 并装配 Feature Query 与 UI。 */
-export default async function CustomersPage({
-        searchParams,
-}: {
-        searchParams: Promise<SearchParams>;
-}) {
-        const params = await searchParams;
-        const page = readInt(params, "page", 1);
-        const pageSize = Math.min(100, readInt(params, "pageSize", 10));
-        const keyword = readOne(params, "keyword");
-        const categoryCode = readOne(params, "category");
-        const status = readOne(params, "status");
-
-        const [customerPage, pageOptions] = await Promise.all([
-                listCustomersQuery({
-                        page,
-                        pageSize,
-                        keyword: keyword || undefined,
-                        categoryCode: categoryCode || undefined,
-                        status: status || undefined,
-                }),
-                getCustomerPageOptionsQuery(),
-        ]);
-
-        return (
-                <CustomerView
-                        initialCustomers={
-                                customerPage.items as CustomerListItem[]
-                        }
-                        initialTotal={customerPage.total}
-                        initialPage={page}
-                        initialPageSize={pageSize}
-                        initialKeyword={keyword}
-                        initialCategory={categoryCode}
-                        initialStatus={status}
-                        categoryOptions={pageOptions.categoryOptions}
-                        tagOptions={pageOptions.tagOptions}
-                />
-        );
-}
+/**
+ * 客户档案页：createResourcePage 装配。
+ * List 使用业务定制 CustomerView（逃生舱）；URL/取数走工厂约定。
+ */
+export default createResourcePage<CustomerListItem, {
+  categoryOptions: CustomerCategoryItem[];
+  tagOptions: CustomerTagItem[];
+}>({
+  search: customerSearchParams,
+  subject: CustomerSubject,
+  pageContract: customerPageContract,
+  title: "客户档案",
+  rowKey: (c) => c.id || c.customerCode,
+  columns: [],
+  actions: {},
+  List: ({ data, total, options }) => (
+    <CustomerView
+      data={data}
+      total={total}
+      categoryOptions={options?.categoryOptions}
+      tagOptions={options?.tagOptions}
+    />
+  ),
+  query: {
+    list: async (parsed) => {
+      const pageResult = await listCustomersQuery({
+        page: parsed.page,
+        pageSize: parsed.pageSize,
+        keyword: String(parsed.keyword ?? "") || undefined,
+        categoryCode: String(parsed.category ?? "") || undefined,
+        status: String(parsed.status ?? "") || undefined,
+      });
+      return {
+        items: pageResult.items as CustomerListItem[],
+        total: pageResult.total,
+      };
+    },
+    options: async () => getCustomerPageOptionsQuery(),
+  },
+});

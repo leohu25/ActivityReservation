@@ -23,6 +23,8 @@
       "@base/db-tenant": ["packages/base/db-tenant/src/index.ts"],
       "@base/ui": ["packages/base/ui/src/index.ts"],
       "@base/ui/*": ["packages/base/ui/src/*"],
+      "@base/biz-shared": ["packages/base/biz-shared/src/index.ts"],
+      "@base/biz-shared/*": ["packages/base/biz-shared/src/*"],
       "@/components/ui/*": ["packages/base/ui/src/components/ui/*"],
       "@/hooks/*": ["packages/base/ui/src/hooks/*"],
       "@base/feature-control-admin": [

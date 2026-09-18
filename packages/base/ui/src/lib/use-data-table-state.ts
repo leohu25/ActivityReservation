@@ -26,10 +26,9 @@ export interface UseDataTableStateOptions {
 }
 
 /**
- * 企业级 DataTable 状态流水线核心 Hook
- *
- * 统一接管列表受控状态（page, pageSize, total, keyword, onSearch, onReset, onPageChange）
- * 并与 URL 参数双向绑定，物理杜绝业务组件“手写 onSearch 漏传 keyword”导致的搜索瘫痪 Bug！
+ * @deprecated 请改用 `defineListSearchParams`（contract.ts）+ `useListSearch`，
+ * 并将 `{...list.dataTableProps}` 绑定到 `DataTable`。
+ * 本 Hook 依赖已废弃的 `useListUrlNav`，仅作存量迁移过渡，新代码禁止使用。
  */
 export function useDataTableState(options: UseDataTableStateOptions = {}) {
   const {

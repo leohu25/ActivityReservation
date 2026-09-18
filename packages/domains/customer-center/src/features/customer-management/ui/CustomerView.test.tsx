@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToString } from "react-dom/server";
+import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import {
   TenantAbilityProvider,
   createAbilityFromSnapshot,
@@ -43,7 +44,9 @@ function renderCustomerView(
 
   return renderToString(
     <TenantAbilityProvider snapshots={snapshots}>
-      <UiAbilityProvider ability={ability}>{ui}</UiAbilityProvider>
+      <UiAbilityProvider ability={ability}>
+        <NuqsTestingAdapter>{ui}</NuqsTestingAdapter>
+      </UiAbilityProvider>
     </TenantAbilityProvider>,
   );
 }
@@ -52,9 +55,10 @@ function customerViewProps(
   overrides: Partial<React.ComponentProps<typeof CustomerView>> = {},
 ) {
   return {
-    initialCustomers: mockCustomers,
-    categories: [],
-    tags: [],
+    data: mockCustomers,
+    total: mockCustomers.length,
+    categoryOptions: [],
+    tagOptions: [],
     ...overrides,
   };
 }

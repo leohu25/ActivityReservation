@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Store } from "lucide-react";
 import {
   DataTable,
@@ -13,8 +13,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  useListSearch,
   toast,
-  useListUrlNav,
   type ColumnDef,
 } from "@base/ui";
 import { exportContractCsv } from "@base/shared";
@@ -24,6 +24,7 @@ import {
   CustomerAction,
   CustomerField,
   customerPageContract,
+  customerSearchParams,
   MasterDataStatus,
 } from "../contract";
 import type {
@@ -33,16 +34,9 @@ import type {
 } from "../types";
 import { CustomerFormModal } from "./CustomerFormModal";
 
-interface Props {
-  initialCustomers: CustomerListItem[];
-  /** 服务端总条数（分页必传） */
-  initialTotal?: number;
-  initialPage?: number;
-  initialPageSize?: number;
-  initialKeyword?: string;
-  initialCategory?: string;
-  initialStatus?: string;
-  /** 下拉选项数据源：统一 Options 命名 */
+export interface CustomerViewProps {
+  data: CustomerListItem[];
+  total: number;
   categoryOptions?: CustomerCategoryItem[];
   tagOptions?: CustomerTagItem[];
 }
@@ -53,118 +47,69 @@ const SETTLEMENT_LABELS: Record<string, string> = {
   PREPAID: "预付款",
 };
 
+/**
+ * 客户档案列表：少即是多。
+ * - URL：defineListSearchParams + useListSearch（默认 page/pageSize/keyword）
+ * - UI：DataTable 默认能力 + filterExtra 扩展
+ * - 表单：FormModal
+ */
 export function CustomerView({
-  initialCustomers,
-  initialTotal,
-  initialPage = 1,
-  initialPageSize = 10,
-  initialKeyword = "",
-  initialCategory = "",
-  initialStatus = "",
+  data,
+  total,
   categoryOptions,
   tagOptions,
-}: Props) {
-  const resolvedCategoryOptions = categoryOptions ?? [];
-  const resolvedTagOptions = tagOptions ?? [];
-  // 官方范式：Ability 一律来自上层 AbilityProvider（customer layout）
+}: CustomerViewProps) {
+  const categories = categoryOptions ?? [];
+  const tags = tagOptions ?? [];
   const ability = useAbility();
-  const { navigateList, router } = useListUrlNav();
-  const [customers, setCustomers] = useState(initialCustomers);
-  const [total, setTotal] = useState(initialTotal ?? initialCustomers.length);
-  const [page, setPage] = useState(initialPage);
-  const [pageSize, setPageSize] = useState(initialPageSize);
+  const list = useListSearch(customerSearchParams);
 
-  useEffect(() => {
-    setCustomers(initialCustomers);
-    setTotal(initialTotal ?? initialCustomers.length);
-    setPage(initialPage);
-    setPageSize(initialPageSize);
-  }, [initialCustomers, initialTotal, initialPage, initialPageSize]);
-
-  const [keyword, setKeyword] = useState(initialKeyword);
-  const [selectedCat, setSelectedCat] = useState(initialCategory);
-  const [selectedStatus, setSelectedStatus] = useState(initialStatus);
-  const [, setLoading] = useState(false);
   const [modalState, setModalState] = useState<{
     open: boolean;
     mode: "create" | "edit" | "view";
     record?: CustomerListItem | null;
-  }>({
-    open: false,
-    mode: "create",
-    record: null,
-  });
+  }>({ open: false, mode: "create", record: null });
 
-  const handleToggleStatus = async (
-    customerCode: string,
-    currentStatus: string,
+  const runAction = async (
+    fn: () => Promise<{ success: boolean; error?: string }>,
+    successText: string,
   ) => {
-    setLoading(true);
+    const res = await fn();
+    if (res.success) toast.success(successText);
+    else toast.error(res.error || "操作失败");
+  };
+
+  const handleToggleStatus = (customerCode: string, currentStatus: string) => {
     const nextStatus =
       currentStatus === MasterDataStatus.ACTIVE
         ? MasterDataStatus.DISABLED
         : MasterDataStatus.ACTIVE;
-    try {
-      const res = await updateCustomerStatusAction(customerCode, nextStatus);
-      if (res.success) {
-        setCustomers((prev) =>
-          prev.map((item) =>
-            item.customerCode === customerCode
-              ? { ...item, status: nextStatus }
-              : item,
-          ),
-        );
-        toast.success(
-          nextStatus === MasterDataStatus.ACTIVE ? "客户已启用" : "客户已停用",
-        );
-        router?.refresh();
-      } else {
-        toast.error(res.error || "更新状态失败");
-      }
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "更新状态异常");
-    } finally {
-      setLoading(false);
-    }
+    void runAction(
+      () => updateCustomerStatusAction(customerCode, nextStatus),
+      nextStatus === MasterDataStatus.ACTIVE ? "客户已启用" : "客户已停用",
+    );
   };
 
-  const handleDelete = async (customerCode: string) => {
-    setLoading(true);
-    try {
-      const res = await deleteCustomerAction(customerCode);
-      if (res.success) {
-        setCustomers((prev) =>
-          prev.filter((item) => item.customerCode !== customerCode),
-        );
-        toast.success("客户已成功删除");
-        router?.refresh();
-      } else {
-        toast.error(res.error || "删除客户失败");
-      }
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "删除操作异常");
-    } finally {
-      setLoading(false);
-    }
+  const handleDelete = (customerCode: string) => {
+    void runAction(
+      () => deleteCustomerAction(customerCode),
+      "客户已成功删除",
+    );
   };
 
   const handleExport = () => {
-    exportContractCsv(
-      customers,
-      customerPageContract.configurableFields ?? [],
-      {
-        subject: customerPageContract.subject,
-        ability,
-        skip: [CustomerField.CREDIT_LIMIT],
-        filename: `客户主数据_${new Date().toISOString().slice(0, 10)}.csv`,
-        format: {
-          [CustomerField.SETTLEMENT_METHOD]: (c) =>
-            SETTLEMENT_LABELS[c.settlementMethod] || c.settlementMethod,
-          [CustomerField.STATUS]: (c) =>
-            c.status === MasterDataStatus.ACTIVE ? "正常" : "已停用",
-        },
+    exportContractCsv(data, customerPageContract.configurableFields ?? [], {
+      subject: customerPageContract.subject,
+      ability,
+      skip: [CustomerField.CREDIT_LIMIT],
+      filename: `客户主数据_${new Date().toISOString().slice(0, 10)}.csv`,
+      format: {
+        [CustomerField.SETTLEMENT_METHOD]: (c) =>
+          SETTLEMENT_LABELS[c.settlementMethod] || c.settlementMethod,
+        [CustomerField.STATUS]: (c) =>
+          c.status === MasterDataStatus.ACTIVE ? "正常" : "已停用",
       },
-    );
+    });
   };
 
   const columns: ColumnDef<CustomerListItem>[] = [
@@ -174,7 +119,7 @@ export function CustomerView({
       header: "客户编码",
       width: 150,
       lockVisible: true,
-      cell: (c: CustomerListItem) => (
+      cell: (c) => (
         <span className="font-mono text-xs font-bold text-primary">
           {c.customerCode}
         </span>
@@ -184,11 +129,11 @@ export function CustomerView({
       id: "customerName",
       field: CustomerField.CUSTOMER_NAME,
       header: "客户名称",
-      cell: (c: CustomerListItem) => (
+      cell: (c) => (
         <div>
           <div className="font-medium text-foreground">{c.customerName}</div>
           {c.customerTags && (
-            <div className="flex flex-wrap gap-1 mt-1">
+            <div className="mt-1 flex flex-wrap gap-1">
               {c.customerTags.split(",").map((t: string) => (
                 <Badge key={t} variant="secondary" size="sm">
                   {t}
@@ -204,7 +149,7 @@ export function CustomerView({
       field: CustomerField.CATEGORY,
       header: "分类",
       width: 130,
-      cell: (c: CustomerListItem) => (
+      cell: (c) => (
         <Badge variant="outline" size="sm">
           {c.category?.categoryName || c.categoryCode}
         </Badge>
@@ -215,12 +160,10 @@ export function CustomerView({
       header: "联系人 / 电话",
       field: CustomerField.CONTACT_PHONE,
       width: 160,
-      cell: (c: CustomerListItem) => (
+      cell: (c) => (
         <div className="text-xs">
           <div className="font-medium text-foreground">{c.contactPerson}</div>
-          <div className="text-muted-foreground font-mono">
-            {c.contactPhone}
-          </div>
+          <div className="font-mono text-muted-foreground">{c.contactPhone}</div>
         </div>
       ),
     },
@@ -229,7 +172,7 @@ export function CustomerView({
       header: "结算 / 税率",
       field: CustomerField.SETTLEMENT_METHOD,
       width: 130,
-      cell: (c: CustomerListItem) => (
+      cell: (c) => (
         <div className="text-xs">
           <div>
             {SETTLEMENT_LABELS[c.settlementMethod] || c.settlementMethod}
@@ -245,8 +188,8 @@ export function CustomerView({
       header: "下属门店",
       width: 100,
       align: "center",
-      cell: (c: CustomerListItem) => (
-        <span className="inline-flex items-center gap-1 text-xs font-mono font-medium text-muted-foreground">
+      cell: (c) => (
+        <span className="inline-flex items-center gap-1 font-mono text-xs font-medium text-muted-foreground">
           <Store className="size-3.5" />
           {c._count?.stores || 0}
         </span>
@@ -258,7 +201,7 @@ export function CustomerView({
       header: "状态",
       width: 90,
       align: "center",
-      cell: (c: CustomerListItem) => (
+      cell: (c) => (
         <Badge
           variant={
             c.status === MasterDataStatus.ACTIVE ? "success" : "secondary"
@@ -274,7 +217,7 @@ export function CustomerView({
       header: "操作",
       width: 90,
       align: "right",
-      cell: (c: CustomerListItem) => (
+      cell: (c) => (
         <DataTableRowActions
           record={c}
           onView={() => setModalState({ open: true, mode: "view", record: c })}
@@ -315,76 +258,43 @@ export function CustomerView({
 
   return (
     <>
-      <DataTable
-        data={customers}
+      <DataTable<CustomerListItem>
+        data={data}
         columns={columns}
-        rowKey={(c: CustomerListItem) => c.id || c.customerCode}
+        rowKey={(c) => c.id || c.customerCode}
         subject={customerPageContract.subject}
         title="客户档案"
         description="维护企业客户主数据、结算方式、授信与服务时间。一个客户下可挂载多个履约门店。"
-        page={page}
-        pageSize={pageSize}
         total={total}
-        onPageChange={(nextPage, nextPageSize) => {
-          setPage(nextPage);
-          setPageSize(nextPageSize);
-          navigateList({
-            page: nextPage,
-            pageSize: nextPageSize,
-            keyword: keyword.trim() || undefined,
-            category: selectedCat || undefined,
-            status: selectedStatus || undefined,
-          });
-        }}
-        onRefresh={() => router?.refresh()}
+        {...list.dataTableProps}
         onExport={handleExport}
-        onCreate={() =>
-          setModalState({ open: true, mode: "create", record: null })
-        }
+        onCreate={() => setModalState({ open: true, mode: "create" })}
+        createText="新增"
         contentProps={{ selectable: true }}
         keywordPlaceholder="搜索客户编码、名称、联系人、电话..."
-        keywordValue={keyword}
-        onKeywordChange={setKeyword}
         statusOptions={[
           { value: MasterDataStatus.ACTIVE, label: "正常" },
           { value: MasterDataStatus.DISABLED, label: "已停用" },
         ]}
-        statusValue={selectedStatus}
-        onStatusChange={(v) => {
-          setSelectedStatus(v);
-          setPage(1);
-          navigateList({
-            page: 1,
-            pageSize,
-            keyword: keyword.trim() || undefined,
-            category: selectedCat || undefined,
-            status: v || undefined,
-          });
-        }}
+        statusValue={String(list.params.status ?? "")}
+        onStatusChange={(v) => list.patch({ status: v || "" })}
         filterExtra={
           <DataTableInputGroup label="客户分类" className="w-48">
             <Select
-              value={selectedCat || "ALL"}
-              onValueChange={(next) => {
-                const value = !next || next === "ALL" ? "" : next;
-                setSelectedCat(value);
-                setPage(1);
-                navigateList({
-                  page: 1,
-                  pageSize,
-                  keyword: keyword.trim() || undefined,
-                  category: value || undefined,
-                  status: selectedStatus || undefined,
-                });
-              }}
+              value={String(list.params.category || "ALL")}
+              onValueChange={(next) =>
+                list.patch({
+                  category: !next || next === "ALL" ? "" : next,
+                })
+              }
             >
-              <SelectTrigger className="border-0 bg-transparent shadow-none focus:ring-0">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="全部" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
                   <SelectItem value="ALL">全部</SelectItem>
-                  {resolvedCategoryOptions.map((c) => (
+                  {categories.map((c) => (
                     <SelectItem key={c.categoryCode} value={c.categoryCode}>
                       {c.categoryName}
                     </SelectItem>
@@ -394,47 +304,20 @@ export function CustomerView({
             </Select>
           </DataTableInputGroup>
         }
-        onSearch={() => {
-          setPage(1);
-          navigateList({
-            page: 1,
-            pageSize,
-            keyword: keyword.trim() || undefined,
-            category: selectedCat || undefined,
-            status: selectedStatus || undefined,
-          });
-        }}
-        onReset={() => {
-          setKeyword("");
-          setSelectedCat("");
-          setSelectedStatus("");
-          setPage(1);
-          navigateList({
-            page: 1,
-            pageSize,
-            keyword: undefined,
-            category: undefined,
-            status: undefined,
-          });
-        }}
-        onAdvancedFilter={() => {
-          toast.info("高级筛选面板可按业务扩展");
-        }}
       />
 
       <CustomerFormModal
         open={modalState.open}
         mode={modalState.mode}
         record={modalState.record}
-        categoryOptions={resolvedCategoryOptions}
-        tagOptions={resolvedTagOptions}
+        categoryOptions={categories}
+        tagOptions={tags}
         onClose={() =>
           setModalState({ open: false, mode: "create", record: null })
         }
-        onSuccess={() => {
-          setModalState({ open: false, mode: "create", record: null });
-          router?.refresh();
-        }}
+        onSuccess={() =>
+          setModalState({ open: false, mode: "create", record: null })
+        }
       />
     </>
   );

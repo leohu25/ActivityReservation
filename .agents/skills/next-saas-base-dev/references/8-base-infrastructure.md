@@ -2,7 +2,7 @@
 
 > 消费预算：~5,000 Tokens。涉及 `@base/*` 基础设施包、`tooling/db-migrate` 演进引擎或双端应用装配层（`apps/*/src/kernel`）改造与迭代时的权威操作手册。
 
-本项目采用 **Modular Monorepo** 架构。除了纵向独立的业务切片（`packages/features/*`）外，系统整体运转依托于坚实、解耦且具备高内聚特性的**横向平台基础设施层 (Horizontal Platform & Shared Modules)**。
+本项目采用 **Modular Monorepo** 架构。除了纵向独立的业务切片（`packages/domains/*`）外，系统整体运转依托于坚实、解耦且具备高内聚特性的**横向平台基础设施层 (Horizontal Platform & Shared Modules)**。
 
 ---
 
@@ -92,12 +92,13 @@ graph TD
 
 ### 5. `@base/ui` — 现代工业风高密度 UI 体系
 
-- **职责**：为整个多租户 SaaS 系统提供设计系统代币、通用组件积木与页面布局框架。
+- **职责**：为整个多租户 SaaS 系统提供设计系统代币、通用组件积木、页面布局框架与**列表 URL 约定**。
 - **架构范式**：对齐 **shadcn UI 官方最佳实践（Monorepo Design System）**，开发时参考并执行 `.agents/skills/shadcn/` Skill：
   - **原子组件层 (`src/components/ui/`)**：基于 Base UI 无头原语构建，源码归项目所有（由 Git 跟踪）。**允许且推荐就地通过 CVA 扩展变体与尺寸，支持就地内嵌修补**，彻底消除无意义伪包装层；
+  - **列表 URL 约定（已固化）**：`defineListSearchParams`（server-safe）+ `useListSearch`（Client；别名 `useListParams`）；**禁止** `useTableUrlState` / `useDataTableState` / `useListUrlNav`；
   - **高阶业务资产目录 (`src/components/`)**：
-    - `data-table/`：企业级表格中台资产（涵盖自增序号、动态列配置、多维筛选条、紧凑数字分页与一体化白卡容器）；
-    - `form/`：基于 Zod Schema 驱动的增改查三态表单 `FormModal`、下拉组合框 `Combobox`、日期选择 `DatePicker`；
+    - `data-table/`：企业级表格中台资产（默认 chrome：刷新/导出/列设置/新增/搜索/分页；扩展 `filterExtra`/`statusOptions`）；
+    - `form/`：Zod 驱动三态表单 `FormModal` + `FormFieldSchema`/`sections`；
     - `auth/`：声明式权限守卫 `AuthGuard`、权限受控按钮 `ActionButton` 与敏感字段渲染器 `AuthField`；
     - `tree/`：层级管理树 `HierarchyTree` 与左树右表过滤面板 `DirectoryTreeFilter`；
     - `layout/`：后台框架 `DashboardShell`、标签页 `TabBar`、顶部栏 `TopHeader`；
@@ -105,11 +106,12 @@ graph TD
 
 ### 6. `@base/biz-shared` — 跨切片中台公共资产库 (Level 2)
 
-- **职责**：沉淀经过 2 个以上业务切片验证的通用业务模式，避免在各业务切片中重复造轮子。
+- **职责**：沉淀跨切片业务管道与经验证的通用业务模式；**禁止**为 CRUD 单开独立包。
 - **资产范围**：
-  - **统一单据流水号系统 (`doc-no`)**：涵盖单据类型前缀契约（如 `PO`、`QU`、`SO`）、日期规则与序列号生成契约；
-  - **通用业务审批流契约 (`approval`)**：定义单据草稿、待审、已审、驳回的标准状态机与流转接口；
-  - **明细行表格模板 (`detail-table`)**：主子表单据明细行高密度录入与金额聚合计算。
+  - **资源化 CRUD 管道（已固化）**：`createResourceActions` / `createResourceList` / `createResourcePage`（`createCrud*` 为 `@deprecated` 别名）——细节见 `9-crud-resource-paradigm.md`；
+  - **统一单据流水号系统 (`doc-no`)**：单据类型前缀、日期规则与序列号契约；
+  - **通用业务审批流契约 (`approval`)**：草稿/待审/已审/驳回状态机；
+  - **明细行表格模板 (`detail-table`)**：主子表明细录入与金额聚合（与 `@base/ui` `DetailTable` 协同）。
 
 ### 7. `@base/shared` — 纯技术工具库 (Level 1)
 
@@ -124,8 +126,8 @@ graph TD
 ## 三、 基础设施演进的四大铁律 (Zero-Tolerance Rules)
 
 1. **严禁反向与环状依赖**：
-   - 基础包（`@base/*`）**绝对严禁**引用任何业务切片（`packages/features/*`）；
-   - `@base/biz-shared` 仅能依赖 Level 1 基础包（`@base/shared`, `@base/ui`, `@base/authorization`），不可反向被 Level 1 依赖；
+   - 基础包（`@base/*`）**绝对严禁**引用任何业务切片（`packages/domains/*`）；
+   - **`@base/biz-shared` 仅能依赖**：`@base/shared`、`@base/ui`、`@base/authorization`、`next`、`@casl/ability` 等（资源管道需要 `revalidatePath` / CASL）；不可被 Level 1 反向依赖；
    - 依赖关系必须保持严格单向拓扑，由应用层（`apps/*`）负责最终装配。
 2. **严禁在基础设施中嵌入特定业务逻辑**：
    - `@base/ui` 的组件必须是通用抽象，不得内嵌特定业务字段（如 `customerId`, `quoteAmount` 等）；

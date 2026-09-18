@@ -6,9 +6,10 @@ import { useSafeRouter } from "./use-safe-router";
 export type ListUrlPatch = Record<string, string | number | undefined | null>;
 
 /**
- * 列表页 URL 查询参数导航（服务端筛选/翻页共用）
- * 仅 push 非空参数；默认分页 1 / pageSize 10 不写入 URL。
- * 使用 useSafeRouter：非 App Router 上下文（单测 renderToString）安全降级。
+ * @deprecated 请改用 `defineListSearchParams` + `useListSearch`（约定大于配置：
+ * 默认 page/pageSize/keyword + DataTable.dataTableProps）。
+ * 本 Hook 仅作存量切片（StoreView/QuoteView/RoleListView 等）迁移过渡，
+ * 新代码禁止使用；存量迁完后将从 `@base/ui` 移除。
  */
 export function useListUrlNav(options?: {
   readonly defaultPage?: number;

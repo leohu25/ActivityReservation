@@ -4,8 +4,21 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
+import { defineListSearchParams } from "@base/ui";
 
 export { MasterDataStatus };
+
+/**
+ * 列表 URL 契约（少即是多）：page/pageSize/keyword 由基座约定，业务只扩展默认值。
+ * server-safe：RSC contract 可直接引用，无需 import nuqs parser。
+ */
+export const customerSearchParams = defineListSearchParams({
+  category: "",
+  status: "",
+});
+export type CustomerSearchParams = Awaited<
+  ReturnType<typeof customerSearchParams.parse>
+>;
 
 /** 客户主数据实体与资源标识 (SSoT) */
 export const CustomerSubject = "Customer";

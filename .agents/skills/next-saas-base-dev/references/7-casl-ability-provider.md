@@ -59,7 +59,7 @@ import {
 ### 2.1 切片 Ability Boundary（Client）
 
 ```tsx
-// packages/features/<business-area>/src/shared/ui/<Area>AbilityBoundary.tsx
+// packages/domains/<business-area>/src/shared/ui/<Area>AbilityBoundary.tsx
 "use client";
 import React from "react";
 import {
@@ -129,7 +129,7 @@ export default async function SliceLayout({
 ```tsx
 // page.tsx — 禁止再 getTenantSubjectPermissions、禁止传 permissions/ability
 const pageData = await listXxxQuery({ page, pageSize });
-return <XxxView initialItems={pageData.items} initialTotal={pageData.total} />;
+return <XxxView data={pageData.items} total={pageData.total} />;
 ```
 
 ### 2.4 View 只声明 subject + useAbility
@@ -139,13 +139,17 @@ return <XxxView initialItems={pageData.items} initialTotal={pageData.total} />;
 import { useAbility } from "@base/authorization";
 import { DataTable, DataTree } from "@base/ui";
 
-export function XxxView({ initialItems }: Props) {
+export function XxxView({ data, total }: Props) {
   const ability = useAbility(); // 仅导出等需要命令式 can() 时使用
+
+  const list = useListSearch(xxxSearchParams); // 见 references/9
 
   return (
     <DataTable
-      data={items}
+      {...list.dataTableProps}
+      data={data}
       columns={columns}
+      total={total}
       rowKey={(r) => r.id}
       subject={XxxSubject} // 只传 subject！
       title="…"
@@ -308,7 +312,7 @@ renderToString(
       fieldPolicies: {},
     }}
   >
-    <CustomerView initialCustomers={[]} categories={[]} tags={[]} />
+    <CustomerView data={[]} total={0} categoryOptions={[]} tagOptions={[]} />
   </TenantAbilityProvider>,
 );
 ```

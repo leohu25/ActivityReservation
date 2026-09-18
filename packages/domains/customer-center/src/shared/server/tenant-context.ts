@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { headers } from "next/headers";
 import { getCurrentTenantContext, type TenantContext } from "@base/auth";
 import { getTenantDbManager, type TenantPrismaClient } from "@base/db-tenant";
@@ -23,9 +24,10 @@ export interface TenantDbContext {
 
 /**
  * 纯技术底层：解析并获取当前租户物理数据库客户端与员工门禁校验。
- * 仅依赖横向平台包（@base/auth、@base/db-tenant），绝不依赖业务 Feature 契约或目录。
+ * React.cache()：同一 RSC/Action 请求生命周期内多次调用零重复 DB。
+ * 禁止将结果写入模块级变量（server-no-shared-module-state）。
  */
-export async function getTenantDbContext(): Promise<TenantDbContext> {
+export const getTenantDbContext = cache(async (): Promise<TenantDbContext> => {
   const reqHeaders = await headers();
   const tenantCtx = await getCurrentTenantContext(reqHeaders);
 
@@ -61,7 +63,7 @@ export async function getTenantDbContext(): Promise<TenantDbContext> {
     tenantCtx,
     employeeProfile,
   };
-}
+});
 
 import type {
   CustomerSubjectType,

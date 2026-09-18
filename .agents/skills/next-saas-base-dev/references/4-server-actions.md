@@ -8,28 +8,76 @@
 > 2. **RSC 读取与 mutation 分离**：Server Component 初始读取使用 `server-only` Query；只有客户端触发的 mutation 使用 Server Action；
 > 3. **统一使用 `defineServerAction` 包装 mutation**：由机制确保返回值安全序列化并消灭重复 `try...catch`；
 > 4. **写路径强制 CASL 守卫**：create/update/delete/状态变更必须 `assert*Ability`，与页面按钮同一 `(action, subject)`（ADR-007：业务权限只认 CASL）；
-> 5. **操作人与部门审计落盘 (ADR-009)**：新建数据时，必须从 `TenantCustomerContext` 中提取 `userId` 与 `employeeProfile?.departmentId` 写入实体 `createdById` 与 `deptId`。
+> 5. **操作人与部门审计落盘 (ADR-009)**：新建数据时，必须从租户上下文提取 `userId` 与 `employeeProfile?.departmentId` 写入实体 `createdById` 与 `deptId`（`createResourceActions` 已自动注入 deptId）。
 
 ---
 
-## 1. 统一 Action 包装器 (`defineServerAction`)
+## 1. 标准 CRUD：`createResourceActions`（推荐 / 已固化）
 
-所有 Server Actions 统一使用 `@base/shared` 导出的 `defineServerAction`，并在创建/更新时注入操作人审计：
+标准增改查优先使用 `@base/biz-shared` 工厂，业务只注入 context/subject/schema/service；在 `"use server"` 文件中**平铺 re-export**：
+
+```ts
+"use server";
+
+import { createResourceActions } from "@base/biz-shared";
+import { getTenantCustomerContext, assertCustomerAbility } from "../../assembly/context";
+import { CustomerField, CustomerSubject, CustomerAction } from "./contract";
+import { parseCreateCustomerInput, parseUpdateCustomerInput } from "./schema";
+import { CustomerService } from "./service";
+
+const actions = createResourceActions({
+  getContext: async () => {
+    const ctx = await getTenantCustomerContext();
+    return {
+      client: ctx.client,
+      ability: ctx.ability,
+      userId: ctx.userId,
+      deptId: ctx.employeeProfile?.departmentId ?? null,
+    };
+  },
+  subject: CustomerSubject,
+  controlledFields: Object.values(CustomerField),
+  assertAbility: (ability, action, subject) => {
+    assertCustomerAbility(ability as never, action as never, subject as never);
+  },
+  revalidatePaths: ["/customer/customers"],
+  schemas: { create: parseCreateCustomerInput, update: parseUpdateCustomerInput },
+  service: {
+    create: (client, input, ctx) => CustomerService.createCustomer(client as never, input as never, ctx),
+    update: (client, id, input, ctx) => CustomerService.updateCustomer(client as never, id, input as never, ctx),
+    remove: (client, id, ctx) => CustomerService.deleteCustomer(client as never, id, ctx),
+    toggleStatus: (client, id, status, ctx) =>
+      CustomerService.updateCustomerStatus(client as never, id, status as never, ctx),
+  },
+  toggleAction: CustomerAction.TOGGLE_STATUS,
+  toggleExtraRevalidatePaths: ["/customer/stores"],
+});
+
+export const createCustomerAction = actions.create!;
+export const updateCustomerAction = actions.update!;
+export const deleteCustomerAction = actions.remove!;
+export const updateCustomerStatusAction = actions.toggleStatus!;
+```
+
+工厂管道：`getContext → assertAbility → Zod → assertEditableFields → service → revalidatePath`。  
+定制：`onBeforeCreate` / `onBeforeUpdate` / 自定义 service 方法。
+
+完整范式见 `references/9-crud-resource-paradigm.md`。
+
+---
+
+## 1b. 手写 `defineServerAction`（完全特异逻辑时）
 
 ```ts
 "use server";
 
 import { revalidatePath } from "next/cache";
 import { defineServerAction } from "@base/shared";
-import {
-  assertCustomerAbility,
-  getTenantCustomerContext,
-} from "../../assembly/context";
+import { assertCustomerAbility, getTenantCustomerContext } from "../../assembly/context";
 import { CustomerService } from "./service";
 import { CustomerSubject } from "./contract";
 import type { CreateCustomerInput } from "./types";
 
-// 写路径：create（注入创建人与部门审计）
 export const createCustomerAction = defineServerAction(
   async (input: CreateCustomerInput) => {
     const { client, ability, userId, employeeProfile } =
@@ -45,26 +93,9 @@ export const createCustomerAction = defineServerAction(
   },
   "创建客户失败",
 );
-
-// 自定义扩展动作：与契约 action 名一致
-export const updateCustomerStatusAction = defineServerAction(
-  async (customerCode: string, status: "ACTIVE" | "DISABLED") => {
-    const { client, ability, userId } = await getTenantCustomerContext();
-    assertCustomerAbility(ability, "toggle_status", CustomerSubject);
-
-    const updated = await CustomerService.updateCustomerStatus(
-      client,
-      customerCode,
-      status,
-      { userId },
-    );
-    revalidatePath("/customer/customers");
-    revalidatePath("/customer/stores");
-    return updated;
-  },
-  "更新客户状态失败",
-);
 ```
+
+注意：客户端默认不 `router.refresh()`；自愈靠 Action 内 `revalidatePath`。
 
 ---
 

@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { StandardAction } from "@base/authorization";
 
 import { getAccessibleWhere, pickReadableFields } from "@base/authorization";
@@ -9,42 +10,35 @@ import {
 import { CustomerSubject } from "./contract";
 import { CustomerService } from "./service";
 import { CustomerCategoryTagService } from "./classification/service";
-import type { CustomerListItem, ListCustomerFilter } from "./types";
-import type {
-  CustomerCategoryItem,
-  CustomerTagItem,
-} from "./classification/types";
+import type { CustomerListItem, ListCustomerFilter, CustomerPageOptions } from "./types";
 import { toPlainData, MasterDataStatus } from "@base/shared";
 
-export interface CustomerPageOptions {
-  categoryOptions: CustomerCategoryItem[];
-  tagOptions: CustomerTagItem[];
-}
+export type { CustomerPageOptions };
 
 /**
- * 获取客户档案页面所需的全量下拉选项元数据（宿主聚合 BFF 模式）
- * 遵循工业级 DDD 与 App Router 规范：校验宿主 CustomerSubject 读权限，
- * 一次性聚合当前租户所有处于 ACTIVE 状态的可用分类与标签，
- * 消除子模块后台权限变动波及主业务页面的级联瘫痪隐患。
+ * 下拉选项 BFF：React.cache 请求级去重。
+ * RSC 只允许把 **resolve 后的纯数据** 传给 Client，禁止透传 Promise prop。
  */
-export async function getCustomerPageOptionsQuery(): Promise<CustomerPageOptions> {
-  const { client, ability } = await getTenantCustomerContext();
-  assertCustomerAbility(ability, StandardAction.READ, CustomerSubject);
+export const getCustomerPageOptionsQuery = cache(
+  async (): Promise<CustomerPageOptions> => {
+    const { client, ability } = await getTenantCustomerContext();
+    assertCustomerAbility(ability, StandardAction.READ, CustomerSubject);
 
-  const [categoryOptions, tagOptions] = await Promise.all([
-    CustomerCategoryTagService.listCategories(client, {
-      status: MasterDataStatus.ACTIVE,
-    }),
-    CustomerCategoryTagService.listTags(client, {
-      status: MasterDataStatus.ACTIVE,
-    }),
-  ]);
+    const [categoryOptions, tagOptions] = await Promise.all([
+      CustomerCategoryTagService.listCategories(client, {
+        status: MasterDataStatus.ACTIVE,
+      }),
+      CustomerCategoryTagService.listTags(client, {
+        status: MasterDataStatus.ACTIVE,
+      }),
+    ]);
 
-  return toPlainData({
-    categoryOptions,
-    tagOptions,
-  });
-}
+    return toPlainData({
+      categoryOptions,
+      tagOptions,
+    });
+  },
+);
 
 export async function listCustomersQuery(filter: ListCustomerFilter = {}) {
   const { client, ability } = await getTenantCustomerContext();

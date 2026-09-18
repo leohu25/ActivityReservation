@@ -8,6 +8,12 @@ export type {
   CustomerTagItem,
 } from "./classification/types";
 
+/** 列表页下拉选项（与筛选解耦，可缓存在壳层） */
+export interface CustomerPageOptions {
+  categoryOptions: CustomerCategoryItem[];
+  tagOptions: import("./classification/types").CustomerTagItem[];
+}
+
 export interface CreateCustomerInput {
   customerName: string;
   categoryCode: string;

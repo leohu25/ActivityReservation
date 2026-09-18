@@ -24,33 +24,30 @@
 > 4. **平台 UI 基建沉淀主动提问机制 (UI Infrastructure Extraction Trigger)**：在垂直切片实施过程中，一旦发现当前交互模式、明细表、子表单或看板具备通用性，**严禁在切片内部私造或闭门造车，必须主动向用户发起提问**，评估并沉淀至 `@base/ui`；
 > 5. **二次确认只在对话框提示一次**：破坏性操作统一由 `ActionButton` 或 `DataTableRowActions` 的 `ConfirmDialog` 进行模态对话框确认，严禁在回调函数内再次使用浏览器的 `window.confirm` 进行二次弹窗；
 > 6. **消息通知右上角 Toast 弹出**：严禁在页面顶部塞入静态红色大横幅挤压变形表格布局，所有成功、警告与错误提示统一使用右上角 `toast`（基于 `sonner`）；页内粘性反馈用 `FeedbackBanner`（基于 shadcn `Alert`）；
-> 7. **杜绝全页强刷**：严禁调用 `window.location.reload()`，状态变更必须由 React 本地 State 即时响应驱动，配合 `router?.refresh()` 静默同步；
+> 7. **杜绝全页强刷**：严禁 `window.location.reload()`；mutation 默认 Action 内 `revalidatePath`，客户端默认不写 `router.refresh()`；
 > 8. **服务端分页（生产必选）**：`DataTable` 默认不做客户端切片，服务端分页驱动。
 
 `DataTable.Root` 默认**不做**客户端切片：`data` 必须是服务端返回的**当前页**，`total` 来自 API `count`。
 
 ```tsx
-// RSC page.tsx
-const sp = await searchParams;
-const page = readInt(sp, "page", 1);
-const pageSize = readInt(sp, "pageSize", 20);
-const { items, total } = await listAction({ page, pageSize, keyword });
+// RSC page.tsx — 见 references/9：createResourcePage 或等价 parse + query
+const parsed = await customerSearchParams.parse(searchParams);
+const { items, total } = await listCustomersQuery({
+  page: parsed.page,
+  pageSize: parsed.pageSize,
+  keyword: parsed.keyword || undefined,
+});
+return <CustomerView data={items} total={total} />;
 
-<CustomerView
-  initialCustomers={items}
-  initialTotal={total}
-  initialPage={page}
-  initialPageSize={pageSize}
-/>
-
-// Client View
-<DataTable.Root
-  data={customers}
-  page={page}
-  pageSize={pageSize}
+// Client View — 一体 DataTable + useListSearch（非手拼 Root + navigateList）
+const list = useListSearch(customerSearchParams);
+<DataTable
+  {...list.dataTableProps}
+  data={data}
+  columns={columns}
   total={total}
-  onPageChange={(p, ps) => navigateList({ page: p, pageSize: ps })}
->
+  subject={customerPageContract.subject}
+/>
 ```
 
 服务层使用 `count` + `skip/take`，严禁 `findMany` 全量返回后再前端切页。
@@ -76,91 +73,64 @@ toast.warning("检测到该客户存在未结款项");
 
 ## 2. 现代化工业风 DataTable 通用积木与权限开发手册
 
-> **权限来源（官方 CASL）**：切片 layout 已挂 `TenantAbilityProvider`；Workspace/Root **只传 `subject`**，禁止传 `permissions`/`ability`。完整范式见 `7-casl-ability-provider.md`。
+> **权限来源（官方 CASL）**：切片 layout 已挂 `TenantAbilityProvider`；`DataTable` **只传 `subject`**，禁止传 `permissions`/`ability`。完整范式见 `7-casl-ability-provider.md`。
 
-### 2.0 状态流水线与防漏传黄金法则 (`useDataTableState`)
+### 2.0 状态流水线与列表约定（`defineListSearchParams` + `useListSearch`）
 
-> ⚠️ **高频踩坑警示（搜索失效根因）**：
-> 过去很多业务页面手写 `onSearch={() => navigateList({ page: 1 })}`，**极其容易手抖漏传 `keyword` 参数**，导致用户点击查询或敲回车时没有任何反应！
-> 同时，直接写死的 `"单号 / 名称 / 关键字"` 占位符在客户档案、门店管理等非单据页面造成业务语义严重错乱。
->
-> **官方统一规范**：所有 `DataTable` 列表组件**推荐使用 `useDataTableState` 接管状态管道**，自动搞定分页、关键字、URL 双向同步与重置；且关键字输入框**原生支持 Enter 回车自动触发查询**！
+> **已固化规范**（对标 Element UI：约定大于配置）：  
+> - URL：`contract.ts` 内 `defineListSearchParams({ 扩展默认值 })`，自动自带 **page / pageSize / keyword**  
+> - Client：`useListSearch(params)` 返回 `dataTableProps`，直接 spread 到 `DataTable`  
+> - **禁止**：`useDataTableState`、`useListUrlNav`、`useTableUrlState`、`parseTableSearchParams`（旧 API 已 `@deprecated` 或作废）
 
 ```tsx
-import { DataTable, useDataTableState } from "@base/ui";
+import { DataTable, useListSearch } from "@base/ui";
+import { customerSearchParams, customerPageContract } from "../contract";
 
-export function CustomerView({
-  initialCustomers,
-  initialTotal,
-  initialPage,
-  initialPageSize,
-  initialKeyword,
-}: Props) {
-  // 一行代码统一接管受控状态与 URL 参数同步，物理杜绝漏传 keyword！
-  const table = useDataTableState({
-    initialPage,
-    initialPageSize,
-    initialTotal,
-    initialKeyword,
-  });
+export function CustomerView({ data, total, categoryOptions }: Props) {
+  const list = useListSearch(customerSearchParams);
 
   return (
     <DataTable
-      {...table.bindProps} // 自动绑定 page, pageSize, total, keywordValue, onKeywordChange, onSearch, onReset, onPageChange, onRefresh
-      data={customers}
+      {...list.dataTableProps}
+      data={data}
       columns={columns}
-      rowKey={(c) => c.customerCode}
+      total={total}
       subject={customerPageContract.subject}
       title="客户档案"
-      description="维护企业客户主数据、结算方式、授信与服务时间。"
-      keywordPlaceholder="输入客户编码 / 客户名称 / 联系人..."
+      description="维护企业客户主数据..."
+      keywordPlaceholder="搜索客户编码、名称、联系人、电话..."
+      onExport={handleExport}
+      onCreate={() => setModal({ open: true, mode: "create" })}
+      statusOptions={[
+        { value: "ACTIVE", label: "正常" },
+        { value: "DISABLED", label: "已停用" },
+      ]}
+      statusValue={String(list.params.status ?? "")}
+      onStatusChange={(v) => list.patch({ status: v || "" })}
+      filterExtra={<客户分类 Select />}  {/* 扩展插槽：与默认筛选并排 */}
     />
   );
 }
 ```
 
-### 2.1 一体化卡片容器原则
+### 2.1 一体化列表 chrome（约定大于配置）
 
-**推荐整页模板（约定大于配置）**：`DataTable.Workspace` 默认带齐 Header + 刷新/导出/列设置/新增 + 关键字(+/状态)筛选 + 表格 + 分页，页面按需 `show*=false` 关闭：
+**标准列表**直接使用 `DataTable` 一体组件（非手拼 Root/Header/FilterBar）：
+
+- **默认 chrome（始终可见）**：标题、刷新、导出、列设置、新增、关键字搜索、查询/重置、分页  
+- **扩展插槽（叠加，不折叠默认项）**：`statusOptions`、`filterExtra`、`toolbarExtra`  
+- **禁止**业务层手绘壳（ListShell/TableRegion）或把默认能力收进抽屉  
+- `DataTable.Workspace` / `DataTable.Root` 原子积木：仅完全自定义布局时使用；标准 CRUD **优先一体 `DataTable` + `useListSearch`**
 
 ```tsx
-<DataTable.Workspace
-  data={customers}
-  columns={columns}
-  rowKey={(c) => c.customerCode}
-  subject={customerPageContract.subject}
-  title="客户档案"
-  description="维护企业客户主数据、结算方式、授信与服务时间。"
-  page={page}
-  pageSize={pageSize}
-  total={total}
-  onPageChange={(p, ps) => navigateList({ page: p, pageSize: ps })}
-  onRefresh={() => router?.refresh()}
-  onExport={handleExport}
-  onCreate={() => setShowModal(true)}
-  statusOptions={[
-    { value: "ACTIVE", label: "正常" },
-    { value: "DISABLED", label: "已停用" },
-  ]}
-  keywordValue={keyword}
-  statusValue={status}
-  onKeywordChange={setKeyword}
-  onStatusChange={setStatus}
-  onSearch={() => navigateList({ page: 1 })}
-  onReset={() => {
-    setKeyword("");
-    setStatus("");
-    navigateList({ page: 1, keyword: "", status: "" });
-  }}
-  contentProps={{ selectable: true }}
-  // 不需要导出时： showExport={false}
-  // 不需要状态筛时： hideStatusFilter 或不传 statusOptions
->
-  {/* 本页特有扩展插槽（详情/表单 Modal 等） */}
-</DataTable.Workspace>
+// 标准范式（推荐）
+const list = useListSearch(customerSearchParams);
+<DataTable {...list.dataTableProps} data={data} columns={columns} total={total} ... />
+
+// 页面装配优先 createResourcePage（见 references/9-crud-resource-paradigm.md）
 ```
 
-**原子拼装仍可用**（Workspace 内部即组合这些积木）：搜索栏、工具栏、表格主体与分页条必须包在同一张 `DataTable.Root` 白卡内，严禁零散漂浮在页面灰色背景上。
+**原子拼装仍可用**（需要完全自定义布局时）：搜索栏、工具栏、表格主体与分页条必须包在同一张 `DataTable.Root` 白卡内，严禁零散漂浮在页面灰色背景上。
 
 ```tsx
 // 原子范式（需要完全自定义布局时）
@@ -212,7 +182,8 @@ export function CustomerView({
 
 | 积木                                     | 职责                                                                      | 关键开关                                                                     |
 | :--------------------------------------- | :------------------------------------------------------------------------ | :--------------------------------------------------------------------------- |
-| `DataTable.Workspace`                    | **整页工作台模板（推荐）** 默认刷新/导出/列设置/新增 + 筛选 + 表格 + 分页 | `showRefresh/Export/Create/ColumnSettings`、`showFilterBar`、`statusOptions` |
+| `DataTable`                             | **标准列表一体组件（推荐）** 默认 chrome + 可扩展 `filterExtra`/`statusOptions` | `title/subject/columns`、`dataTableProps`（useListSearch）、`filterExtra` |
+| `DataTable.Workspace`                   | 自定义工作台积木（非标准 CRUD 首选） | `showRefresh/Export/...` |
 | `DataTable.Root`                         | 状态上下文 + 一体化白卡                                                   | `integratedCard`                                                             |
 | `DataTable.Header`                       | 分类小标 + 竖条标题 + 说明 + actions 插槽                                 | `category/title/description/actions`                                         |
 | `DataTable.Toolbar`                      | 全局操作按钮容器                                                          | children 自由装配                                                            |
@@ -602,30 +573,27 @@ const columns: ColumnDef<CustomerItem>[] = createColumnsFromSchema(entitySchema,
 ## 4. 响应式无感更新模式 (No Reload)
 
 ```tsx
-export function CustomerView({ initialCustomers }: Props) {
-  const router = useSafeRouter();
-  const [customers, setCustomers] = useState(initialCustomers);
+// ✅ 已固化标杆（禁止镜像 state / router.refresh）
+export function CustomerView({ data, total, categoryOptions }: Props) {
+  const list = useListSearch(customerSearchParams);
+  const [modal, setModal] = useState({ open: false, mode: "create" as const });
 
-  useEffect(() => {
-    setCustomers(initialCustomers);
-  }, [initialCustomers]);
-
-  const handleDelete = async (code: string) => {
-    setLoading(true);
-    try {
-      const res = await deleteCustomerAction(code);
-      if (res.success) {
-        setCustomers((prev) =>
-          prev.filter((item) => item.customerCode !== code),
-        );
-        toast.success("客户已成功删除");
-        router?.refresh();
-      } else {
-        toast.error(res.error || "删除客户失败");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  return (
+    <>
+      <DataTable
+        {...list.dataTableProps}
+        data={data}
+        columns={columns}
+        total={total}
+        subject={customerPageContract.subject}
+        onExport={handleExport}
+        onCreate={() => setModal({ open: true, mode: "create" })}
+        filterExtra={/* 扩展筛选 */}
+      />
+      <CustomerFormModal open={modal.open} mode={modal.mode} ... />
+    </>
+  );
 }
+// 删除/状态变更：调用 createResourceActions 导出的 Action；
+// Action 内 revalidatePath 自愈，客户端不 router.refresh()
 ```

@@ -19,12 +19,23 @@ export interface CustomerAuditContext {
   deptId?: string | null;
 }
 
+function isUniqueConstraintError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "P2002"
+  );
+}
+
 export class CustomerService {
   /**
-   * 生成唯一且单调递增的客户编码: CUST-YYYYMMDD-XXXX
+   * 生成客户编码: CUST-YYYYMMDD-XXXX。
+   * 调用方必须在事务内先持有 advisory lock，避免并发读 max(code) 撞号。
+   * 禁止 count(*)+1。
    */
   static async generateCustomerCode(
-    client: TenantPrismaClient,
+    client: TenantPrismaClient | { customer: TenantPrismaClient["customer"] },
   ): Promise<string> {
     const today = new Date();
     const yyyy = today.getFullYear();
@@ -157,69 +168,98 @@ export class CustomerService {
   }
 
   /**
-   * 创建客户档案（强制记录创建人与归属部门）
+   * 创建客户档案：事务 + advisory lock 发号 + P2002 指数退避重试。
    */
   static async createCustomer(
     client: TenantPrismaClient,
     input: CreateCustomerInput,
     auditCtx: CustomerAuditContext,
   ) {
-    const category = await client.customerCategory.findUnique({
-      where: { categoryCode: input.categoryCode },
-    });
-    if (!category) {
-      throw new Error(`分类 [${input.categoryCode}] 不存在`);
-    }
+    const maxRetries = 3;
 
-    const customerCode = await CustomerService.generateCustomerCode(client);
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await client.$transaction(
+          async (tx) => {
+            // Postgres advisory lock：同事务提交时自动释放，兼容事务级连接池
+            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('customer_code'))`;
 
-    // 格式化标签摘要
-    let customerTagsStr = "";
-    if (input.tagCodes && input.tagCodes.length > 0) {
-      const tags = await client.customerTag.findMany({
-        where: { tagCode: { in: input.tagCodes } },
-        select: { tagName: true },
-      });
-      customerTagsStr = tags.map((t) => t.tagName).join(",");
-    }
-
-    return client.customer.create({
-      data: {
-        customerCode,
-        customerName: input.customerName,
-        categoryCode: input.categoryCode,
-        contactPerson: input.contactPerson,
-        contactPhone: input.contactPhone,
-        settlementMethod: input.settlementMethod,
-        defaultTaxRate:
-          input.defaultTaxRate === undefined ? null : input.defaultTaxRate,
-        creditLimit: input.creditLimit === undefined ? null : input.creditLimit,
-        customerTags: customerTagsStr || null,
-        salesPerson: input.salesPerson || null,
-        defaultWarehouse: input.defaultWarehouse || null,
-        paymentCycle: input.paymentCycle || null,
-        serviceTime: input.serviceTime || null,
-        status: "ACTIVE",
-        createdById: auditCtx.userId,
-        deptId: auditCtx.deptId ?? null,
-        isDeleted: false,
-        tagAssignments: input.tagCodes?.length
-          ? {
-              create: input.tagCodes.map((tagCode) => ({
-                tag: { connect: { tagCode } },
-              })),
+            const category = await tx.customerCategory.findUnique({
+              where: { categoryCode: input.categoryCode },
+            });
+            if (!category) {
+              throw new Error(`分类 [${input.categoryCode}] 不存在`);
             }
-          : undefined,
-      },
-      include: {
-        category: true,
-        tagAssignments: {
-          include: {
-            tag: true,
+
+            const customerCode = await CustomerService.generateCustomerCode(tx);
+
+            let customerTagsStr = "";
+            if (input.tagCodes && input.tagCodes.length > 0) {
+              const tags = await tx.customerTag.findMany({
+                where: { tagCode: { in: input.tagCodes } },
+                select: { tagName: true },
+              });
+              customerTagsStr = tags.map((t) => t.tagName).join(",");
+            }
+
+            return tx.customer.create({
+              data: {
+                customerCode,
+                customerName: input.customerName,
+                categoryCode: input.categoryCode,
+                contactPerson: input.contactPerson,
+                contactPhone: input.contactPhone,
+                settlementMethod: input.settlementMethod,
+                defaultTaxRate:
+                  input.defaultTaxRate === undefined
+                    ? null
+                    : input.defaultTaxRate,
+                creditLimit:
+                  input.creditLimit === undefined ? null : input.creditLimit,
+                customerTags: customerTagsStr || null,
+                salesPerson: input.salesPerson || null,
+                defaultWarehouse: input.defaultWarehouse || null,
+                paymentCycle: input.paymentCycle || null,
+                serviceTime: input.serviceTime || null,
+                status: "ACTIVE",
+                createdById: auditCtx.userId,
+                updatedById: auditCtx.userId,
+                deptId: auditCtx.deptId ?? null,
+                isDeleted: false,
+                tagAssignments: input.tagCodes?.length
+                  ? {
+                      create: input.tagCodes.map((tagCode) => ({
+                        tag: { connect: { tagCode } },
+                      })),
+                    }
+                  : undefined,
+              },
+              include: {
+                category: true,
+                tagAssignments: {
+                  include: {
+                    tag: true,
+                  },
+                },
+              },
+            });
           },
-        },
-      },
-    });
+          {
+            maxWait: 5000,
+            timeout: 10000,
+            isolationLevel: "ReadCommitted",
+          },
+        );
+      } catch (error) {
+        if (isUniqueConstraintError(error) && attempt < maxRetries) {
+          await new Promise((resolve) => setTimeout(resolve, attempt * 50));
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    throw new Error("createCustomer: retries exhausted");
   }
 
   /**

@@ -7,7 +7,7 @@
 ## 目录结构规范
 
 ```bash
-packages/features/<business-area>/src/
+packages/domains/<business-area>/src/
 ├── features/
 │   └── <feature>/
 │       ├── service.ts         # 纯业务领域逻辑与数据库事务 (包内私有实现)
@@ -225,3 +225,14 @@ export async function getCustomerPageOptionsQuery(): Promise<CustomerPageOptions
   return toPlainData({ categoryOptions, tagOptions });
 }
 ```
+
+---
+
+## 查询层约定（已固化，与标杆对齐）
+
+1. `queries.ts` 首行 `import "server-only"`。
+2. 租户上下文与 Ability：经 `assembly/context.ts`，并用 **React `cache()`** 无参记忆化（见 `9-crud-resource-paradigm.md`）。
+3. 列表 Query：返回 **DTO 投影**（Decimal→number、Date→ISO），禁止 Prisma 实体直出。
+4. 页面 options 与 list 使用 `Promise.all` 并行。
+5. 发号在 `service.ts`，禁止 `count(*)+1`。
+

@@ -1,8 +1,10 @@
 # 模块 1：页面纯数据契约 (contracts/) 与权限体系
 
-在现代企业级多租户 SaaS 架构体系中，所有业务切片（`packages/features/*`）的权限体系严格采用**页面纯数据契约（Page Permission Contract）作为单一事实源（SSoT）**。
+在现代企业级多租户 SaaS 架构体系中，所有业务切片（`packages/domains/*`）的权限体系严格采用**页面纯数据契约（Page Permission Contract）作为单一事实源（SSoT）**。
 
 ---
+
+> **列表 URL 契约（已固化）**：在 `contract.ts` 使用 `defineListSearchParams({ 扩展默认值 })`（默认 page/pageSize/keyword）；Client 用 `useListSearch`。细节见 `9-crud-resource-paradigm.md`。
 
 ## 权限四维命名与 SSoT 铁律
 
@@ -88,7 +90,7 @@ node scripts/check/check-permission-contracts.mjs
 在遵循 **Feature-based Vertical Slice Architecture** 的业务切片中，契约同级就近放置在各自 Feature / Sub-Feature 目录下，消灭顶层大平铺：
 
 ```bash
-packages/features/<business-area>/src/features/
+packages/domains/<business-area>/src/features/
 ├── <feature-a>/
 │   ├── contract.ts                   # 核心特性 A 专属契约 (实体符号 + 字段枚举 + 页面契约)
 │   └── <sub-feature>/
@@ -176,19 +178,21 @@ export const customerPageContract: FeaturePagePermissionDescriptor = {
 权限快照在 **切片 layout** 注入，View **只收业务数据**，不再接收 `permissions`/`ability` props。
 
 ```tsx
-// packages/features/customer-center/src/features/customer-management/ui/CustomerView.tsx
+// packages/domains/customer-center/.../ui/CustomerView.tsx
 "use client";
 import { useAbility } from "@base/authorization";
-import { DataTable } from "@base/ui";
+import { DataTable, useListSearch } from "@base/ui";
+import { customerSearchParams, customerPageContract } from "../contract";
 
 interface Props {
-  initialCustomers: CustomerListItem[];
-  // 禁止：permissions?: {...} / ability?: {...}
+  data: CustomerListItem[];
+  total: number;
+  // 禁止：permissions / ability props；禁止 initial* 镜像 state
 }
 
-export function CustomerView({ initialCustomers }: Props) {
-  // 命令式 can()（如导出字段过滤）用官方 useAbility；按钮显隐交给 ActionButton
+export function CustomerView({ data, total }: Props) {
   const ability = useAbility();
+  const list = useListSearch(customerSearchParams);
 
   const columns: ColumnDef<CustomerListItem>[] = [
     {
@@ -200,10 +204,12 @@ export function CustomerView({ initialCustomers }: Props) {
   ];
 
   return (
-    <DataTable.Workspace
-      data={initialCustomers}
+    <DataTable
+      {...list.dataTableProps}
+      data={data}
       columns={columns}
-      rowKey={(c) => c.customerCode}
+      total={total}
+      rowKey={(c) => c.id || c.customerCode}
       subject={customerPageContract.subject} // 只传 subject
       title="客户档案"
     />
@@ -268,7 +274,7 @@ assertCustomerAbility(
 
    ```tsx
    <DataTable
-     {...table.bindProps}
+     {...list.dataTableProps}
      keywordPlaceholder="搜索订单号、销售员、客户、门店..."
    />
    ```

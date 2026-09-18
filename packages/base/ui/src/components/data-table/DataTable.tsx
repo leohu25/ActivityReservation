@@ -1,7 +1,8 @@
 "use client";
 
 import type * as React from "react";
-import { Download, Plus, RefreshCw } from "lucide-react";
+import * as ReactRuntime from "react";
+import { Download, Plus, RefreshCw, RotateCcw, Search } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import {
@@ -43,8 +44,16 @@ export interface DataTableStatusOption {
 
 export interface DataTableProps<TData>
 	extends Omit<DataTableRootProps<TData>, "children"> {
-	title: string;
+	/** 标题；`showHeader={false}` 时可省略（壳层自绘 Header） */
+	title?: string;
 	description?: string;
+	/** 默认 true。false 时不渲染 Header（筛选/表体由外层壳或积木拼装） */
+	showHeader?: boolean;
+	/**
+	 * 默认与 showHeader 一致；showHeader=false 时可单独打开，
+	 * 在表体上方渲染刷新/导出/列设置等工具按钮（壳层拆分场景）。
+	 */
+	showToolbar?: boolean;
 
 	// ---- 工具栏：默认全量，hide* 关闭 ----
 	/** 默认 true */
@@ -84,10 +93,32 @@ export interface DataTableProps<TData>
 	onSearch?: () => void;
 	onReset?: () => void;
 	onAdvancedFilter?: () => void;
-	/** 状态/关键字之外的自定义筛选插槽 */
+	/**
+	 * 推荐扩展插槽：关键字/状态之外的业务筛选（如客户分类）。
+	 * 渲染在默认筛选栏内，与搜索/新增/刷新/导出/列设置并排，**不会**被折叠。
+	 * @example filterExtra={<DataTableInputGroup label="客户分类">...</DataTableInputGroup>}
+	 */
 	filterExtra?: React.ReactNode;
-	/** 完全接管筛选栏 children（仍保留查询/重置按钮） */
+	/** 完全接管筛选栏 children（仍保留查询/重置按钮）；一般业务请优先用 filterExtra */
 	filterChildren?: React.ReactNode;
+
+	/**
+	 * 关键字搜索放置位置。
+	 * @deprecated 默认列表请使用 `filter-bar`（默认值）。`toolbar` 为可选高级形态，
+	 * 业务扩展筛选请用 `filterExtra` / `statusOptions` 叠加，不要把默认能力折进抽屉。
+	 * 新页面禁止依赖 `toolbar` / `advancedFilters`；后续可能收敛移除。
+	 */
+	searchPlacement?: "filter-bar" | "toolbar";
+	/**
+	 * @deprecated 配套 `searchPlacement="toolbar"` 的抽屉触发文案。
+	 * 业务扩展请用 `filterExtra`（推荐，不废弃）。
+	 */
+	advancedTriggerText?: string;
+	/**
+	 * @deprecated 与 `searchPlacement="toolbar"` 配套的抽屉插槽。
+	 * 业务附加筛选请写在 **`filterExtra`（推荐，未废弃）**。
+	 */
+	advancedFilters?: React.ReactNode;
 
 	// ---- 表格 / 分页 ----
 	contentProps?: DataTableContentProps<TData>;
@@ -105,6 +136,7 @@ export interface DataTableProps<TData>
 export function DataTable<TData>({
 	title,
 	description,
+	showHeader = true,
 	data,
 	columns,
 	rowKey,
@@ -123,6 +155,7 @@ export function DataTable<TData>({
 	showExport = true,
 	showColumnSettings = true,
 	showCreate = true,
+	showToolbar,
 	toolbarExtra,
 	onRefresh,
 	onExport,
@@ -148,6 +181,9 @@ export function DataTable<TData>({
 	onAdvancedFilter,
 	filterExtra,
 	filterChildren,
+	searchPlacement = "filter-bar",
+	advancedTriggerText = "扩展",
+	advancedFilters,
 
 	contentProps,
 	showPagination = true,
@@ -158,6 +194,144 @@ export function DataTable<TData>({
 
 	const resolvedPlaceholder =
 		searchPlaceholder ?? keywordPlaceholder ?? "输入关键字搜索...";
+
+	const searchInToolbar = searchPlacement === "toolbar";
+	const toolbarVisible = showToolbar ?? showHeader !== false;
+	const [advancedOpen, setAdvancedOpen] = ReactRuntime.useState(false);
+
+	const keywordField = showKeywordFilter ? (
+		<DataTableInputGroup label="关键字" className="min-w-[220px] sm:w-72">
+			<Input
+				placeholder={resolvedPlaceholder}
+				value={keywordValue}
+				onChange={(e) => onKeywordChange?.(e.target.value)}
+				onKeyDown={(e) => {
+					if (e.key === "Enter") {
+						e.preventDefault();
+						onSearch?.();
+					}
+				}}
+			/>
+		</DataTableInputGroup>
+	) : null;
+
+	const statusField = showStatusFilter ? (
+		<DataTableInputGroup label="状态" className="min-w-[170px] w-auto">
+			<Select
+				value={statusValue ?? statusAllValue}
+				onValueChange={(value) =>
+					onStatusChange?.(value ?? statusAllValue)
+				}
+			>
+				<SelectTrigger className="w-full">
+					<SelectValue placeholder={statusAllLabel} />
+				</SelectTrigger>
+				<SelectContent>
+					<SelectGroup>
+						<SelectItem value={statusAllValue}>{statusAllLabel}</SelectItem>
+						{statusOptions?.map((opt) => (
+							<SelectItem key={opt.value} value={opt.value}>
+								{opt.label}
+							</SelectItem>
+						))}
+					</SelectGroup>
+				</SelectContent>
+			</Select>
+		</DataTableInputGroup>
+	) : null;
+
+	const toolbar = (
+		<DataTableToolbar>
+			{showRefresh ? (
+				<Button
+					variant="outline"
+					onClick={onRefresh}
+					className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
+				>
+					<RefreshCw
+						data-icon="inline-start"
+						className="text-muted-foreground"
+					/>
+					{refreshText}
+				</Button>
+			) : null}
+
+			{showExport ? (
+				<DataTableActionButton
+					action="export"
+					variant="outline"
+					onClick={onExport}
+					className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
+				>
+					<Download
+						data-icon="inline-start"
+						className="text-muted-foreground"
+					/>
+					{exportText}
+				</DataTableActionButton>
+			) : null}
+
+			{showColumnSettings ? <DataTableColumnSettings /> : null}
+
+			{toolbarExtra}
+
+			{showCreate ? (
+				<DataTableActionButton
+					action="create"
+					onClick={onCreate}
+					className="gap-1.5 shadow-xs"
+				>
+					<Plus data-icon="inline-start" />
+					{createText}
+				</DataTableActionButton>
+			) : null}
+		</DataTableToolbar>
+	);
+
+	const searchResetRow = (
+		<>
+			{onSearch ? (
+				<Button className="gap-1.5 shadow-xs" onClick={onSearch}>
+					<Search data-icon="inline-start" />
+					查询
+				</Button>
+			) : null}
+			{onReset ? (
+				<Button
+					variant="outline"
+					className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
+					onClick={onReset}
+				>
+					<RotateCcw data-icon="inline-start" />
+					重置
+				</Button>
+			) : null}
+		</>
+	);
+
+	const advancedTrigger =
+		searchInToolbar && (statusField || advancedFilters || filterExtra) ? (
+			<DataTableFilterDrawer
+				triggerText={advancedTriggerText}
+				activeCount={
+					(statusValue ? 1 : 0) +
+					(advancedFilters || filterExtra ? 0 : 0)
+				}
+				onReset={() => {
+					onStatusChange?.(statusAllValue);
+					onReset?.();
+				}}
+				onApply={() => {
+					onSearch?.();
+					setAdvancedOpen(false);
+				}}
+				open={advancedOpen}
+				onOpenChange={setAdvancedOpen}
+			>
+				{statusField}
+				{advancedFilters ?? filterExtra}
+			</DataTableFilterDrawer>
+		) : null;
 
 	return (
 		<DataTableRoot<TData>
@@ -175,59 +349,31 @@ export function DataTable<TData>({
 			clientSidePagination={clientSidePagination}
 			className={className}
 		>
-			<DataTableHeader
-				title={title}
-				description={description}
-				actions={
-					<DataTableToolbar>
-						{showRefresh ? (
-							<Button
-								variant="outline"
-								onClick={onRefresh}
-								className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
-							>
-								<RefreshCw
-									data-icon="inline-start"
-									className="text-muted-foreground"
-								/>
-								{refreshText}
-							</Button>
-						) : null}
+			{showHeader !== false ? (
+				<DataTableHeader
+					title={title ?? ""}
+					description={description}
+					actions={
+						searchInToolbar ? undefined : toolbar
+					}
+				/>
+			) : toolbarVisible && !searchInToolbar ? (
+				<div className="flex flex-wrap items-center justify-end gap-2 px-4 pt-3">
+					{toolbar}
+				</div>
+			) : null}
 
-						{showExport ? (
-							<DataTableActionButton
-								action="export"
-								variant="outline"
-								onClick={onExport}
-								className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
-							>
-								<Download
-									data-icon="inline-start"
-									className="text-muted-foreground"
-								/>
-								{exportText}
-							</DataTableActionButton>
-						) : null}
-
-						{showColumnSettings ? <DataTableColumnSettings /> : null}
-
-						{toolbarExtra}
-
-						{showCreate ? (
-							<DataTableActionButton
-								action="create"
-								onClick={onCreate}
-								className="gap-1.5 shadow-xs"
-							>
-								<Plus data-icon="inline-start" />
-								{createText}
-							</DataTableActionButton>
-						) : null}
-					</DataTableToolbar>
-				}
-			/>
-
-			{showFilterBar ? (
+			{/* 封装组件标准布局：关键字与 刷新/导出/列设置/新增 同排 */}
+			{searchInToolbar ? (
+				<div className="flex flex-wrap items-center gap-2 border-b border-border/60 px-4 pb-3 pt-3">
+					<div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+						{keywordField}
+						{searchResetRow}
+						{advancedTrigger}
+					</div>
+					{toolbar}
+				</div>
+			) : showFilterBar ? (
 				<DataTableFilterBar
 					onSearch={onSearch}
 					onReset={onReset}
@@ -235,55 +381,8 @@ export function DataTable<TData>({
 				>
 					{filterChildren ?? (
 						<>
-							{showKeywordFilter ? (
-								<DataTableInputGroup
-									label="关键字"
-									className="min-w-[280px] sm:w-80"
-								>
-									<Input
-										placeholder={resolvedPlaceholder}
-										value={keywordValue}
-										onChange={(e) => onKeywordChange?.(e.target.value)}
-										onKeyDown={(e) => {
-											if (e.key === "Enter") {
-												e.preventDefault();
-												onSearch?.();
-											}
-										}}
-									/>
-								</DataTableInputGroup>
-							) : null}
-
-							{showStatusFilter ? (
-								<DataTableInputGroup
-									label="状态"
-									className="min-w-[170px] w-auto"
-								>
-									<Select
-										value={statusValue ?? statusAllValue}
-										onValueChange={(value) =>
-											onStatusChange?.(value ?? statusAllValue)
-										}
-									>
-										<SelectTrigger className="w-full">
-											<SelectValue placeholder={statusAllLabel} />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectGroup>
-												<SelectItem value={statusAllValue}>
-													{statusAllLabel}
-												</SelectItem>
-												{statusOptions?.map((opt) => (
-													<SelectItem key={opt.value} value={opt.value}>
-														{opt.label}
-													</SelectItem>
-												))}
-											</SelectGroup>
-										</SelectContent>
-									</Select>
-								</DataTableInputGroup>
-							) : null}
-
+							{keywordField}
+							{statusField}
 							{filterExtra}
 						</>
 					)}

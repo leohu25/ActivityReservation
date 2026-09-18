@@ -9,8 +9,9 @@
 ## 一、 核心分层概念（中英对照）
 
 1. **`Business Area / Feature Group`（业务领域 / 特性集群）**：
-   - 对应 `packages/features/<business-area>/`（如 `customer-center`, `tenant-admin`, `control-admin`）。
-   - 是一个完整的工作区包，承载某一完整业务线。
+   - 业务切片：`packages/domains/<business-area>/`（如 `customer-center`）。
+   - 平台业务：`packages/platform/<area>/`（如 `tenant-admin`、`control-admin`）。
+   - 历史文档中的 `packages/domains/*` 指向已迁移；以仓库现目录为准。
 2. **`Feature`（核心业务特性 / 独立业务功能）**：
    - 对应 `src/features/<feature>/`（如 `tenant-management`, `customer-management`）。
    - 具备完整的业务闭环与垂直切片，内部自包含契约、类型、服务、Query、Action 与 UI。
@@ -24,10 +25,10 @@
 
 ## 二、 Business Area 工作区包标准完整骨架 (Package-Level Topology)
 
-一个标准的业务集群包（如 `packages/features/<business-area>/`）由 **业务切片 (features/)**、**横向共享 (shared/)**、**运行时装配 (assembly/)** 与 **元数据注册 (manifest/catalog)** 4 大支柱完整构成：
+一个标准的业务集群包（如 `packages/domains/<business-area>/`）由 **业务切片 (features/)**、**横向共享 (shared/)**、**运行时装配 (assembly/)** 与 **元数据注册 (manifest/catalog)** 4 大支柱完整构成：
 
 ```bash
-packages/features/<business-area>/
+packages/domains/<business-area>/
 ├── prisma/schema.prisma                # 业务切片专属数据模型 (多 Feature 共享或独立)
 ├── package.json                        # 语义化子路径声明 (严格 exports，无根 barrel)
 └── src/
@@ -41,18 +42,19 @@ packages/features/<business-area>/
     │       │   ├── actions.ts
     │       │   ├── public.ts
     │       │   └── public.server.ts
-    │       ├── contract.ts             # [Phase 2] 纯数据契约 (受控字段枚举与 SSoT 动作)
+    │       ├── contract.ts             # [Phase 2] 权限契约 + defineListSearchParams
     │       ├── types.ts                # [Phase 2] 入参、筛选条件与 ViewModel 强类型
+    │       ├── schema.ts               # 共享 Zod（create/update）
     │       ├── service.ts              # [Phase 3] 领域业务逻辑、事务与数据持久化
     │       ├── service.test.ts         # [Phase 3/7] 同级单测 (Colocation 测试就近共存)
     │       ├── queries.ts              # [Phase 3] RSC 纯服务端读取 (供 page.tsx 直调)
-    │       ├── actions.ts              # [Phase 4] 纯服务端写操作 (defineServerAction + CASL)
+    │       ├── actions.ts              # [Phase 4] createResourceActions + 平铺 export
     │       ├── public.ts               # [Package Entry] Client-Safe 导出入口 (View/Types)
     │       ├── public.server.ts        # [Package Entry] Server-Only 导出入口 (import "server-only")
     │       └── ui/                     # [Phase 5] Feature 专属私有组件与视图
-    │           ├── <Feature>View.tsx   # 核心交互视图组件 (useAbility + DataTable.Root)
+    │           ├── <Feature>View.tsx   # useListSearch + DataTable 默认 chrome
     │           ├── <Feature>View.test.tsx # 页面与契约 100% 对齐单测
-    │           └── <Feature>Modal.tsx  # 增改查弹窗等私有子组件
+    │           └── <Feature>FormModal.tsx  # FormModal + schema/fields + subject
     │
     ├── shared/                         # Business Area 内多个 Feature 的真实复用
     │   ├── server/tenant-context.ts    # 底层租户数据库上下文与员工门禁 (平台端为 control-guard/session)
@@ -84,7 +86,7 @@ packages/features/<business-area>/
     ▼                         ▼                                     ▼                     ▼
 contract.ts (契约)       ui/ (组件)                            queries.ts (只读)     actions.ts (写操作)
                               │                                     │                     │
-                              │ (useAction 调用)                    │                     │
+                              │ (Server Action / createResourceActions) │                     │
                               └──────────────────────────┬──────────┴─────────────────────┘
                                                          ▼
                                                     service.ts (领域业务逻辑)

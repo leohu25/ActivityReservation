@@ -22,6 +22,8 @@
 | DEBT-011 | 2026-09-08 | @coordinator | packages/db-control, packages/authorization | 缺少 authorizationVersion 权限版本化控制，员工调部门、调岗、改角色无法低成本驱动分布式缓存与 CASL Ability 立即失效重建 | 在 tenant-org-core-schema 中增加 authorizationVersion 并在相关人事调动操作中自增驱动失效 | 中 | 排期中(tenant-org-core-schema) |
 | DEBT-012 | 2026-09-12 | @implementer | packages/features/tenant-admin | 历史遗留页面（EmployeeView、PositionView、RolePermissionManager）使用原生 confirm()/window.confirm 弹窗二次确认，违反红线 8 与 20 | 已全部重构为 @base/ui ConfirmDialog 模态对话框，红线门禁强校验通过 | 高 | 已解决 |
 | DEBT-013 | 2026-09-12 | @implementer | packages/features/tenant-admin, packages/features/control-admin | 历史遗留视图（EmployeeView、PositionView、RolePermissionManager、MigrationsView）存在手写原生 <table> DOM 标签，违反红线 3 | 已全部重构为 @base/ui Table 原子组件与 DataTable 标准表格，红线门禁强校验通过 | 高 | 已解决 |
+| DEBT-014 | 2026-09-18 | @implementer | packages/domains/customer-center + packages/base/ui | StoreView / QuoteView / RoleListView 仍使用已 `@deprecated` 的 `useListUrlNav`（及依赖它的 `useDataTableState`），未切换 `defineListSearchParams` + `useListSearch` 标杆 | 按 CustomerView 标杆迁移：contract 内 defineListSearchParams + View 使用 useListSearch；全部迁完后 **物理删除** useListUrlNav / useDataTableState | 中 | 进行中(API 已 @deprecated) |
+| DEBT-015 | 2026-09-18 | @implementer | packages/base/ui DataTable | `searchPlacement="toolbar"` / `advancedFilters` / `advancedTriggerText` 为可选高级抽屉形态，易与推荐扩展插槽 **`filterExtra`（未废弃）** 混淆 | 新代码禁用 toolbar/advancedFilters；统一 `filter-bar` + `filterExtra`；无调用方后移除 deprecated props | 低 | @deprecated 待清理 |
 
 ---
 

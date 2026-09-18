@@ -7,7 +7,7 @@
 ## 1. 切片目录结构规范
 
 ```bash
-packages/features/<feature-name>/
+packages/domains/<feature-name>/
 └── prisma/
     └── schema.prisma          # 切片专属数据模型 (仅维护实体定义，严禁在切片内手写 DB Client)
 ```

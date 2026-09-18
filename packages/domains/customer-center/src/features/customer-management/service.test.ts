@@ -35,16 +35,23 @@ test("CustomerService 自动递增编码并级联停用门店", async () => {
 test("CustomerService 创建客户时注入 createdById 与 deptId 基础审计字段", async () => {
   let createdData: any = null;
   const mockClient = {
-    customerCategory: {
-      findUnique: async () => ({ categoryCode: "CAT-1" }),
-    },
-    customer: {
-      findFirst: async () => null,
-      create: async ({ data }: { data: any }) => {
-        createdData = data;
-        return { customerCode: data.customerCode, ...data };
-      },
-    },
+    $transaction: async (fn: (tx: unknown) => unknown) =>
+      fn({
+        $queryRaw: async () => [],
+        customerCategory: {
+          findUnique: async () => ({ categoryCode: "CAT-1" }),
+        },
+        customerTag: {
+          findMany: async () => [],
+        },
+        customer: {
+          findFirst: async () => null,
+          create: async ({ data }: { data: any }) => {
+            createdData = data;
+            return { customerCode: data.customerCode, ...data };
+          },
+        },
+      }),
   };
 
   await CustomerService.createCustomer(
@@ -64,6 +71,7 @@ test("CustomerService 创建客户时注入 createdById 与 deptId 基础审计�
 
   assert.ok(createdData);
   assert.equal(createdData.createdById, "user-creator-123");
+  assert.equal(createdData.updatedById, "user-creator-123");
   assert.equal(createdData.deptId, "dept-sales-456");
   assert.equal(createdData.isDeleted, false);
 });

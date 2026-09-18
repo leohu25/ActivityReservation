@@ -15,3 +15,4 @@ export * from "./DataTableActions";
 export * from "./DataTableColumnsSchema";
 export * from "./DetailTable";
 export * from "./DataTable";
+export * from "./DataTableSkeleton";

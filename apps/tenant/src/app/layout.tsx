@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { ThemeProvider, Toaster } from "@base/ui";
 import "./globals.css";
 
@@ -31,8 +32,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ThemeProvider>
-          {children}
-          <Toaster position="top-right" richColors closeButton />
+          <NuqsAdapter>
+            {children}
+            <Toaster position="top-right" richColors closeButton />
+          </NuqsAdapter>
         </ThemeProvider>
       </body>
     </html>
