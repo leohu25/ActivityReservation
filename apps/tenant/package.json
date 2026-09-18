@@ -1,43 +1,40 @@
 {
-  "name": "tenant",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
-    "check": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@base/auth": "workspace:*",
-    "@base/authorization": "workspace:*",
-    "@base/db-control": "workspace:*",
-    "@base/db-tenant": "workspace:*",
-    "@base/feature-customer-center": "workspace:*",
-    "@base/feature-order-center": "workspace:*",
-    "@base/feature-material-center": "workspace:*",
-    "@base/feature-procurement-center": "workspace:*",
-    "@base/feature-tenant-admin": "workspace:*",
-    "@base/shared": "workspace:*",
-    "@base/ui": "workspace:*",
-    "better-auth": "1.7.3",
-    "lucide-react": "^1.41.0",
-    "next": "16.3.4",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "server-only": "0.0.1"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.3.4",
-    "tailwindcss": "^4",
-    "tsx": "^4.23.13",
-    "typescript": "^5"
-  },
-  "packageManager": "pnpm@11.1.2"
+	"name": "tenant",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"dev": "next dev",
+		"build": "next build",
+		"start": "next start",
+		"lint": "eslint",
+		"check": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@base/auth": "workspace:*",
+		"@base/authorization": "workspace:*",
+		"@base/db-control": "workspace:*",
+		"@base/db-tenant": "workspace:*",
+		"@base/feature-customer-center": "workspace:*",
+		"@base/feature-tenant-admin": "workspace:*",
+		"@base/shared": "workspace:*",
+		"@base/ui": "workspace:*",
+		"better-auth": "1.7.3",
+		"lucide-react": "^1.41.0",
+		"next": "16.3.4",
+		"react": "19.2.8",
+		"react-dom": "19.2.8",
+		"server-only": "0.0.1"
+	},
+	"devDependencies": {
+		"@tailwindcss/postcss": "^4",
+		"@types/node": "^20",
+		"@types/react": "^19",
+		"@types/react-dom": "^19",
+		"eslint": "^9",
+		"eslint-config-next": "16.3.4",
+		"tailwindcss": "^4",
+		"tsx": "^4.23.13",
+		"typescript": "^5"
+	},
+	"packageManager": "pnpm@11.1.2"
 }
