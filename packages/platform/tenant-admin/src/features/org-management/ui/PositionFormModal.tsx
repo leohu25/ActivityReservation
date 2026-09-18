@@ -1,34 +1,38 @@
 "use client";
 
 import { useMemo } from "react";
-import { FormModal, type FormFieldSchema, toast, z } from "@base/ui";
+import { FormModal, type FormFieldSchema, toast } from "@base/ui";
 import { createPositionAction, updatePositionAction } from "../actions";
+import { PositionSubject } from "../position.contract";
+import { createPositionSchema, type CreatePositionSchema } from "../position.schema";
 import type { PositionItem } from "../types";
 
 export interface PositionFormModalProps {
-  readonly mode: "create" | "edit";
+  readonly open?: boolean;
+  readonly mode: "create" | "edit" | "view";
   readonly record?: PositionItem | null;
   readonly onClose: () => void;
+  readonly onSuccess?: () => void;
+  readonly inline?: boolean;
+  /** 向后兼容旧回调命名 */
   readonly onSaved?: () => void;
 }
 
-const positionZodSchema = z.object({
-  name: z.string().min(1, "岗位名称不能为空"),
-  code: z.string().min(1, "岗位编码不能为空"),
-  description: z.string().optional(),
-  sort: z.number().default(0),
-});
+export const positionZodSchema = createPositionSchema;
 
-type PositionForm = z.infer<typeof positionZodSchema>;
-
-/** 岗位新建/编辑：标准 FormModal 驱动 */
+/** 岗位新建/编辑/查看：标准 FormModal 驱动 */
 export function PositionFormModal({
+  open = true,
   mode,
   record,
   onClose,
+  onSuccess,
   onSaved,
+  inline,
 }: PositionFormModalProps) {
-  const initialValues: PositionForm = useMemo(
+  const isEdit = mode === "edit";
+
+  const initialValues: CreatePositionSchema = useMemo(
     () => ({
       name: record?.name || "",
       code: record?.code || "",
@@ -52,7 +56,9 @@ export function PositionFormModal({
         label: "岗位编码",
         type: "text",
         required: true,
+        disabled: isEdit,
         placeholder: "例如: pos_procurement_mgr",
+        hint: isEdit ? "岗位编码创建后不可变更" : undefined,
       },
       {
         name: "description",
@@ -68,20 +74,30 @@ export function PositionFormModal({
         type: "number",
       },
     ],
-    [],
+    [isEdit],
   );
 
+  const title =
+    mode === "create"
+      ? "新建岗位字典"
+      : isEdit
+        ? `编辑岗位: ${record?.name || ""}`
+        : `岗位详情: ${record?.name || ""}`;
+
   return (
-    <FormModal<PositionForm>
-      open
+    <FormModal<CreatePositionSchema>
+      key={`${mode}-${record?.id || "new"}-${open ? "open" : "closed"}`}
+      open={open}
+      inline={inline}
       onClose={onClose}
       mode={mode}
-      title={mode === "create" ? "新建岗位字典" : "编辑岗位信息"}
+      subject={PositionSubject}
+      title={title}
       description="维护行政职务字典，编码用于接口与系统内部唯一标识"
-      schema={positionZodSchema}
+      schema={createPositionSchema}
       fields={fields}
       initialValues={initialValues}
-      submitText="确认保存"
+      submitText={mode === "create" ? "立即创建岗位" : "保存修改"}
       onSubmit={async (values) => {
         const payload = {
           name: values.name.trim(),
@@ -98,6 +114,7 @@ export function PositionFormModal({
           throw new Error(res.error || "保存岗位失败");
         }
         toast.success(mode === "create" ? "岗位已创建" : "岗位已更新");
+        onSuccess?.();
         onSaved?.();
       }}
     />

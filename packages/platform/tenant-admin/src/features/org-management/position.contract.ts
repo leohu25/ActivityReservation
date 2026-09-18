@@ -3,12 +3,31 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
+import { defineListSearchParams } from "@base/ui";
+import { MasterDataStatus } from "@base/shared";
+
+export { MasterDataStatus };
+
+/**
+ * 列表 URL 契约（少即是多）：page/pageSize/keyword 由基座约定，业务只扩展默认值。
+ */
+export const positionSearchParams = defineListSearchParams({
+  status: "",
+});
+export type PositionSearchParams = Awaited<
+  ReturnType<typeof positionSearchParams.parse>
+>;
 
 /** 岗位实体与资源标识 (SSoT) */
 export const PositionSubject = "Position";
 export type PositionSubject = typeof PositionSubject;
 export const PositionResource = "organization.position";
 export type PositionResource = typeof PositionResource;
+
+export const PositionAction = {
+  ...StandardAction,
+  TOGGLE_STATUS: "toggle_status",
+} as const;
 
 /** 岗位受控字段字典 */
 export const PositionField = {
@@ -50,7 +69,13 @@ export const positionPageContract: FeaturePagePermissionDescriptor = {
       label: "编辑",
       supportedScopes: STANDARD_DATA_SCOPES,
     },
+    {
+      action: PositionAction.TOGGLE_STATUS,
+      label: "启用/停用",
+      supportedScopes: STANDARD_DATA_SCOPES,
+    },
     { action: StandardAction.DELETE, label: "删除" },
+    { action: StandardAction.EXPORT, label: "导出岗位列表" },
   ],
   configurableFields: positionConfigurableFields.map((f) => ({
     field: f.field,

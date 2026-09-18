@@ -1,4 +1,4 @@
-import type { TenantPrismaClient } from "@base/db-tenant";
+import type { TenantPrismaClient, TenantPrisma } from "@base/db-tenant";
 import { MasterDataStatus, resolvePagination } from "@base/shared";
 import type {
 	CreateTagInput,
@@ -38,7 +38,7 @@ export class CustomerTagService {
 			defaultPageSize: 20,
 		});
 
-		const where: any = {};
+		const where: TenantPrisma.CustomerTagWhereInput = {};
 		if (filter.tagType) {
 			where.tagType = filter.tagType;
 		}
@@ -81,7 +81,7 @@ export class CustomerTagService {
 		client: TenantPrismaClient,
 		filter?: { tagType?: string; status?: CustomerTagStatus },
 	): Promise<CustomerTagItem[]> {
-		const where: any = {};
+		const where: TenantPrisma.CustomerTagWhereInput = {};
 		if (filter?.tagType) {
 			where.tagType = filter.tagType;
 		}

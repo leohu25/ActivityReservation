@@ -15,12 +15,14 @@ import { EmployeeSubject } from "./employee.contract";
 import { DepartmentService } from "./department-service";
 import { PositionService } from "./position-service";
 import { EmployeeManagementService } from "./employee-management-service";
+import {
+  parseCreatePositionInput,
+  parseUpdatePositionInput,
+} from "./position.schema";
 import type {
   CreateDepartmentInput,
   UpdateDepartmentInput,
   DepartmentTreeNode,
-  CreatePositionInput,
-  UpdatePositionInput,
   PositionItem,
   DirectCreateEmployeeInput,
   EmployeeItem,
@@ -104,10 +106,11 @@ export const listPositionsAction = defineServerAction(
 );
 
 export const createPositionAction = defineServerAction(
-  async (input: CreatePositionInput): Promise<PositionItem> => {
+  async (raw: unknown): Promise<PositionItem> => {
     const { client, ability } = await getTenantAdminContext();
     assertTenantAdminAbility(ability, StandardAction.CREATE, PositionSubject);
 
+    const input = parseCreatePositionInput(raw);
     const data = await posService.createPosition(client, input);
     revalidatePath("/organization/positions");
     revalidatePath("/organization/employees");
@@ -117,10 +120,11 @@ export const createPositionAction = defineServerAction(
 );
 
 export const updatePositionAction = defineServerAction(
-  async (id: string, input: UpdatePositionInput): Promise<PositionItem> => {
+  async (id: string, raw: unknown): Promise<PositionItem> => {
     const { client, ability } = await getTenantAdminContext();
     assertTenantAdminAbility(ability, StandardAction.UPDATE, PositionSubject);
 
+    const input = parseUpdatePositionInput(raw);
     const data = await posService.updatePosition(client, id, input);
     revalidatePath("/organization/positions");
     revalidatePath("/organization/employees");

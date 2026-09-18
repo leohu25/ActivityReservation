@@ -4,4 +4,6 @@ export { PositionView } from "./ui/PositionView";
 export { PositionFormModal } from "./ui/PositionFormModal";
 export { EmployeeView } from "./ui/EmployeeView";
 export * from "./contract";
+export * from "./position.contract";
+export * from "./position.schema";
 export type * from "./types";

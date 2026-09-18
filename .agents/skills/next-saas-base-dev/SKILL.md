@@ -51,10 +51,11 @@ tooling/db-migrate                  12-Factor 迁移引擎
 | 11  | 原子层 shadcn 规范（`@base/ui` `components/ui/`）                                                    | `.agents/skills/shadcn/`                      |
 | 12  | 通用能力上浮至 `@base/ui` / `@base/biz-shared`，禁业务平行第二套                                     | `references/8-base-infrastructure.md`         |
 | 13  | 测试同级共存；实体审计+软删除基线；提交前人工审阅 + 中文 Conventional Commits；禁 `--no-verify`      | `AGENTS.md`、`references/2-schema-migrate.md` |
+| 14  | 严禁用 `any` 降解，强制 TypeScript 强类型（Prisma/Zod/DTO/Props 端到端可推导；禁 `any` / `(x as any)`）| `AGENTS.md`、`references/3-services.md`       |
 
 **作废 / 禁止用于新代码**（仅存量迁移过渡的标 `@deprecated`）：
 
-`useTableUrlState`、`parseTableSearchParams`、`useDataTableState`、`useListUrlNav`、业务层 RHF 手写表单、ListShell/TableRegion、`count(*)+1` 发号、客户端默认 `router.refresh()`、单开 `@base/crud` 包、`createResourcePage`、`createResourceActions`、`createResourceList`（过度封装已彻底废弃）。
+`any`、`(x as any)` 类型降解、`useTableUrlState`、`parseTableSearchParams`、`useDataTableState`、`useListUrlNav`、业务层 RHF 手写表单、ListShell/TableRegion、`count(*)+1` 发号、客户端默认 `router.refresh()`、单开 `@base/crud` 包、`createResourcePage`、`createResourceActions`、`createResourceList`（过度封装已彻底废弃）。
 
 ---
 

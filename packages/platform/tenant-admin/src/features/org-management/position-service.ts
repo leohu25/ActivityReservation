@@ -1,7 +1,9 @@
-import type { TenantPrismaClient } from "@base/db-tenant";
-import { MasterDataStatus } from "@base/shared";
+import type { TenantPrismaClient, TenantPrisma } from "@base/db-tenant";
+import { MasterDataStatus, resolvePagination } from "@base/shared";
 import type {
   CreatePositionInput,
+  ListPositionsFilter,
+  ListPositionsResult,
   PositionItem,
   UpdatePositionInput,
 } from "./types";
@@ -15,6 +17,84 @@ import type {
  * 4. 具备删除防护：仍有关联在职员工时禁止物理删除。
  */
 export class PositionService {
+  /**
+   * 分页查询岗位列表（支持关键字搜索与状态过滤，使用标准 resolvePagination）
+   */
+  async listPositionsPaged(
+    tenantPrisma: TenantPrismaClient,
+    filter: ListPositionsFilter = {},
+  ): Promise<ListPositionsResult> {
+    const { page, pageSize, skip, take } = resolvePagination(filter, {
+      defaultPageSize: 20,
+    });
+
+    const andConditions: TenantPrisma.PositionWhereInput[] = [];
+
+    if (filter.status) {
+      andConditions.push({ status: filter.status });
+    }
+
+    if (filter.keyword && filter.keyword.trim().length > 0) {
+      const q = filter.keyword.trim();
+      andConditions.push({
+        OR: [
+          { name: { contains: q, mode: "insensitive" } },
+          { code: { contains: q, mode: "insensitive" } },
+          { description: { contains: q, mode: "insensitive" } },
+        ],
+      });
+    }
+
+    const where: TenantPrisma.PositionWhereInput =
+      andConditions.length > 0 ? { AND: andConditions } : {};
+
+    const [total, positions] = await Promise.all([
+      tenantPrisma.position.count({ where }),
+      tenantPrisma.position.findMany({
+        where,
+        orderBy: [{ sort: "asc" }, { createdAt: "asc" }],
+        skip,
+        take,
+      }),
+    ]);
+
+    if (positions.length === 0) {
+      return { items: [], total, page, pageSize };
+    }
+
+    const positionIds = positions.map((p) => p.id);
+    const counts = await tenantPrisma.employeeProfile.groupBy({
+      by: ["positionId"],
+      where: {
+        status: MasterDataStatus.ACTIVE,
+        positionId: { in: positionIds },
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    const countMap = new Map<string, number>();
+    for (const item of counts) {
+      if (item.positionId) {
+        countMap.set(item.positionId, item._count._all);
+      }
+    }
+
+    const items: PositionItem[] = positions.map((pos) => ({
+      id: pos.id,
+      name: pos.name,
+      code: pos.code,
+      description: pos.description,
+      sort: pos.sort,
+      status: pos.status,
+      employeeCount: countMap.get(pos.id) ?? 0,
+      createdAt: pos.createdAt,
+    }));
+
+    return { items, total, page, pageSize };
+  }
+
   /**
    * 查询所有岗位列表（包含各岗位的在职员工人数）
    */

@@ -1,274 +1,280 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  Button,
+  DataTable,
   Badge,
-  PageShell,
-  ConfirmDialog,
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
+  DataTableRowActions,
+  toast,
+  useListSearch,
+  type ColumnDef,
 } from "@base/ui";
+import { Users } from "lucide-react";
+import { exportContractCsv, MasterDataStatus } from "@base/shared";
+import { useAbility } from "@base/authorization";
 import {
-  Briefcase,
-  Plus,
-  Edit2,
-  Trash2,
-  Power,
-  Users,
-  AlertCircle,
-  CheckCircle2,
-} from "lucide-react";
-import type { PositionItem } from "../types";
-import { MasterDataStatus } from "@base/shared";
+  PositionAction,
+  PositionField,
+  positionPageContract,
+  positionSearchParams,
+} from "../position.contract";
 import {
   deletePositionAction,
-  listPositionsAction,
   togglePositionStatusAction,
 } from "../actions";
 import { PositionFormModal } from "./PositionFormModal";
+import type { PositionItem } from "../types";
 
 export interface PositionViewProps {
-  readonly initialPositions: readonly PositionItem[];
+  /** 服务端岗位列表数据 */
+  data?: PositionItem[];
+  /** 服务端总数 */
+  total?: number;
+
+  /** 向后兼容旧 props */
+  initialPositions?: readonly PositionItem[];
 }
 
 /**
  * 岗位字典管理面板组件 (现代数智工业风)
  * 严格遵循 Position != Role 物理正交解耦原则，岗位用于表达企业行政职务，不直接绑定 CASL 授权
+ * 基于标准 DataTable 与 URL-as-State (nuqs) 驱动
  */
-export function PositionView({ initialPositions }: PositionViewProps) {
-  const [positions, setPositions] =
-    useState<readonly PositionItem[]>(initialPositions);
-  const [feedback, setFeedback] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
+export function PositionView({
+  data: propData,
+  total: propTotal,
+  initialPositions,
+}: PositionViewProps) {
+  const data = (propData ?? initialPositions ?? []) as PositionItem[];
+  const total = propTotal ?? data.length;
+
+  const ability = useAbility();
+  const list = useListSearch(positionSearchParams);
 
   const [modalState, setModalState] = useState<{
-    mode: "create" | "edit";
-    targetPosition?: PositionItem;
-  } | null>(null);
+    open: boolean;
+    mode: "create" | "edit" | "view";
+    record?: PositionItem | null;
+  }>({
+    open: false,
+    mode: "create",
+    record: null,
+  });
 
-  const [, startTransition] = useTransition();
-
-  const refreshPositions = async () => {
-    const res = await listPositionsAction();
-    if (res.success && res.data) {
-      setPositions(res.data);
-    }
-  };
-
-  const openCreateModal = () => {
-    setModalState({ mode: "create" });
-    setFeedback(null);
-  };
-
-  const openEditModal = (pos: PositionItem) => {
-    setModalState({ mode: "edit", targetPosition: pos });
-    setFeedback(null);
-  };
-
-  const handleToggleStatus = (pos: PositionItem) => {
-    startTransition(async () => {
-      const res = await togglePositionStatusAction(pos.id);
-      if (res.success) {
-        const statusText =
-          res.data?.status === MasterDataStatus.ACTIVE ? "已启用" : "已停用";
-        setFeedback({
-          type: "success",
-          message: `岗位 [${pos.name}] ${statusText}`,
-        });
-        await refreshPositions();
-      } else {
-        setFeedback({
-          type: "error",
-          message: res.error || "切换岗位状态失败",
-        });
+  const runAction = useCallback(
+    async (
+      fn: () => Promise<{ success: boolean; error?: string }>,
+      successText: string,
+    ) => {
+      try {
+        const res = await fn();
+        if (res.success) {
+          toast.success(successText);
+        } else {
+          toast.error(res.error || "操作失败");
+        }
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "操作异常");
       }
-    });
-  };
+    },
+    [],
+  );
 
-  const [deleteTarget, setDeleteTarget] = useState<PositionItem | null>(null);
+  const handleToggleStatus = useCallback(
+    (pos: PositionItem) => {
+      const isCurrentlyActive = pos.status === MasterDataStatus.ACTIVE;
+      void runAction(
+        () => togglePositionStatusAction(pos.id),
+        isCurrentlyActive ? `岗位 [${pos.name}] 已停用` : `岗位 [${pos.name}] 已启用`,
+      );
+    },
+    [runAction],
+  );
 
-  const confirmDelete = (pos: PositionItem) => {
-    startTransition(async () => {
-      const res = await deletePositionAction(pos.id);
-      if (res.success) {
-        setFeedback({ type: "success", message: "岗位已成功删除" });
-        await refreshPositions();
-      } else {
-        setFeedback({
-          type: "error",
-          message: res.error || "删除岗位失败",
-        });
-      }
-      setDeleteTarget(null);
+  const handleDelete = useCallback(
+    (pos: PositionItem) => {
+      void runAction(
+        () => deletePositionAction(pos.id),
+        `岗位 [${pos.name}] 已成功删除`,
+      );
+    },
+    [runAction],
+  );
+
+  const handleExport = useCallback(() => {
+    exportContractCsv(data, positionPageContract.configurableFields ?? [], {
+      subject: positionPageContract.subject,
+      ability,
+      filename: `企业岗位字典_${new Date().toISOString().slice(0, 10)}.csv`,
+      format: {
+        [PositionField.STATUS]: (p) =>
+          p.status === MasterDataStatus.ACTIVE ? "正常" : "已停用",
+      },
     });
-  };
+  }, [data, ability]);
+
+  const columns: ColumnDef<PositionItem>[] = useMemo(
+    () => [
+      {
+        id: "name",
+        field: PositionField.NAME,
+        header: "岗位名称",
+        cell: (p: PositionItem) => (
+          <div>
+            <div className="font-medium text-foreground">{p.name}</div>
+            {p.description && (
+              <div
+                className="text-xs text-muted-foreground line-clamp-1 max-w-sm mt-0.5"
+                title={p.description}
+              >
+                {p.description}
+              </div>
+            )}
+          </div>
+        ),
+      },
+      {
+        id: "code",
+        field: PositionField.CODE,
+        header: "岗位编码",
+        width: 170,
+        cell: (p: PositionItem) => (
+          <span className="font-mono text-xs font-semibold text-foreground">
+            {p.code}
+          </span>
+        ),
+      },
+      {
+        id: "employeeCount",
+        header: "在职员工数",
+        width: 110,
+        align: "center",
+        cell: (p: PositionItem) => (
+          <span className="inline-flex items-center gap-1 font-mono text-xs font-medium text-muted-foreground">
+            <Users className="size-3.5" />
+            {p.employeeCount} 人
+          </span>
+        ),
+      },
+      {
+        id: "sort",
+        field: PositionField.SORT,
+        header: "排序权重",
+        width: 90,
+        align: "center",
+        cell: (p: PositionItem) => (
+          <span className="font-mono text-xs text-muted-foreground">
+            {p.sort ?? 0}
+          </span>
+        ),
+      },
+      {
+        id: "status",
+        field: PositionField.STATUS,
+        header: "状态",
+        width: 90,
+        align: "center",
+        cell: (p: PositionItem) => (
+          <Badge
+            variant={
+              p.status === MasterDataStatus.ACTIVE ? "success" : "secondary"
+            }
+            size="sm"
+          >
+            {p.status === MasterDataStatus.ACTIVE ? "正常" : "已停用"}
+          </Badge>
+        ),
+      },
+      {
+        id: "actions",
+        header: "操作",
+        width: 140,
+        align: "right",
+        cell: (p: PositionItem) => (
+          <DataTableRowActions
+            record={p}
+            onView={() =>
+              setModalState({ open: true, mode: "view", record: p })
+            }
+            onEdit={() =>
+              setModalState({ open: true, mode: "edit", record: p })
+            }
+            onDelete={() => handleDelete(p)}
+            deleteConfirm={{
+              title: `确认删除岗位 "${p.name}"？`,
+              description:
+                p.employeeCount > 0
+                  ? `警告：该岗位下仍有 ${p.employeeCount} 名在职员工，删除将被系统安全门禁拦截！`
+                  : "删除后该岗位字典数据将不可恢复。",
+            }}
+            extraActions={[
+              {
+                label:
+                  p.status === MasterDataStatus.ACTIVE ? "停用岗位" : "启用岗位",
+                action: PositionAction.TOGGLE_STATUS,
+                variant:
+                  p.status === MasterDataStatus.ACTIVE
+                    ? "destructive"
+                    : "default",
+                onClick: () => handleToggleStatus(p),
+                confirm:
+                  p.status === MasterDataStatus.ACTIVE
+                    ? {
+                        title: `确认停用岗位 "${p.name}"？`,
+                        description:
+                          "停用后新入职或调岗员工将无法选择该岗位。",
+                        confirmText: "确认停用",
+                        cancelText: "取消",
+                      }
+                    : undefined,
+              },
+            ]}
+          />
+        ),
+      },
+    ],
+    [handleDelete, handleToggleStatus],
+  );
 
   return (
-    <PageShell
-      title="企业岗位字典"
-      description="维护企业职位与职务名称。严格遵守 Position != Role 解耦原则，岗位用于人事表达，系统权限由独立角色配置。"
-      icon={<Briefcase className="size-5 text-blue-600" />}
-      actions={
-        <Button
-          onClick={openCreateModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs"
-        >
-          <Plus className="mr-1.5 size-4" />
-          新增岗位
-        </Button>
-      }
-      feedback={feedback}
-      onDismissFeedback={() => setFeedback(null)}
-    >
-      {/* 岗位表格主卡片 */}
-      <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
-        <CardHeader className="border-b border-slate-100 pb-4 dark:border-slate-800">
-          <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-slate-100">
-            <Briefcase className="size-5 text-blue-600" />
-            <span>岗位列表</span>
-          </CardTitle>
-          <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
-            展示企业当前已定义的所有岗位及在职员工人数。有关联员工时执行
-            Fail-Closed 删除保护。
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          {positions.length === 0 ? (
-            <div className="py-12 text-center text-xs text-slate-400">
-              暂未维护任何岗位字典，请点击右上角新增岗位
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table className="w-full text-xs">
-                <TableHeader className="bg-muted/50 font-medium">
-                  <TableRow className="border-b border-border">
-                    <TableHead className="px-5 py-3 text-xs font-semibold text-muted-foreground">岗位名称</TableHead>
-                    <TableHead className="px-4 py-3 text-xs font-semibold text-muted-foreground">岗位编码</TableHead>
-                    <TableHead className="px-4 py-3 text-xs font-semibold text-muted-foreground">职责说明</TableHead>
-                    <TableHead className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">排序号</TableHead>
-                    <TableHead className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">在职员工</TableHead>
-                    <TableHead className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">状态</TableHead>
-                    <TableHead className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground">操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="divide-y divide-border/60">
-                  {positions.map((pos) => {
-                    const isActive = pos.status === MasterDataStatus.ACTIVE;
-                    return (
-                      <TableRow
-                        key={pos.id}
-                        className="hover:bg-muted/40 transition-colors"
-                      >
-                        <TableCell className="px-5 py-3.5 font-bold text-foreground">
-                          {pos.name}
-                        </TableCell>
-                        <TableCell className="px-4 py-3.5 font-mono text-muted-foreground">
-                          <Badge
-                            variant="outline"
-                            className="text-[11px] font-mono"
-                          >
-                            {pos.code}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="px-4 py-3.5 text-muted-foreground max-w-xs truncate">
-                          {pos.description || "—"}
-                        </TableCell>
-                        <TableCell className="px-4 py-3.5 text-center font-mono text-muted-foreground">
-                          {pos.sort}
-                        </TableCell>
-                        <TableCell className="px-4 py-3.5 text-center">
-                          <div className="inline-flex items-center gap-1 text-foreground font-semibold">
-                            <Users className="size-3.5 text-muted-foreground" />
-                            <span>{pos.employeeCount}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="px-4 py-3.5 text-center">
-                          <Badge
-                            variant={isActive ? "success" : "secondary"}
-                            size="sm"
-                          >
-                            {isActive ? "已启用" : "已停用"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="px-5 py-3.5 text-right space-x-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 text-xs text-primary"
-                            onClick={() => openEditModal(pos)}
-                          >
-                            <Edit2 className="mr-1 size-3.5" />
-                            编辑
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 text-xs"
-                            onClick={() => handleToggleStatus(pos)}
-                          >
-                            <Power className="mr-1 size-3.5" />
-                            {isActive ? "停用" : "启用"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 text-xs text-destructive hover:text-destructive"
-                            onClick={() => setDeleteTarget(pos)}
-                          >
-                            <Trash2 className="mr-1 size-3.5" />
-                            删除
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+    <>
+      <DataTable<PositionItem>
+        data={data}
+        columns={columns}
+        rowKey={(p: PositionItem) => p.id}
+        subject={positionPageContract.subject}
+        title="企业岗位字典"
+        description="维护企业行政职务字典，支持在职人数统计、启停管控与同级排序。岗位与系统角色权限解耦。"
+        total={total}
+        {...list.dataTableProps}
+        onExport={handleExport}
+        onCreate={() =>
+          setModalState({ open: true, mode: "create", record: null })
+        }
+        createText="新建岗位"
+        contentProps={{ selectable: true }}
+        keywordPlaceholder="搜索岗位名称、编码、职责..."
+        statusOptions={[
+          { value: MasterDataStatus.ACTIVE, label: "正常" },
+          { value: "INACTIVE", label: "已停用" },
+        ]}
+        statusValue={String(list.params.status ?? "")}
+        onStatusChange={(v) => list.patch({ status: v || "" })}
+      />
 
-      {modalState && (
+      {modalState.open && (
         <PositionFormModal
+          open={modalState.open}
           mode={modalState.mode}
-          record={modalState.targetPosition}
-          onClose={() => setModalState(null)}
-          onSaved={async () => {
-            setModalState(null);
-            await refreshPositions();
+          record={modalState.record}
+          onClose={() =>
+            setModalState({ open: false, mode: "create", record: null })
+          }
+          onSuccess={() => {
+            setModalState({ open: false, mode: "create", record: null });
           }}
         />
       )}
-
-      {/* 删除二次确认弹窗 */}
-      <ConfirmDialog
-        open={Boolean(deleteTarget)}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
-        title={`确定要删除岗位 [${deleteTarget?.name || ""}] 吗？`}
-        description="删除后该岗位记录将被移除。如果该岗位下存在在职员工，系统将自动拦截并提示错误。"
-        confirmText="确认删除"
-        variant="destructive"
-        onConfirm={async () => {
-          if (deleteTarget) {
-            confirmDelete(deleteTarget);
-          }
-        }}
-      />
-    </PageShell>
+    </>
   );
 }

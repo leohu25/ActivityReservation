@@ -3,6 +3,7 @@ import "server-only";
 export {
   listDepartmentTreeQuery,
   listPositionsQuery,
+  listPositionsPagedQuery,
   listEmployeesQuery,
 } from "./queries";
 export {

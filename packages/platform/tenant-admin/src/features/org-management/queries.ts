@@ -17,6 +17,8 @@ import { EmployeeManagementService } from "./employee-management-service";
 import type {
   DepartmentTreeNode,
   PositionItem,
+  ListPositionsFilter,
+  ListPositionsResult,
   EmployeeItem,
   EmployeeListFilter,
 } from "./types";
@@ -33,6 +35,27 @@ export async function listDepartmentTreeQuery(): Promise<
 
   const tree = await deptService.listDepartmentTree(client);
   return toPlainData(tree);
+}
+
+export async function listPositionsPagedQuery(
+  filter: ListPositionsFilter = {},
+): Promise<ListPositionsResult> {
+  const { client, ability } = await getTenantAdminContext();
+  assertTenantAdminAbility(ability, StandardAction.READ, PositionSubject);
+
+  const result = await posService.listPositionsPaged(client, filter);
+  const items: PositionItem[] = result.items.map((p) => {
+    // SAFETY: PositionItem is plain data compatible with Record<string, unknown>
+    const record = p as unknown as Record<string, unknown>;
+    const readable = pickReadableFields(ability, PositionSubject, record);
+    // SAFETY: readable 由 pickReadableFields 依据 CASL 过滤，附加唯一标识 id 保障组件展示完整性
+    return {
+      id: p.id,
+      ...readable,
+    } as unknown as PositionItem;
+  });
+
+  return toPlainData({ ...result, items });
 }
 
 export async function listPositionsQuery(): Promise<readonly PositionItem[]> {

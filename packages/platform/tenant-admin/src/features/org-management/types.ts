@@ -61,6 +61,22 @@ export interface UpdatePositionInput {
   readonly status?: string;
 }
 
+/** 岗位分页过滤条件 */
+export interface ListPositionsFilter {
+  readonly page?: number;
+  readonly pageSize?: number;
+  readonly keyword?: string;
+  readonly status?: string;
+}
+
+/** 岗位分页查询结果 */
+export interface ListPositionsResult {
+  readonly items: readonly PositionItem[];
+  readonly total: number;
+  readonly page: number;
+  readonly pageSize: number;
+}
+
 /** 员工管理列表单项模型 */
 export interface EmployeeItem {
   readonly id: string;

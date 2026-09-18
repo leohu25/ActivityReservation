@@ -1,4 +1,4 @@
-import type { TenantPrismaClient } from "@base/db-tenant";
+import type { TenantPrismaClient, TenantPrisma } from "@base/db-tenant";
 import { MasterDataStatus, resolvePagination } from "@base/shared";
 import type {
 	CreateCategoryInput,
@@ -37,7 +37,7 @@ export class CustomerCategoryService {
 			defaultPageSize: 20,
 		});
 
-		const where: any = {};
+		const where: TenantPrisma.CustomerCategoryWhereInput = {};
 		if (filter.status) {
 			where.status = filter.status;
 		}
@@ -77,7 +77,7 @@ export class CustomerCategoryService {
 		client: TenantPrismaClient,
 		filter?: { status?: CustomerCategoryStatus },
 	): Promise<CustomerCategoryItem[]> {
-		const where: any = {};
+		const where: TenantPrisma.CustomerCategoryWhereInput = {};
 		if (filter?.status) {
 			where.status = filter.status;
 		}
