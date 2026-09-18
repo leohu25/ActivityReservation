@@ -25,7 +25,7 @@ apps/control | apps/tenant          双端装配
 packages/domains/*                  业务切片（customer-center 等）
 packages/platform/*                 平台业务（control-admin / tenant-admin）
 packages/base/ui                    UI 契约：DataTable / FormModal / list params
-packages/base/biz-shared            资源管道：createResource*
+packages/base/biz-shared            业务中台通用资产：单号发号器 / 审批契约
 packages/base/shared                defineServerAction / toPlainData
 packages/base/auth | authorization | db-tenant | db-control
 tooling/db-migrate                  12-Factor 迁移引擎
@@ -38,25 +38,25 @@ tooling/db-migrate                  12-Factor 迁移引擎
 
 ## 二、 红线摘要（细则见对应 reference）
 
-| # | 红线 | 细则 |
-| :--- | :--- | :--- |
-| 1 | 权限/列表 URL 契约收敛在 `contract.ts`（SSoT），门禁脚本硬拦 | `references/1-contracts.md` |
-| 2 | mutation：`defineServerAction` + `toPlainData`；RSC→Client 禁 Promise/函数 props | `references/4-server-actions.md` |
-| 3 | 破坏性操作单次 `ConfirmDialog`；反馈用 Toast；禁 `window.location.reload()` | `references/5-ui-components.md` |
-| 4 | 数据经 `TenantDbManager` 分库路由，禁拼连接串 | `docs/ARCHITECTURE.md`、db-tenant 文档 |
-| 5 | 标准列表：`DataTable` 默认 chrome + `useListSearch`；禁业务手绘表壳 | `references/5-ui-components.md` |
-| 6 | 写路径 CASL（Action 内断言 + UI `subject`/门禁） | `references/4`、`references/7` |
-| 7 | 列表 URL：`defineListSearchParams`；Client：`useListSearch` | `references/9-crud-resource-paradigm.md` |
-| 8 | CRUD 表单：`FormModal` + schema/fields；禁业务层手写字段树 / 直接 RHF | `references/5-ui-components.md` |
-| 9 | 标准 CRUD 优先 `createResourceActions` / `createResourcePage`；`use server` 平铺导出 | `references/9`、`references/4` |
-| 10 | 导出走 `exportContractCsv` + 契约字段 | `references/1-contracts.md` |
-| 11 | 原子层 shadcn 规范（`@base/ui` `components/ui/`） | `.agents/skills/shadcn/` |
-| 12 | 通用能力上浮至 `@base/ui` / `@base/biz-shared`，禁业务平行第二套 | `references/8-base-infrastructure.md` |
-| 13 | 测试同级共存；实体审计+软删除基线；提交前人工审阅 + 中文 Conventional Commits；禁 `--no-verify` | `AGENTS.md`、`references/2-schema-migrate.md` |
+| #   | 红线                                                                                                 | 细则                                          |
+| :-- | :--------------------------------------------------------------------------------------------------- | :-------------------------------------------- |
+| 1   | 权限/列表 URL 契约收敛在 `contract.ts`（SSoT），门禁脚本硬拦                                         | `references/1-contracts.md`                   |
+| 2   | mutation：`defineServerAction` + `toPlainData`；RSC→Client 禁 Promise/函数 props                     | `references/4-server-actions.md`              |
+| 3   | 破坏性操作单次 `ConfirmDialog`；反馈用 Toast；禁 `window.location.reload()`                          | `references/5-ui-components.md`               |
+| 4   | 数据经 `TenantDbManager` 分库路由，禁拼连接串                                                        | `docs/ARCHITECTURE.md`、db-tenant 文档        |
+| 5   | 标准列表：`DataTable` 默认 chrome + `useListSearch`；禁业务手绘表壳                                  | `references/5-ui-components.md`               |
+| 6   | 写路径 CASL（Action 内断言 + UI `subject`/门禁）                                                     | `references/4`、`references/7`                |
+| 7   | 列表 URL：`defineListSearchParams`；Client：`useListSearch`                                          | `references/9-crud-resource-paradigm.md`      |
+| 8   | CRUD 表单：`FormModal` + schema/fields；禁业务层手写字段树 / 直接 RHF                                | `references/5-ui-components.md`               |
+| 9   | Mutation 使用 `defineServerAction` 直写；RSC 装配遵循 Next.js 标准 async 函数；`use server` 平铺导出 | `references/9`、`references/4`                |
+| 10  | 导出走 `exportContractCsv` + 契约字段                                                                | `references/1-contracts.md`                   |
+| 11  | 原子层 shadcn 规范（`@base/ui` `components/ui/`）                                                    | `.agents/skills/shadcn/`                      |
+| 12  | 通用能力上浮至 `@base/ui` / `@base/biz-shared`，禁业务平行第二套                                     | `references/8-base-infrastructure.md`         |
+| 13  | 测试同级共存；实体审计+软删除基线；提交前人工审阅 + 中文 Conventional Commits；禁 `--no-verify`      | `AGENTS.md`、`references/2-schema-migrate.md` |
 
 **作废 / 禁止用于新代码**（仅存量迁移过渡的标 `@deprecated`）：
 
-`useTableUrlState`、`parseTableSearchParams`、`useDataTableState`、`useListUrlNav`、业务层 RHF 手写表单、ListShell/TableRegion、`count(*)+1` 发号、客户端默认 `router.refresh()`、单开 `@base/crud` 包。
+`useTableUrlState`、`parseTableSearchParams`、`useDataTableState`、`useListUrlNav`、业务层 RHF 手写表单、ListShell/TableRegion、`count(*)+1` 发号、客户端默认 `router.refresh()`、单开 `@base/crud` 包、`createResourcePage`、`createResourceActions`、`createResourceList`（过度封装已彻底废弃）。
 
 ---
 
@@ -69,22 +69,22 @@ tooling/db-migrate                  12-Factor 迁移引擎
 ② schema.ts       共享 Zod
 ③ service.ts      领域逻辑（事务 / 发号 / 状态机）
 ④ queries.ts      server-only + cache + DTO
-⑤ actions.ts      createResourceActions → 平铺 export
+⑤ actions.ts      defineServerAction 直写 → 平铺 export
 ⑥ ui/*FormModal   FormModal + schema/fields + subject
 ⑦ ui/*View        useListSearch + DataTable + filterExtra
-⑧ apps page.tsx   createResourcePage
+⑧ apps page.tsx   标准 RSC 装配（parse + Promise.all -> View）
 → 单测与 check/test 全绿
 ```
 
-| 阶段 | 深入阅读 |
-| :--- | :--- |
-| ① 契约 | `references/1-contracts.md` |
-| ②③ 数据与服务 | `references/2-schema-migrate.md`、`references/3-services.md` |
-| ⑤ Actions | `references/4-server-actions.md` |
-| ⑥⑦ UI | `references/5-ui-components.md` |
-| ⑧ 装配 / Manifest | `references/6-tenant-routing.md` |
-| CASL Provider | `references/7-casl-ability-provider.md` |
-| 包骨架 | `references/0-architecture-topology.md` |
+| 阶段              | 深入阅读                                                     |
+| :---------------- | :----------------------------------------------------------- |
+| ① 契约            | `references/1-contracts.md`                                  |
+| ②③ 数据与服务     | `references/2-schema-migrate.md`、`references/3-services.md` |
+| ⑤ Actions         | `references/4-server-actions.md`                             |
+| ⑥⑦ UI             | `references/5-ui-components.md`                              |
+| ⑧ 装配 / Manifest | `references/6-tenant-routing.md`                             |
+| CASL Provider     | `references/7-casl-ability-provider.md`                      |
+| 包骨架            | `references/0-architecture-topology.md`                      |
 
 ---
 
@@ -100,25 +100,25 @@ tooling/db-migrate                  12-Factor 迁移引擎
 
 ## 五、 渐进式阅读索引
 
-| 领域 | 路径 |
-| :--- | :--- |
-| **CRUD 黄金标杆（必读）** | `references/9-crud-resource-paradigm.md` |
-| 切片包骨架 | `references/0-architecture-topology.md` |
-| 契约 | `references/1-contracts.md` |
-| Schema / 迁移 | `references/2-schema-migrate.md` |
-| Service / Query | `references/3-services.md` |
-| Server Actions | `references/4-server-actions.md` |
-| DataTable / FormModal | `references/5-ui-components.md` |
-| 路由 / page / Manifest | `references/6-tenant-routing.md` |
-| CASL Provider | `references/7-casl-ability-provider.md` |
-| 基座包 | `references/8-base-infrastructure.md` |
-| 目标架构规格 | `docs/architecture/refactoring-architecture-and-official-patterns.md` |
-| 系统全景 | `docs/ARCHITECTURE.md` |
+| 领域                      | 路径                                                                  |
+| :------------------------ | :-------------------------------------------------------------------- |
+| **CRUD 黄金标杆（必读）** | `references/9-crud-resource-paradigm.md`                              |
+| 切片包骨架                | `references/0-architecture-topology.md`                               |
+| 契约                      | `references/1-contracts.md`                                           |
+| Schema / 迁移             | `references/2-schema-migrate.md`                                      |
+| Service / Query           | `references/3-services.md`                                            |
+| Server Actions            | `references/4-server-actions.md`                                      |
+| DataTable / FormModal     | `references/5-ui-components.md`                                       |
+| 路由 / page / Manifest    | `references/6-tenant-routing.md`                                      |
+| CASL Provider             | `references/7-casl-ability-provider.md`                               |
+| 基座包                    | `references/8-base-infrastructure.md`                                 |
+| 目标架构规格              | `docs/architecture/refactoring-architecture-and-official-patterns.md` |
+| 系统全景                  | `docs/ARCHITECTURE.md`                                                |
 
 ---
 
 ## 六、 使用约定
 
-1. 本 Skill 根文件 **只当地图**；写代码前按阶段打开对应 `references/`。  
-2. references 与仓库真实导出冲突时：**以代码真实 API 为准**，并回写文档债。  
+1. 本 Skill 根文件 **只当地图**；写代码前按阶段打开对应 `references/`。
+2. references 与仓库真实导出冲突时：**以代码真实 API 为准**，并回写文档债。
 3. 与 `AGENTS.md` 冲突时：以 `AGENTS.md` 工程红线为 P0。

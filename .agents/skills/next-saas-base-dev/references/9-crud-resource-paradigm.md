@@ -9,12 +9,12 @@
 
 ## 1. 分层与 API（锁定）
 
-| 层 | 包 | API |
-| :--- | :--- | :--- |
-| 组件 / 列表 URL | `@base/ui` | `DataTable`、`FormModal`、`defineListSearchParams`、`useListSearch` |
-| 资源管道 | `@base/biz-shared` | `createResourceActions`、`createResourceList`、`createResourcePage` |
-| Action 包装 | `@base/shared` | `defineServerAction` + `toPlainData` |
-| 业务 | `packages/domains/*` | contract / schema / service / queries / actions / ui |
+| 层               | 包                   | API                                                                 |
+| :--------------- | :------------------- | :------------------------------------------------------------------ |
+| 组件 / 列表 URL  | `@base/ui`           | `DataTable`、`FormModal`、`defineListSearchParams`、`useListSearch` |
+| 业务中台通用资产 | `@base/biz-shared`   | `formatBusinessDocNo`、`approval`                                   |
+| Action 包装      | `@base/shared`       | `defineServerAction` + `toPlainData`                                |
+| 业务             | `packages/domains/*` | contract / schema / service / queries / actions / ui                |
 
 **不单开** `@base/crud`。`createCrudActions` 等仅为 `@deprecated` 别名。
 
@@ -51,7 +51,7 @@ export const xxxPageContract = {
 
 ```ts
 import { z } from "@base/ui";
-export const createXxxSchema = z.object({ /* ... */ });
+export const createXxxSchema = z.object({/* ... */});
 export const updateXxxSchema = createXxxSchema.partial();
 export const parseCreateXxxInput = (raw: unknown) => createXxxSchema.parse(raw);
 ```
@@ -66,43 +66,63 @@ export const parseCreateXxxInput = (raw: unknown) => createXxxSchema.parse(raw);
 ```ts
 import "server-only";
 import { cache } from "react";
-export const getXxxPageOptionsQuery = cache(async () => { /* 下拉选项 */ });
+export const getXxxPageOptionsQuery = cache(async () => {
+  /* 下拉选项 */
+});
 export async function listXxxQuery(parsed) {
   const { client, ability } = await getTenantXxxContext();
   // Ability → accessibleWhere → DTO 投影（无 Decimal/Date 直出）
 }
 ```
 
-### ⑤ actions.ts（"use server" 平铺导出）
+### ⑤ actions.ts（"use server" 平铺导出，推荐 defineServerAction 保持直观）
 
 ```ts
 "use server";
-import { createResourceActions } from "@base/biz-shared";
 
-const actions = createResourceActions({
-  getContext: async () => {
-    const ctx = await getTenantXxxContext();
-    return { client: ctx.client, ability: ctx.ability, userId: ctx.userId, deptId: ctx.employeeProfile?.departmentId ?? null };
-  },
-  subject: XxxSubject,
-  controlledFields: Object.values(XxxField),
-  assertAbility: (ability, action, subject) => { assertXxxAbility(ability as never, action as never, subject as never); },
-  revalidatePaths: ["/domain/xxx"],
-  schemas: { create: parseCreateXxxInput, update: parseUpdateXxxInput },
-  service: {
-    create: (client, input, ctx) => XxxService.create(client as never, input as never, ctx),
-    update: (client, id, input, ctx) => XxxService.update(client as never, id, input as never, ctx),
-    remove: (client, id, ctx) => XxxService.remove(client as never, id, ctx),
-    // toggleStatus 可选
-  },
-});
+import { revalidatePath } from "next/cache";
+import { defineServerAction } from "@base/shared";
+import { StandardAction } from "@base/authorization";
+import { assertXxxAbility, getTenantXxxContext } from "../../assembly/context";
+import { XxxService } from "./service";
+import { XxxSubject } from "./contract";
+import { parseCreateXxxInput, parseUpdateXxxInput } from "./schema";
 
-export const createXxxAction = actions.create!;
-export const updateXxxAction = actions.update!;
-export const deleteXxxAction = actions.remove!;
+export const createXxxAction = defineServerAction(async (raw: unknown) => {
+  const { client, ability, userId, employeeProfile } =
+    await getTenantXxxContext();
+  assertXxxAbility(ability, StandardAction.CREATE, XxxSubject);
+  const input = parseCreateXxxInput(raw);
+  const created = await XxxService.create(client, input, {
+    userId,
+    deptId: employeeProfile?.departmentId ?? null,
+  });
+  revalidatePath("/domain/xxx");
+  return created;
+}, "创建失败");
+
+export const updateXxxAction = defineServerAction(
+  async (id: string, raw: unknown) => {
+    const { client, ability, userId } = await getTenantXxxContext();
+    assertXxxAbility(ability, StandardAction.UPDATE, XxxSubject);
+    const input = parseUpdateXxxInput(raw);
+    const updated = await XxxService.update(client, id, input, { userId });
+    revalidatePath("/domain/xxx");
+    return updated;
+  },
+  "修改失败",
+);
+
+export const deleteXxxAction = defineServerAction(async (id: string) => {
+  const { client, ability, userId } = await getTenantXxxContext();
+  assertXxxAbility(ability, StandardAction.DELETE, XxxSubject);
+  const deleted = await XxxService.remove(client, id, { userId });
+  revalidatePath("/domain/xxx");
+  return deleted;
+}, "删除失败");
 ```
 
-管道顺序（工厂内置）：`getContext → assertAbility → Zod parse → assertEditableFields → service → revalidatePath`。
+直观清晰：`上下文 -> CASL 守卫 -> Zod 验参 -> 调 Service -> revalidatePath`，零多余黑盒。
 
 ### ⑥ ui/*FormModal.tsx
 
@@ -146,45 +166,66 @@ const list = useListSearch(xxxSearchParams);
 />
 ```
 
-- 默认 chrome：搜索/新增/刷新/导出/列设置/分页 —— **不要手绘**
-- 扩展 = `filterExtra` / `statusOptions` / `toolbarExtra`，**不是**把默认能力折进抽屉
-- 数据来自 RSC props；**禁止** `useState(props.data)` 镜像
+- **按钮全量由模板接管（严禁手写）**：
+  - 展开 `{...list.dataTableProps}`，`DataTable` 自动渲染内置「查询」与「重置」按钮，并支持回车即搜；
+  - 顶部工具栏自动渲染「刷新」、「导出」、「新增」按钮，严禁业务视图内自行手写查询/重置/刷新按钮；
+- **行操作（DataTableRowActions）与详情闭环**：
+  - `DataTableRowActions` 默认 `hideView = false`；
+  - **若需要详情**：传入 `onView={() => setModal({ open: true, mode: "view", record })}`，且 `FormModal` 必须支持 `mode: "view"`（全字段只读展示）；
+  - **若无需详情**：必须显式传入 `hideView={true}`，**严禁漏传 `onView` 导致操作列出现置灰不可点击的「详情」按钮**；
+- **分页器绝不可缺失**：
+  - 所有标准列表与字典均需配备分页（`DataTablePagination`），由 `total`、`page`、`pageSize`、`onPageChange` 驱动；
+  - **严禁配置 `showPagination={false}`** 导致页面失去分页能力；
+- **多实体聚合页布局规范**：
+  - 聚合页（如分类+标签同页）**严禁左右并排挤压展示**（会导致表格变形与换行错乱）；
+  - 必须在顶部使用**横向平铺的 Tab 导航**，切换后每个实体独占 100% 全宽 DataTable 视图。
 
 ### ⑧ apps page.tsx
 
-```tsx
-import { createResourcePage } from "@base/biz-shared";
+**正统 Next.js App Router 范式**：直接编写标准异步 Server Component，杜绝黑盒过度封装。
 
-export default createResourcePage({
-  search: xxxSearchParams,
-  subject: XxxSubject,
-  pageContract: xxxPageContract,
-  title: "...",
-  rowKey: (row) => row.id,
-  columns: [],
-  List: ({ data, total, options }) => <XxxView data={data} total={total} options={options} />,
-  query: {
-    list: async (parsed) => {
-      const r = await listXxxQuery(parsed);
-      return { items: r.items, total: r.total };
-    },
-    options: async () => getXxxPageOptionsQuery(),
-  },
-});
+```tsx
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function XxxPage({ searchParams }: PageProps) {
+  const parsed = await xxxSearchParams.parse(searchParams);
+
+  const [pageResult, options] = await Promise.all([
+    listXxxQuery({
+      page: parsed.page,
+      pageSize: parsed.pageSize,
+      keyword: String(parsed.keyword ?? "") || undefined,
+      status: String(parsed.status ?? "") || undefined,
+    }),
+    getXxxPageOptionsQuery(),
+  ]);
+
+  return (
+    <XxxView
+      data={pageResult.items}
+      total={pageResult.total}
+      options={options}
+    />
+  );
+}
 ```
 
-标准列表可不传 `List`，由 `createResourceList` 生成（需配 `columns` + `actions` + 可选 `form`）。
+- 一行 `xxxSearchParams.parse(searchParams)` 搞定服务端 URL 参数校验与默认值；
+- `Promise.all` 并发拉取列表与选项纯数据；
+- 直接渲染自定义 `XxxView`，**零黑盒工厂包裹，无需填任何无用空属性**。
 
 ---
 
 ## 3. Element UI 心智映射
 
-| Element UI | 本仓 |
-| :--- | :--- |
-| `el-table` + 默认分页/工具 | `DataTable` 默认 chrome |
-| `el-form` rules | `FormModal` + Zod `schema` |
-| URL 查询状态 | `defineListSearchParams` + `useListSearch` |
-| 资源 CRUD 管道 | `createResourceActions` / `createResourcePage` |
+| Element UI                 | 本仓                                         |
+| :------------------------- | :------------------------------------------- |
+| `el-table` + 默认分页/工具 | `DataTable` 默认 chrome                      |
+| `el-form` rules            | `FormModal` + Zod `schema`                   |
+| URL 查询状态               | `defineListSearchParams` + `useListSearch`   |
+| 资源 CRUD 管道             | 正统 Next.js RSC 装配 + `defineServerAction` |
 
 ---
 

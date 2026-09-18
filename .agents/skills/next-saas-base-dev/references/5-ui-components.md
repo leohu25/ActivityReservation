@@ -47,7 +47,7 @@ const list = useListSearch(customerSearchParams);
   columns={columns}
   total={total}
   subject={customerPageContract.subject}
-/>
+/>;
 ```
 
 服务层使用 `count` + `skip/take`，严禁 `findMany` 全量返回后再前端切页。
@@ -77,9 +77,10 @@ toast.warning("检测到该客户存在未结款项");
 
 ### 2.0 状态流水线与列表约定（`defineListSearchParams` + `useListSearch`）
 
-> **已固化规范**（对标 Element UI：约定大于配置）：  
-> - URL：`contract.ts` 内 `defineListSearchParams({ 扩展默认值 })`，自动自带 **page / pageSize / keyword**  
-> - Client：`useListSearch(params)` 返回 `dataTableProps`，直接 spread 到 `DataTable`  
+> **已固化规范**（对标 Element UI：约定大于配置）：
+>
+> - URL：`contract.ts` 内 `defineListSearchParams({ 扩展默认值 })`，自动自带 **page / pageSize / keyword**
+> - Client：`useListSearch(params)` 返回 `dataTableProps`，直接 spread 到 `DataTable`
 > - **禁止**：`useDataTableState`、`useListUrlNav`、`useTableUrlState`、`parseTableSearchParams`（旧 API 已 `@deprecated` 或作废）
 
 ```tsx
@@ -117,9 +118,9 @@ export function CustomerView({ data, total, categoryOptions }: Props) {
 
 **标准列表**直接使用 `DataTable` 一体组件（非手拼 Root/Header/FilterBar）：
 
-- **默认 chrome（始终可见）**：标题、刷新、导出、列设置、新增、关键字搜索、查询/重置、分页  
-- **扩展插槽（叠加，不折叠默认项）**：`statusOptions`、`filterExtra`、`toolbarExtra`  
-- **禁止**业务层手绘壳（ListShell/TableRegion）或把默认能力收进抽屉  
+- **默认 chrome（始终可见）**：标题、刷新、导出、列设置、新增、关键字搜索、查询/重置、分页
+- **扩展插槽（叠加，不折叠默认项）**：`statusOptions`、`filterExtra`、`toolbarExtra`
+- **禁止**业务层手绘壳（ListShell/TableRegion）或把默认能力收进抽屉
 - `DataTable.Workspace` / `DataTable.Root` 原子积木：仅完全自定义布局时使用；标准 CRUD **优先一体 `DataTable` + `useListSearch`**
 
 ```tsx
@@ -180,25 +181,25 @@ const list = useListSearch(customerSearchParams);
 
 ### 2.2 核心积木零件矩阵
 
-| 积木                                     | 职责                                                                      | 关键开关                                                                     |
-| :--------------------------------------- | :------------------------------------------------------------------------ | :--------------------------------------------------------------------------- |
-| `DataTable`                             | **标准列表一体组件（推荐）** 默认 chrome + 可扩展 `filterExtra`/`statusOptions` | `title/subject/columns`、`dataTableProps`（useListSearch）、`filterExtra` |
-| `DataTable.Workspace`                   | 自定义工作台积木（非标准 CRUD 首选） | `showRefresh/Export/...` |
-| `DataTable.Root`                         | 状态上下文 + 一体化白卡                                                   | `integratedCard`                                                             |
-| `DataTable.Header`                       | 分类小标 + 竖条标题 + 说明 + actions 插槽                                 | `category/title/description/actions`                                         |
-| `DataTable.Toolbar`                      | 全局操作按钮容器                                                          | children 自由装配                                                            |
-| `DataTable.ActionButton`                 | 声明式权限按钮                                                            | `action/subject/unauthorizedStrategy`（默认 hidden）                         |
-| `DataTable.ColumnSettings`               | 动态列显隐（DropdownMenu+Checkbox）                                       | 列定义 `lockVisible/defaultVisible`                                          |
-| `DataTable.FilterBar`                    | 组合筛选栏                                                                | `onSearch/onReset/onAdvancedFilter`                                          |
-| `DataTable.InputGroup`                   | `[标签 \| 控件]` 一体化输入组                                             | `label`                                                                      |
-| `DataTable.Content`                      | 紧凑表格主体                                                              | `selectable/showIndex`                                                       |
-| `DataTable.RowActions`                   | 行内平铺 + 折叠菜单；默认详情/编辑/删除                                   | `hideView/hideEdit/hideDelete`、`extraActions`、`menuOnly`                   |
-| `DataTable.Pagination`                   | 范围文案 + 数字页码                                                       | `showRange/pageSizeOptions`                                                  |
-| `DataTable.FormModal`                    | 编辑/新建弹窗（品牌徽标+可选底栏提示）                                    | `badge/headerExtra/auditHint`                                                |
-| `DataTable.FormSection/FieldGrid/Banner` | 表单分组/字段网格/信息横幅                                                | 配合 FormModal 使用                                                          |
-| `DataTable.DetailDrawer`                 | 详情查看居中弹窗（与编辑弹窗同构）                                        | `record/onClose/children/badge`                                              |
-| `DataTable.AuthField`                    | 字段三态表单控件（shadcn `Field`+`Badge` 组合）                           | `field/action`                                                               |
-| `DataTable.AuthGuard`                    | 权限包裹任意插槽                                                          | `action`                                                                     |
+| 积木                                     | 职责                                                                            | 关键开关                                                                  |
+| :--------------------------------------- | :------------------------------------------------------------------------------ | :------------------------------------------------------------------------ |
+| `DataTable`                              | **标准列表一体组件（推荐）** 默认 chrome + 可扩展 `filterExtra`/`statusOptions` | `title/subject/columns`、`dataTableProps`（useListSearch）、`filterExtra` |
+| `DataTable.Workspace`                    | 自定义工作台积木（非标准 CRUD 首选）                                            | `showRefresh/Export/...`                                                  |
+| `DataTable.Root`                         | 状态上下文 + 一体化白卡                                                         | `integratedCard`                                                          |
+| `DataTable.Header`                       | 分类小标 + 竖条标题 + 说明 + actions 插槽                                       | `category/title/description/actions`                                      |
+| `DataTable.Toolbar`                      | 全局操作按钮容器                                                                | children 自由装配                                                         |
+| `DataTable.ActionButton`                 | 声明式权限按钮                                                                  | `action/subject/unauthorizedStrategy`（默认 hidden）                      |
+| `DataTable.ColumnSettings`               | 动态列显隐（DropdownMenu+Checkbox）                                             | 列定义 `lockVisible/defaultVisible`                                       |
+| `DataTable.FilterBar`                    | 组合筛选栏                                                                      | `onSearch/onReset/onAdvancedFilter`                                       |
+| `DataTable.InputGroup`                   | `[标签 \| 控件]` 一体化输入组                                                   | `label`                                                                   |
+| `DataTable.Content`                      | 紧凑表格主体                                                                    | `selectable/showIndex`                                                    |
+| `DataTable.RowActions`                   | 行内平铺 + 折叠菜单；默认详情/编辑/删除                                         | `hideView/hideEdit/hideDelete`、`extraActions`、`menuOnly`                |
+| `DataTable.Pagination`                   | 范围文案 + 数字页码                                                             | `showRange/pageSizeOptions`                                               |
+| `DataTable.FormModal`                    | 编辑/新建弹窗（品牌徽标+可选底栏提示）                                          | `badge/headerExtra/auditHint`                                             |
+| `DataTable.FormSection/FieldGrid/Banner` | 表单分组/字段网格/信息横幅                                                      | 配合 FormModal 使用                                                       |
+| `DataTable.DetailDrawer`                 | 详情查看居中弹窗（与编辑弹窗同构）                                              | `record/onClose/children/badge`                                           |
+| `DataTable.AuthField`                    | 字段三态表单控件（shadcn `Field`+`Badge` 组合）                                 | `field/action`                                                            |
+| `DataTable.AuthGuard`                    | 权限包裹任意插槽                                                                | `action`                                                                  |
 
 ### 2.3 自定义操作按钮如何加权限
 
@@ -243,6 +244,13 @@ const list = useListSearch(customerSearchParams);
 对齐工业风参考：高频操作直接平铺文字链接（详情/编辑），次要与危险操作折叠进 `...`：
 
 **默认全量展示**内置「详情 / 编辑 / 删除」；页面不需要时用 `hideView` / `hideEdit` / `hideDelete` 显式关闭，并同步从契约移除对应 action。
+
+> ⚠️ **「详情」置灰避坑红线**：
+> `DataTableRowActions` 内部对内置动作实施闭环检查：若用户拥有 `read` 权限但页面未传递 `onView` 回调，系统会判定为“未配置操作回调”，从而将「详情」按钮**以置灰不可点击态（disabled）暴露在界面上**。
+> **严格规范**：
+>
+> 1. **需要详情时**：必须传入 `onView={() => setModal({ open: true, mode: "view", record })}`，且 `FormModal` 必须支持 `mode: "view"`（全字段只读展示）；
+> 2. **不需要详情时**：必须显式传入 `hideView={true}`，严禁漏传导致置灰无响应按钮残留！
 
 ```tsx
 <DataTable.RowActions

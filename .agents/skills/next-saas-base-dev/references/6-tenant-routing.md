@@ -49,12 +49,9 @@ export default async function CustomerLayout({
 
 ```tsx
 // apps/tenant/src/app/(dashboard)/customer/customers/page.tsx
-import { createResourcePage } from "@base/biz-shared";
 import {
   CustomerView,
   customerSearchParams,
-  customerPageContract,
-  CustomerSubject,
   type CustomerListItem,
 } from "@base/feature-customer-center/customer-management";
 import {
@@ -62,35 +59,34 @@ import {
   getCustomerPageOptionsQuery,
 } from "@base/feature-customer-center/customer-management/server";
 
-export default createResourcePage<CustomerListItem, { categoryOptions: []; tagOptions: [] }>({
-  search: customerSearchParams,
-  subject: CustomerSubject,
-  pageContract: customerPageContract,
-  title: "客户档案",
-  rowKey: (c) => c.id || c.customerCode,
-  columns: [],
-  List: ({ data, total, options }) => (
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+/** 客户档案页：标准 Next.js App Router Server Component 装配，零过度封装 */
+export default async function CustomersPage({ searchParams }: PageProps) {
+  const parsed = await customerSearchParams.parse(searchParams);
+
+  const [customerPage, pageOptions] = await Promise.all([
+    listCustomersQuery({
+      page: parsed.page,
+      pageSize: parsed.pageSize,
+      keyword: String(parsed.keyword ?? "") || undefined,
+      categoryCode: String(parsed.category ?? "") || undefined,
+      status: String(parsed.status ?? "") || undefined,
+    }),
+    getCustomerPageOptionsQuery(),
+  ]);
+
+  return (
     <CustomerView
-      data={data}
-      total={total}
-      categoryOptions={options?.categoryOptions}
-      tagOptions={options?.tagOptions}
+      data={customerPage.items as CustomerListItem[]}
+      total={customerPage.total}
+      categoryOptions={pageOptions.categoryOptions}
+      tagOptions={pageOptions.tagOptions}
     />
-  ),
-  query: {
-    list: async (parsed) => {
-      const r = await listCustomersQuery({
-        page: parsed.page,
-        pageSize: parsed.pageSize,
-        keyword: String(parsed.keyword ?? "") || undefined,
-        categoryCode: String(parsed.category ?? "") || undefined,
-        status: String(parsed.status ?? "") || undefined,
-      });
-      return { items: r.items as CustomerListItem[], total: r.total };
-    },
-    options: async () => getCustomerPageOptionsQuery(),
-  },
-});
+  );
+}
 ```
 
 ---

@@ -108,7 +108,6 @@ graph TD
 
 - **职责**：沉淀跨切片业务管道与经验证的通用业务模式；**禁止**为 CRUD 单开独立包。
 - **资产范围**：
-  - **资源化 CRUD 管道（已固化）**：`createResourceActions` / `createResourceList` / `createResourcePage`（`createCrud*` 为 `@deprecated` 别名）——细节见 `9-crud-resource-paradigm.md`；
   - **统一单据流水号系统 (`doc-no`)**：单据类型前缀、日期规则与序列号契约；
   - **通用业务审批流契约 (`approval`)**：草稿/待审/已审/驳回状态机；
   - **明细行表格模板 (`detail-table`)**：主子表明细录入与金额聚合（与 `@base/ui` `DetailTable` 协同）。

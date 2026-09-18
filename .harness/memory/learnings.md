@@ -45,7 +45,7 @@
   - 刚刚验证通过且代码未再修改时，直接执行提交，由 `pre-commit` 自动兜底；
   - 日常开发优先执行单 Package 测试或类型检查，避免无节制全量扫盘。
 
-## 6.1. 跨平台脚本全量采用 Node.js (*.mjs)，严禁新增 Shell 脚本 (*.sh)
+## 6.1. 跨平台脚本全量采用 Node.js (_.mjs)，严禁新增 Shell 脚本 (_.sh)
 
 - **痛点**：团队成员跨 Windows、macOS 与 Linux 协同开发，历史上使用 Bash (`*.sh`) 编写的 `init.sh`、`verify.sh`、`status.sh` 在 Windows（PowerShell / CMD / VS Code 默认终端）下无法直接运行或路径解析错乱，导致流程中断，甚至因 CRLF 换行符引发门禁误报。
 - **解法与铁律**：
@@ -94,7 +94,7 @@
   - 初始误区：甚至试图在应用层再包一层 `app-sidebar.tsx` 去打补丁，制造了无意义的冗余胶水层。
 - **Next.js 官方正统 Mental Model (思维模型)**：
   - **Hard Navigation vs Soft Navigation**：原生 `<a>` 必然导致硬导航（销毁整页与状态）；只有 `next/link` 才能触发 App Router 的软导航与路由缓存（Router Cache）；
-  - **Layout State Preservation**：官方原语承诺 *“A layout is UI that is shared between multiple routes. On navigation, layouts preserve state, remain interactive, and do not re-render.”*；
+  - **Layout State Preservation**：官方原语承诺 _“A layout is UI that is shared between multiple routes. On navigation, layouts preserve state, remain interactive, and do not re-render.”_；
   - **组件边界原则**：在针对 Next.js 生态的专用应用与 UI 库中，**严禁用冗余的 `LinkComponent` 抽象层把原本两行代码的原生 `next/link` 和 `usePathname` 搞得支离破碎**；直接遵循官方标准，组件自身原生接入 `next/link`。
 - **全栈固化工程规范 (Iron Rules)**：
   1. **零冗余胶水层**：禁止在路由组目录制造类似于 `app-sidebar.tsx` 这种仅仅为了桥接 `Link` 的空壳组件，`layout.tsx` 直接消费 UI 库导出的标准组件；
@@ -277,3 +277,24 @@
      - 过滤掉未传的 `undefined` 键，提取实际提交的显式受控键，一旦检测到包含不可编辑或隐藏字段，立即抛出 CASL `ForbiddenError` 物理阻断事务；
   4. **列表列配置细粒度契约对齐**：
      - 列表复合列若包含多个不同受控维度的敏感字段，应拆分为独立列，或在单元格内部针对各子字段进行 `ability.can("read", subject, field)` 细粒度判断，杜绝因宿主字段放行而导致敏感子文本越权泄露。
+
+## 19. 标准列表 CRUD、DataTableRowActions 详情避坑与多实体页面布局铁律 (Standard CRUD & Actions Invariant)
+
+- **痛点复盘**：
+  1. **行操作「详情」置灰不可点**：`DataTableRowActions` 默认开启了 `hideView = false`。如果业务页面未传递 `onView` 回调，组件会将其判定为“未实现查看功能”，从而在界面上把「详情」按钮以置灰 Disabled（`未配置操作回调`）展示，给用户带来严重的“系统坏了”的困惑；
+  2. **筛选/查询按钮私自手写**：部分视图脱离 `useListSearch` 和 `DataTable`，在页面上手写裸 `<Button>` 查询或重置，破坏了回车即搜、防抖同步、URL 状态契约及工业风视觉一致性；
+  3. **列表无分页**：在字典或分类列表中显式配置 `showPagination={false}`，或者缺少分页状态管理，导致列表数据无法翻页，违背了标杆列表分页底线；
+  4. **多实体聚合页左右并排挤压**：在同一个页面包含多个实体/字典（如分类与标签）时，采用 `grid-cols-2` 左右并排，导致两个表格字段换行严重、列宽挤压、右侧操作列溢出，布局极其恶劣。
+- **工业级正统解法与行为铁律**：
+  1. **按钮 100% 由模板组件托管，严禁私自手写**：
+     - 视图一律调用 `const list = useListSearch(xxxSearchParams)`，并将 `{...list.dataTableProps}` 完整展开传递给 `DataTable`；
+     - 筛选栏右侧的「查询」与「重置」按钮由 `DataTable` 自动渲染；
+     - 工具栏右上角的「刷新」、「导出」、「列设置」、「新增」按钮由 `DataTable` 自动生成，新增与导出受控于 CASL；
+  2. **`DataTableRowActions` 详情显隐两则铁律**：
+     - **需要详情时**：必须传入 `onView={() => setModal({ open: true, mode: "view", record })}`，且配套的 `FormModal` 必须支持 `mode: "view"`（全字段只读展示）；
+     - **不需要详情时**：必须显式传入 `hideView={true}`，**严禁漏传 `onView` 导致灰色的「详情」按钮暴露在界面上**；
+  3. **标准分页绝不可缺失**：
+     - 所有实体与字典列表均由 `DataTablePagination` 接管，必须传入有效的数据总量 `total`，驱动标准翻页与每页条数（10/20/50条）切换；严禁 `showPagination={false}`；
+  4. **多实体聚合页面布局标准**：
+     - 多实体/多字典页面**严禁左右并排**；
+     - 必须在顶部横向平铺 Tab 导航，切换 Tab 时每个实体均独占 100% 全宽标准 DataTable 视图。

@@ -1,27 +1,28 @@
 {
-  "name": "@base/shared",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
-  "exports": {
-    ".": "./src/index.ts"
-  },
-  "scripts": {
-    "check": "tsc --noEmit",
-    "test": "tsx --test --test-reporter=../../../scripts/reporter/fail-only-reporter.mjs src/*.test.ts src/**/*.test.ts",
-    "lint": "eslint ."
-  },
-  "devDependencies": {
-    "@types/node": "^20.19.43",
-    "tsx": "^4.20.6",
-    "typescript": "^5.8.2"
-  },
-  "dependencies": {
-    "dayjs": "^1.11.23",
-    "decimal.js": "^10.6.0",
-    "radash": "^12.1.1",
-    "superjson": "^2.2.6"
-  }
+	"name": "@base/shared",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"main": "./src/index.ts",
+	"types": "./src/index.ts",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"check": "tsc --noEmit",
+		"test": "tsx --test --test-reporter=../../../scripts/reporter/fail-only-reporter.mjs src/*.test.ts src/**/*.test.ts",
+		"lint": "eslint ."
+	},
+	"devDependencies": {
+		"@types/node": "^20.19.43",
+		"tsx": "^4.20.6",
+		"typescript": "^5.8.2"
+	},
+	"dependencies": {
+		"dayjs": "^1.11.23",
+		"decimal.js": "^10.6.0",
+		"p-retry": "^8.0.1",
+		"radash": "^12.1.1",
+		"superjson": "^2.2.6"
+	}
 }

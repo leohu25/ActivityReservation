@@ -7,7 +7,8 @@
 本包是 Modular Monorepo 中的业务区域包，内部采用 Feature-based Vertical Slice Architecture（基于特性的垂直切片架构）：
 
 - `customer-management/`：Customer Management Feature（客户管理核心特性）；
-- `customer-management/classification/`：Classification Sub-Feature（分类与标签子特性）；
+- `customer-management/category/`：Category Sub-Feature（客户分类子特性）；
+- `customer-management/tag/`：Tag Sub-Feature（业务标签子特性）；
 - `store-management/`：Store Management Feature（门店管理核心特性）；
 - `quotation-management/`：Quotation Management Feature（报价管理核心特性）；
 - `shared/`：仅供 Customer Center 内多个 Feature 复用的基础设施与 UI 能力。
@@ -62,7 +63,8 @@ import {
 import { listCustomersQuery } from "@base/feature-customer-center/customer-management/server";
 
 // 3. 引入子特性（Sub-Feature）组件
-import { CategoryTagView } from "@base/feature-customer-center/customer-management/classification";
+import { CategoryView } from "@base/feature-customer-center/customer-management/category";
+import { TagView } from "@base/feature-customer-center/customer-management/tag";
 
 // 4. 引入主应用装配清单
 import { customerManifest } from "@base/feature-customer-center/manifest";

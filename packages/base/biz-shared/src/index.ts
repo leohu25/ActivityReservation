@@ -5,5 +5,3 @@
 
 export * from "./types/approval";
 export * from "./utils/doc-no";
-export * from "./crud";
-

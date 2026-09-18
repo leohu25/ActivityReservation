@@ -12,68 +12,70 @@
 
 ---
 
-## 1. 标准 CRUD：`createResourceActions`（推荐 / 已固化）
+## 1. 推荐直写：`defineServerAction`（首选范式，清晰透明）
 
-标准增改查优先使用 `@base/biz-shared` 工厂，业务只注入 context/subject/schema/service；在 `"use server"` 文件中**平铺 re-export**：
-
-```ts
-"use server";
-
-import { createResourceActions } from "@base/biz-shared";
-import { getTenantCustomerContext, assertCustomerAbility } from "../../assembly/context";
-import { CustomerField, CustomerSubject, CustomerAction } from "./contract";
-import { parseCreateCustomerInput, parseUpdateCustomerInput } from "./schema";
-import { CustomerService } from "./service";
-
-const actions = createResourceActions({
-  getContext: async () => {
-    const ctx = await getTenantCustomerContext();
-    return {
-      client: ctx.client,
-      ability: ctx.ability,
-      userId: ctx.userId,
-      deptId: ctx.employeeProfile?.departmentId ?? null,
-    };
-  },
-  subject: CustomerSubject,
-  controlledFields: Object.values(CustomerField),
-  assertAbility: (ability, action, subject) => {
-    assertCustomerAbility(ability as never, action as never, subject as never);
-  },
-  revalidatePaths: ["/customer/customers"],
-  schemas: { create: parseCreateCustomerInput, update: parseUpdateCustomerInput },
-  service: {
-    create: (client, input, ctx) => CustomerService.createCustomer(client as never, input as never, ctx),
-    update: (client, id, input, ctx) => CustomerService.updateCustomer(client as never, id, input as never, ctx),
-    remove: (client, id, ctx) => CustomerService.deleteCustomer(client as never, id, ctx),
-    toggleStatus: (client, id, status, ctx) =>
-      CustomerService.updateCustomerStatus(client as never, id, status as never, ctx),
-  },
-  toggleAction: CustomerAction.TOGGLE_STATUS,
-  toggleExtraRevalidatePaths: ["/customer/stores"],
-});
-
-export const createCustomerAction = actions.create!;
-export const updateCustomerAction = actions.update!;
-export const deleteCustomerAction = actions.remove!;
-export const updateCustomerStatusAction = actions.toggleStatus!;
-```
-
-工厂管道：`getContext → assertAbility → Zod → assertEditableFields → service → revalidatePath`。  
-定制：`onBeforeCreate` / `onBeforeUpdate` / 自定义 service 方法。
-
-完整范式见 `references/9-crud-resource-paradigm.md`。
-
----
-
-## 1b. 手写 `defineServerAction`（完全特异逻辑时）
+业务切片 Mutation 优先使用 `@base/shared` 的 `defineServerAction` 直接书写，每一步清晰可见、便于断点调试与微调：
 
 ```ts
 "use server";
 
 import { revalidatePath } from "next/cache";
 import { defineServerAction } from "@base/shared";
-import { assertCustomerAbility, getTenantCustomerContext } from "../../assembly/context";
+import { StandardAction } from "@base/authorization";
+import {
+  assertCustomerAbility,
+  getTenantCustomerContext,
+} from "../../assembly/context";
+import { CustomerService } from "./service";
+import { CustomerSubject } from "./contract";
+import { parseCreateCustomerInput } from "./schema";
+import type { CreateCustomerInput } from "./types";
+
+export const createCustomerAction = defineServerAction(
+  async (rawInput: CreateCustomerInput) => {
+    // 1. 获取租户与权限上下文
+    const { client, ability, userId, employeeProfile } =
+      await getTenantCustomerContext();
+
+    // 2. CASL 强类型权限守卫
+    assertCustomerAbility(ability, StandardAction.CREATE, CustomerSubject);
+
+    // 3. Zod 校验入参
+    const input = parseCreateCustomerInput(rawInput);
+
+    // 4. 执行领域逻辑
+    const created = await CustomerService.createCustomer(client, input, {
+      userId,
+      deptId: employeeProfile?.departmentId ?? null,
+    });
+
+    // 5. 缓存刷新
+    revalidatePath("/customer/customers");
+    return created;
+  },
+  "创建客户失败",
+);
+```
+
+**优势**：
+
+- 零多余抽象与黑盒堆栈，易于单步断点与错误定位；
+- 避免因 Next.js "use server" 规则在文件末尾重复写一遍 async function 包装；
+- 灵活性极高，支持随业务扩展定制 revalidatePath 与复合副作用。
+
+---
+
+## 1b. 工厂模式：`createResourceActions`（纯同构简单 CRUD 可选）
+
+```ts
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { defineServerAction } from "@base/shared";
+import {
+  assertCustomerAbility,
+  getTenantCustomerContext,
+} from "../../assembly/context";
 import { CustomerService } from "./service";
 import { CustomerSubject } from "./contract";
 import type { CreateCustomerInput } from "./types";
@@ -106,10 +108,7 @@ export const createCustomerAction = defineServerAction(
 ```ts
 // src/assembly/context.ts（以 customer-center 为标杆）
 import { getServerAuthRuntime } from "@base/auth";
-import {
-  CaslAbilityFactory,
-  type AppPrismaAbility,
-} from "@base/authorization";
+import { CaslAbilityFactory, type AppPrismaAbility } from "@base/authorization";
 import { resolveEmployeeTopology } from "@base/db-tenant";
 import { ForbiddenError } from "@casl/ability";
 import {
@@ -132,10 +131,19 @@ export async function getTenantCustomerContext(): Promise<TenantCustomerContext>
       findEmployeeProfile: async (memberId: string) =>
         dbCtx.client.employeeProfile.findUnique({
           where: { memberId },
-          select: { id: true, memberId: true, departmentId: true, employeeNo: true, jobTitle: true, status: true },
+          select: {
+            id: true,
+            memberId: true,
+            departmentId: true,
+            employeeNo: true,
+            jobTitle: true,
+            status: true,
+          },
         }),
       findAllDepartments: async () =>
-        dbCtx.client.department.findMany({ select: { id: true, parentId: true } }),
+        dbCtx.client.department.findMany({
+          select: { id: true, parentId: true },
+        }),
     },
     { userId: dbCtx.userId, memberId: dbCtx.memberId },
   );
