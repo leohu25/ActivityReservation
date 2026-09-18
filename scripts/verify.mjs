@@ -30,14 +30,14 @@ function runQuiet(label, command, args = [], options = {}) {
 	const combined = stdout + (stderr ? `\n${stderr}` : "");
 
 	if (res.status === 0) {
-		if (combined.includes("Auto-Recorded")) {
-			const recordedLines = combined
+		if (combined.includes("[Sandbox Boundary Warning]")) {
+			const warningLines = combined
 				.split("\n")
-				.filter((line) => line.includes("Auto-Recorded"))
+				.filter((line) => line.includes("Warning") || line.trim().startsWith("• "))
 				.map((line) => `  ${line}`)
 				.join("\n");
-			if (recordedLines) {
-				console.log(recordedLines);
+			if (warningLines) {
+				console.log(warningLines);
 			}
 		}
 		console.log(`• ${label}: ${GREEN}通过${NC}`);
