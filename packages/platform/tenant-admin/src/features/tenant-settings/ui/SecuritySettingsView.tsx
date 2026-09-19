@@ -22,8 +22,6 @@ import { updateSecuritySettingsAction } from "../actions";
 
 export interface SecuritySettingsViewProps {
   readonly data: SecuritySettingsData;
-  /** @deprecated 请直接使用 data */
-  readonly initialData?: SecuritySettingsData;
   readonly isReadOnly?: boolean;
 }
 
@@ -39,11 +37,9 @@ const IDLE_TIMEOUT_COMBOBOX_OPTIONS = [
  * 纯受控 data 契约，Combobox 全面升级，PageShell 统一外壳
  */
 export function SecuritySettingsView({
-  data: explicitData,
-  initialData,
+  data,
   isReadOnly = false,
 }: SecuritySettingsViewProps) {
-  const data = explicitData ?? initialData!;
   const [formData, setFormData] = useState<UpdateSecuritySettingsSchemaInput>({
     sessionIdleTimeoutMinutes: data.sessionIdleTimeoutMinutes ?? 60,
     forceChangeInitialPassword: data.forceChangeInitialPassword ?? true,

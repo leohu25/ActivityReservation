@@ -21,8 +21,6 @@ import { updateGeneralSettingsAction } from "../actions";
 
 export interface GeneralSettingsViewProps {
   readonly data: GeneralSettingsData;
-  /** @deprecated 请直接使用 data */
-  readonly initialData?: GeneralSettingsData;
   readonly isReadOnly?: boolean;
 }
 
@@ -45,11 +43,9 @@ const PRECISION_COMBOBOX_OPTIONS = [
  * 纯受控 data 契约，Combobox 全面升级，PageShell 统一外壳
  */
 export function GeneralSettingsView({
-  data: explicitData,
-  initialData,
+  data,
   isReadOnly = false,
 }: GeneralSettingsViewProps) {
-  const data = explicitData ?? initialData!;
   const [formData, setFormData] = useState<UpdateGeneralSettingsSchemaInput>({
     systemName: data.systemName || "宸润数智 ERP",
     defaultPageSize: data.defaultPageSize || 10,

@@ -653,9 +653,3 @@ export function TreeFilter<T extends TreeNode = TreeNode>({
 
 /** 语义化主流别名：TreeNav 与 TreeFilter 完全等价 */
 export const TreeNav = TreeFilter;
-
-/** @deprecated 旧名称向后兼容过渡，建议统一改用主流命名 TreeFilter 或 TreeNav */
-export const DirectoryTreeFilter = TreeFilter;
-export type DirectoryTreeNode = TreeNode;
-export type DirectoryTreeFilterProps<T extends TreeNode = TreeNode> =
-	TreeFilterProps<T>;

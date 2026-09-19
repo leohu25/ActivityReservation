@@ -39,18 +39,14 @@ import { NodePropertyForm } from "./components/NodePropertyForm";
 
 export interface NavigationConfigViewProps {
   readonly data: NavigationConfigData;
-  /** @deprecated 请直接使用 data */
-  readonly initialData?: NavigationConfigData;
 }
 
 /**
  * 租户导航菜单动态配置控制台 (已解构治理：紧凑树形 + 属性配置 + 功能池)
  */
 export function NavigationConfigView({
-  data: explicitData,
-  initialData,
+  data,
 }: NavigationConfigViewProps) {
-  const data = explicitData ?? initialData!;
   const router = useSafeRouter();
   const [isPending, startTransition] = useTransition();
 

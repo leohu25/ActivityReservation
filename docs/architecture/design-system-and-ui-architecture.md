@@ -57,7 +57,7 @@
    - 保持官方无头原语特性，**落实源码所有权 (Code Ownership)**。支持就地通过 `cva()` 扩展语义变体（如 `badge.tsx`）与内嵌修复（如 `select.tsx`），杜绝 1:1 伪包装层。色彩完全依托语义变量（如 `bg-card`、`text-card-foreground`、`border-border`）；
    - 官方为通用展示卡片预置了基础内边距（如 `Card` 自带 `py-6`、`gap-6`）。
 2. **高阶业务资产与容器层 (`packages/base/ui/src/components/{data-table,auth,form,tree,layout,feedback}/*`)**：
-   - 当原子组件组装为高阶面板（例如 `DirectoryTreeFilter`）时，由于内部容器 Header 拥有独立的背景色与边框，官方原子层默认的 `py-6` 会在顶部产生 24px 的空隙白条；
+   - 当原子组件组装为高阶面板（例如 `TreeFilter`）时，由于内部容器 Header 拥有独立的背景色与边框，官方原子层默认的 `py-6` 会在顶部产生 24px 的空隙白条；
    - **允许且推荐的做法**：上层高阶组件通过 `className` 传入 `py-0 gap-0`（如 `<Card className="py-0 gap-0 ...">`）执行**结构布局重置 (Layout Padding Reset)**；
    - **原则核验**：只要覆盖的依然是结构尺寸或纯语义 Token，没有硬编码十六进制色值，就**绝对没有违反基础组件技术中立与无样式的红线**。开发时直接指明使用 `.agents/skills/shadcn/` 最佳范式 Skill。
 

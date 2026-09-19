@@ -41,7 +41,7 @@ packages/base/ui/
 │   │   │
 │   │   ├── tree/                # 【树形资产】(多级层级结构与分类维护)
 │   │   │   ├── HierarchyTree.tsx
-│   │   │   ├── DirectoryTreeFilter.tsx
+│   │   │   ├── TreeFilter.tsx
 │   │   │   └── DataTree.tsx
 │   │   │
 │   │   ├── layout/              # 【应用骨架与导航】(Shell 与系统级布局套件)
@@ -60,7 +60,7 @@ packages/base/ui/
 │   │   └── icon/                # 【图标资产】IconPicker, DynamicNavIcon
 │   │
 │   ├── hooks/                   # 通用 Hook (use-mobile 等)
-│   ├── lib/                     # 工具库 (cn, use-data-table-state, use-safe-router 等)
+│   ├── lib/                     # 工具库 (cn, use-list-search, use-safe-router 等)
 │   └── index.ts                 # 统一导出入口（无同名遮蔽、无重复覆盖，干净透明）
 ```
 

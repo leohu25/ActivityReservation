@@ -94,24 +94,6 @@ export interface DataTableProps<TData>
 	/** 完全接管筛选栏 children（仍保留查询/重置按钮）；一般业务请优先用 filterExtra */
 	filterChildren?: React.ReactNode;
 
-	/**
-	 * 关键字搜索放置位置。
-	 * @deprecated 默认列表请使用 `filter-bar`（默认值）。`toolbar` 为可选高级形态，
-	 * 业务扩展筛选请用 `filterExtra` / `statusOptions` 叠加，不要把默认能力折进抽屉。
-	 * 新页面禁止依赖 `toolbar` / `advancedFilters`；后续可能收敛移除。
-	 */
-	searchPlacement?: "filter-bar" | "toolbar";
-	/**
-	 * @deprecated 配套 `searchPlacement="toolbar"` 的抽屉触发文案。
-	 * 业务扩展请用 `filterExtra`（推荐，不废弃）。
-	 */
-	advancedTriggerText?: string;
-	/**
-	 * @deprecated 与 `searchPlacement="toolbar"` 配套的抽屉插槽。
-	 * 业务附加筛选请写在 **`filterExtra`（推荐，未废弃）**。
-	 */
-	advancedFilters?: React.ReactNode;
-
 	// ---- 表格 / 分页 ----
 	contentProps?: DataTableContentProps<TData>;
 	showPagination?: boolean;
@@ -173,9 +155,6 @@ export function DataTable<TData>({
 	onAdvancedFilter,
 	filterExtra,
 	filterChildren,
-	searchPlacement = "filter-bar",
-	advancedTriggerText = "扩展",
-	advancedFilters,
 
 	contentProps,
 	showPagination = true,
@@ -187,9 +166,7 @@ export function DataTable<TData>({
 	const resolvedPlaceholder =
 		searchPlaceholder ?? keywordPlaceholder ?? "输入关键字搜索...";
 
-	const searchInToolbar = searchPlacement === "toolbar";
 	const toolbarVisible = showToolbar ?? showHeader !== false;
-	const [advancedOpen, setAdvancedOpen] = React.useState(false);
 
 	const keywordField = showKeywordFilter ? (
 		<DataTableInputGroup label="关键字" className="min-w-[220px] sm:w-72">
@@ -275,51 +252,6 @@ export function DataTable<TData>({
 		</DataTableToolbar>
 	);
 
-	const searchResetRow = (
-		<>
-			{onSearch ? (
-				<Button className="gap-1.5 shadow-xs" onClick={onSearch}>
-					<Search data-icon="inline-start" />
-					查询
-				</Button>
-			) : null}
-			{onReset ? (
-				<Button
-					variant="outline"
-					className="gap-1.5 border-border bg-card shadow-xs hover:bg-muted/40"
-					onClick={onReset}
-				>
-					<RotateCcw data-icon="inline-start" />
-					重置
-				</Button>
-			) : null}
-		</>
-	);
-
-	const advancedTrigger =
-		searchInToolbar && (statusField || advancedFilters || filterExtra) ? (
-			<DataTableFilterDrawer
-				triggerText={advancedTriggerText}
-				activeCount={
-					(statusValue ? 1 : 0) +
-					(advancedFilters || filterExtra ? 0 : 0)
-				}
-				onReset={() => {
-					onStatusChange?.(statusAllValue);
-					onReset?.();
-				}}
-				onApply={() => {
-					onSearch?.();
-					setAdvancedOpen(false);
-				}}
-				open={advancedOpen}
-				onOpenChange={setAdvancedOpen}
-			>
-				{statusField}
-				{advancedFilters ?? filterExtra}
-			</DataTableFilterDrawer>
-		) : null;
-
 	return (
 		<DataTableRoot<TData>
 			data={data}
@@ -340,27 +272,15 @@ export function DataTable<TData>({
 				<DataTableHeader
 					title={title ?? ""}
 					description={description}
-					actions={
-						searchInToolbar ? undefined : toolbar
-					}
+					actions={toolbar}
 				/>
-			) : toolbarVisible && !searchInToolbar ? (
+			) : toolbarVisible ? (
 				<div className="flex flex-wrap items-center justify-end gap-2 px-4 pt-3">
 					{toolbar}
 				</div>
 			) : null}
 
-			{/* 封装组件标准布局：关键字与 刷新/导出/列设置/新增 同排 */}
-			{searchInToolbar ? (
-				<div className="flex flex-wrap items-center gap-2 border-b border-border/60 px-4 pb-3 pt-3">
-					<div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-						{keywordField}
-						{searchResetRow}
-						{advancedTrigger}
-					</div>
-					{toolbar}
-				</div>
-			) : showFilterBar ? (
+			{showFilterBar ? (
 				<DataTableFilterBar
 					onSearch={onSearch}
 					onReset={onReset}

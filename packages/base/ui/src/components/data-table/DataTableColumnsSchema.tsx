@@ -75,9 +75,13 @@ export function createColumnsFromSchema<TData extends object>(
       const fieldDef = shape[key];
       const isNum =
         fieldDef instanceof z.ZodNumber ||
-        (fieldDef &&
+        (fieldDef != null &&
+          typeof fieldDef === "object" &&
           "_def" in fieldDef &&
-          (fieldDef as any)._def?.typeName === "ZodNumber");
+          typeof (fieldDef as { _def?: { typeName?: string } })._def ===
+            "object" &&
+          (fieldDef as { _def?: { typeName?: string } })._def?.typeName ===
+            "ZodNumber");
 
       const override = overrides[key];
       const header = override?.header ?? fieldDef?.description ?? key;

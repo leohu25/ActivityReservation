@@ -100,7 +100,7 @@ graph TD
     - `data-table/`：企业级表格中台资产（默认 chrome：刷新/导出/列设置/新增/搜索/分页；扩展 `filterExtra`/`statusOptions`）；
     - `form/`：Zod 驱动三态表单 `FormModal` + `FormFieldSchema`/`sections`；
     - `auth/`：声明式权限守卫 `AuthGuard`、权限受控按钮 `ActionButton` 与敏感字段渲染器 `AuthField`；
-    - `tree/`：层级管理树 `HierarchyTree` 与左树右表过滤面板 `DirectoryTreeFilter`；
+    - `tree/`：层级管理树 `HierarchyTree` 与左树右表过滤面板 `TreeFilter`（别名 `TreeNav`）；
     - `layout/`：后台框架 `DashboardShell`、标签页 `TabBar`、顶部栏 `TopHeader`；
     - `feedback/`：单次确认对话框 `ConfirmDialog`、空状态 `EmptyState` 与统一 `toast`（基于 `sonner`）。
 

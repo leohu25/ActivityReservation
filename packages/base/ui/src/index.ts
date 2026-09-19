@@ -39,13 +39,6 @@ export * from "./components/DictionarySectionCard";
 export { z } from "zod";
 export * from "./lib/utils";
 export { useSafeRouter } from "./lib/use-safe-router";
-/** @deprecated 改用 defineListSearchParams + useListSearch；存量迁移后移除 */
-export { useListUrlNav, type ListUrlPatch } from "./lib/use-list-url-nav";
-/** @deprecated 改用 defineListSearchParams + useListSearch + DataTable.dataTableProps */
-export {
-	useDataTableState,
-	type UseDataTableStateOptions,
-} from "./lib/use-data-table-state";
 /** 列表 URL 契约（推荐）：server-safe，可被 RSC contract 引用 */
 export {
 	defineListSearchParams,

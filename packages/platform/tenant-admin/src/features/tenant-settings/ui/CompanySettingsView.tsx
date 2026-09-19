@@ -22,8 +22,6 @@ import { updateCompanyProfileAction } from "../actions";
 
 export interface CompanySettingsViewProps {
   readonly data: CompanyProfileData;
-  /** @deprecated 请直接使用 data */
-  readonly initialData?: CompanyProfileData;
   readonly isReadOnly?: boolean;
 }
 
@@ -48,11 +46,9 @@ const CURRENCY_OPTIONS = [
  * 企业资料设置面板：纯受控 data 契约，Combobox 升级，AuthorizedField 三态。
  */
 export function CompanySettingsView({
-  data: explicitData,
-  initialData,
+  data,
   isReadOnly = false,
 }: CompanySettingsViewProps) {
-  const data = explicitData ?? initialData!;
   const [formData, setFormData] = useState<UpdateCompanyProfileSchemaInput>({
     companyName: data.companyName || "",
     shortName: data.shortName || "",
