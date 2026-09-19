@@ -13,14 +13,19 @@ import {
   GeneralSettingsSubject,
   SecuritySettingsSubject,
 } from "./contract";
+import {
+  updateCompanyProfileSchema,
+  updateGeneralSettingsSchema,
+  updateSecuritySettingsSchema,
+  type UpdateCompanyProfileSchemaInput,
+  type UpdateGeneralSettingsSchemaInput,
+  type UpdateSecuritySettingsSchemaInput,
+} from "./schema";
 import { TenantSettingsService } from "./service";
 import type {
   CompanyProfileData,
-  UpdateCompanyProfileInput,
   GeneralSettingsData,
-  UpdateGeneralSettingsInput,
   SecuritySettingsData,
-  UpdateSecuritySettingsInput,
 } from "./types";
 
 /** 获取企业信息 Server Action */
@@ -41,7 +46,8 @@ export const getCompanyProfileAction = defineServerAction(
 
 /** 更新企业信息 Server Action */
 export const updateCompanyProfileAction = defineServerAction(
-  async (input: UpdateCompanyProfileInput): Promise<CompanyProfileData> => {
+  async (input: UpdateCompanyProfileSchemaInput): Promise<CompanyProfileData> => {
+    const validated = updateCompanyProfileSchema.parse(input);
     const { organizationId, client, ability } = await getTenantAdminContext();
     assertTenantAdminAbility(ability, StandardAction.UPDATE, CompanyProfileSubject);
 
@@ -50,7 +56,7 @@ export const updateCompanyProfileAction = defineServerAction(
       controlPrisma,
       async () => client,
     );
-    const data = await service.updateCompanyProfile(organizationId, input);
+    const data = await service.updateCompanyProfile(organizationId, validated);
 
     revalidatePath("/settings/company");
     return data;
@@ -76,7 +82,8 @@ export const getGeneralSettingsAction = defineServerAction(
 
 /** 更新基础设置 Server Action */
 export const updateGeneralSettingsAction = defineServerAction(
-  async (input: UpdateGeneralSettingsInput): Promise<GeneralSettingsData> => {
+  async (input: UpdateGeneralSettingsSchemaInput): Promise<GeneralSettingsData> => {
+    const validated = updateGeneralSettingsSchema.parse(input);
     const { organizationId, client, ability } = await getTenantAdminContext();
     assertTenantAdminAbility(ability, StandardAction.UPDATE, GeneralSettingsSubject);
 
@@ -85,7 +92,7 @@ export const updateGeneralSettingsAction = defineServerAction(
       controlPrisma,
       async () => client,
     );
-    const data = await service.updateGeneralSettings(organizationId, input);
+    const data = await service.updateGeneralSettings(organizationId, validated);
 
     revalidatePath("/settings/general");
     return data;
@@ -111,7 +118,8 @@ export const getSecuritySettingsAction = defineServerAction(
 
 /** 更新安全设置 Server Action */
 export const updateSecuritySettingsAction = defineServerAction(
-  async (input: UpdateSecuritySettingsInput): Promise<SecuritySettingsData> => {
+  async (input: UpdateSecuritySettingsSchemaInput): Promise<SecuritySettingsData> => {
+    const validated = updateSecuritySettingsSchema.parse(input);
     const { organizationId, client, ability } = await getTenantAdminContext();
     assertTenantAdminAbility(ability, StandardAction.UPDATE, SecuritySettingsSubject);
 
@@ -120,7 +128,7 @@ export const updateSecuritySettingsAction = defineServerAction(
       controlPrisma,
       async () => client,
     );
-    const data = await service.updateSecuritySettings(organizationId, input);
+    const data = await service.updateSecuritySettings(organizationId, validated);
 
     revalidatePath("/settings/security");
     return data;

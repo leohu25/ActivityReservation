@@ -12,46 +12,43 @@ import {
   Checkbox,
   Label,
   PageShell,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Combobox,
+  toast,
 } from "@base/ui";
 import { ShieldCheck, Save, Lock, Clock } from "lucide-react";
-import type {
-  SecuritySettingsData,
-  UpdateSecuritySettingsInput,
-} from "../types";
+import type { SecuritySettingsData } from "../types";
+import type { UpdateSecuritySettingsSchemaInput } from "../schema";
 import { updateSecuritySettingsAction } from "../actions";
 
 export interface SecuritySettingsViewProps {
-  readonly initialData: SecuritySettingsData;
+  readonly data: SecuritySettingsData;
+  /** @deprecated 请直接使用 data */
+  readonly initialData?: SecuritySettingsData;
   readonly isReadOnly?: boolean;
 }
 
-const IDLE_TIMEOUT_OPTIONS = [15, 30, 60, 480] as const;
-
-const IDLE_TIMEOUT_LABELS: Record<number, string> = {
-  15: "15 分钟 (高灵敏安全)",
-  30: "30 分钟 (推荐标准)",
-  60: "60 分钟 (1 小时常规)",
-  480: "480 分钟 (8 小时工作日免登)",
-};
+const IDLE_TIMEOUT_COMBOBOX_OPTIONS = [
+  { value: "15", label: "15 分钟 (高灵敏安全)" },
+  { value: "30", label: "30 分钟 (推荐标准)" },
+  { value: "60", label: "60 分钟 (1 小时常规)" },
+  { value: "480", label: "480 分钟 (8 小时工作日免登)" },
+];
 
 /**
  * 租户安全策略配置面板组件
- * 直用 PageShell + shadcn Select / Checkbox，不手写壳与原生控件。
+ * 纯受控 data 契约，Combobox 全面升级，PageShell 统一外壳
  */
 export function SecuritySettingsView({
+  data: explicitData,
   initialData,
   isReadOnly = false,
 }: SecuritySettingsViewProps) {
-  const [formData, setFormData] = useState<UpdateSecuritySettingsInput>({
-    sessionIdleTimeoutMinutes: initialData.sessionIdleTimeoutMinutes ?? 60,
-    forceChangeInitialPassword: initialData.forceChangeInitialPassword ?? true,
-    passwordMinLength: initialData.passwordMinLength ?? 8,
-    requireSpecialChar: initialData.requireSpecialChar ?? true,
+  const data = explicitData ?? initialData!;
+  const [formData, setFormData] = useState<UpdateSecuritySettingsSchemaInput>({
+    sessionIdleTimeoutMinutes: data.sessionIdleTimeoutMinutes ?? 60,
+    forceChangeInitialPassword: data.forceChangeInitialPassword ?? true,
+    passwordMinLength: data.passwordMinLength ?? 8,
+    requireSpecialChar: data.requireSpecialChar ?? true,
   });
 
   const [feedback, setFeedback] = useState<{
@@ -67,11 +64,13 @@ export function SecuritySettingsView({
     startTransition(async () => {
       const res = await updateSecuritySettingsAction(formData);
       if (res.success) {
+        toast.success("租户安全策略已成功更新并生效");
         setFeedback({
           type: "success",
           message: "租户安全策略已成功更新并生效",
         });
       } else {
+        toast.error(res.error || "保存安全策略失败，请稍后重试");
         setFeedback({
           type: "error",
           message: res.error || "保存安全策略失败，请稍后重试",
@@ -102,30 +101,21 @@ export function SecuritySettingsView({
           </CardHeader>
           <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
                 闲置自动登出超时 (分钟)
-              </Label>
-              <Select
+              </span>
+              <Combobox
                 value={String(formData.sessionIdleTimeoutMinutes ?? 60)}
-                onValueChange={(v) =>
+                options={IDLE_TIMEOUT_COMBOBOX_OPTIONS}
+                onChange={(val) =>
                   setFormData((prev) => ({
                     ...prev,
-                    sessionIdleTimeoutMinutes: Number(v),
+                    sessionIdleTimeoutMinutes: Number(val) || 60,
                   }))
                 }
+                placeholder="选择超时策略"
                 disabled={isReadOnly || isPending}
-              >
-                <SelectTrigger className="w-full text-xs">
-                  <SelectValue placeholder="选择超时策略" />
-                </SelectTrigger>
-                <SelectContent>
-                  {IDLE_TIMEOUT_OPTIONS.map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {IDLE_TIMEOUT_LABELS[n]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
           </CardContent>
         </Card>
@@ -154,7 +144,7 @@ export function SecuritySettingsView({
                   type="number"
                   min={6}
                   max={32}
-                  value={formData.passwordMinLength ?? 8}
+                  value={Number(formData.passwordMinLength ?? 8)}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
@@ -214,10 +204,10 @@ export function SecuritySettingsView({
                     htmlFor="security-require-special-char"
                     className="text-xs font-semibold text-slate-800 dark:text-slate-200 cursor-pointer"
                   >
-                    强制要求包含特殊符号 (@#$%^&*)
+                    强制要求包含特殊符号
                   </Label>
                   <p className="text-[11px] text-slate-400">
-                    提高暴力破解阻断阈值，避免弱口令安全隐患
+                    密码必须包含数字、字母及至少一个特殊字符 (!@#$%^&* 等)
                   </p>
                 </div>
               </div>

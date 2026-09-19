@@ -67,5 +67,5 @@ export default async function SettingsSecurityPage() {
   // 服务端读取安全策略设置 (通过 Server Query)
   const securitySettings = await getSecuritySettingsQuery();
 
-  return <SecuritySettingsView initialData={securitySettings} />;
+  return <SecuritySettingsView data={securitySettings} />;
 }

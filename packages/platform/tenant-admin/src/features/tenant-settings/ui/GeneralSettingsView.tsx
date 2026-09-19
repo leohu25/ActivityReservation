@@ -11,52 +11,51 @@ import {
   Button,
   Label,
   PageShell,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Combobox,
+  toast,
 } from "@base/ui";
 import { Sliders, Save } from "lucide-react";
-import type { GeneralSettingsData, UpdateGeneralSettingsInput } from "../types";
+import type { GeneralSettingsData } from "../types";
+import type { UpdateGeneralSettingsSchemaInput } from "../schema";
 import { updateGeneralSettingsAction } from "../actions";
 
 export interface GeneralSettingsViewProps {
-  readonly initialData: GeneralSettingsData;
+  readonly data: GeneralSettingsData;
+  /** @deprecated 请直接使用 data */
+  readonly initialData?: GeneralSettingsData;
   readonly isReadOnly?: boolean;
 }
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
-const PRECISION_OPTIONS = [0, 2, 3, 4] as const;
+const PAGE_SIZE_COMBOBOX_OPTIONS = [
+  { value: "10", label: "10 行 / 页" },
+  { value: "20", label: "20 行 / 页" },
+  { value: "50", label: "50 行 / 页" },
+  { value: "100", label: "100 行 / 页" },
+];
 
-const PAGE_SIZE_LABELS: Record<number, string> = {
-  10: "10 行 / 页",
-  20: "20 行 / 页",
-  50: "50 行 / 页",
-  100: "100 行 / 页",
-};
-
-const PRECISION_LABELS: Record<number, string> = {
-  0: "0 位 (整数)",
-  2: "2 位 (常规元角分)",
-  3: "3 位 (高精成本)",
-  4: "4 位 (超精密算)",
-};
+const PRECISION_COMBOBOX_OPTIONS = [
+  { value: "0", label: "0 位 (整数)" },
+  { value: "2", label: "2 位 (常规元角分)" },
+  { value: "3", label: "3 位 (高精成本)" },
+  { value: "4", label: "4 位 (超精密算)" },
+];
 
 /**
  * 租户通用基础偏好设置面板组件
- * 直用 PageShell（页头+反馈条）+ shadcn Form 零件，不手写壳。
+ * 纯受控 data 契约，Combobox 全面升级，PageShell 统一外壳
  */
 export function GeneralSettingsView({
+  data: explicitData,
   initialData,
   isReadOnly = false,
 }: GeneralSettingsViewProps) {
-  const [formData, setFormData] = useState<UpdateGeneralSettingsInput>({
-    systemName: initialData.systemName || "宸润数智 ERP",
-    defaultPageSize: initialData.defaultPageSize || 10,
-    orderPrefix: initialData.orderPrefix || "PO-",
-    dateFormat: initialData.dateFormat || "YYYY-MM-DD",
-    amountPrecision: initialData.amountPrecision ?? 2,
+  const data = explicitData ?? initialData!;
+  const [formData, setFormData] = useState<UpdateGeneralSettingsSchemaInput>({
+    systemName: data.systemName || "宸润数智 ERP",
+    defaultPageSize: data.defaultPageSize || 10,
+    orderPrefix: data.orderPrefix || "PO-",
+    dateFormat: data.dateFormat || "YYYY-MM-DD",
+    amountPrecision: data.amountPrecision ?? 2,
   });
 
   const [feedback, setFeedback] = useState<{
@@ -72,8 +71,10 @@ export function GeneralSettingsView({
     startTransition(async () => {
       const res = await updateGeneralSettingsAction(formData);
       if (res.success) {
+        toast.success("基础设置偏好已成功更新");
         setFeedback({ type: "success", message: "基础设置偏好已成功更新" });
       } else {
+        toast.error(res.error || "保存失败，请稍后重试");
         setFeedback({
           type: "error",
           message: res.error || "保存失败，请稍后重试",
@@ -124,30 +125,21 @@ export function GeneralSettingsView({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
                 默认分页大小 (行/页)
-              </Label>
-              <Select
+              </span>
+              <Combobox
                 value={String(formData.defaultPageSize ?? 10)}
-                onValueChange={(v) =>
+                options={PAGE_SIZE_COMBOBOX_OPTIONS}
+                onChange={(val) =>
                   setFormData((prev) => ({
                     ...prev,
-                    defaultPageSize: Number(v),
+                    defaultPageSize: Number(val) || 10,
                   }))
                 }
+                placeholder="选择分页大小"
                 disabled={isReadOnly || isPending}
-              >
-                <SelectTrigger className="w-full text-xs">
-                  <SelectValue placeholder="选择分页大小" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAGE_SIZE_OPTIONS.map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {PAGE_SIZE_LABELS[n]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
           </CardContent>
         </Card>
@@ -205,30 +197,21 @@ export function GeneralSettingsView({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
                 金额小数保留位数
-              </Label>
-              <Select
+              </span>
+              <Combobox
                 value={String(formData.amountPrecision ?? 2)}
-                onValueChange={(v) =>
+                options={PRECISION_COMBOBOX_OPTIONS}
+                onChange={(val) =>
                   setFormData((prev) => ({
                     ...prev,
-                    amountPrecision: Number(v),
+                    amountPrecision: val !== null ? Number(val) : 2,
                   }))
                 }
+                placeholder="选择精度"
                 disabled={isReadOnly || isPending}
-              >
-                <SelectTrigger className="w-full text-xs">
-                  <SelectValue placeholder="选择精度" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PRECISION_OPTIONS.map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {PRECISION_LABELS[n]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
           </CardContent>
         </Card>

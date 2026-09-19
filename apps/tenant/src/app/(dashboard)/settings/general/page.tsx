@@ -67,5 +67,5 @@ export default async function SettingsGeneralPage() {
   // 服务端读取基础偏好配置 (通过 Server Query)
   const generalSettings = await getGeneralSettingsQuery();
 
-  return <GeneralSettingsView initialData={generalSettings} />;
+  return <GeneralSettingsView data={generalSettings} />;
 }

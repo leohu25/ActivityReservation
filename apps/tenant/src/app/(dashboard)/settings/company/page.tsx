@@ -64,5 +64,5 @@ export default async function SettingsCompanyPage() {
   // 服务端读取企业档案数据 (通过 Server Query)
   const profile = await getCompanyProfileQuery();
 
-  return <CompanySettingsView initialData={profile} />;
+  return <CompanySettingsView data={profile} />;
 }

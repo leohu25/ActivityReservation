@@ -12,33 +12,57 @@ import {
   Button,
   Badge,
   AuthorizedField,
+  Combobox,
+  toast,
 } from "@base/ui";
 import { Building2, Save, CheckCircle2, AlertCircle } from "lucide-react";
-import type { CompanyProfileData, UpdateCompanyProfileInput } from "../types";
+import type { CompanyProfileData } from "../types";
+import type { UpdateCompanyProfileSchemaInput } from "../schema";
 import { updateCompanyProfileAction } from "../actions";
 
 export interface CompanySettingsViewProps {
-  readonly initialData: CompanyProfileData;
+  readonly data: CompanyProfileData;
+  /** @deprecated 请直接使用 data */
+  readonly initialData?: CompanyProfileData;
   readonly isReadOnly?: boolean;
 }
 
+const TIMEZONE_OPTIONS = [
+  { value: "Asia/Shanghai", label: "Asia/Shanghai (中国标准时间 UTC+8)" },
+  { value: "Asia/Hong_Kong", label: "Asia/Hong_Kong (香港时间 UTC+8)" },
+  { value: "Asia/Tokyo", label: "Asia/Tokyo (东京时间 UTC+9)" },
+  { value: "Asia/Singapore", label: "Asia/Singapore (新加坡时间 UTC+8)" },
+  { value: "Europe/London", label: "Europe/London (格林威治标准时间 UTC+0)" },
+  { value: "America/New_York", label: "America/New_York (美东时间 UTC-5)" },
+];
+
+const CURRENCY_OPTIONS = [
+  { value: "CNY", label: "CNY - 人民币 (¥)" },
+  { value: "USD", label: "USD - 美元 ($)" },
+  { value: "EUR", label: "EUR - 欧元 (€)" },
+  { value: "HKD", label: "HKD - 港币 (HK$)" },
+  { value: "JPY", label: "JPY - 日元 (¥)" },
+];
+
 /**
- * 企业资料设置面板：AuthorizedField 三态来自 AbilityProvider（settings layout）。
+ * 企业资料设置面板：纯受控 data 契约，Combobox 升级，AuthorizedField 三态。
  */
 export function CompanySettingsView({
+  data: explicitData,
   initialData,
   isReadOnly = false,
 }: CompanySettingsViewProps) {
-  const [formData, setFormData] = useState<UpdateCompanyProfileInput>({
-    companyName: initialData.companyName || "",
-    shortName: initialData.shortName || "",
-    creditCode: initialData.creditCode || "",
-    legalPerson: initialData.legalPerson || "",
-    contactPhone: initialData.contactPhone || "",
-    contactEmail: initialData.contactEmail || "",
-    address: initialData.address || "",
-    timezone: initialData.timezone || "Asia/Shanghai",
-    currency: initialData.currency || "CNY",
+  const data = explicitData ?? initialData!;
+  const [formData, setFormData] = useState<UpdateCompanyProfileSchemaInput>({
+    companyName: data.companyName || "",
+    shortName: data.shortName || "",
+    creditCode: data.creditCode || "",
+    legalPerson: data.legalPerson || "",
+    contactPhone: data.contactPhone || "",
+    contactEmail: data.contactEmail || "",
+    address: data.address || "",
+    timezone: data.timezone || "Asia/Shanghai",
+    currency: data.currency || "CNY",
   });
 
   const [feedback, setFeedback] = useState<{
@@ -49,7 +73,7 @@ export function CompanySettingsView({
   const [isPending, startTransition] = useTransition();
 
   const handleChange = (
-    field: keyof UpdateCompanyProfileInput,
+    field: keyof UpdateCompanyProfileSchemaInput,
     value: string,
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -66,8 +90,10 @@ export function CompanySettingsView({
     startTransition(async () => {
       const res = await updateCompanyProfileAction(formData);
       if (res.success) {
+        toast.success("企业资料已成功保存并同步");
         setFeedback({ type: "success", message: "企业资料已成功保存并同步" });
       } else {
+        toast.error(res.error || "保存失败，请稍后重试");
         setFeedback({
           type: "error",
           message: res.error || "保存失败，请稍后重试",
@@ -94,7 +120,7 @@ export function CompanySettingsView({
             variant="outline"
             className="text-slate-500 font-mono text-[11px]"
           >
-            {initialData.id ? `ID: ${initialData.id}` : "初始档案未固化"}
+            {data.id ? `ID: ${data.id}` : "初始档案未固化"}
           </Badge>
         </div>
       </div>
@@ -264,25 +290,27 @@ export function CompanySettingsView({
           </CardHeader>
           <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
                 企业业务时区
-              </label>
-              <Input
+              </span>
+              <Combobox
                 value={formData.timezone || "Asia/Shanghai"}
-                onChange={(e) => handleChange("timezone", e.target.value)}
-                placeholder="Asia/Shanghai"
+                options={TIMEZONE_OPTIONS}
+                onChange={(val) => handleChange("timezone", val || "Asia/Shanghai")}
+                placeholder="选择业务时区"
                 disabled={isReadOnly || isPending}
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
                 财务本位币种
-              </label>
-              <Input
+              </span>
+              <Combobox
                 value={formData.currency || "CNY"}
-                onChange={(e) => handleChange("currency", e.target.value)}
-                placeholder="CNY"
+                options={CURRENCY_OPTIONS}
+                onChange={(val) => handleChange("currency", val || "CNY")}
+                placeholder="选择财务本位币"
                 disabled={isReadOnly || isPending}
               />
             </div>
