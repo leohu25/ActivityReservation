@@ -2,9 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import type { ControlPrismaClient } from "@base/db-control";
 import type { TenantPrismaClient } from "@base/db-tenant";
-import { DepartmentService } from "./department-service";
-import { PositionService } from "./position-service";
-import { EmployeeManagementService } from "./employee-management-service";
+import { DepartmentService } from "./department/service";
+import { PositionService } from "./position/service";
+import { EmployeeManagementService } from "./employee/service";
 
 interface FakeDepartment {
   id: string;

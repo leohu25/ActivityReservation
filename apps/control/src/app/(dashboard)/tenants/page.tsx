@@ -1,16 +1,14 @@
 import React from "react";
-import { TenantsView } from "@base/feature-control-admin/tenant-management";
+import {
+  TenantsView,
+  tenantSearchParams,
+} from "@base/feature-control-admin/tenant-management";
 import { listTenantsPagedQuery } from "@base/feature-control-admin/tenant-management/server";
 
 export const dynamic = "force-dynamic";
 
 interface TenantsRouteProps {
-  searchParams: Promise<{
-    page?: string;
-    pageSize?: string;
-    keyword?: string;
-    status?: string;
-  }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 /**
@@ -19,12 +17,12 @@ interface TenantsRouteProps {
 export default async function TenantsRoute({
   searchParams,
 }: TenantsRouteProps): Promise<React.JSX.Element> {
-  const params = await searchParams;
+  const params = await tenantSearchParams.parse(searchParams);
   const pagedResult = await listTenantsPagedQuery({
-    page: Number(params.page) || 1,
-    pageSize: Number(params.pageSize) || 10,
-    keyword: params.keyword,
-    status: params.status,
+    page: params.page,
+    pageSize: params.pageSize,
+    keyword: String(params.keyword ?? "") || undefined,
+    status: String(params.status ?? "") || undefined,
   });
 
   return <TenantsView data={pagedResult.data} total={pagedResult.total} />;

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { headers } from "next/headers";
 import { getCurrentTenantContext, getServerAuthRuntime } from "@base/auth";
 import { CaslAbilityFactory, type FieldAccessMode } from "@base/authorization";
@@ -8,6 +9,32 @@ export interface TenantSubjectPermissions {
   readonly actions: readonly string[];
   readonly fieldPolicies: Readonly<Record<string, FieldAccessMode>>;
 }
+
+/**
+ * 缓存单次请求周期内的 TenantContext 与 CASL Ability
+ * 利用 React 19 cache(...) 机制：在同一个 HTTP 请求/RSC 渲染树内，
+ * 无论有多少个 Layout / Component 消费权限，只查一次数据库、只计算一次全量 Ability 实例！
+ */
+const getCachedTenantAbilityContext = cache(async () => {
+  const reqHeaders = await headers();
+  const runtime = getServerAuthRuntime();
+  const tenantCtx = await getCurrentTenantContext(reqHeaders);
+  const factory = new CaslAbilityFactory(
+    runtime.tenantContextRepository,
+    globalTenantCatalog,
+  );
+  const [ability, roleNames] = await Promise.all([
+    factory.createForTenant(tenantCtx),
+    factory.resolveMemberRoleNames(tenantCtx),
+  ]);
+
+  return {
+    factory,
+    tenantCtx,
+    ability,
+    roleNames,
+  };
+});
 
 /**
  * 在 Server Component 中获取当前登录用户针对特定 Subject 的强类型权限纯数据描述
@@ -21,14 +48,8 @@ export async function getTenantSubjectPermissions(
   subject: string,
 ): Promise<TenantSubjectPermissions> {
   try {
-    const reqHeaders = await headers();
-    const runtime = getServerAuthRuntime();
-    const tenantCtx = await getCurrentTenantContext(reqHeaders);
-    const factory = new CaslAbilityFactory(
-      runtime.tenantContextRepository,
-      globalTenantCatalog,
-    );
-    const ability = await factory.createForTenant(tenantCtx);
+    const { factory, tenantCtx, ability, roleNames } =
+      await getCachedTenantAbilityContext();
 
     const declaredActions = globalTenantCatalog.getDeclaredActions(subject);
     const allowedActions: string[] = [];
@@ -40,7 +61,6 @@ export async function getTenantSubjectPermissions(
     }
 
     // owner 全量放行（仅限契约声明动作）；字段策略经工厂公开 API 聚合
-    const roleNames = await factory.resolveMemberRoleNames(tenantCtx);
     if (roleNames.includes("owner")) {
       return toPlainData({
         actions: declaredActions,

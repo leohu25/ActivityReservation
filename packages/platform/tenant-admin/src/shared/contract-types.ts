@@ -4,7 +4,10 @@ import type {
   EmployeeSubject,
   PositionSubject,
 } from "../features/org-management/contract";
-import type { RoleManagementSubject } from "../features/role-management/contract";
+import type {
+  RoleManagementSubject,
+  RoleSubject,
+} from "../features/role-management/contract";
 import type {
   CompanyProfileSubject,
   GeneralSettingsSubject,
@@ -22,6 +25,7 @@ export type TenantAdminSubjectType =
   | DepartmentSubject
   | PositionSubject
   | EmployeeSubject
+  | RoleSubject
   | RoleManagementSubject
   | CompanyProfileSubject
   | GeneralSettingsSubject

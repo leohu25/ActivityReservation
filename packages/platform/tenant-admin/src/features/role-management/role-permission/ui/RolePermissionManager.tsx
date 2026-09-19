@@ -1,0 +1,1157 @@
+"use client";
+
+import React, { useState, useTransition, useMemo } from "react";
+import Link from "next/link";
+import {
+  Shield,
+  Save,
+  CheckCircle2,
+  AlertCircle,
+  ChevronDown,
+  ChevronRight,
+  UserCheck,
+  PackageCheck,
+  Users,
+  Settings,
+  ShieldCheck,
+  FileText,
+  Sparkles,
+  Layers,
+  Search,
+  ExternalLink,
+} from "lucide-react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Button,
+  Badge,
+  Input,
+  TreeFilter,
+  type TreeNode,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+  Combobox,
+  cn,
+} from "@base/ui";
+import {
+  DataScope,
+  FieldPolicy,
+  StandardAction,
+  useSubjectCan,
+  resolveFieldAccess,
+  type DataScopeType,
+  type FieldAccessMode,
+  type RolePermissionPayload,
+} from "@base/authorization";
+import type { TenantRoleItem } from "../../types";
+import { saveRolePermissionsAction } from "../../actions";
+import {
+  DATA_SCOPE_SELECT_OPTIONS,
+  type ModulePermissionDescriptor,
+  type PagePermissionDescriptor,
+} from "../../../../shared/public";
+import { RoleManagementSubject } from "../contract";
+
+export interface RolePermissionManagerProps {
+  readonly initialRoles: readonly TenantRoleItem[];
+  readonly activeOrgId: string;
+  readonly permissionTree?: readonly ModulePermissionDescriptor[];
+}
+
+export function RolePermissionManager({
+  initialRoles,
+  permissionTree = [],
+}: RolePermissionManagerProps) {
+  // 官方 CASL 客户端范式：校验当前用户对 RoleManagement 是否拥有 update 权限
+  const canRole = useSubjectCan(RoleManagementSubject);
+  const canUpdate = canRole("update");
+
+  // 过滤掉任何可能混入的 owner 角色（双重保护）
+  const sanitizedInitialRoles = initialRoles.filter((r) => r.role !== "owner");
+  const [roles, setRoles] = useState<TenantRoleItem[]>([
+    ...sanitizedInitialRoles,
+  ]);
+  const [selectedRoleCode, setSelectedRoleCode] = useState(
+    sanitizedInitialRoles[0]?.role || "admin",
+  );
+  const [isPending, startTransition] = useTransition();
+  const [notification, setNotification] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  // 模块展开/折叠状态：默认展开 permissionTree 中全部模块（由契约派生，禁止硬编码 moduleKey）
+  const [expandedModules, setExpandedModules] = useState<
+    Record<string, boolean>
+  >(() => {
+    const initial: Record<string, boolean> = {};
+    for (const mod of permissionTree) {
+      initial[mod.moduleKey] = true;
+    }
+    return initial;
+  });
+
+  // 展开字段控制抽屉/面板的页面 resource
+  const [expandedFieldPages, setExpandedFieldPages] = useState<
+    Record<string, boolean>
+  >({});
+
+  // 复合页面展开/折叠状态：默认全部展开
+  const [expandedCompositePages, setExpandedCompositePages] = useState<
+    Record<string, boolean>
+  >({});
+
+  const roleNavNodes: TreeNode[] = useMemo(() => {
+    return roles.map((r) => ({
+      id: r.role,
+      name: r.name,
+      code: r.role,
+      description: r.description,
+    }));
+  }, [roles]);
+
+  const selectedRole =
+    roles.find((r) => r.role === selectedRoleCode) || roles[0];
+  const isSystemRole = selectedRole?.isSystem ?? false;
+
+  const toggleModuleExpand = (moduleKey: string) => {
+    setExpandedModules((prev) => ({
+      ...prev,
+      [moduleKey]: !prev[moduleKey],
+    }));
+  };
+
+  const toggleFieldExpand = (resource: string) => {
+    setExpandedFieldPages((prev) => ({
+      ...prev,
+      [resource]: !prev[resource],
+    }));
+  };
+
+  const toggleCompositeExpand = (key: string) => {
+    setExpandedCompositePages((prev) => ({
+      ...prev,
+      [key]: !(prev[key] ?? true),
+    }));
+  };
+
+  // 角色权限变更辅助函数
+  const updateSelectedRolePermissions = (
+    nextPermissions: RolePermissionPayload,
+  ) => {
+    if (!selectedRole) return;
+    setRoles((prev) =>
+      prev.map((r) =>
+        r.role === selectedRole.role
+          ? { ...r, permissions: nextPermissions }
+          : r,
+      ),
+    );
+  };
+
+  const isPageActionChecked = (resource: string, action: string): boolean => {
+    if (!selectedRole) return false;
+    const actions = selectedRole.permissions.statement[resource] ?? [];
+    return actions.includes(action);
+  };
+
+  const getPageDataScope = (resource: string): DataScopeType => {
+    if (!selectedRole) return DataScope.DEPT;
+    const scope = selectedRole.permissions.dataScopes?.find(
+      (s) => s.resource === resource && (!s.action || s.action === "read"),
+    );
+    return scope?.scopeType ?? DataScope.DEPT;
+  };
+
+  // --- 交互处理函数 ---
+
+  // 1. 切换单个页面的指定操作 Action (联动：取消 read 则自动清理写权限与字段，勾选写权限自动补齐 read)
+  const handleTogglePageAction = (
+    page: PagePermissionDescriptor,
+    action: string,
+  ) => {
+    if (!selectedRole) return;
+    const currentActions =
+      selectedRole.permissions.statement[page.resource] ?? [];
+    const exists = currentActions.includes(action);
+
+    let nextActions: string[];
+    if (exists) {
+      if (action === StandardAction.READ) {
+        // 取消查看权限时，联动清空该页面的所有后续操作权限（皮之不存毛将焉附）
+        nextActions = [];
+      } else {
+        nextActions = currentActions.filter((a) => a !== action);
+      }
+    } else if (
+      action !== StandardAction.READ &&
+      !currentActions.includes(StandardAction.READ)
+    ) {
+      // 勾选任意非读操作时，自动补齐底层 read 查看权限
+      nextActions = [...currentActions, StandardAction.READ, action];
+    } else {
+      nextActions = [...currentActions, action];
+    }
+
+    const nextStatement = {
+      ...selectedRole.permissions.statement,
+      [page.resource]: nextActions,
+    };
+
+    updateSelectedRolePermissions({
+      ...selectedRole.permissions,
+      statement: nextStatement,
+    });
+  };
+
+  // 2. 切换单个页面/实体的全选/全不选
+  const handleTogglePageAll = (page: PagePermissionDescriptor) => {
+    if (!selectedRole) return;
+    const currentActions =
+      selectedRole.permissions.statement[page.resource] ?? [];
+    const isAllChecked = page.actions.every((a) =>
+      currentActions.includes(a.action),
+    );
+
+    const nextStatement = { ...selectedRole.permissions.statement };
+    if (isAllChecked) {
+      delete nextStatement[page.resource];
+    } else {
+      nextStatement[page.resource] = page.actions.map((a) => a.action);
+    }
+
+    updateSelectedRolePermissions({
+      ...selectedRole.permissions,
+      statement: nextStatement,
+    });
+  };
+
+  // 2.1 切换复合页面容器（包含多个子实体）全选/全不选
+  const handleTogglePageContainerAll = (page: PagePermissionDescriptor) => {
+    if (!selectedRole) return;
+    const entities =
+      page.entities && page.entities.length > 0 ? page.entities : [page];
+    const nextStatement = { ...selectedRole.permissions.statement };
+
+    const isAllChecked = entities.every((ent) => {
+      const currentActions = nextStatement[ent.resource] ?? [];
+      return ent.actions.every((a) => currentActions.includes(a.action));
+    });
+
+    if (isAllChecked) {
+      for (const ent of entities) {
+        delete nextStatement[ent.resource];
+      }
+    } else {
+      for (const ent of entities) {
+        nextStatement[ent.resource] = ent.actions.map((a) => a.action);
+      }
+    }
+
+    updateSelectedRolePermissions({
+      ...selectedRole.permissions,
+      statement: nextStatement,
+    });
+  };
+
+  // 3. 模块整组快捷全选/清空
+  const handleToggleModuleAll = (mod: ModulePermissionDescriptor) => {
+    if (!selectedRole) return;
+    const nextStatement = { ...selectedRole.permissions.statement };
+    const allEntities = mod.pages.flatMap((p) =>
+      p.entities && p.entities.length > 0 ? p.entities : [p],
+    );
+
+    const allChecked = allEntities.every((ent) => {
+      const actions = nextStatement[ent.resource] ?? [];
+      return ent.actions.every((a) => actions.includes(a.action));
+    });
+
+    if (allChecked) {
+      // 模块全清空
+      for (const ent of allEntities) {
+        delete nextStatement[ent.resource];
+      }
+    } else {
+      // 模块全选
+      for (const ent of allEntities) {
+        nextStatement[ent.resource] = ent.actions.map((a) => a.action);
+      }
+    }
+
+    updateSelectedRolePermissions({
+      ...selectedRole.permissions,
+      statement: nextStatement,
+    });
+  };
+
+  // 4. 切换数据范围
+  const handleDataScopeChange = (
+    resource: string,
+    nextScope: DataScopeType,
+  ) => {
+    if (!selectedRole) return;
+    const existing = (selectedRole.permissions.dataScopes ?? []).filter(
+      (s) => s.resource !== resource,
+    );
+    updateSelectedRolePermissions({
+      ...selectedRole.permissions,
+      dataScopes: [
+        ...existing,
+        {
+          resource,
+          action: StandardAction.READ,
+          scopeType: nextScope,
+        },
+      ],
+    });
+  };
+
+  // 5. 字段策略推导与修改（单一规则源：@base/authorization resolveFieldAccess）
+  const getFieldAccess = (
+    subject: string,
+    field: string,
+    resource: string,
+  ): FieldAccessMode => {
+    const policies = selectedRole?.permissions.fieldPolicies ?? [];
+    const found = policies.find(
+      (p) => p.subject === subject && p.field === field,
+    );
+    if (found) return found.access;
+
+    const statement = selectedRole?.permissions.statement[resource] ?? [];
+    return resolveFieldAccess({
+      hasRead: statement.includes(StandardAction.READ),
+      hasWrite:
+        statement.includes(StandardAction.CREATE) ||
+        statement.includes(StandardAction.UPDATE),
+    });
+  };
+
+  const handleToggleFieldAccess = (
+    subject: string,
+    field: string,
+    resource: string,
+    targetMode: "read" | "write",
+  ) => {
+    if (!selectedRole) return;
+    const currentAccess = getFieldAccess(subject, field, resource);
+    const policies = (selectedRole.permissions.fieldPolicies ?? []).filter(
+      (p) => !(p.subject === subject && p.field === field),
+    );
+
+    if (targetMode === "read") {
+      // 切换读状态 (HIDDEN <-> READONLY/EDITABLE)
+      if (currentAccess === FieldPolicy.HIDDEN) {
+        policies.push({
+          subject,
+          field,
+          access: FieldPolicy.READONLY,
+        });
+      } else {
+        policies.push({
+          subject,
+          field,
+          access: FieldPolicy.HIDDEN,
+        });
+      }
+    } else {
+      // 切换写状态 (READONLY <-> EDITABLE)
+      if (currentAccess === FieldPolicy.EDITABLE) {
+        policies.push({
+          subject,
+          field,
+          access: FieldPolicy.READONLY,
+        });
+      } else {
+        policies.push({
+          subject,
+          field,
+          access: FieldPolicy.EDITABLE,
+        });
+      }
+    }
+
+    updateSelectedRolePermissions({
+      ...selectedRole.permissions,
+      fieldPolicies: policies,
+    });
+  };
+
+  // 6. 保存角色权限
+  const handleSave = () => {
+    if (!selectedRole) return;
+    setNotification(null);
+    startTransition(async () => {
+      const res = await saveRolePermissionsAction(
+        selectedRole.role,
+        selectedRole.permissions,
+      );
+      if (res.success) {
+        const savedData = res.data;
+        setRoles((prev) =>
+          prev.map((r) => (r.role === savedData.role ? savedData : r)),
+        );
+        setNotification({
+          type: "success",
+          message: `角色 [${selectedRole.name}] 权限配置已成功保存生效！`,
+        });
+      } else {
+        setNotification({
+          type: "error",
+          message: res.error || "保存失败",
+        });
+      }
+    });
+  };
+
+  // 辅助渲染模块图标
+  const renderModuleIcon = (iconName: string) => {
+    switch (iconName) {
+      case "UserCheck":
+        return <UserCheck className="size-3.5 text-blue-600" />;
+      case "PackageCheck":
+        return <PackageCheck className="size-3.5 text-emerald-600" />;
+      case "Users":
+        return <Users className="size-3.5 text-indigo-600" />;
+      case "ShieldCheck":
+        return <ShieldCheck className="size-3.5 text-amber-600" />;
+      case "Settings":
+        return <Settings className="size-3.5 text-slate-600" />;
+      case "FileText":
+        return <FileText className="size-3.5 text-rose-600" />;
+      default:
+        return <Shield className="size-3.5 text-blue-600" />;
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* 顶部标题横幅 */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 pb-3.5 dark:border-slate-800">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+              角色权限配置中心
+            </h1>
+          </div>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            细粒度编排企业角色的功能操作权限、数据范围隔离与敏感字段保护策略；角色的增删由组织架构下的角色管理统一维护。
+          </p>
+        </div>
+
+        <Link
+          href="/organization/roles"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+        >
+          <Users className="size-3.5 text-blue-600" />
+          <span>管理角色字典</span>
+          <ExternalLink className="size-3 text-muted-foreground" />
+        </Link>
+      </div>
+
+      {/* 提示通知反馈栏 */}
+      {notification && (
+        <div
+          className={`flex items-center gap-2 rounded-lg p-2.5 text-xs font-semibold border ${
+            notification.type === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300"
+              : "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-300"
+          }`}
+        >
+          {notification.type === "success" ? (
+            <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+          ) : (
+            <AlertCircle className="size-4 shrink-0 text-rose-600" />
+          )}
+          <span>{notification.message}</span>
+        </div>
+      )}
+
+      {/* 紧凑型主从工作台 (左侧角色列表 3 列，右侧权限矩阵 9 列) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* 左侧：角色列表导航 (基于通用 TreeFilter 统一抽象) */}
+        <div className="lg:col-span-3">
+          <div className="lg:sticky lg:top-4 space-y-2">
+            <TreeFilter
+              title="选择配置角色"
+              icon={<Shield className="size-3.5 text-blue-600" />}
+              showAll={false}
+              totalCount={roles.length}
+              nodes={roleNavNodes}
+              selectedId={selectedRoleCode}
+              onSelect={(id) => {
+                if (id) setSelectedRoleCode(id);
+              }}
+              codePlacement="subtitle"
+              searchPlaceholder="过滤角色..."
+              maxHeight="max-h-[calc(100vh-14rem)]"
+              renderBadge={(node, isSelected) => {
+                const r = roles.find((item) => item.role === node.id);
+                if (r?.isSystem) {
+                  return (
+                    <Badge
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "text-[10px] px-1.5 py-0 h-4.5 font-normal shrink-0 transition-colors",
+                        isSelected
+                          ? "border-primary/40 bg-background/90 text-primary font-semibold shadow-2xs dark:bg-background/40"
+                          : "border-border/80 bg-muted/50 text-muted-foreground",
+                      )}
+                    >
+                      内置
+                    </Badge>
+                  );
+                }
+                if (r && !r.updatedAt) {
+                  return (
+                    <span
+                      className={cn(
+                        "text-[10px] font-normal shrink-0 transition-colors",
+                        isSelected
+                          ? "text-amber-700 font-semibold dark:text-amber-300"
+                          : "text-amber-600 dark:text-amber-400",
+                      )}
+                    >
+                      (未配置)
+                    </span>
+                  );
+                }
+                return null;
+              }}
+            />
+          </div>
+        </div>
+
+        {/* 右侧：权限配置表格与折叠树矩阵 (已移除多余的模块可见列) */}
+        <Card className="lg:col-span-9 gap-0 py-0 overflow-hidden border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-xs">
+          <CardHeader className="p-3.5 [.border-b]:pb-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                  {selectedRole?.name}
+                </CardTitle>
+                <Badge
+                  variant={isSystemRole ? "default" : "secondary"}
+                  size="sm"
+                  className="text-[10px] h-5"
+                >
+                  {isSystemRole ? "系统内置" : "自定义角色"}
+                </Badge>
+                {!selectedRole?.updatedAt && (
+                  <Badge
+                    variant="outline"
+                    size="sm"
+                    className="text-[10px] h-5 border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 font-normal"
+                  >
+                    未配置权限 (默认拒绝访问)
+                  </Badge>
+                )}
+                <span className="text-xs text-slate-400 truncate hidden sm:inline">
+                  {selectedRole?.description || "细粒度权限配置"}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {canUpdate && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleSave}
+                    disabled={isPending}
+                    className="shadow-xs shrink-0"
+                  >
+                    <Save className="size-3.5" />
+                    <span>{isPending ? "保存中..." : "保存权限"}</span>
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table className="w-full text-xs">
+                <TableHeader className="bg-muted/50 font-medium">
+                  <TableRow className="border-b border-border">
+                    <TableHead className="py-2.5 px-3 w-[360px] min-w-[360px] text-xs font-semibold text-muted-foreground">
+                      功能模块 / 页面
+                    </TableHead>
+                    <TableHead className="py-2.5 px-3 text-left text-xs font-semibold text-muted-foreground">
+                      功能操作权限 (Actions)
+                    </TableHead>
+                    <TableHead className="py-2.5 px-3 text-center w-[140px] text-xs font-semibold text-muted-foreground">
+                      数据过滤范围
+                    </TableHead>
+                    <TableHead className="py-2.5 px-2 text-center w-[90px] text-xs font-semibold text-muted-foreground">
+                      字段策略
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-border/60">
+                  {permissionTree.map((mod) => {
+                    const isExpanded = expandedModules[mod.moduleKey] ?? true;
+                    // 获取模块下所有子实体
+                    const allEntities = mod.pages.flatMap((p) =>
+                      p.entities && p.entities.length > 0 ? p.entities : [p],
+                    );
+                    // 统计当前模块下已授权实体数与总实体数
+                    const authorizedPagesCount = allEntities.filter((p) => {
+                      const actions =
+                        selectedRole?.permissions.statement[p.resource] ?? [];
+                      return actions.includes(StandardAction.READ);
+                    }).length;
+
+                    // 统计总操作权限数
+                    const authorizedActionsCount = allEntities.reduce(
+                      (sum, p) => {
+                        const actions =
+                          selectedRole?.permissions.statement[p.resource] ?? [];
+                        return sum + actions.length;
+                      },
+                      0,
+                    );
+
+                    const renderEntityRow = (
+                      entity: PagePermissionDescriptor,
+                      options: {
+                        indentClass: string;
+                        prefixSymbol: string;
+                        showPath?: boolean;
+                        displayLabel?: string;
+                      },
+                    ) => {
+                      const currentActions =
+                        selectedRole?.permissions.statement[entity.resource] ??
+                        [];
+                      const isAllChecked = entity.actions.every((a) =>
+                        currentActions.includes(a.action),
+                      );
+                      const hasRead = currentActions.includes(
+                        StandardAction.READ,
+                      );
+                      const scope = getPageDataScope(entity.resource);
+                      const supportsScope = entity.actions.some(
+                        (a) =>
+                          a.supportedScopes && a.supportedScopes.length > 0,
+                      );
+                      const hasFields =
+                        entity.configurableFields &&
+                        entity.configurableFields.length > 0;
+                      const isFieldExpanded =
+                        expandedFieldPages[entity.resource] ?? false;
+
+                      return (
+                        <React.Fragment key={entity.resource}>
+                          <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                            {/* 实体名称与全选操作 */}
+                            <td className={`py-2 px-3 ${options.indentClass}`}>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="text-slate-300 dark:text-slate-600 font-mono shrink-0">
+                                  {options.prefixSymbol}
+                                </span>
+                                <span
+                                  className={`shrink-0 ${
+                                    hasRead
+                                      ? "text-slate-900 dark:text-slate-100 font-bold"
+                                      : "text-slate-500 dark:text-slate-400 font-normal"
+                                  }`}
+                                  title={entity.label}
+                                >
+                                  {options.displayLabel || entity.label}
+                                </span>
+                                {options.showPath && entity.path && (
+                                  <span
+                                    className="text-[10px] font-mono text-slate-400 dark:text-slate-500 truncate max-w-[150px] hidden sm:inline"
+                                    title={entity.path}
+                                  >
+                                    {entity.path}
+                                  </span>
+                                )}
+                                {!options.showPath && (
+                                  <span
+                                    className="text-[10px] font-mono text-slate-400 dark:text-slate-500 bg-slate-100/80 dark:bg-slate-800/80 px-1 py-0.5 rounded truncate max-w-[140px] hidden sm:inline"
+                                    title={entity.resource}
+                                  >
+                                    {entity.resource}
+                                  </span>
+                                )}
+                                <button
+                                  type="button"
+                                  disabled={!canUpdate}
+                                  onClick={() => handleTogglePageAll(entity)}
+                                  className={`text-[10px] underline font-normal ml-1 shrink-0 ${
+                                    canUpdate
+                                      ? "text-slate-400 hover:text-blue-600"
+                                      : "text-slate-300 dark:text-slate-600 cursor-not-allowed"
+                                  }`}
+                                >
+                                  {isAllChecked ? "清空" : "全选"}
+                                </button>
+                              </div>
+                            </td>
+
+                            {/* 动作 Action 多选 Checkboxes */}
+                            <td className="py-2 px-3">
+                              <div className="flex flex-wrap items-center gap-2">
+                                {entity.actions.map((act) => {
+                                  const checked = isPageActionChecked(
+                                    entity.resource,
+                                    act.action,
+                                  );
+                                  const isRead =
+                                    act.action === StandardAction.READ;
+                                  return (
+                                    <label
+                                      key={act.action}
+                                      className={`inline-flex items-center gap-1 px-2 py-1 rounded border text-[11px] transition-colors ${
+                                        canUpdate
+                                          ? checked
+                                            ? isRead
+                                              ? "border-blue-500 bg-blue-50 text-blue-900 dark:bg-blue-950 dark:border-blue-600 dark:text-blue-100 font-bold cursor-pointer"
+                                              : "border-blue-300 bg-blue-50/60 text-blue-800 dark:bg-blue-950/40 dark:border-blue-700 dark:text-blue-200 font-medium cursor-pointer"
+                                            : "border-slate-200 bg-transparent text-slate-500 dark:border-slate-700 dark:text-slate-400 cursor-pointer"
+                                          : "opacity-60 cursor-not-allowed border-slate-200 text-slate-400 dark:border-slate-800"
+                                      }`}
+                                      title={
+                                        isRead
+                                          ? "【查看】是基础访问权限，勾选后对应菜单自动对该角色可见"
+                                          : undefined
+                                      }
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={checked}
+                                        disabled={!canUpdate}
+                                        onChange={() =>
+                                          handleTogglePageAction(
+                                            entity,
+                                            act.action,
+                                          )
+                                        }
+                                        className="size-3 rounded text-blue-600 focus:ring-blue-500 border-slate-300 disabled:cursor-not-allowed"
+                                      />
+                                      <span>{act.label}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </td>
+
+                            {/* 数据范围下拉选择 */}
+                            <td className="py-2 px-3 text-center">
+                              {supportsScope && hasRead ? (
+                                <div className="w-[120px] mx-auto">
+                                  <Combobox
+                                    value={scope}
+                                    disabled={!canUpdate}
+                                    options={DATA_SCOPE_SELECT_OPTIONS}
+                                    onChange={(val) => {
+                                      if (val) {
+                                        handleDataScopeChange(
+                                          entity.resource,
+                                          val as DataScopeType,
+                                        );
+                                      }
+                                    }}
+                                    placeholder="数据范围"
+                                  />
+                                </div>
+                              ) : (
+                                <span className="text-[11px] text-slate-400 font-mono">
+                                  -
+                                </span>
+                              )}
+                            </td>
+
+                            {/* 字段策略配置按钮 */}
+                            <td className="py-2 px-2 text-center">
+                              {hasFields ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    toggleFieldExpand(entity.resource)
+                                  }
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border transition-colors ${
+                                    isFieldExpanded
+                                      ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                                      : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300"
+                                  }`}
+                                >
+                                  <Sparkles className="size-3" />
+                                  <span>
+                                    {isFieldExpanded ? "收起" : "配置"}
+                                  </span>
+                                </button>
+                              ) : (
+                                <span className="text-[11px] text-slate-400 font-mono">
+                                  -
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+
+                          {/* 字段细粒度展开矩阵抽屉 */}
+                          {isFieldExpanded && entity.configurableFields && (
+                            <tr className="bg-slate-50/80 dark:bg-slate-800/40">
+                              <td colSpan={4} className="p-3 pl-12">
+                                <div className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 space-y-2">
+                                  <div className="flex items-center justify-between text-xs">
+                                    <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                      <Sparkles className="size-3.5 text-blue-600" />
+                                      <span>
+                                        【{entity.label}】敏感资产与字段策略
+                                      </span>
+                                    </span>
+                                    <span className="text-[11px] text-slate-400">
+                                      字段三态策略：可读、可写、隐藏
+                                    </span>
+                                  </div>
+
+                                  <Table className="w-full text-xs">
+                                    <TableHeader className="bg-muted/30">
+                                      <TableRow className="border-b border-border text-xs text-muted-foreground">
+                                        <TableHead className="py-1.5 text-left font-medium">
+                                          字段名称
+                                        </TableHead>
+                                        <TableHead className="py-1.5 text-center font-medium w-[80px]">
+                                          查看权限
+                                        </TableHead>
+                                        <TableHead className="py-1.5 text-center font-medium w-[80px]">
+                                          编辑权限
+                                        </TableHead>
+                                        <TableHead className="py-1.5 text-right font-medium w-[100px]">
+                                          生效状态
+                                        </TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody className="divide-y divide-border/60">
+                                      {entity.configurableFields.map((f) => {
+                                        const mode = getFieldAccess(
+                                          entity.subject,
+                                          f.field,
+                                          entity.resource,
+                                        );
+                                        const canRead =
+                                          mode !== FieldPolicy.HIDDEN;
+                                        const canWrite =
+                                          mode === FieldPolicy.EDITABLE;
+
+                                        return (
+                                          <TableRow key={f.field}>
+                                            <TableCell className="py-1.5">
+                                              <span className="font-medium text-foreground">
+                                                {f.label}
+                                              </span>
+                                              <span className="font-mono text-[10px] text-muted-foreground ml-1.5">
+                                                ({f.field})
+                                              </span>
+                                              {f.sensitive && (
+                                                <Badge
+                                                  variant="outline"
+                                                  size="sm"
+                                                  className="ml-1.5 text-[9px] px-1 py-0 text-amber-600 border-amber-200"
+                                                >
+                                                  敏感
+                                                </Badge>
+                                              )}
+                                            </TableCell>
+                                            <TableCell className="py-1.5 text-center">
+                                              <input
+                                                type="checkbox"
+                                                checked={canRead}
+                                                disabled={!canUpdate}
+                                                onChange={() =>
+                                                  handleToggleFieldAccess(
+                                                    entity.subject,
+                                                    f.field,
+                                                    entity.resource,
+                                                    "read",
+                                                  )
+                                                }
+                                                className="size-3.5 rounded text-primary focus:ring-primary border-border disabled:opacity-40 disabled:cursor-not-allowed"
+                                              />
+                                            </TableCell>
+                                            <TableCell className="py-1.5 text-center">
+                                              <input
+                                                type="checkbox"
+                                                checked={canWrite}
+                                                disabled={
+                                                  !canRead || !canUpdate
+                                                }
+                                                onChange={() =>
+                                                  handleToggleFieldAccess(
+                                                    entity.subject,
+                                                    f.field,
+                                                    entity.resource,
+                                                    "write",
+                                                  )
+                                                }
+                                                className="size-3.5 rounded text-primary focus:ring-primary border-border disabled:opacity-30 disabled:cursor-not-allowed"
+                                              />
+                                            </TableCell>
+                                            <TableCell className="py-1.5 text-right font-mono text-[10px]">
+                                              {mode ===
+                                                FieldPolicy.EDITABLE && (
+                                                <span className="text-emerald-600 font-bold">
+                                                  EDITABLE
+                                                </span>
+                                              )}
+                                              {mode ===
+                                                FieldPolicy.READONLY && (
+                                                <span className="text-blue-600 font-bold">
+                                                  READONLY
+                                                </span>
+                                              )}
+                                              {mode === FieldPolicy.HIDDEN && (
+                                                <span className="text-rose-500 font-bold">
+                                                  HIDDEN
+                                                </span>
+                                              )}
+                                            </TableCell>
+                                          </TableRow>
+                                        );
+                                      })}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    };
+
+                    return (
+                      <React.Fragment key={mod.moduleKey}>
+                        {/* 顶级模块分类行 (对齐菜单目录结构) */}
+                        <tr className="bg-slate-50/70 dark:bg-slate-800/30 font-semibold border-t border-slate-200/60 dark:border-slate-800">
+                          <td className="py-2.5 px-3">
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  toggleModuleExpand(mod.moduleKey)
+                                }
+                                className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500"
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="size-3.5" />
+                                ) : (
+                                  <ChevronRight className="size-3.5" />
+                                )}
+                              </button>
+                              <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+                                {renderModuleIcon(mod.iconName)}
+                                <span className="font-bold">{mod.label}</span>
+                                <button
+                                  type="button"
+                                  disabled={!canUpdate}
+                                  onClick={() => handleToggleModuleAll(mod)}
+                                  className={`text-[10px] font-normal ml-1 underline ${
+                                    canUpdate
+                                      ? "text-slate-400 hover:text-blue-600"
+                                      : "text-slate-300 dark:text-slate-600 cursor-not-allowed"
+                                  }`}
+                                >
+                                  全选本目录
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td
+                            className="py-2.5 px-3 text-slate-400 text-[11px]"
+                            colSpan={3}
+                          >
+                            <div className="flex items-center gap-2">
+                              {authorizedPagesCount > 0 ? (
+                                <span className="text-emerald-600 dark:text-emerald-400 font-medium inline-flex items-center gap-1">
+                                  <span className="size-1.5 rounded-full bg-emerald-500 inline-block" />
+                                  已授权 {authorizedPagesCount}/
+                                  {allEntities.length} 个功能模块 · 共生效{" "}
+                                  {authorizedActionsCount} 项操作
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 dark:text-slate-500 inline-flex items-center gap-1">
+                                  <span className="size-1.5 rounded-full bg-slate-300 dark:bg-slate-600 inline-block" />
+                                  未授权（该角色无权访问此目录下任何功能）
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* 模块下属页面行列表 */}
+                        {isExpanded &&
+                          mod.pages.map((page) => {
+                            const isComposite = Boolean(
+                              page.entities && page.entities.length > 1,
+                            );
+                            const subEntities =
+                              page.entities && page.entities.length > 0
+                                ? page.entities
+                                : [page];
+                            const pageKey = `${mod.moduleKey}-${page.path || page.resource}`;
+                            const isCompositeExpanded =
+                              expandedCompositePages[pageKey] ?? true;
+
+                            if (!isComposite) {
+                              return renderEntityRow(page, {
+                                indentClass: "pl-8",
+                                prefixSymbol: "└─",
+                                showPath: true,
+                              });
+                            }
+
+                            // 复合页面（包含多个实体模块）
+                            const authorizedEntitiesCount = subEntities.filter(
+                              (ent) => {
+                                const actions =
+                                  selectedRole?.permissions.statement[
+                                    ent.resource
+                                  ] ?? [];
+                                return actions.includes(StandardAction.READ);
+                              },
+                            ).length;
+
+                            const compositeActionsCount = subEntities.reduce(
+                              (sum, ent) => {
+                                const actions =
+                                  selectedRole?.permissions.statement[
+                                    ent.resource
+                                  ] ?? [];
+                                return sum + actions.length;
+                              },
+                              0,
+                            );
+
+                            const isPageAllChecked = subEntities.every(
+                              (ent) => {
+                                const actions =
+                                  selectedRole?.permissions.statement[
+                                    ent.resource
+                                  ] ?? [];
+                                return ent.actions.every((a) =>
+                                  actions.includes(a.action),
+                                );
+                              },
+                            );
+
+                            return (
+                              <React.Fragment key={pageKey}>
+                                {/* 复合页面父级容器行 */}
+                                <tr className="bg-slate-50/90 dark:bg-slate-800/40 border-t border-slate-200/60 dark:border-slate-800">
+                                  <td className="py-2.5 px-3 pl-8">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          toggleCompositeExpand(pageKey)
+                                        }
+                                        className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 shrink-0"
+                                      >
+                                        {isCompositeExpanded ? (
+                                          <ChevronDown className="size-3 text-slate-500" />
+                                        ) : (
+                                          <ChevronRight className="size-3 text-slate-500" />
+                                        )}
+                                      </button>
+                                      <Layers className="size-3.5 text-blue-500 shrink-0" />
+                                      <span
+                                        className="font-bold text-slate-800 dark:text-slate-200 shrink-0"
+                                        title={page.label}
+                                      >
+                                        {page.label}
+                                      </span>
+                                      {page.path && (
+                                        <span
+                                          className="text-[10px] font-mono text-slate-400 dark:text-slate-500 truncate max-w-[140px] hidden sm:inline"
+                                          title={page.path}
+                                        >
+                                          {page.path}
+                                        </span>
+                                      )}
+                                      <button
+                                        type="button"
+                                        disabled={!canUpdate}
+                                        onClick={() =>
+                                          handleTogglePageContainerAll(page)
+                                        }
+                                        className={`text-[10px] underline font-normal ml-1 shrink-0 ${
+                                          canUpdate
+                                            ? "text-slate-400 hover:text-blue-600"
+                                            : "text-slate-300 dark:text-slate-600 cursor-not-allowed"
+                                        }`}
+                                      >
+                                        {isPageAllChecked
+                                          ? "清空本页"
+                                          : "全选本页"}
+                                      </button>
+                                    </div>
+                                  </td>
+                                  <td
+                                    className="py-2.5 px-3 text-slate-400 text-[11px]"
+                                    colSpan={3}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      {authorizedEntitiesCount > 0 ? (
+                                        <span className="text-blue-600 dark:text-blue-400 font-medium inline-flex items-center gap-1">
+                                          <span className="size-1.5 rounded-full bg-blue-500 inline-block" />
+                                          聚合 {subEntities.length}{" "}
+                                          个数据实体模块（已授权{" "}
+                                          {authorizedEntitiesCount}/
+                                          {subEntities.length} · 共生效{" "}
+                                          {compositeActionsCount} 项操作）
+                                        </span>
+                                      ) : (
+                                        <span className="text-slate-400 dark:text-slate-500 inline-flex items-center gap-1">
+                                          <span className="size-1.5 rounded-full bg-slate-300 dark:bg-slate-600 inline-block" />
+                                          聚合 {subEntities.length}{" "}
+                                          个数据实体模块（未授权）
+                                        </span>
+                                      )}
+                                      <span className="text-slate-300 dark:text-slate-600">
+                                        |
+                                      </span>
+                                      <span className="text-[10px] text-slate-400">
+                                        请在下方展开行分别配置各模块操作与数据范围
+                                      </span>
+                                    </div>
+                                  </td>
+                                </tr>
+
+                                {/* 复合页面下属子实体行列表 */}
+                                {isCompositeExpanded &&
+                                  subEntities.map((ent, idx) =>
+                                    renderEntityRow(ent, {
+                                      indentClass: "pl-14",
+                                      prefixSymbol:
+                                        idx === subEntities.length - 1
+                                          ? "└─"
+                                          : "├─",
+                                      showPath: false,
+                                    }),
+                                  )}
+                              </React.Fragment>
+                            );
+                          })}
+                      </React.Fragment>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
