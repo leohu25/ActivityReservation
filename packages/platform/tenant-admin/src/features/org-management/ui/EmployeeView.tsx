@@ -10,8 +10,8 @@ import {
   Input,
   Button,
   Badge,
-  DirectoryTreeFilter,
-  type DirectoryTreeNode,
+  TreeFilter,
+  type TreeNode,
   ConfirmDialog,
   Table,
   TableHeader,
@@ -30,11 +30,8 @@ import {
   CheckCircle2,
   AlertCircle,
   FolderTree,
-  ChevronRight,
-  ChevronDown,
   UserCheck,
   UserX,
-  Shuffle,
   ShieldCheck,
 } from "lucide-react";
 import type {
@@ -53,8 +50,6 @@ import {
   transferRolesAction,
 } from "../actions";
 import { flattenTree, MasterDataStatus } from "@base/shared";
-import { useAbility } from "@base/authorization";
-import { EmployeeSubject } from "../employee.contract";
 
 export interface EmployeeViewProps {
   readonly initialEmployees: readonly EmployeeItem[];
@@ -63,10 +58,15 @@ export interface EmployeeViewProps {
   readonly availableRoles: readonly { role: string; name: string }[];
 }
 
-/** 扁平化部门树，供下拉选择 */
-type FlatDeptOption = ReturnType<
-  typeof flattenTree<DepartmentTreeNode>
->[number];
+function mapDeptToTreeNodes(nodes: readonly DepartmentTreeNode[]): TreeNode[] {
+  return nodes.map((d) => ({
+    id: d.id,
+    name: d.name,
+    code: d.code,
+    badge: d.employeeCount > 0 ? d.employeeCount : undefined,
+    children: d.children ? mapDeptToTreeNodes(d.children) : undefined,
+  }));
+}
 
 /**
  * 员工档案与人事调动中心面板组件 (现代数智工业风)
@@ -78,9 +78,6 @@ export function EmployeeView({
   positions,
   availableRoles,
 }: EmployeeViewProps) {
-  const ability = useAbility();
-  const canUpdate = ability.can("update", EmployeeSubject);
-  const canCreate = ability.can("create", EmployeeSubject);
   const [employees, setEmployees] =
     useState<readonly EmployeeItem[]>(initialEmployees);
 
@@ -90,11 +87,6 @@ export function EmployeeView({
   const [searchKeyword, setSearchKeyword] = useState("");
   const [selectedPositionId, setSelectedPositionId] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
-  const [treeExpandedIds, setTreeExpandedIds] = useState<Set<string>>(() => {
-    const set = new Set<string>();
-    for (const d of departmentTree) set.add(d.id);
-    return set;
-  });
 
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
@@ -330,71 +322,6 @@ export function EmployeeView({
     });
   };
 
-  // 递归渲染左侧部门树过滤项
-  const renderDeptFilterTree = (
-    nodes: readonly DepartmentTreeNode[],
-    depth = 0,
-  ) => {
-    return (
-      <div className="space-y-0.5">
-        {nodes.map((node) => {
-          const isSelected = selectedDeptId === node.id;
-          const hasChildren = node.children && node.children.length > 0;
-          const isExpanded = treeExpandedIds.has(node.id);
-
-          return (
-            <div key={node.id}>
-              <div
-                className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition-colors cursor-pointer ${
-                  isSelected
-                    ? "bg-blue-50 text-blue-700 font-bold dark:bg-blue-950/40 dark:text-blue-300"
-                    : "text-slate-600 hover:bg-slate-100/70 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
-                }`}
-                style={{ paddingLeft: `${depth * 14 + 10}px` }}
-                onClick={() => handleDeptSelect(node.id)}
-              >
-                <div className="flex items-center gap-1.5 truncate">
-                  {hasChildren ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setTreeExpandedIds((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(node.id)) next.delete(node.id);
-                          else next.add(node.id);
-                          return next;
-                        });
-                      }}
-                      className="size-4 flex items-center justify-center text-slate-400 hover:text-slate-700"
-                    >
-                      {isExpanded ? (
-                        <ChevronDown className="size-3 text-blue-600" />
-                      ) : (
-                        <ChevronRight className="size-3" />
-                      )}
-                    </button>
-                  ) : (
-                    <span className="size-4 flex items-center justify-center text-slate-300">
-                      •
-                    </span>
-                  )}
-                  <span className="truncate">{node.name}</span>
-                </div>
-                <span className="text-[10px] text-slate-400 font-mono">
-                  {node.employeeCount}
-                </span>
-              </div>
-              {hasChildren &&
-                isExpanded &&
-                renderDeptFilterTree(node.children, depth + 1)}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-6">
       {/* 顶部标题与直接建号操作 */}
@@ -437,22 +364,13 @@ export function EmployeeView({
 
       {/* 左右分栏布局 */}
       <div className="flex flex-col gap-6 lg:flex-row items-start">
-        {/* 左栏：基于官方通用 DirectoryTreeFilter 的部门架构过滤树 */}
+        {/* 左栏：基于官方通用 TreeFilter 的部门架构过滤树 */}
         <div className="w-full lg:w-64 shrink-0">
-          <DirectoryTreeFilter
+          <TreeFilter
             title="部门级联过滤"
             allLabel="全公司所有员工"
             totalCount={employees.length}
-            nodes={departmentTree.map((d) => ({
-              id: d.id,
-              name: d.name,
-              code: d.code,
-              badge: d.employeeCount > 0 ? d.employeeCount : undefined,
-              // SAFETY: DepartmentTreeNode 递归映射至 DirectoryTreeNode
-              children: d.children
-                ? (d.children as unknown as DirectoryTreeNode[])
-                : undefined,
-            }))}
+            nodes={mapDeptToTreeNodes(departmentTree)}
             selectedId={selectedDeptId}
             onSelect={(id) => handleDeptSelect(id)}
             searchPlaceholder="过滤部门..."

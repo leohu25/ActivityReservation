@@ -28,12 +28,15 @@ import {
   Button,
   Badge,
   Input,
+  TreeFilter,
+  type TreeNode,
   Table,
   TableHeader,
   TableBody,
   TableHead,
   TableRow,
   TableCell,
+  cn,
 } from "@base/ui";
 import {
   DataScope,
@@ -103,19 +106,14 @@ export function RolePermissionManager({
     Record<string, boolean>
   >({});
 
-  // 角色搜索关键字 (左侧快速检索)
-  const [roleSearchKeyword, setRoleSearchKeyword] = useState("");
-
-  const filteredRoles = useMemo(() => {
-    const q = roleSearchKeyword.trim().toLowerCase();
-    if (!q) return roles;
-    return roles.filter(
-      (r) =>
-        r.role.toLowerCase().includes(q) ||
-        r.name.toLowerCase().includes(q) ||
-        (r.description && r.description.toLowerCase().includes(q)),
-    );
-  }, [roles, roleSearchKeyword]);
+  const roleNavNodes: TreeNode[] = useMemo(() => {
+    return roles.map((r) => ({
+      id: r.role,
+      name: r.name,
+      code: r.role,
+      description: r.description,
+    }));
+  }, [roles]);
 
   const selectedRole =
     roles.find((r) => r.role === selectedRoleCode) || roles[0];
@@ -477,77 +475,57 @@ export function RolePermissionManager({
 
       {/* 紧凑型主从工作台 (左侧角色列表 3 列，右侧权限矩阵 9 列) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* 左侧：角色列表导航 (独立 Grid 列撑开滑动轨道，内部容器执行绝对可靠 sticky) */}
+        {/* 左侧：角色列表导航 (基于通用 TreeFilter 统一抽象) */}
         <div className="lg:col-span-3">
           <div className="lg:sticky lg:top-4 space-y-2">
-            <Card className="gap-0 py-0 overflow-hidden border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-xs">
-              <CardHeader className="p-3 [.border-b]:pb-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-xs font-bold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
-                    <Shield className="size-3.5 text-blue-600" />
-                    <span>选择配置角色</span>
-                  </CardTitle>
-                  <span className="text-[11px] font-mono text-slate-400">
-                    {roles.length} 个角色
-                  </span>
-                </div>
-                {/* 角色快速过滤框 */}
-                <div className="relative mt-2">
-                  <Search className="absolute left-2 top-2 size-3 text-muted-foreground" />
-                  <Input
-                    value={roleSearchKeyword}
-                    onChange={(e) => setRoleSearchKeyword(e.target.value)}
-                    placeholder="过滤角色..."
-                    className="h-7 pl-7 text-xs bg-white dark:bg-slate-900"
-                  />
-                </div>
-              </CardHeader>
-              <CardContent className="p-2 space-y-1 max-h-[calc(100vh-14rem)] overflow-y-auto">
-                {filteredRoles.length === 0 ? (
-                  <div className="py-6 text-center text-xs text-muted-foreground">
-                    未匹配到角色
-                  </div>
-                ) : (
-                  filteredRoles.map((r) => {
-                    const active = r.role === selectedRoleCode;
-                    return (
-                      <div
-                        key={r.role}
-                        onClick={() => setSelectedRoleCode(r.role)}
-                        className={`group flex items-center justify-between rounded-lg px-2.5 py-2 text-xs cursor-pointer transition-all border ${
-                          active
-                            ? "border-blue-600/30 bg-blue-50/80 text-blue-900 font-bold shadow-xs dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-100"
-                            : "border-transparent hover:bg-slate-50 text-slate-700 dark:text-slate-300 dark:hover:bg-slate-800/50"
-                        }`}
-                      >
-                        <div className="min-w-0 pr-2">
-                          <div className="flex items-center gap-1.5 truncate">
-                            <span className="truncate">{r.name}</span>
-                            {r.isSystem && (
-                              <Badge
-                                variant="outline"
-                                size="sm"
-                                className="text-[10px] px-1 py-0 h-4 border-slate-200 dark:border-slate-700 text-slate-500 font-normal shrink-0"
-                              >
-                                内置
-                              </Badge>
-                            )}
-                            {!r.updatedAt && (
-                              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-normal shrink-0">
-                                (未配置)
-                              </span>
-                            )}
-                          </div>
-                          <div className="font-mono text-[10px] text-slate-400 truncate">
-                            {r.role}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </CardContent>
-            </Card>
+            <TreeFilter
+              title="选择配置角色"
+              icon={<Shield className="size-3.5 text-blue-600" />}
+              showAll={false}
+              totalCount={roles.length}
+              nodes={roleNavNodes}
+              selectedId={selectedRoleCode}
+              onSelect={(id) => {
+                if (id) setSelectedRoleCode(id);
+              }}
+              codePlacement="subtitle"
+              searchPlaceholder="过滤角色..."
+              maxHeight="max-h-[calc(100vh-14rem)]"
+              renderBadge={(node, isSelected) => {
+                const r = roles.find((item) => item.role === node.id);
+                if (r?.isSystem) {
+                  return (
+                    <Badge
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "text-[10px] px-1.5 py-0 h-4.5 font-normal shrink-0 transition-colors",
+                        isSelected
+                          ? "border-primary/40 bg-background/90 text-primary font-semibold shadow-2xs dark:bg-background/40"
+                          : "border-border/80 bg-muted/50 text-muted-foreground",
+                      )}
+                    >
+                      内置
+                    </Badge>
+                  );
+                }
+                if (r && !r.updatedAt) {
+                  return (
+                    <span
+                      className={cn(
+                        "text-[10px] font-normal shrink-0 transition-colors",
+                        isSelected
+                          ? "text-amber-700 font-semibold dark:text-amber-300"
+                          : "text-amber-600 dark:text-amber-400",
+                      )}
+                    >
+                      (未配置)
+                    </span>
+                  );
+                }
+                return null;
+              }}
+            />
           </div>
         </div>
 

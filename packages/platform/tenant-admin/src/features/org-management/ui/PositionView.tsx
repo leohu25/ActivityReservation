@@ -27,12 +27,9 @@ import type { PositionItem } from "../types";
 
 export interface PositionViewProps {
   /** 服务端岗位列表数据 */
-  data?: PositionItem[];
+  data: PositionItem[];
   /** 服务端总数 */
-  total?: number;
-
-  /** 向后兼容旧 props */
-  initialPositions?: readonly PositionItem[];
+  total: number;
 }
 
 /**
@@ -41,12 +38,9 @@ export interface PositionViewProps {
  * 基于标准 DataTable 与 URL-as-State (nuqs) 驱动
  */
 export function PositionView({
-  data: propData,
-  total: propTotal,
-  initialPositions,
+  data,
+  total,
 }: PositionViewProps) {
-  const data = (propData ?? initialPositions ?? []) as PositionItem[];
-  const total = propTotal ?? data.length;
 
   const ability = useAbility();
   const list = useListSearch(positionSearchParams);

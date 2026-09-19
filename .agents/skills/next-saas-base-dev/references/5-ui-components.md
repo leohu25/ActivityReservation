@@ -12,7 +12,7 @@
 | **2. 高阶表格资产 (Data Table)**     | `packages/base/ui/src/components/data-table/` | `DataTable`, `DataTableRoot`, `DataTableRowActions`, `DataTablePagination`, `DetailTable` 等 | 完整业务表格工作区，负责搜索、分面过滤、分页、列配置、Action 权限接管与 CSV 导出。                                                                                |
 | **3. 权限基础设施 (Auth Guards)**    | `packages/base/ui/src/components/auth/`       | `ActionButton`, `ActionGroup`, `AuthGuard`, `AuthField`, `UiAbilityProvider` 等              | 注入 CASL 强类型权限判定、三态权限控制与防误删门禁，解耦业务与权限规则。                                                                                          |
 | **4. 高阶表单与弹窗 (Form & Modal)** | `packages/base/ui/src/components/form/`       | `FormModal`, `Combobox`, `DatePicker`, `FormDrawer`, `FormFields`, `FormLayout` 等           | Zod Schema 运行时校验驱动的三态表单（create/edit/view）、复杂单据录入与内置明细表联动。                                                                           |
-| **5. 树形工作台 (Tree)**             | `packages/base/ui/src/components/tree/`       | `HierarchyTree`, `DirectoryTreeFilter`, `DataTree` 等                                        | 组织架构、商品分类等层级数据维护、左树右表过滤与同级排序。                                                                                                        |
+| **5. 树形工作台 (Tree)**             | `packages/base/ui/src/components/tree/`       | `HierarchyTree`, `TreeFilter`, `TreeNav`, `DataTree` 等                                      | 组织架构、商品分类等层级数据维护、左树右表过滤与同级排序。                                                                                                        |
 | **6. 应用布局与外壳 (Layout)**       | `packages/base/ui/src/components/layout/`     | `DashboardShell`, `TabBar`, `TopHeader`, `AppSidebar`, `MasterDetailShell`, `PageShell` 等   | 双端应用级主框架外壳、现代 ERP 多标签页、面包屑与自适应主从联动骨架。                                                                                             |
 | **7. 交互反馈套件 (Feedback)**       | `packages/base/ui/src/components/feedback/`   | `ConfirmDialog`, `EmptyState`, `Toast` (基于 `sonner`) 等                                    | 全局统一反馈事实源、破坏性操作二次确认、空状态引导。                                                                                                              |
 
@@ -604,4 +604,60 @@ export function XxxView({ data, total, options }: Props) {
 }
 // 删除/状态变更：调用 Server Action；
 // Action 内 revalidatePath 自愈，客户端不 router.refresh()
+```
+
+---
+
+## 5. 通用树形筛选与导航组件 (`TreeFilter` / `TreeNav`)
+
+在现代 B 端“左树右表”或“左侧导航 + 右侧矩阵”布局中（如：部门架构管理、员工人事过滤、角色权限配置中心等），**必须统一采用 `@base/ui` 导出的 `TreeFilter`（主流语义别名 `TreeNav`）**，严禁在业务切片内手写私有树、独立卡片列表或带静态事件的裸 `div` 布局。
+
+### 5.1 核心原则与架构规范
+
+1. **彻底业务中立**：默认配置杜绝写死“全公司所有部门”等领域特定文案。默认 `allLabel="全部"`，标题自定；
+2. **模式自适应**：
+   - **过滤树模式**（`showAll={true}`，默认）：顶部常驻“全部”根项汇总，点击传 `null`；
+   - **单选导航模式**（`showAll={false}`）：无“全部”项，用于必须选中具体实体（如角色配置中心）；
+3. **递归搜索与祖先保全算法**：
+   - 过滤算法必须满足：若某子节点或孙节点命中关键字，**其祖先链路上的所有父节点必须自动保留在渲染树中**；
+   - 搜索进行时，算法**自动将所有匹配节点的祖先 ID 纳入展开集合**，无需用户手动逐层点击寻找；
+4. **全链路强类型（TypeScript Generics，零 `any`）**：
+   - 节点类型规范：统一使用 `TreeNode`（别名 `TreeFilterNode` / `TreeNavNode`）；
+   - 属性涵盖：`id`, `name`, `code?`, `description?`, `badge?`, `icon?`, `disabled?`, `children?`；
+5. **语义化与无障碍 (A11y)**：
+   - 折叠指示器与节点标题独立为语义化 `<button type="button">`，严禁在静态 `<div>` 上直接绑定 `onClick` 或手写伪按钮角色。
+
+### 5.2 标准使用范式
+
+```tsx
+import { TreeFilter, type TreeNode } from "@base/ui";
+
+// 1. 左树右表部门架构过滤树
+<TreeFilter
+  title="部门组织拓扑"
+  allLabel="全公司所有部门"
+  totalCount={departments.length}
+  nodes={departmentTreeNodes}
+  selectedId={selectedDeptId}
+  onSelect={(id) => setSelectedDeptId(id)}
+  cascadeToggle={{
+    checked: includeChildren,
+    onChange: setIncludeChildren,
+    label: "包含下级所有子部门",
+  }}
+  searchPlaceholder="搜索部门名称或编码..."
+/>
+
+// 2. 左侧角色导航列表 (单选模式，showAll=false)
+<TreeFilter
+  title="选择配置角色"
+  icon={<Shield className="size-3.5 text-primary" />}
+  showAll={false}
+  totalCount={roles.length}
+  nodes={roleNodes}
+  selectedId={selectedRoleCode}
+  onSelect={(id) => { if (id) setSelectedRoleCode(id); }}
+  searchPlaceholder="过滤角色..."
+  maxHeight="max-h-[calc(100vh-14rem)]"
+/>
 ```

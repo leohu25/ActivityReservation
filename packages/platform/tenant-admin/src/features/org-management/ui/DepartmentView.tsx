@@ -5,11 +5,11 @@ import { StandardAction } from "@base/authorization";
 import {
   Badge,
   PageShell,
-  DirectoryTreeFilter,
+  TreeFilter,
   DataTable,
   DataTableRowActions,
   type ColumnDef,
-  type DirectoryTreeNode,
+  type TreeNode,
 } from "@base/ui";
 import { Building, Users, FolderTree } from "lucide-react";
 import type { DepartmentTreeNode } from "../types";
@@ -81,7 +81,7 @@ function flattenTreeWithMeta(
 
 function convertToFilterNodes(
   nodes: readonly DepartmentTreeNode[],
-): DirectoryTreeNode[] {
+): TreeNode[] {
   return nodes.map((n) => ({
     id: n.id,
     name: n.name,
@@ -91,10 +91,37 @@ function convertToFilterNodes(
   }));
 }
 
+function collectDescendantIds(
+  nodes: readonly DepartmentTreeNode[],
+  targetId: string,
+): Set<string> {
+  const ids = new Set<string>();
+  const findAndCollect = (list: readonly DepartmentTreeNode[]) => {
+    for (const n of list) {
+      if (n.id === targetId) {
+        ids.add(n.id);
+        const addChildren = (children?: readonly DepartmentTreeNode[]) => {
+          if (!children) return;
+          for (const c of children) {
+            ids.add(c.id);
+            addChildren(c.children);
+          }
+        };
+        addChildren(n.children);
+        return true;
+      }
+      if (n.children && findAndCollect(n.children)) return true;
+    }
+    return false;
+  };
+  findAndCollect(nodes);
+  return ids;
+}
+
 /**
  * 现代企业部门架构管理面板
  * 布局：【左树右表】
- * - 左侧：DirectoryTreeFilter 部门拓扑导航树
+ * - 左侧：TreeFilter 部门拓扑导航树
  * - 右侧：DataTable.Workspace 官方 CRUD 标准工作台（支持关键字、新增、编辑、删除等完整生命周期）
  */
 export function DepartmentView({ initialTree }: DepartmentViewProps) {
@@ -161,33 +188,7 @@ export function DepartmentView({ initialTree }: DepartmentViewProps) {
     [treeData],
   );
 
-  // 递归收集某个节点及其所有后代节点 ID
-  const collectDescendantIds = (
-    nodes: readonly DepartmentTreeNode[],
-    targetId: string,
-  ): Set<string> => {
-    const ids = new Set<string>();
-    const findAndCollect = (list: readonly DepartmentTreeNode[]) => {
-      for (const n of list) {
-        if (n.id === targetId) {
-          ids.add(n.id);
-          const addChildren = (children?: readonly DepartmentTreeNode[]) => {
-            if (!children) return;
-            for (const c of children) {
-              ids.add(c.id);
-              addChildren(c.children);
-            }
-          };
-          addChildren(n.children);
-          return true;
-        }
-        if (n.children && findAndCollect(n.children)) return true;
-      }
-      return false;
-    };
-    findAndCollect(nodes);
-    return ids;
-  };
+  // 递归收集某个节点及其所有后代节点 ID 见外部纯函数 collectDescendantIds
 
   // 右侧表格过滤逻辑
   const filteredRows = useMemo(() => {
@@ -323,9 +324,9 @@ export function DepartmentView({ initialTree }: DepartmentViewProps) {
       onDismissFeedback={() => setFeedback(null)}
     >
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-        {/* 左侧：通用 DirectoryTreeFilter 部门拓扑导航面板 */}
+        {/* 左侧：通用 TreeFilter 部门拓扑导航面板 */}
         <div className="lg:col-span-1">
-          <DirectoryTreeFilter
+          <TreeFilter
             title="部门组织拓扑"
             allLabel="全公司所有部门"
             totalCount={allRows.length}

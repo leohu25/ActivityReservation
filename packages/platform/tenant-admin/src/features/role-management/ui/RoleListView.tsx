@@ -1,152 +1,79 @@
 "use client";
 
-import { useState, useMemo, useTransition, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   DataTable,
   Badge,
   DataTableRowActions,
   toast,
-  ConfirmDialog,
-  useListUrlNav,
+  useListSearch,
   type ColumnDef,
 } from "@base/ui";
 import { ShieldAlert, ShieldCheck, KeyRound, ExternalLink } from "lucide-react";
 import Link from "next/link";
-import { useAbility } from "@base/authorization";
 import type { TenantRoleItem } from "../types";
-import { RoleSubject } from "../contract";
-import { deleteRoleAction, listRolesAction } from "../actions";
-import { CreateRoleModal } from "./CreateRoleModal";
-import { EditRoleModal } from "./EditRoleModal";
+import {
+  RoleSubject,
+  roleSearchParams,
+  RoleField,
+} from "../contract";
+import { deleteRoleAction } from "../actions";
+import { RoleFormModal } from "./RoleFormModal";
 
 export interface RoleListViewProps {
-  readonly initialRoles: readonly TenantRoleItem[];
-  readonly initialTotal?: number;
-  readonly initialPage?: number;
-  readonly initialPageSize?: number;
-  readonly initialKeyword?: string;
+  /** 服务端角色列表数据 */
+  data: TenantRoleItem[];
+  /** 服务端总记录数 */
+  total: number;
 }
 
 /**
  * 组织架构 - 角色字典与管理中心 (现代数智工业风)
- * 沉淀完整闭环的企业级 CRUD (Create, Read, Update, Delete) + 服务端分页与搜索下推
+ * 沉淀完整闭环的企业级 CRUD (Create, Read, Update, Delete) + URL-as-State (nuqs)
  */
 export function RoleListView({
-  initialRoles,
-  initialTotal,
-  initialPage = 1,
-  initialPageSize = 10,
-  initialKeyword = "",
+  data,
+  total,
 }: RoleListViewProps) {
-  const ability = useAbility();
-  const canCreate = ability.can("create", RoleSubject);
-  const canUpdate = ability.can("update", RoleSubject);
-  const canDelete = ability.can("delete", RoleSubject);
+  const list = useListSearch(roleSearchParams);
 
-  const { navigateList, router } = useListUrlNav();
+  const [modalState, setModalState] = useState<{
+    open: boolean;
+    mode: "create" | "edit" | "view";
+    record?: TenantRoleItem | null;
+  }>({
+    open: false,
+    mode: "create",
+    record: null,
+  });
 
-  const [roles, setRoles] = useState<readonly TenantRoleItem[]>(initialRoles);
-  const [total, setTotal] = useState(initialTotal ?? initialRoles.length);
-  const [page, setPage] = useState(initialPage);
-  const [pageSize, setPageSize] = useState(initialPageSize);
-  const [keyword, setKeyword] = useState(initialKeyword);
-
-  // 当 Server Component 传入更新的 Props 时同步
-  useEffect(() => {
-    setRoles(initialRoles);
-    setTotal(initialTotal ?? initialRoles.length);
-    setPage(initialPage);
-    setPageSize(initialPageSize);
-    setKeyword(initialKeyword);
-  }, [
-    initialRoles,
-    initialTotal,
-    initialPage,
-    initialPageSize,
-    initialKeyword,
-  ]);
-
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState<TenantRoleItem | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<TenantRoleItem | null>(null);
-  const [isDeleting, startDeleteTransition] = useTransition();
-
-  const refreshRoles = async (
-    curPage = page,
-    curSize = pageSize,
-    curKw = keyword,
-  ) => {
-    const res = await listRolesAction({
-      page: curPage,
-      pageSize: curSize,
-      keyword: curKw.trim() || undefined,
-    });
-    if (res.success && res.data) {
-      setRoles(res.data.items);
-      setTotal(res.data.total);
-      setPage(res.data.page);
-      setPageSize(res.data.pageSize);
-    }
-  };
-
-  const handleSearch = () => {
-    navigateList({
-      page: 1,
-      pageSize,
-      keyword: keyword.trim() || undefined,
-    });
-    refreshRoles(1, pageSize, keyword);
-  };
-
-  const handleReset = () => {
-    setKeyword("");
-    navigateList({
-      page: 1,
-      pageSize,
-      keyword: undefined,
-    });
-    refreshRoles(1, pageSize, "");
-  };
-
-  const handlePageChange = (nextPage: number, nextPageSize: number) => {
-    setPage(nextPage);
-    setPageSize(nextPageSize);
-    navigateList({
-      page: nextPage,
-      pageSize: nextPageSize,
-      keyword: keyword.trim() || undefined,
-    });
-    refreshRoles(nextPage, nextPageSize, keyword);
-  };
-
-  const handleDelete = (roleItem: TenantRoleItem) => {
-    if (roleItem.isSystem) {
-      toast.error("系统内置角色严禁删除");
-      return;
-    }
-    setDeleteTarget(roleItem);
-  };
-
-  const confirmDelete = () => {
-    if (!deleteTarget) return;
-    startDeleteTransition(async () => {
-      const res = await deleteRoleAction(deleteTarget.role);
-      if (res.success) {
-        toast.success(`角色 [${deleteTarget.name}] 已成功删除`);
-        setDeleteTarget(null);
-        await refreshRoles();
-      } else {
-        toast.error(res.error || "删除角色失败");
+  const handleDelete = useCallback(
+    async (roleItem: TenantRoleItem) => {
+      if (roleItem.isSystem) {
+        toast.error("系统内置角色严禁删除");
+        return;
       }
-    });
-  };
+      try {
+        const res = await deleteRoleAction(roleItem.role);
+        if (res.success) {
+          toast.success(`角色 [${roleItem.name}] 已成功删除`);
+        } else {
+          toast.error(res.error || "删除角色失败");
+        }
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "删除异常");
+      }
+    },
+    [],
+  );
 
   const columns: ColumnDef<TenantRoleItem>[] = useMemo(
     () => [
       {
         id: "roleCode",
+        field: RoleField.ROLE,
         header: "角色标识 (Role Code)",
-        cell: (row) => (
+        cell: (row: TenantRoleItem) => (
           <div className="flex items-center gap-2">
             <div className="flex size-7 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
               {row.isSystem ? (
@@ -168,8 +95,9 @@ export function RoleListView({
       },
       {
         id: "name",
+        field: RoleField.NAME,
         header: "角色名称",
-        cell: (row) => (
+        cell: (row: TenantRoleItem) => (
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-900 dark:text-slate-100">
               {row.name}
@@ -196,8 +124,9 @@ export function RoleListView({
       },
       {
         id: "description",
+        field: RoleField.DESCRIPTION,
         header: "职责描述",
-        cell: (row) => (
+        cell: (row: TenantRoleItem) => (
           <span
             className="text-xs text-muted-foreground truncate max-w-[320px] inline-block"
             title={row.description || ""}
@@ -209,7 +138,7 @@ export function RoleListView({
       {
         id: "status",
         header: "权限编排状态",
-        cell: (row) => {
+        cell: (row: TenantRoleItem) => {
           const statementKeys = Object.keys(row.permissions?.statement ?? {});
           const hasPolicies = statementKeys.length > 0;
           return (
@@ -231,7 +160,7 @@ export function RoleListView({
       {
         id: "actions",
         header: "操作",
-        cell: (row) => (
+        cell: (row: TenantRoleItem) => (
           <div className="flex items-center gap-2">
             <Link
               href="/settings/roles"
@@ -244,11 +173,18 @@ export function RoleListView({
 
             <DataTableRowActions<TenantRoleItem>
               record={row}
-              hideView
-              hideEdit={row.isSystem || !canUpdate}
-              hideDelete={row.isSystem || !canDelete}
-              onEdit={(r) => setEditingRole(r)}
-              onDelete={() => handleDelete(row)}
+              onView={() =>
+                setModalState({ open: true, mode: "view", record: row })
+              }
+              onEdit={
+                row.isSystem
+                  ? undefined
+                  : () =>
+                      setModalState({ open: true, mode: "edit", record: row })
+              }
+              onDelete={
+                row.isSystem ? undefined : () => handleDelete(row)
+              }
               deleteConfirm={{
                 title: `确认删除业务角色 [${row.name}] 吗？`,
                 description:
@@ -260,73 +196,40 @@ export function RoleListView({
         ),
       },
     ],
-    [canUpdate, canDelete],
+    [handleDelete],
   );
 
   return (
-    <div className="space-y-4">
-      <DataTable
+    <>
+      <DataTable<TenantRoleItem>
         title="企业角色管理"
         description="管理租户下的所有组织角色字典与完整生命周期，支持角色新增、重命名与描述编辑、安全删除，并直达权限配置中心编排权限矩阵"
-        rowKey={(r) => r.role}
+        rowKey={(r: TenantRoleItem) => r.role}
         subject={RoleSubject}
-        data={roles as TenantRoleItem[]}
+        data={data}
         columns={columns}
-        page={page}
-        pageSize={pageSize}
         total={total}
-        onPageChange={handlePageChange}
-        showRefresh
-        showCreate={canCreate}
+        {...list.dataTableProps}
+        onCreate={() =>
+          setModalState({ open: true, mode: "create", record: null })
+        }
         createText="新建业务角色"
-        onCreate={() => setIsCreateOpen(true)}
-        onRefresh={() => {
-          router?.refresh();
-          refreshRoles();
-        }}
-        showKeywordFilter
         keywordPlaceholder="搜索角色编码、角色名称、描述..."
-        keywordValue={keyword}
-        onKeywordChange={setKeyword}
-        onSearch={handleSearch}
-        onReset={handleReset}
       />
 
-      {/* 新增角色标准 FormModal */}
-      {isCreateOpen && (
-        <CreateRoleModal
-          onClose={() => setIsCreateOpen(false)}
-          onCreated={async () => {
-            setIsCreateOpen(false);
-            await refreshRoles(1, pageSize, keyword);
+      {modalState.open && (
+        <RoleFormModal
+          open={modalState.open}
+          mode={modalState.mode}
+          record={modalState.record}
+          onClose={() =>
+            setModalState({ open: false, mode: "create", record: null })
+          }
+          onSuccess={() => {
+            setModalState({ open: false, mode: "create", record: null });
           }}
         />
       )}
-
-      {/* 编辑角色标准 FormModal */}
-      {editingRole && (
-        <EditRoleModal
-          role={editingRole}
-          onClose={() => setEditingRole(null)}
-          onUpdated={async () => {
-            setEditingRole(null);
-            await refreshRoles();
-          }}
-        />
-      )}
-
-      {/* 删除确认弹窗 */}
-      <ConfirmDialog
-        open={Boolean(deleteTarget)}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
-        title={`确认删除业务角色 [${deleteTarget?.name || ""}] 吗？`}
-        description="删除角色将导致该角色下已绑定的员工失去对应角色身份及所有关联授权，操作不可逆，请谨慎确认！"
-        confirmText={isDeleting ? "正在删除..." : "确认永久删除"}
-        variant="destructive"
-        onConfirm={confirmDelete}
-      />
-    </div>
+    </>
   );
 }

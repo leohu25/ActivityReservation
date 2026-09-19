@@ -14,8 +14,6 @@ export interface PositionFormModalProps {
   readonly onClose: () => void;
   readonly onSuccess?: () => void;
   readonly inline?: boolean;
-  /** 向后兼容旧回调命名 */
-  readonly onSaved?: () => void;
 }
 
 export const positionZodSchema = createPositionSchema;
@@ -27,7 +25,6 @@ export function PositionFormModal({
   record,
   onClose,
   onSuccess,
-  onSaved,
   inline,
 }: PositionFormModalProps) {
   const isEdit = mode === "edit";
@@ -115,7 +112,6 @@ export function PositionFormModal({
         }
         toast.success(mode === "create" ? "岗位已创建" : "岗位已更新");
         onSuccess?.();
-        onSaved?.();
       }}
     />
   );

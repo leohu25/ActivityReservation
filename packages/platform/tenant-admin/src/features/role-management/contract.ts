@@ -2,6 +2,14 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
+import { defineListSearchParams } from "@base/ui";
+
+/** 角色列表 URL 搜索契约 (SSoT) */
+export const roleSearchParams = defineListSearchParams({
+  keyword: "",
+});
+
+export type RoleSearchParams = ReturnType<typeof roleSearchParams.parse>;
 
 /** 角色管理 (组织架构下 CRUD) 实体与资源标识 (SSoT) */
 export const RoleSubject = "Role";

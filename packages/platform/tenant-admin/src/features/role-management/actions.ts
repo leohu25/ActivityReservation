@@ -10,6 +10,12 @@ import {
 } from "../../assembly/context";
 import { getServerAuthRuntime } from "@base/auth";
 import { RoleManagementSubject, RoleSubject } from "./contract";
+import {
+  parseCreateRoleInput,
+  parseUpdateRoleInput,
+  type CreateRoleSchema,
+  type UpdateRoleSchema,
+} from "./role.schema";
 import { TenantRoleService } from "./service";
 import type {
   ListRolesQueryInput,
@@ -67,13 +73,15 @@ export const saveRolePermissionsAction = defineServerAction(
   "保存角色权限失败",
 );
 
+export interface UpdateRoleActionInput extends UpdateRoleSchema {
+  roleCode: string;
+}
+
 /** 新增自定义角色 Server Action */
 export const createRoleAction = defineServerAction(
-  async (
-    roleCode: string,
-    roleName?: string,
-    description?: string,
-  ): Promise<TenantRoleItem> => {
+  async (input: CreateRoleSchema): Promise<TenantRoleItem> => {
+    const validated = parseCreateRoleInput(input);
+
     const { organizationId, ability } = await getTenantAdminContext();
     const canCreateOrgRole = ability.can(StandardAction.CREATE, RoleSubject);
     const canUpdateRoleMgmt = ability.can(
@@ -88,9 +96,9 @@ export const createRoleAction = defineServerAction(
 
     const data = await service.createRole({
       organizationId,
-      roleCode,
-      roleName,
-      description,
+      roleCode: validated.roleCode,
+      roleName: validated.roleName,
+      description: validated.description,
     });
 
     revalidatePath("/organization/roles");
@@ -102,11 +110,9 @@ export const createRoleAction = defineServerAction(
 
 /** 编辑更新自定义角色 Server Action */
 export const updateRoleAction = defineServerAction(
-  async (
-    roleCode: string,
-    roleName?: string,
-    description?: string,
-  ): Promise<TenantRoleItem> => {
+  async (input: UpdateRoleActionInput): Promise<TenantRoleItem> => {
+    const validated = parseUpdateRoleInput(input);
+
     const { organizationId, ability } = await getTenantAdminContext();
     const canUpdateOrgRole = ability.can(StandardAction.UPDATE, RoleSubject);
     const canUpdateRoleMgmt = ability.can(
@@ -121,9 +127,9 @@ export const updateRoleAction = defineServerAction(
 
     const data = await service.updateRole({
       organizationId,
-      roleCode,
-      roleName,
-      description,
+      roleCode: input.roleCode,
+      roleName: validated.roleName,
+      description: validated.description,
     });
 
     revalidatePath("/organization/roles");
