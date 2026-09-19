@@ -3,6 +3,7 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
+import { defineListSearchParams } from "@base/ui";
 
 /** 部门实体与资源标识 (SSoT) */
 export const DepartmentSubject = "Department";
@@ -36,6 +37,15 @@ export const departmentConfigurableFields = [
   { field: DepartmentField.SORT, label: "排序序号", isSensitive: false },
   { field: DepartmentField.STATUS, label: "部门状态", isSensitive: false },
 ] as const;
+
+/** 部门查询 URL 参数契约：由 defineListSearchParams 派生，自动内置 page, pageSize, keyword */
+export const departmentSearchParams = defineListSearchParams({
+  departmentId: "",
+});
+
+export type DepartmentSearchParams = Awaited<
+  ReturnType<typeof departmentSearchParams.parse>
+>;
 
 /**
  * 部门管理页面纯数据权限契约 (SSoT)

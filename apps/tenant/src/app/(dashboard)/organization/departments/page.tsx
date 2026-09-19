@@ -50,5 +50,5 @@ export default async function OrganizationDepartmentsPage() {
   // 通过 Server Query 检索部门树数据 (含 CASL 门禁与租户物理库路由)
   const tree: readonly DepartmentTreeNode[] = await listDepartmentTreeQuery();
 
-  return <DepartmentView initialTree={tree} />;
+  return <DepartmentView data={tree} />;
 }

@@ -12,7 +12,10 @@ import { getControlDbClient } from "../../shared/server/tenant-context";
 import { DepartmentSubject } from "./department.contract";
 import { PositionSubject } from "./position.contract";
 import { EmployeeSubject } from "./employee.contract";
-import { DepartmentService } from "./department-service";
+import {
+  parseCreateDepartmentInput,
+  parseUpdateDepartmentInput,
+} from "./department.schema";
 import { PositionService } from "./position-service";
 import { EmployeeManagementService } from "./employee-management-service";
 import {
@@ -27,15 +30,13 @@ import {
   parseTransferRolesInput,
 } from "./employee.schema";
 import type {
-  CreateDepartmentInput,
-  UpdateDepartmentInput,
   DepartmentTreeNode,
   PositionItem,
   EmployeeItem,
   EmployeeListFilter,
-  TransferPositionInput,
 } from "./types";
 
+import { DepartmentService } from "./department-service";
 const deptService = new DepartmentService();
 const posService = new PositionService();
 const empService = new EmployeeManagementService();
@@ -55,11 +56,18 @@ export const listDepartmentTreeAction = defineServerAction(
 );
 
 export const createDepartmentAction = defineServerAction(
-  async (input: CreateDepartmentInput): Promise<DepartmentTreeNode> => {
+  async (raw: unknown): Promise<DepartmentTreeNode> => {
+    const input = parseCreateDepartmentInput(raw);
     const { client, ability } = await getTenantAdminContext();
     assertTenantAdminAbility(ability, StandardAction.CREATE, DepartmentSubject);
 
-    const data = await deptService.createDepartment(client, input);
+    const data = await deptService.createDepartment(client, {
+      name: input.name,
+      code: input.code,
+      parentId: input.parentId || null,
+      leaderMemberId: null,
+      sort: input.sort ?? 0,
+    });
     revalidatePath("/organization/departments");
     revalidatePath("/organization/employees");
     return data;
@@ -70,12 +78,18 @@ export const createDepartmentAction = defineServerAction(
 export const updateDepartmentAction = defineServerAction(
   async (
     id: string,
-    input: UpdateDepartmentInput,
+    raw: unknown,
   ): Promise<DepartmentTreeNode> => {
+    const input = parseUpdateDepartmentInput(raw);
     const { client, ability } = await getTenantAdminContext();
     assertTenantAdminAbility(ability, StandardAction.UPDATE, DepartmentSubject);
 
-    const data = await deptService.updateDepartment(client, id, input);
+    const data = await deptService.updateDepartment(client, id, {
+      ...(input.name !== undefined ? { name: input.name } : {}),
+      ...(input.code !== undefined ? { code: input.code } : {}),
+      ...(input.parentId !== undefined ? { parentId: input.parentId || null } : {}),
+      ...(input.sort !== undefined ? { sort: input.sort } : {}),
+    });
     revalidatePath("/organization/departments");
     revalidatePath("/organization/employees");
     return data;

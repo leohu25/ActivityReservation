@@ -2,19 +2,25 @@
 
 import { useMemo } from "react";
 import {
-  z,
   FormModal,
-  type FormFieldSchema,
+  type FormModalMode,
   type FormModalSection,
+  type ComboboxOption,
   toast,
 } from "@base/ui";
 import { createDepartmentAction, updateDepartmentAction } from "../actions";
+import { DepartmentSubject } from "../department.contract";
+import {
+  createDepartmentSchema,
+  type CreateDepartmentSchema,
+} from "../department.schema";
 import type { DepartmentTreeNode } from "../types";
 
 export interface DepartmentFormModalProps {
-  readonly mode: "create" | "edit";
+  readonly open: boolean;
+  readonly mode: FormModalMode;
   readonly record?: DepartmentTreeNode | null;
-  /** 扁平化上级部门选项（含缩进深度） */
+  /** 扁平化可选上级部门列表 */
   readonly parentOptions: readonly {
     id: string;
     name: string;
@@ -22,126 +28,129 @@ export interface DepartmentFormModalProps {
   }[];
   readonly defaultParentId?: string | null;
   readonly onClose: () => void;
-  readonly onSaved?: () => void;
+  readonly onSuccess?: () => void;
   readonly inline?: boolean;
 }
 
-export type DepartmentFormData = {
-  name: string;
-  code: string;
-  parentId: string;
-  sort: number;
-};
-
-export const departmentFormZodSchema = z.object({
-  name: z.string().trim().min(1, "部门名称为必填项"),
-  code: z.string().trim().min(1, "部门编码 (唯一标识) 为必填项"),
-  parentId: z.string().optional().default(""),
-  sort: z.coerce.number().optional().default(0),
-});
-
-/** 部门新建/编辑：FormModal + Zod Schema 声明式驱动 */
+/**
+ * 部门新建/编辑/只读详情：官方三态受控 FormModal
+ * 1. 单一度量源 (SSoT)：直接复用 department.schema.ts 中的 createDepartmentSchema；
+ * 2. 上级部门选择全面升级为 Combobox（支持即时模糊打字检索与一键清空）；
+ * 3. 严格遵循受控契约，彻底清除旧胶水回调 onSaved。
+ */
 export function DepartmentFormModal({
+  open,
   mode,
   record,
   parentOptions,
   defaultParentId,
   onClose,
-  onSaved,
+  onSuccess,
   inline,
 }: DepartmentFormModalProps) {
-  const initialValues = useMemo<DepartmentFormData>(
+  const isEdit = mode === "edit";
+
+  const initialValues = useMemo<CreateDepartmentSchema>(
     () => ({
       name: record?.name || "",
       code: record?.code || "",
-      parentId: (mode === "edit" ? record?.parentId : defaultParentId) || "",
+      parentId: (isEdit ? record?.parentId : defaultParentId) || "",
       sort: record?.sort ?? 0,
     }),
-    [record, mode, defaultParentId],
+    [record, isEdit, defaultParentId],
   );
 
-  const fields: FormFieldSchema[] = useMemo(
-    () => [
-      {
-        name: "name",
-        label: "部门名称",
-        type: "text",
-        required: true,
-        placeholder: "例如: 华东销售部、研发中心",
-      },
-      {
-        name: "code",
-        label: "部门编码 (唯一标识)",
-        type: "text",
-        required: true,
-        placeholder: "例如: SALES_EAST、DEV",
-      },
-      {
-        name: "parentId",
-        label: "上级部门",
-        type: "select",
-        options: [
-          { value: "", label: "-- 无上级 (作为顶级根部门) --" },
-          ...parentOptions.map((opt) => ({
-            value: opt.id,
-            label: `${"— ".repeat(opt.depth)}${opt.name}`,
-          })),
-        ],
-      },
-      {
-        name: "sort",
-        label: "同级排序号",
-        type: "number",
-      },
-    ],
-    [parentOptions],
-  );
+  // 过滤掉自身（防止自选循环）
+  const parentComboboxOptions = useMemo<ComboboxOption[]>(() => {
+    return parentOptions.flatMap((opt) =>
+      opt.id === record?.id
+        ? []
+        : [
+            {
+              value: opt.id,
+              label: `${"— ".repeat(opt.depth)}${opt.name}`,
+            },
+          ],
+    );
+  }, [parentOptions, record?.id]);
 
   const sections: FormModalSection[] = useMemo(
     () => [
       {
-        title: "部门信息",
-        fields,
+        title: "基本信息",
         columns: 2,
+        fields: [
+          {
+            name: "name",
+            label: "部门名称",
+            type: "text",
+            required: true,
+            placeholder: "例如: 华东销售部、研发中心",
+          },
+          {
+            name: "code",
+            label: "部门编码 (唯一标识)",
+            type: "text",
+            required: true,
+            placeholder: "例如: SALES_EAST、DEV",
+          },
+          {
+            name: "parentId",
+            label: "上级部门",
+            type: "combobox",
+            options: parentComboboxOptions,
+            placeholder: "无上级 (作为顶级根部门)",
+            clearable: true,
+          },
+          {
+            name: "sort",
+            label: "同级排序号",
+            type: "number",
+            placeholder: "0",
+          },
+        ],
       },
     ],
-    [fields],
+    [parentComboboxOptions],
   );
 
-  const handleSubmit = async (values: DepartmentFormData) => {
-    const payload = {
-      name: values.name.trim(),
-      code: values.code.trim(),
-      parentId: values.parentId || null,
-      leaderMemberId: null,
-      sort: Number(values.sort) || 0,
-    };
-    const res =
-      mode === "create"
-        ? await createDepartmentAction(payload)
-        : await updateDepartmentAction(record!.id, payload);
-    if (!res.success) {
-      toast.error(res.error || "保存部门失败");
-      throw new Error(res.error || "保存部门失败");
-    }
-    toast.success(mode === "create" ? "部门创建成功" : "部门更新成功");
-    onSaved?.();
-  };
-
   return (
-    <FormModal<DepartmentFormData>
-      open
+    <FormModal<CreateDepartmentSchema>
+      key={`${mode}-${record?.id || "new"}-${open ? "open" : "closed"}`}
+      open={open}
       inline={inline}
       mode={mode}
-      title={mode === "create" ? "新建部门节点" : "编辑部门节点"}
-      description="系统将严格防范循环引用与重复编码"
-      submitText="确认保存"
+      subject={DepartmentSubject}
+      title={
+        mode === "create"
+          ? "新建部门节点"
+          : isEdit
+            ? `编辑部门: ${record?.name}`
+            : `部门详情: ${record?.name}`
+      }
+      description="系统将在服务端严格防范循环引用与重复编码"
+      schema={createDepartmentSchema}
       sections={sections}
       initialValues={initialValues}
-      schema={departmentFormZodSchema}
       onClose={onClose}
-      onSubmit={handleSubmit}
+      onSubmit={async (values) => {
+        if (isEdit && record) {
+          const res = await updateDepartmentAction(record.id, values);
+          if (!res.success) {
+            toast.error(res.error || "更新部门失败");
+            throw new Error(res.error || "更新部门失败");
+          }
+          toast.success("部门更新成功");
+        } else {
+          const res = await createDepartmentAction(values);
+          if (!res.success) {
+            toast.error(res.error || "创建部门失败");
+            throw new Error(res.error || "创建部门失败");
+          }
+          toast.success("部门创建成功");
+        }
+        onSuccess?.();
+      }}
     />
   );
 }
-
