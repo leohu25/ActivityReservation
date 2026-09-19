@@ -36,7 +36,9 @@ import {
 import { useRouter } from "next/navigation";
 
 export interface MigrationsViewProps {
-  readonly initialData: MigrationDashboardData;
+  readonly data: MigrationDashboardData;
+  /** @deprecated 请直接使用 data */
+  readonly initialData?: MigrationDashboardData;
 }
 
 /**
@@ -44,8 +46,10 @@ export interface MigrationsViewProps {
  * 基于 shadcn ui (Card, Badge, Button) 组合布局，自适应暗色与亮色主题
  */
 export function MigrationsView({
+  data: explicitData,
   initialData,
 }: MigrationsViewProps): React.JSX.Element {
+  const data = explicitData ?? initialData!;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [upgradeTarget, setUpgradeTarget] = useState<{
@@ -97,7 +101,7 @@ export function MigrationsView({
     });
   };
 
-  const { platform, fleet } = initialData;
+  const { platform, fleet } = data;
 
   return (
     <div className="space-y-6">

@@ -38,35 +38,39 @@ import { AvailablePagePool } from "./components/AvailablePagePool";
 import { NodePropertyForm } from "./components/NodePropertyForm";
 
 export interface NavigationConfigViewProps {
-  readonly initialData: NavigationConfigData;
+  readonly data: NavigationConfigData;
+  /** @deprecated 请直接使用 data */
+  readonly initialData?: NavigationConfigData;
 }
 
 /**
  * 租户导航菜单动态配置控制台 (已解构治理：紧凑树形 + 属性配置 + 功能池)
  */
 export function NavigationConfigView({
+  data: explicitData,
   initialData,
 }: NavigationConfigViewProps) {
+  const data = explicitData ?? initialData!;
   const router = useSafeRouter();
   const [isPending, startTransition] = useTransition();
 
   // 1. 树状数据状态
   const [tree, setTree] = useState<TenantMenuNode[]>(() => {
-    if (initialData.currentTree && initialData.currentTree.length > 0) {
-      return [...initialData.currentTree];
+    if (data.currentTree && data.currentTree.length > 0) {
+      return [...data.currentTree];
     }
     return [];
   });
 
   const [isConfigured, setIsConfigured] = useState<boolean>(() => {
     return Boolean(
-      initialData.currentTree && initialData.currentTree.length > 0,
+      data.currentTree && data.currentTree.length > 0,
     );
   });
 
   // 2. 当前选中的节点 ID
   const [selectedNodeId, setSelectedNodeId] = useState<string>(() => {
-    return initialData.currentTree?.[0]?.id || "";
+    return data.currentTree?.[0]?.id || "";
   });
 
   // 3. 目录展开折叠状态
@@ -79,8 +83,8 @@ export function NavigationConfigView({
 
   // 页面元数据快速查找字典
   const pageMap = useMemo(() => {
-    return new Map(initialData.availablePages.map((p) => [p.pageKey, p]));
-  }, [initialData.availablePages]);
+    return new Map(data.availablePages.map((p) => [p.pageKey, p]));
+  }, [data.availablePages]);
 
   // 统计每个页面被挂载的次数
   const pageMountCounts = useMemo(() => {
@@ -112,7 +116,7 @@ export function NavigationConfigView({
     >();
     const q = poolSearch.trim().toLowerCase();
 
-    for (const p of initialData.availablePages) {
+    for (const p of data.availablePages) {
       if (
         q &&
         !p.defaultLabel.toLowerCase().includes(q) &&
@@ -133,7 +137,7 @@ export function NavigationConfigView({
       featureName: data.featureName,
       pages: data.pages,
     }));
-  }, [initialData.availablePages, poolSearch]);
+  }, [data.availablePages, poolSearch]);
 
   // 递归定位当前选中的节点及其父节点
   const { selectedNode, parentNode } = useMemo(() => {
@@ -186,7 +190,7 @@ export function NavigationConfigView({
       id: newChildId,
       parentId: targetNodeId,
       itemType: "PAGE",
-      pageKey: initialData.availablePages[0]?.pageKey || null,
+      pageKey: data.availablePages[0]?.pageKey || null,
       customLabel: null,
       customIcon: "FileText",
       sortOrder: 99,
@@ -293,7 +297,7 @@ export function NavigationConfigView({
     if (newType === "PAGE") {
       patch.externalUrl = null;
       if (!selectedNode.pageKey) {
-        patch.pageKey = initialData.availablePages[0]?.pageKey || null;
+        patch.pageKey = data.availablePages[0]?.pageKey || null;
       }
     } else if (newType === "LINK") {
       patch.pageKey = null;
@@ -403,7 +407,7 @@ export function NavigationConfigView({
 
       const res = await saveMenuTreeAction(
         { items: flatItems },
-        initialData.availablePages,
+        data.availablePages,
       );
 
       if (res.success) {
@@ -420,7 +424,7 @@ export function NavigationConfigView({
   // 10. 载入推荐业务模板
   const handleLoadRecommendedTemplate = () => {
     const recommended = buildRecommendedBusinessTree(
-      initialData.availablePages,
+      data.availablePages,
     );
     setTree(recommended);
     setIsConfigured(true);
@@ -438,7 +442,7 @@ export function NavigationConfigView({
   // 11. 清空自定义业务菜单
   const handleClearAll = () => {
     startTransition(async () => {
-      const res = await resetMenuTreeAction(initialData.availablePages);
+      const res = await resetMenuTreeAction(data.availablePages);
       if (res.success) {
         setTree([]);
         setSelectedNodeId("");

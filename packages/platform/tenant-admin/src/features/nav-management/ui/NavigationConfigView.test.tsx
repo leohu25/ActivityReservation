@@ -55,7 +55,7 @@ const mockInitialData: NavigationConfigData = {
 
 test("NavigationConfigView 双栏 Master-Detail 布局渲染正常且支持外链与功能池", () => {
   const html = renderToString(
-    <NavigationConfigView initialData={mockInitialData} />,
+    <NavigationConfigView data={mockInitialData} />,
   );
 
   // 验证页面标题与操作条

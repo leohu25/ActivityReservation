@@ -70,5 +70,5 @@ export default async function SettingsNavigationPage() {
     globalBusinessPageList,
   );
 
-  return <NavigationConfigView initialData={navigationConfig} />;
+  return <NavigationConfigView data={navigationConfig} />;
 }

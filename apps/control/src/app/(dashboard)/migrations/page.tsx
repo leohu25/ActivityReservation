@@ -9,5 +9,5 @@ export const dynamic = "force-dynamic";
  */
 export default async function MigrationsRoute(): Promise<React.JSX.Element> {
  const dashboardData = await getMigrationDashboardQuery();
- return <MigrationsView initialData={dashboardData} />;
+ return <MigrationsView data={dashboardData} />;
 }
