@@ -1,7 +1,15 @@
 {
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/components/ui/*": ["../../base/ui/src/components/ui/*"],
+      "@/hooks/*": ["../../base/ui/src/hooks/*"],
+      "@base/ui": ["../../base/ui/src/index.ts"],
+      "@base/ui/*": ["../../base/ui/src/*"]
+    }
   },
   "include": ["src"]
 }

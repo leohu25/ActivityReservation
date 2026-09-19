@@ -1,3 +1,4 @@
+import { resolvePagination } from "@base/shared";
 import {
   PrismaControlDbRepository,
   TenantDatabaseStatus,
@@ -28,6 +29,8 @@ import type {
   ControlTenantMember,
   GetTenantMembersQuery,
   ResetTenantUserPasswordResult,
+  ListTenantsQueryInput,
+  PagedTenantsResult,
 } from "./types";
 
 import { getControlAuthRuntime } from "../../shared/server/auth-runtime";
@@ -121,28 +124,74 @@ export class TenantManagementService {
   }
 
   /**
-   * 查询全部租户列表及其物理数据库与迁移信息
+   * 查询全部租户列表及其物理数据库与迁移信息（向后兼容全量查询）
    */
   async listTenants(operatorUser: {
     email?: string | null;
   }): Promise<ControlTenantItem[]> {
+    const res = await this.listTenantsPaged(operatorUser);
+    return res.data as ControlTenantItem[];
+  }
+
+  /**
+   * 租户运维中心 - 真实后端分页与筛选查询 (Database-driven Paged Query)
+   */
+  async listTenantsPaged(
+    operatorUser: { email?: string | null },
+    params?: ListTenantsQueryInput,
+  ): Promise<PagedTenantsResult> {
     assertControlAdmin(operatorUser);
 
-    const orgs = await this.prisma.organization.findMany({
-      include: {
-        tenantDatabase: true,
-        members: {
-          select: { id: true },
-        },
-        migrations: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-        },
-      },
-      orderBy: { createdAt: "desc" },
+    const { skip, take } = resolvePagination(params, {
+      defaultPageSize: 10,
     });
 
-    return orgs.map((org) => {
+    const kw = params?.keyword?.trim();
+    const status = params?.status?.trim();
+
+    // 构建过滤条件
+    const where: any = {};
+
+    if (kw) {
+      where.OR = [
+        { name: { contains: kw, mode: "insensitive" } },
+        { slug: { contains: kw, mode: "insensitive" } },
+        {
+          tenantDatabase: {
+            databaseName: { contains: kw, mode: "insensitive" },
+          },
+        },
+      ];
+    }
+
+    if (status) {
+      where.tenantDatabase = {
+        ...(where.tenantDatabase || {}),
+        status,
+      };
+    }
+
+    const [total, orgs] = await Promise.all([
+      this.prisma.organization.count({ where }),
+      this.prisma.organization.findMany({
+        where,
+        include: {
+          tenantDatabase: true,
+          members: {
+            select: { id: true },
+          },
+          migrations: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take,
+      }),
+    ]);
+
+    const data: ControlTenantItem[] = orgs.map((org) => {
       const db = org.tenantDatabase;
       const latestMig = org.migrations[0];
 
@@ -171,6 +220,8 @@ export class TenantManagementService {
           : null,
       };
     });
+
+    return { data, total };
   }
 
   /**

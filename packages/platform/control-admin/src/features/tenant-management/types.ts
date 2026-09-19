@@ -98,6 +98,24 @@ export interface ControlTenantDetail {
 }
 
 /**
+ * 租户列表服务端查询参数
+ */
+export interface ListTenantsQueryInput {
+  readonly page?: number;
+  readonly pageSize?: number;
+  readonly keyword?: string;
+  readonly status?: string;
+}
+
+/**
+ * 租户列表分页返回结果契约
+ */
+export interface PagedTenantsResult {
+  readonly data: readonly ControlTenantItem[];
+  readonly total: number;
+}
+
+/**
  * 重置租户成员密码结果契约
  */
 export interface ResetTenantUserPasswordResult {

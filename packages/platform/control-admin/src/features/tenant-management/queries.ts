@@ -6,7 +6,20 @@ import type {
  ControlTenantItem,
  ControlTenantDetail,
  GetTenantMembersQuery,
+ ListTenantsQueryInput,
+ PagedTenantsResult,
 } from "./types";
+
+/**
+ * RSC Server-only 读取租户分页列表（Database-driven Paged Query）
+ */
+export async function listTenantsPagedQuery(
+ params?: ListTenantsQueryInput,
+): Promise<PagedTenantsResult> {
+ const user = await requireControlAdminSession();
+ const service = getTenantManagementService();
+ return service.listTenantsPaged(user, params);
+}
 
 /**
  * RSC Server-only 读取全部租户列表及其物理数据库

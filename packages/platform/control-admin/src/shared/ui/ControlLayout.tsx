@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { TopHeader, Sidebar, DashboardShell, Badge } from "@base/ui";
+import { TopHeader, Sidebar, DashboardShell, Badge, UiAbilityProvider } from "@base/ui";
 import { signOut } from "@base/auth/client";
 import { BarChart3, Building2, Database, ShieldAlert } from "lucide-react";
 
@@ -20,9 +20,9 @@ const CONTROL_NAV_SECTIONS = [
     title: "控制平面核心中枢",
     items: [
       {
-        id: "overview",
-        label: "总控运营大盘",
-        href: "/overview",
+        id: "workbench",
+        label: "总控运营工作台",
+        href: "/workbench",
         icon: <BarChart3 className="size-4.5" />,
       },
       {
@@ -85,18 +85,28 @@ export function ControlLayout({
     </Badge>
   );
 
+  // 控制平面超级管理员全局拥有无限制权限（Fail-Open for Super Admin）
+  const superAdminAbility = React.useMemo(
+    () => ({
+      can: () => true,
+    }),
+    [],
+  );
+
   return (
-    <DashboardShell
-      header={
-        <TopHeader
-          user={currentUser}
-          platformBadge={platformBadgeSlot}
-          onSignOut={handleSignOut}
-        />
-      }
-      sidebar={<Sidebar sections={CONTROL_NAV_SECTIONS} />}
-    >
-      {children}
-    </DashboardShell>
+    <UiAbilityProvider ability={superAdminAbility}>
+      <DashboardShell
+        header={
+          <TopHeader
+            user={currentUser}
+            platformBadge={platformBadgeSlot}
+            onSignOut={handleSignOut}
+          />
+        }
+        sidebar={<Sidebar sections={CONTROL_NAV_SECTIONS} />}
+      >
+        {children}
+      </DashboardShell>
+    </UiAbilityProvider>
   );
 }

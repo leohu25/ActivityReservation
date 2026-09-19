@@ -1,5 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { ThemeProvider, Toaster } from "@base/ui";
 import "./globals.css";
 
@@ -25,8 +26,10 @@ export default function RootLayout({
     suppressHydrationWarning
    >
     <ThemeProvider>
-     {children}
-     <Toaster position="top-right" richColors closeButton />
+     <NuqsAdapter>
+      {children}
+      <Toaster position="top-right" richColors closeButton />
+     </NuqsAdapter>
     </ThemeProvider>
    </body>
   </html>

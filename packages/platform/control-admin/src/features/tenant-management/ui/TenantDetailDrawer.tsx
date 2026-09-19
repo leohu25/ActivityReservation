@@ -112,7 +112,7 @@ export function TenantDetailDrawer({
       if (res.success && res.data) {
         setResetSuccessData(res.data);
         toast.success(`成员 [${res.data.email}] 密码重置成功！`);
-      } else {
+      } else if (!res.success) {
         toast.error(res.error || "重置密码失败");
       }
     } catch (err: unknown) {
@@ -554,10 +554,11 @@ export function TenantDetailDrawer({
             </div>
           ) : (
             <div className="space-y-3">
-              <label className="block text-xs font-bold text-foreground">
+              <label htmlFor="custom-password-input" className="block text-xs font-bold text-foreground">
                 指定新密码 (可选，留空则自动生成安全临时密码)
               </label>
               <input
+                id="custom-password-input"
                 type="text"
                 value={customPassword}
                 onChange={(e) => setCustomPassword(e.target.value)}

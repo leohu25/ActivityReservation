@@ -3,6 +3,7 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
+import { defineListSearchParams } from "@base/ui";
 
 /** Non-entity capability spanning Organization and TenantDatabase operations. */
 export const TenantManagementSubject = "ControlTenant";
@@ -25,6 +26,15 @@ export const TenantManagementAction = {
   ...StandardAction,
   RESET_PASSWORD: "reset_password",
 } as const;
+
+/** 租户运维查询参数契约：少即是多，内置 page, pageSize, keyword，扩展 status 物理库状态 */
+export const tenantSearchParams = defineListSearchParams({
+  status: "",
+});
+
+export type TenantSearchParams = Awaited<
+  ReturnType<typeof tenantSearchParams.parse>
+>;
 
 export const tenantManagementPageContract: FeaturePagePermissionDescriptor = {
   resource: TenantManagementResource,

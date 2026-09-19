@@ -56,6 +56,7 @@ export function OverviewView({ stats }: OverviewViewProps): React.JSX.Element {
           </div>
 
           <Button
+            nativeButton={false}
             render={
               <Link href="/tenants">
                 <span>进入租户运维中枢</span>
