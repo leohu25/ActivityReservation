@@ -16,7 +16,7 @@ graph TD
     end
 
     subgraph BizShared["业务中台层 (Business Shared Layer - Level 2)"]
-        BizSharedPkg["@base/biz-shared<br>(单据号生成/审批流契约/通用明细行)"]
+        BizSharedPkg["@biz/shared<br>(单据号生成/审批流契约/通用明细行)"]
     end
 
     subgraph Foundation["核心平台基座层 (Foundation Base Layer - Level 1)"]
@@ -104,9 +104,9 @@ graph TD
     - `layout/`：后台框架 `DashboardShell`、标签页 `TabBar`、顶部栏 `TopHeader`；
     - `feedback/`：单次确认对话框 `ConfirmDialog`、空状态 `EmptyState` 与统一 `toast`（基于 `sonner`）。
 
-### 6. `@base/biz-shared` — 跨切片中台公共资产库 (Level 2)
+### 6. `@biz/shared` — 跨切片中台公共资产库 (Level 2: packages/biz-shared)
 
-- **职责**：沉淀跨切片业务管道与经验证的通用业务模式；**禁止**为 CRUD 单开独立包。
+- **职责**：独立于 `packages/base/` 纯技术底座，作为跨切片业务管道与经验证的通用业务中台资产库；**禁止**为 CRUD 单开独立包。
 - **资产范围**：
   - **统一单据流水号系统 (`doc-no`)**：单据类型前缀、日期规则与序列号契约；
   - **通用业务审批流契约 (`approval`)**：草稿/待审/已审/驳回状态机；
@@ -127,10 +127,10 @@ graph TD
 
 1. **严禁反向与环状依赖**：
    - 基础包（`@base/*`）**绝对严禁**引用任何业务切片（`packages/domains/*`）；
-   - **`@base/biz-shared` 仅能依赖**：`@base/shared`、`@base/ui`、`@base/authorization`、`next`、`@casl/ability` 等（资源管道需要 `revalidatePath` / CASL）；不可被 Level 1 反向依赖；
+   - **`@biz/shared` 仅能依赖**：`@base/shared`、`@base/ui`、`@base/authorization`、`next`、`@casl/ability` 等（资源管道需要 `revalidatePath` / CASL）；不可被 Level 1 反向依赖；
    - 依赖关系必须保持严格单向拓扑，由应用层（`apps/*`）负责最终装配。
 2. **严禁在基础设施中嵌入特定业务逻辑**：
-   - `@base/ui` 的组件必须是通用抽象，不得内嵌特定业务字段（如 `customerId`, `quoteAmount` 等）；
+   - `@base/ui` 的组件必须是通用抽象，不得内嵌特定业务字段（如 `entityId`, `amount` 等）；
    - `@base/db-tenant` 仅负责数据库连接与生命周期，不感知上层表结构与查询语义。
 3. **保持运行期轻量与无状态**：
    - 基础设施包不得在运行期依赖外部 CLI 工具（如运行时调用 `child_process.exec("prisma ...")`）；
@@ -155,13 +155,13 @@ npx shadcn@latest add <component-name> -y -c packages/base/ui
 - 添加后遵循 `.agents/skills/shadcn/` 最佳范式规范，在 `packages/base/ui/src/index.ts` 中规范导出；
 - 若需定制样式变体，直接在 `src/components/ui/<component>.tsx` 内扩充 CVA variants，杜绝手写 1:1 伪包装层。
 
-### 场景 2：扩展 `@base/biz-shared` 业务中台资产
+### 场景 2：扩展 `@biz/shared` 业务中台资产
 
 1. 确认该能力已被至少两个业务切片独立实现过，存在明确的复用诉求；
 2. 在 `packages/biz-shared/src/` 下创建模块目录（如 `src/approval/`）；
 3. 遵循 pure data contract 原则，导出契约、类型与工具函数；
 4. 编写全面的单元测试（`*.test.ts`），确保 100% 覆盖关键边界分支；
-5. 在 `packages/biz-shared/src/index.ts` 统一导出，并在业务切片中以 `@base/biz-shared` 声明引用。
+5. 在 `packages/biz-shared/src/index.ts` 统一导出，并在业务切片中以 `@biz/shared` 声明引用。
 
 ### 场景 3：调整 `@base/db-tenant` 或总控连接池逻辑
 

@@ -1,11 +1,11 @@
 import React from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { ControlLayout } from "@base/feature-control-admin/shared";
+import { ControlLayout } from "@platform/control-admin/shared";
 import {
   getControlAuthRuntime,
   assertControlAdmin,
-} from "@base/feature-control-admin/shared/server";
+} from "@platform/control-admin/shared/server";
 
 export interface DashboardGroupLayoutProps {
   readonly children: React.ReactNode;

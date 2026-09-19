@@ -1,8 +1,8 @@
 import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
 import { getServerAuthRuntime } from "@base/auth";
-import { RolePermissionManager } from "@base/feature-tenant-admin/role-management";
-import { listTenantRolesQuery } from "@base/feature-tenant-admin/role-management/server";
+import { RolePermissionManager } from "@platform/tenant-admin/role-management";
+import { listTenantRolesQuery } from "@platform/tenant-admin/role-management/server";
 import { Card } from "@base/ui";
 import {
   ALL_TENANT_MANIFESTS,

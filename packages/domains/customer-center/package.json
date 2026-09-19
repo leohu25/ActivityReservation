@@ -1,5 +1,5 @@
 {
-	"name": "@base/feature-customer-center",
+	"name": "@domain/customer-center",
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
@@ -30,7 +30,7 @@
 	"dependencies": {
 		"@base/auth": "workspace:*",
 		"@base/authorization": "workspace:*",
-		"@base/biz-shared": "workspace:*",
+		"@biz/shared": "workspace:*",
 		"@base/db-tenant": "workspace:*",
 		"@base/shared": "workspace:*",
 		"@base/ui": "workspace:*",

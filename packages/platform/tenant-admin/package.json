@@ -1,5 +1,5 @@
 {
-  "name": "@base/feature-tenant-admin",
+  "name": "@platform/tenant-admin",
   "version": "0.1.0",
   "private": true,
   "type": "module",

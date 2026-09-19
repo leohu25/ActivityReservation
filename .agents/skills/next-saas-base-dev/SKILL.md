@@ -10,9 +10,21 @@ agent_created: true
 # 现代多租户 SaaS 架构开发规范 (Next SaaS Base Dev)
 
 > **本文件定位**：**地图与索引**。只保留分层、红线摘要、流水线索引与阅读导航。  
-> **具体开发细节一律在 `references/`**，禁止把实现示例堆进本文件。
-
+> **具体开发细节一律在 `references/`**，禁止把实现示例堆进本文件。  
 > **权威目标规格**：`docs/architecture/refactoring-architecture-and-official-patterns.md`
+
+---
+
+## 零、 核心分工原则：Skill 中立解耦 vs Harness 项目耦合
+
+为保证本工程基座的高度可复用性与跨项目无缝移植能力，团队严格划分 **Skill** 与 **Harness** 的职责边界：
+
+1. **Skill（架构宪法与通用规范 — 100% 业务解耦，高度中立）**：
+   - 本 Skill 仅沉淀**通用的多租户 SaaS 架构模式、技术栈标准、8 阶段流水线、工业风设计系统与前后端防线**；
+   - **绝对中立原则**：Skill 正文及所有 references 中，**严禁硬编码或深度耦合当前项目的具体业务逻辑、业务字段或专有业务模块**；所有代码示例统一使用通用的抽象占位符（如 `<domain>`、`<resource>`、`XxxSubject`），确保本规范可无损移植到任何基于本底座的全新 SaaS 业务项目（如 CRM、WMS、MES、电商等）。
+2. **Harness（当前项目治理与执行记忆 — 与具体业务强绑定）**：
+   - `.harness/` 目录专门负责记录**当前具体项目的业务特性台账 (`feature_list.json`)、当前迭代范围 (`scope.md`)、开发进度 (`progress.md`) 与真实业务交付证据**；
+   - 具体的业务领域验收标准与业务实体流转，全部收敛在 Harness 中。
 
 ---
 
@@ -20,38 +32,39 @@ agent_created: true
 
 ```text
 apps/control | apps/tenant          双端装配
-packages/domains/*                  业务领域垂直切片
-packages/platform/*                 平台业务（control-admin / tenant-admin）
+packages/domains/*                  业务领域垂直切片 (@domain/*)
+packages/platform/*                 平台业务（@platform/control-admin / @platform/tenant-admin）
 packages/base/ui                    UI 契约：DataTable / FormModal / list params
-packages/base/biz-shared            业务中台通用资产：单号发号器 / 审批契约
+packages/biz-shared                 业务中台通用资产：单号发号器 / 审批契约 (@biz/shared)
 packages/base/shared                defineServerAction / toPlainData
 packages/base/auth | authorization | db-tenant | db-control
 tooling/db-migrate                  12-Factor 迁移引擎
 ```
 
 - 业务切片现行路径：`packages/domains/*`、`packages/platform/*`（勿再写 `packages/features/*` 作为现行目录）。
-- **不单开** `@base/crud` 一类包；缺能力增强 `@base/ui` 或 `@base/biz-shared`。
+- **不单开** `@base/crud` 一类包；缺能力增强 `@base/ui` 或 `@biz/shared`。
 
 ---
 
 ## 二、 红线摘要（细则见对应 reference）
 
-| #   | 红线                                                                                                 | 细则                                          |
-| :-- | :--------------------------------------------------------------------------------------------------- | :-------------------------------------------- |
-| 1   | 权限/列表 URL 契约收敛在 `contract.ts`（SSoT），门禁脚本硬拦                                         | `references/1-contracts.md`                   |
-| 2   | mutation：`defineServerAction` + `toPlainData`；RSC→Client 禁 Promise/函数 props                     | `references/4-server-actions.md`              |
-| 3   | 破坏性操作单次 `ConfirmDialog`；反馈用 Toast；禁 `window.location.reload()`                          | `references/5-ui-components.md`               |
-| 4   | 数据经 `TenantDbManager` 分库路由，禁拼连接串                                                        | `docs/ARCHITECTURE.md`、db-tenant 文档        |
-| 5   | 标准列表：`DataTable` 默认 chrome + `useListSearch`；禁业务手绘表壳                                  | `references/5-ui-components.md`               |
-| 6   | 写路径 CASL（Action 内断言 + UI `subject`/门禁）                                                     | `references/4`、`references/7`                |
-| 7   | 列表 URL：`defineListSearchParams`；Client：`useListSearch`                                          | `references/9-crud-resource-paradigm.md`      |
-| 8   | CRUD 表单：`FormModal` + schema/fields；禁业务层手写字段树 / 直接 RHF                                | `references/5-ui-components.md`               |
-| 9   | Mutation 使用 `defineServerAction` 直写；RSC 装配遵循 Next.js 标准 async 函数；`use server` 平铺导出 | `references/9`、`references/4`                |
-| 10  | 导出走 `exportContractCsv` + 契约字段                                                                | `references/1-contracts.md`                   |
-| 11  | 原子层 shadcn 规范（`@base/ui` `components/ui/`）                                                    | `.agents/skills/shadcn/`                      |
-| 12  | 通用能力上浮至 `@base/ui` / `@base/biz-shared`，禁业务平行第二套                                     | `references/8-base-infrastructure.md`         |
-| 13  | 测试同级共存；实体审计+软删除基线；提交前人工审阅 + 中文 Conventional Commits；禁 `--no-verify`      | `AGENTS.md`、`references/2-schema-migrate.md` |
-| 14  | 严禁用 `any` 降解，强制 TypeScript 强类型（Prisma/Zod/DTO/Props 端到端可推导；禁 `any` / `(x as any)`）| `AGENTS.md`、`references/3-services.md`       |
+| #   | 红线                                                                                                           | 细则                                          |
+| :-- | :------------------------------------------------------------------------------------------------------------- | :-------------------------------------------- |
+| 1   | 权限/列表 URL 契约收敛在 `contract.ts`（SSoT），门禁脚本硬拦                                                   | `references/1-contracts.md`                   |
+| 2   | mutation：`defineServerAction` + `toPlainData`；RSC→Client 禁 Promise/函数 props                               | `references/4-server-actions.md`              |
+| 3   | 破坏性操作单次 `ConfirmDialog`；反馈用 Toast；禁 `window.location.reload()`                                    | `references/5-ui-components.md`               |
+| 4   | 数据经 `TenantDbManager` 分库路由，禁拼连接串                                                                  | `docs/ARCHITECTURE.md`、db-tenant 文档        |
+| 5   | 标准列表：`DataTable` 默认 chrome + `useListSearch`；禁业务手绘表壳                                            | `references/5-ui-components.md`               |
+| 6   | 写路径 CASL（Action 内断言 + UI `subject`/门禁）                                                               | `references/4`、`references/7`                |
+| 7   | 列表 URL：`defineListSearchParams`；Client：`useListSearch`                                                    | `references/9-crud-resource-paradigm.md`      |
+| 8   | CRUD 表单：`FormModal` + schema/fields；禁业务层手写字段树 / 直接 RHF                                          | `references/5-ui-components.md`               |
+| 9   | Mutation 使用 `defineServerAction` 直写；RSC 装配遵循 Next.js 标准 async 函数；`use server` 平铺导出           | `references/9`、`references/4`                |
+| 10  | 导出走 `exportContractCsv` + 契约字段                                                                          | `references/1-contracts.md`                   |
+| 11  | 原子层 shadcn 规范（`@base/ui` `components/ui/`）                                                              | `.agents/skills/shadcn/`                      |
+| 12  | 通用能力上浮至 `@base/ui` / `@biz/shared`，禁业务平行第二套                                                    | `references/8-base-infrastructure.md`         |
+| 13  | 测试同级共存；实体审计+软删除基线；提交前人工审阅 + 中文 Conventional Commits；禁 `--no-verify`                | `AGENTS.md`、`references/2-schema-migrate.md` |
+| 14  | 严禁用 `any` 降解，强制 TypeScript 强类型（Prisma/Zod/DTO/Props 端到端可推导；禁 `any` / `(x as any)`）        | `AGENTS.md`、`references/3-services.md`       |
+| 15  | **架构中立性与业务零耦合**：Skill 严禁硬编码当前项目特定业务逻辑与实体，示例一律抽象化，确保跨项目 100% 可移植 | 本规约「零、核心分工原则」                    |
 
 **作废 / 禁止用于新代码**（仅存量迁移过渡的标 `@deprecated`）：
 
@@ -61,7 +74,8 @@ tooling/db-migrate                  12-Factor 迁移引擎
 
 ## 三、 赛道一：业务切片流水线（地图）
 
-**标准 CRUD 最佳范式与流程（通用模板，供参考）** → [`references/9-crud-resource-paradigm.md`](./references/9-crud-resource-paradigm.md)（必读）  
+**标准 CRUD 最佳范式与流程（通用模板，供参考）** → [`references/9-crud-resource-paradigm.md`](./references/9-crud-resource-paradigm.md)（必读）
+
 > 注：8 步流程作为全仓通用的基准参考模板，覆盖绝大多数标准 CRUD 场景。面对主子表、多步骤向导、复杂审批流等高复杂度页面时，在坚守底线的前提下支持合规扩展与定制，切忌生搬硬套。
 
 ```text
@@ -100,20 +114,20 @@ tooling/db-migrate                  12-Factor 迁移引擎
 
 ## 五、 渐进式阅读索引
 
-| 领域                      | 路径                                                                  |
-| :------------------------ | :-------------------------------------------------------------------- |
+| 领域                           | 路径                                                                  |
+| :----------------------------- | :-------------------------------------------------------------------- |
 | **标准 CRUD 最佳范式（必读）** | `references/9-crud-resource-paradigm.md`                              |
-| 切片包骨架                | `references/0-architecture-topology.md`                               |
-| 契约                      | `references/1-contracts.md`                                           |
-| Schema / 迁移             | `references/2-schema-migrate.md`                                      |
-| Service / Query           | `references/3-services.md`                                            |
-| Server Actions            | `references/4-server-actions.md`                                      |
-| DataTable / FormModal     | `references/5-ui-components.md`                                       |
-| 路由 / page / Manifest    | `references/6-tenant-routing.md`                                      |
-| CASL Provider             | `references/7-casl-ability-provider.md`                               |
-| 基座包                    | `references/8-base-infrastructure.md`                                 |
-| 目标架构规格              | `docs/architecture/refactoring-architecture-and-official-patterns.md` |
-| 系统全景                  | `docs/ARCHITECTURE.md`                                                |
+| 切片包骨架                     | `references/0-architecture-topology.md`                               |
+| 契约                           | `references/1-contracts.md`                                           |
+| Schema / 迁移                  | `references/2-schema-migrate.md`                                      |
+| Service / Query                | `references/3-services.md`                                            |
+| Server Actions                 | `references/4-server-actions.md`                                      |
+| DataTable / FormModal          | `references/5-ui-components.md`                                       |
+| 路由 / page / Manifest         | `references/6-tenant-routing.md`                                      |
+| CASL Provider                  | `references/7-casl-ability-provider.md`                               |
+| 基座包                         | `references/8-base-infrastructure.md`                                 |
+| 目标架构规格                   | `docs/architecture/refactoring-architecture-and-official-patterns.md` |
+| 系统全景                       | `docs/ARCHITECTURE.md`                                                |
 
 ---
 

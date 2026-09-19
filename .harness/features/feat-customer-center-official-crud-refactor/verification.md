@@ -5,7 +5,7 @@
 1. **类型检查**：
 
    ```bash
-   pnpm --filter @base/feature-customer-center check
+   pnpm --filter @domain/customer-center check
    pnpm --filter tenant check
    pnpm -r --parallel check
    ```
@@ -15,7 +15,7 @@
 2. **单元测试与回归**：
 
    ```bash
-   pnpm --filter @base/feature-customer-center test
+   pnpm --filter @domain/customer-center test
    ```
 
    单测必须全部通过，覆盖：

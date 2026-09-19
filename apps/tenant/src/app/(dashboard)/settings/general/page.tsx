@@ -1,8 +1,8 @@
 import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
 import { getServerAuthRuntime } from "@base/auth";
-import { GeneralSettingsView } from "@base/feature-tenant-admin/tenant-settings";
-import { getGeneralSettingsQuery } from "@base/feature-tenant-admin/tenant-settings/server";
+import { GeneralSettingsView } from "@platform/tenant-admin/tenant-settings";
+import { getGeneralSettingsQuery } from "@platform/tenant-admin/tenant-settings/server";
 import { Card } from "@base/ui";
 
 /**

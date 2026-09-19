@@ -41,15 +41,15 @@ importers:
       '@base/db-tenant':
         specifier: workspace:*
         version: link:../../packages/base/db-tenant
-      '@base/feature-control-admin':
-        specifier: workspace:*
-        version: link:../../packages/platform/control-admin
       '@base/shared':
         specifier: workspace:*
         version: link:../../packages/base/shared
       '@base/ui':
         specifier: workspace:*
         version: link:../../packages/base/ui
+      '@platform/control-admin':
+        specifier: workspace:*
+        version: link:../../packages/platform/control-admin
       better-auth:
         specifier: 1.7.3
         version: 1.7.3(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))(mysql2@3.15.3)(next@16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -105,27 +105,27 @@ importers:
       '@base/authorization':
         specifier: workspace:*
         version: link:../../packages/base/authorization
-      '@base/biz-shared':
-        specifier: workspace:*
-        version: link:../../packages/base/biz-shared
       '@base/db-control':
         specifier: workspace:*
         version: link:../../packages/base/db-control
       '@base/db-tenant':
         specifier: workspace:*
         version: link:../../packages/base/db-tenant
-      '@base/feature-customer-center':
-        specifier: workspace:*
-        version: link:../../packages/domains/customer-center
-      '@base/feature-tenant-admin':
-        specifier: workspace:*
-        version: link:../../packages/platform/tenant-admin
       '@base/shared':
         specifier: workspace:*
         version: link:../../packages/base/shared
       '@base/ui':
         specifier: workspace:*
         version: link:../../packages/base/ui
+      '@biz/shared':
+        specifier: workspace:*
+        version: link:../../packages/biz-shared
+      '@domain/customer-center':
+        specifier: workspace:*
+        version: link:../../packages/domains/customer-center
+      '@platform/tenant-admin':
+        specifier: workspace:*
+        version: link:../../packages/platform/tenant-admin
       better-auth:
         specifier: 1.7.3
         version: 1.7.3(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))(mysql2@3.15.3)(next@16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -240,55 +240,6 @@ importers:
       react-dom:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
-      tsx:
-        specifier: ^4.20.6
-        version: 4.23.13
-      typescript:
-        specifier: ^5.8.2
-        version: 5.8.2
-
-  packages/base/biz-shared:
-    dependencies:
-      '@base/authorization':
-        specifier: workspace:*
-        version: link:../authorization
-      '@base/shared':
-        specifier: workspace:*
-        version: link:../shared
-      '@base/ui':
-        specifier: workspace:*
-        version: link:../ui
-      '@casl/ability':
-        specifier: 7.0.1
-        version: 7.0.1
-      lucide-react:
-        specifier: ^1.16.0
-        version: 1.41.0(react@19.2.3)
-      next:
-        specifier: 16.3.4
-        version: 16.3.4(@babel/core@7.29.7)(@types/node@22.20.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      nuqs:
-        specifier: ^2.10.1
-        version: 2.10.1(next@16.3.4(@babel/core@7.29.7)(@types/node@22.20.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
-      zod:
-        specifier: ^4.6.1
-        version: 4.6.1
-    devDependencies:
-      '@types/node':
-        specifier: ^22.13.9
-        version: 22.20.2
-      '@types/react':
-        specifier: ^19.0.10
-        version: 19.2.18
-      '@types/react-dom':
-        specifier: ^19.0.4
-        version: 19.2.7(@types/react@19.2.18)
-      react:
-        specifier: 19.2.3
-        version: 19.2.3
-      react-dom:
-        specifier: 19.2.3
-        version: 19.2.3(react@19.2.3)
       tsx:
         specifier: ^4.20.6
         version: 4.23.13
@@ -462,6 +413,55 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
 
+  packages/biz-shared:
+    dependencies:
+      '@base/authorization':
+        specifier: workspace:*
+        version: link:../base/authorization
+      '@base/shared':
+        specifier: workspace:*
+        version: link:../base/shared
+      '@base/ui':
+        specifier: workspace:*
+        version: link:../base/ui
+      '@casl/ability':
+        specifier: 7.0.1
+        version: 7.0.1
+      lucide-react:
+        specifier: ^1.16.0
+        version: 1.41.0(react@19.2.3)
+      next:
+        specifier: 16.3.4
+        version: 16.3.4(@babel/core@7.29.7)(@types/node@22.20.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      nuqs:
+        specifier: ^2.10.1
+        version: 2.10.1(next@16.3.4(@babel/core@7.29.7)(@types/node@22.20.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
+      zod:
+        specifier: ^4.6.1
+        version: 4.6.1
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.9
+        version: 22.20.2
+      '@types/react':
+        specifier: ^19.0.10
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.0.4
+        version: 19.2.7(@types/react@19.2.18)
+      react:
+        specifier: 19.2.3
+        version: 19.2.3
+      react-dom:
+        specifier: 19.2.3
+        version: 19.2.3(react@19.2.3)
+      tsx:
+        specifier: ^4.20.6
+        version: 4.23.13
+      typescript:
+        specifier: ^5.8.2
+        version: 5.8.2
+
   packages/domains/customer-center:
     dependencies:
       '@base/auth':
@@ -470,9 +470,6 @@ importers:
       '@base/authorization':
         specifier: workspace:*
         version: link:../../base/authorization
-      '@base/biz-shared':
-        specifier: workspace:*
-        version: link:../../base/biz-shared
       '@base/db-tenant':
         specifier: workspace:*
         version: link:../../base/db-tenant
@@ -482,6 +479,9 @@ importers:
       '@base/ui':
         specifier: workspace:*
         version: link:../../base/ui
+      '@biz/shared':
+        specifier: workspace:*
+        version: link:../../biz-shared
       '@casl/ability':
         specifier: 7.0.1
         version: 7.0.1

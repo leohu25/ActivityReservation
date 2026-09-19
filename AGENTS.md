@@ -3,9 +3,10 @@
 本项目为 **现代化多租户 SaaS 基础设施与通用业务底座 (Modular Monorepo + Vertical Slice Architecture)**。
 
 - **双端应用**：`apps/control`（平台管控平面）与 `apps/tenant`（租户数据平面）；
-- **横向平台基建**：`packages/base/*`（`@base/auth` 认证、`@base/authorization` CASL 四层权限、`@base/db-tenant` 多租户动态连接池、`@base/ui` 工业风组件与 DataTable、`@base/biz-shared` 业务中台资产、`@base/shared` 序列化工具）；
-- **平台系统套件**：`packages/platform/*`（`@base/feature-control-admin` 平台管控中心、`@base/feature-tenant-admin` 租户系统设置）；
-- **垂直业务切片**：`packages/domains/*`（各业务切片物理内聚、无横向耦合，包括客户、物料、订单、采购等领域）；
+- **横向平台基建**：`packages/base/*`（`@base/auth` 认证、`@base/authorization` CASL 四层权限、`@base/db-tenant` 多租户动态连接池、`@base/ui` 工业风组件与 DataTable、`@base/shared` 序列化工具）；
+- **跨业务中台资产**：`packages/biz-shared`（`@biz/shared` 审批流状态机、单据发号器契约）；
+- **平台系统套件**：`packages/platform/*`（`@platform/control-admin` 平台管控中心、`@platform/tenant-admin` 租户系统设置）；
+- **垂直业务切片**：`packages/domains/*`（各业务切片物理内聚、无横向耦合，例如 `@domain/customer-center` 客户中心等领域）；
 - **迁移引擎与工具**：`tooling/db-migrate`（12-Factor 无状态自愈迁移引擎）；
 - **全栈开发规范事实源**：本底座派生出的全套开发规范详见 **`.agents/skills/next-saas-base-dev/`**（开工前必须参考）。
 

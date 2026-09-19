@@ -389,7 +389,7 @@
     {
       "id": "feat-customer-center-official-crud-refactor",
       "name": "【客户中心标杆重构】对齐 Next.js 官方规范与 FormModal/DataTable 契约式 CRUD",
-      "description": "以客户中心 (@base/feature-customer-center) 为唯一 0→1 黄金标杆，按 docs/architecture/refactoring-architecture-and-official-patterns.md (v2.1) 固化 CRUD 范式：1. URL：引入 nuqs，search-params.ts 强类型契约 + NuqsAdapter + useQueryStates，禁止 useTableUrlState/parseTableSearchParams；2. 列表 UI：DataTable 纯受控 + URL-as-State，剔除 Client data/page 镜像 state；3. 弹窗 UI：FormModal + Zod + FormFieldSchema/sections + subject（Element-UI 式声明式契约），禁止业务层手写 Dialog/Input 树或直接 useForm；4. 服务端：React cache 记忆化租户上下文、DTO 投影、Promise.all 并行、defineServerAction + assertEditableFields + revalidatePath；5. 发号禁止 count()+1，采用 sequence/稳定 ID；6. 页面：customerSearchParamsCache.parse + Suspense 骨架流式装配；7. 对照 .agents/skills/vercel-react-best-practices 做 P1c 性能门禁。验收以架构文档质量门禁为准，不以行数 KPI 卡刀。",
+      "description": "以客户中心 (@domain/customer-center) 为唯一 0→1 黄金标杆，按 docs/architecture/refactoring-architecture-and-official-patterns.md (v2.1) 固化 CRUD 范式：1. URL：引入 nuqs，search-params.ts 强类型契约 + NuqsAdapter + useQueryStates，禁止 useTableUrlState/parseTableSearchParams；2. 列表 UI：DataTable 纯受控 + URL-as-State，剔除 Client data/page 镜像 state；3. 弹窗 UI：FormModal + Zod + FormFieldSchema/sections + subject（Element-UI 式声明式契约），禁止业务层手写 Dialog/Input 树或直接 useForm；4. 服务端：React cache 记忆化租户上下文、DTO 投影、Promise.all 并行、defineServerAction + assertEditableFields + revalidatePath；5. 发号禁止 count()+1，采用 sequence/稳定 ID；6. 页面：customerSearchParamsCache.parse + Suspense 骨架流式装配；7. 对照 .agents/skills/vercel-react-best-practices 做 P1c 性能门禁。验收以架构文档质量门禁为准，不以行数 KPI 卡刀。",
       "dependencies": ["arch-ui-shadcn-official-standardization"],
       "status": "completed",
       "owner": "implementer",

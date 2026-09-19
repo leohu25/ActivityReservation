@@ -23,37 +23,37 @@ import { revalidatePath } from "next/cache";
 import { defineServerAction } from "@base/shared";
 import { StandardAction } from "@base/authorization";
 import {
-  assertCustomerAbility,
-  getTenantCustomerContext,
+  assertDomainAbility,
+  getTenantDomainContext,
 } from "../../assembly/context";
-import { CustomerService } from "./service";
-import { CustomerSubject } from "./contract";
-import { parseCreateCustomerInput } from "./schema";
-import type { CreateCustomerInput } from "./types";
+import { ResourceService } from "./service";
+import { ResourceSubject } from "./contract";
+import { parseCreateResourceInput } from "./schema";
+import type { CreateResourceInput } from "./types";
 
-export const createCustomerAction = defineServerAction(
-  async (rawInput: CreateCustomerInput) => {
+export const createResourceAction = defineServerAction(
+  async (rawInput: CreateResourceInput) => {
     // 1. 获取租户与权限上下文
     const { client, ability, userId, employeeProfile } =
-      await getTenantCustomerContext();
+      await getTenantDomainContext();
 
     // 2. CASL 强类型权限守卫
-    assertCustomerAbility(ability, StandardAction.CREATE, CustomerSubject);
+    assertDomainAbility(ability, StandardAction.CREATE, ResourceSubject);
 
     // 3. Zod 校验入参
-    const input = parseCreateCustomerInput(rawInput);
+    const input = parseCreateResourceInput(rawInput);
 
     // 4. 执行领域逻辑
-    const created = await CustomerService.createCustomer(client, input, {
+    const created = await ResourceService.createResource(client, input, {
       userId,
       deptId: employeeProfile?.departmentId ?? null,
     });
 
     // 5. 缓存刷新
-    revalidatePath("/customer/customers");
+    revalidatePath("/<domain>/<resources>");
     return created;
   },
-  "创建客户失败",
+  "创建记录失败",
 );
 ```
 
@@ -73,27 +73,27 @@ export const createCustomerAction = defineServerAction(
 import { revalidatePath } from "next/cache";
 import { defineServerAction } from "@base/shared";
 import {
-  assertCustomerAbility,
-  getTenantCustomerContext,
+  assertDomainAbility,
+  getTenantDomainContext,
 } from "../../assembly/context";
-import { CustomerService } from "./service";
-import { CustomerSubject } from "./contract";
-import type { CreateCustomerInput } from "./types";
+import { ResourceService } from "./service";
+import { ResourceSubject } from "./contract";
+import type { CreateResourceInput } from "./types";
 
-export const createCustomerAction = defineServerAction(
-  async (input: CreateCustomerInput) => {
+export const createResourceAction = defineServerAction(
+  async (input: CreateResourceInput) => {
     const { client, ability, userId, employeeProfile } =
-      await getTenantCustomerContext();
-    assertCustomerAbility(ability, "create", CustomerSubject);
+      await getTenantDomainContext();
+    assertDomainAbility(ability, "create", ResourceSubject);
 
-    const created = await CustomerService.createCustomer(client, input, {
+    const created = await ResourceService.createResource(client, input, {
       userId,
       deptId: employeeProfile?.departmentId ?? null,
     });
-    revalidatePath("/customer/customers");
+    revalidatePath("/<domain>/<resources>");
     return created;
   },
-  "创建客户失败",
+  "创建记录失败",
 );
 ```
 
@@ -115,13 +115,13 @@ import {
   getTenantDbContext,
   type TenantDbContext,
 } from "../shared/server/tenant-context";
-import { customerCatalog } from "../catalog";
+import { domainCatalog } from "../catalog";
 
-export interface TenantCustomerContext extends TenantDbContext {
+export interface TenantDomainContext extends TenantDbContext {
   readonly ability: AppPrismaAbility<string, string>;
 }
 
-export async function getTenantCustomerContext(): Promise<TenantCustomerContext> {
+export async function getTenantDomainContext(): Promise<TenantDomainContext> {
   const dbCtx = await getTenantDbContext();
   const runtime = getServerAuthRuntime();
 
@@ -151,7 +151,7 @@ export async function getTenantCustomerContext(): Promise<TenantCustomerContext>
   // 2. 编译具备完整 CASL 规则与行级数据范围（Prisma 条件）的 Ability 实例
   const factory = new CaslAbilityFactory(
     runtime.tenantContextRepository,
-    customerCatalog,
+    domainCatalog,
   );
   const ability = (await factory.createPrismaAbilityForTenant(
     dbCtx.tenantCtx,
@@ -161,7 +161,7 @@ export async function getTenantCustomerContext(): Promise<TenantCustomerContext>
   return { ...dbCtx, ability };
 }
 
-export function assertCustomerAbility(
+export function assertDomainAbility(
   ability: AppPrismaAbility<string, string>,
   action: string,
   subject: string,
@@ -185,9 +185,9 @@ type ServerActionResult<T> =
 前端消费极其清爽直观：
 
 ```tsx
-const res = await updateCustomerStatusAction(code, "DISABLED");
+const res = await updateResourceStatusAction(id, "DISABLED");
 if (res.success) {
-  toast.success("客户已成功停用");
+  toast.success("记录已成功停用");
   // 响应式更新前端 State...
 } else {
   toast.error(res.error); // 无权限时这里是 ForbiddenError 文案

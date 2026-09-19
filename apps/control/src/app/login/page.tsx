@@ -1,5 +1,5 @@
 import React from "react";
-import { ControlLogin } from "@base/feature-control-admin/shared";
+import { ControlLogin } from "@platform/control-admin/shared";
 
 /**
  * 控制平面登录/注册页面路由装配点

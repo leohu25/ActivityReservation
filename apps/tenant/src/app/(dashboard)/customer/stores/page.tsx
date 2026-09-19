@@ -2,11 +2,11 @@ import {
 	StoreView,
 	customerStoreSearchParams,
 	type StoreListItem,
-} from "@base/feature-customer-center/store-management";
+} from "@domain/customer-center/store-management";
 import {
 	listStoresQuery,
 	getStorePageOptionsQuery,
-} from "@base/feature-customer-center/store-management/server";
+} from "@domain/customer-center/store-management/server";
 
 interface PageProps {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;

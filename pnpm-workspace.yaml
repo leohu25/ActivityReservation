@@ -1,6 +1,7 @@
 packages:
   - "apps/*"
   - "packages/base/*"
+  - "packages/biz-shared"
   - "packages/platform/*"
   - "packages/domains/*"
   - "tooling/*"

@@ -1,11 +1,11 @@
 import {
 	CategoryView,
 	customerCategorySearchParams,
-} from "@base/feature-customer-center/customer-management/category";
+} from "@domain/customer-center/customer-management/category";
 import {
 	listCategoriesQuery,
 	getCustomerCategoryOptionsQuery,
-} from "@base/feature-customer-center/customer-management/category/server";
+} from "@domain/customer-center/customer-management/category/server";
 
 interface PageProps {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;

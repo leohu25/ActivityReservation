@@ -2,9 +2,9 @@ import {
   DepartmentSubject,
   EmployeeSubject,
   PositionSubject,
-} from "@base/feature-tenant-admin/org-management";
-import { RoleSubject } from "@base/feature-tenant-admin/role-management";
-import { TenantAdminAbilityBoundary } from "@base/feature-tenant-admin/shared";
+} from "@platform/tenant-admin/org-management";
+import { RoleSubject } from "@platform/tenant-admin/role-management";
+import { TenantAdminAbilityBoundary } from "@platform/tenant-admin/shared";
 import { getTenantSubjectPermissions } from "@/kernel";
 
 /**

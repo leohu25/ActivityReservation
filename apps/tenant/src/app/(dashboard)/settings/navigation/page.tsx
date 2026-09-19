@@ -1,8 +1,8 @@
 import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
 import { getServerAuthRuntime } from "@base/auth";
-import { NavigationConfigView } from "@base/feature-tenant-admin/nav-management";
-import { getNavigationConfigQuery } from "@base/feature-tenant-admin/nav-management/server";
+import { NavigationConfigView } from "@platform/tenant-admin/nav-management";
+import { getNavigationConfigQuery } from "@platform/tenant-admin/nav-management/server";
 import { Card } from "@base/ui";
 import { globalBusinessPageList } from "@/kernel";
 

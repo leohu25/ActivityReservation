@@ -10,7 +10,7 @@
 
 ## 2. 演进目标（以目标架构 v2.1 为准）
 
-以 `@base/feature-customer-center` 为唯一 0→1 标杆，固化：
+以 `@domain/customer-center` 为唯一 0→1 标杆，固化：
 
 | 层 | 标准 |
 | :--- | :--- |

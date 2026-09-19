@@ -1,7 +1,6 @@
 # 模块 7：官方 CASL 客户端范式（教科书形态）
 
-> **权威样板**：`customer-center` + `apps/tenant/src/app/(dashboard)/customer/layout.tsx`  
-> 新切片 / 迁移旧切片一律按本模块，禁止再引入「View 自建 plain ability + 传 `permissions` props」双轨。
+> **设计原则**：切片 Layout 负责声明式一次性注入权限快照，View 视图只负责渲染业务数据并通过 `useAbility()` 消费权限。禁止再引入「View 自建 plain ability + 传 `permissions` props」双轨模式。
 
 ## 0. 为什么是这个形态
 
@@ -31,13 +30,13 @@ Server Action  assert*Ability(...)   ← 安全真相永远在服务端
 
 ## 1. 四个入口（必须记住）
 
-| 角色   | API                                                        | 位置                                           |
-| ------ | ---------------------------------------------------------- | ---------------------------------------------- |
-| 拉权限 | `getTenantSubjectPermissions(subject)`                     | `apps/tenant/src/kernel`                       |
-| 编快照 | `buildCustomerAbilitySnapshots` / 自建 `AbilitySnapshot[]` | Business Area `shared/ui/*AbilityBoundary.tsx` |
-| 注入   | `TenantAbilityProvider snapshots={...}`                    | 切片 layout 或 Boundary                        |
-| 消费   | `useAbility()` / `Can` / DataTable 积木                    | Client View                                    |
-| 写路径 | `assert*Ability(ability, action, subject)`                 | Feature `actions.ts`                           |
+| 角色   | API                                                     | 位置                                           |
+| ------ | ------------------------------------------------------- | ---------------------------------------------- |
+| 拉权限 | `getTenantSubjectPermissions(subject)`                  | `apps/tenant/src/kernel`                       |
+| 编快照 | `buildSliceAbilitySnapshots` / 自建 `AbilitySnapshot[]` | Business Area `shared/ui/*AbilityBoundary.tsx` |
+| 注入   | `TenantAbilityProvider snapshots={...}`                 | 切片 layout 或 Boundary                        |
+| 消费   | `useAbility()` / `Can` / DataTable 积木                 | Client View                                    |
+| 写路径 | `assert*Ability(ability, action, subject)`              | Feature `actions.ts`                           |
 
 导出（均可从 `@base/authorization` 或 `@base/ui`）：
 
@@ -72,9 +71,9 @@ export function buildSliceAbilitySnapshots(permissions: {
 }): AbilitySnapshot[] {
   return [
     {
-      subject: "Customer",
-      actions: permissions.customer.actions,
-      fieldPolicies: permissions.customer.fieldPolicies,
+      subject: "ResourceA",
+      actions: permissions.resourceA.actions,
+      fieldPolicies: permissions.resourceA.fieldPolicies,
     },
     // …其他 Subject
   ];
@@ -101,9 +100,9 @@ export function SliceAbilityBoundary({
 
 ```tsx
 // apps/tenant/src/app/(dashboard)/<slice>/layout.tsx
-import { SliceAbilityBoundary } from "@base/feature-<area>/shared";
-import { CustomerSubject } from "@base/feature-<area>/customer-management";
-import { CustomerStoreSubject } from "@base/feature-<area>/store-management";
+import { SliceAbilityBoundary } from "@domain/<area>/shared";
+import { ResourceASubject } from "@domain/<area>/<feature-a>";
+import { ResourceBSubject } from "@domain/<area>/<feature-b>";
 import { getTenantSubjectPermissions } from "@/kernel";
 
 export default async function SliceLayout({
@@ -111,13 +110,13 @@ export default async function SliceLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [customer, store] = await Promise.all([
-    getTenantSubjectPermissions(CustomerSubject),
-    getTenantSubjectPermissions(CustomerStoreSubject),
+  const [resourceA, resourceB] = await Promise.all([
+    getTenantSubjectPermissions(ResourceASubject),
+    getTenantSubjectPermissions(ResourceBSubject),
   ]);
 
   return (
-    <SliceAbilityBoundary permissions={{ customer, store }}>
+    <SliceAbilityBoundary permissions={{ resourceA, resourceB }}>
       {children}
     </SliceAbilityBoundary>
   );
@@ -214,8 +213,8 @@ Fail-Closed：`actions: []` → 一切拒绝；无 Provider 时 `useOptionalAbil
 ```tsx
 <DataTree<CategoryTreeItem>
   data={treeData}
-  subject={CustomerCategorySubject} // 👈 必须传：内部 ActionButton 自动按此 Subject 校验 create/update/delete
-  title="客户多级分类树"
+  subject={CategorySubject} // 👈 必须传：内部 ActionButton 自动按此 Subject 校验 create/update/delete
+  title="多级分类树"
   onCreateRoot={handleCreateRoot}
   nodeActions={[
     {
@@ -240,11 +239,11 @@ Fail-Closed：`actions: []` → 一切拒绝；无 Provider 时 `useOptionalAbil
 #### (3) 使用标准表单模态框 FormModal 时：显式注入 subject，零私有权限胶水代码
 
 ```tsx
-<FormModal<CustomerFormData>
+<FormModal<ResourceFormData>
   open={open}
   mode={mode}
-  subject={CustomerSubject} // 👈 必须传：内部自动执行字段三态过滤、动态豁免不可见字段必填并禁用只读项
-  schema={customerFormZodSchema}
+  subject={ResourceSubject} // 👈 必须传：内部自动执行字段三态过滤、动态豁免不可见字段必填并禁用只读项
+  schema={resourceFormZodSchema}
   sections={sections}
   initialValues={initialValues}
   onClose={onClose}
@@ -264,7 +263,7 @@ import { ItemMasterSubject, StandardAction } from "../contract";
   action={StandardAction.CREATE}
   onClick={() => setShowModal(true)}
 >
-  <Plus className="mr-1 h-4 w-4" /> 新建商品
+  <Plus className="mr-1 h-4 w-4" /> 新增记录
 </ActionButton>
 
 // 或使用 AuthGuard 声明式包裹：
@@ -279,11 +278,11 @@ import { ItemMasterSubject, StandardAction } from "../contract";
 
 ```tsx
 // 1. 动作级校验
-assertCustomerAbility(ability, StandardAction.UPDATE, CustomerSubject);
+assertSliceAbility(ability, StandardAction.UPDATE, ResourceSubject);
 // 2. 字段级防篡改校验 (拦截恶意通过网络请求篡改只读/隐藏字段)
 assertEditableFields(
   ability as unknown as AnyMongoAbility,
-  CustomerSubject,
+  ResourceSubject,
   extractControlledPayload(input),
 );
 ```
@@ -302,17 +301,17 @@ assertEditableFields(
 
 ```tsx
 import { TenantAbilityProvider } from "@base/authorization";
-import { CustomerView } from "./CustomerView";
+import { ResourceView } from "./ResourceView";
 
 renderToString(
   <TenantAbilityProvider
     snapshots={{
-      subject: "Customer",
+      subject: "Resource",
       actions: ["read", "export"],
       fieldPolicies: {},
     }}
   >
-    <CustomerView data={[]} total={0} categoryOptions={[]} tagOptions={[]} />
+    <ResourceView data={[]} total={0} options={[]} />
   </TenantAbilityProvider>,
 );
 ```

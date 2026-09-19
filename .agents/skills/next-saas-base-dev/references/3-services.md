@@ -28,7 +28,12 @@ packages/domains/<business-area>/src/
 
 ```ts
 import { headers } from "next/headers";
-import { getCurrentTenantContext, getServerAuthRuntime, assertTenantAccessGate, type TenantContext } from "@base/auth";
+import {
+  getCurrentTenantContext,
+  getServerAuthRuntime,
+  assertTenantAccessGate,
+  type TenantContext,
+} from "@base/auth";
 import { getTenantDbManager, type TenantPrismaClient } from "@base/db-tenant";
 
 export interface TenantDbContext {
@@ -52,7 +57,9 @@ export async function getTenantDbContext(): Promise<TenantDbContext> {
   const reqHeaders = await headers();
   const tenantCtx = await getCurrentTenantContext(reqHeaders);
   const runtime = getServerAuthRuntime();
-  const manager = getTenantDbManager({ repository: runtime.tenantContextRepository });
+  const manager = getTenantDbManager({
+    repository: runtime.tenantContextRepository,
+  });
 
   const client = await manager.getClient(tenantCtx.organizationId);
   // 员工在职状态与租户门禁强校验 (Fail-Closed)
@@ -99,19 +106,21 @@ import type { TenantPrismaClient } from "@base/db-tenant";
 import type { PrismaQueryCondition } from "@base/authorization";
 import { resolvePagination } from "@base/shared";
 
-export class CustomerService {
+export class ResourceService {
   /**
-   * 客户列表查询：组合软删除过滤与行级数据范围下推
+   * 资源列表查询：组合软删除过滤与行级数据范围下推
    */
-  static async listCustomers(
+  static async listResources(
     client: TenantPrismaClient,
-    filter: ListCustomerFilter = {},
+    filter: ListResourceFilter = {},
     accessibleWhere?: PrismaQueryCondition,
   ) {
     // 统一中立分页解析：一行搞定清洗、防 OOM 边界与 skip/take
-    const { page, pageSize, skip, take } = resolvePagination(filter, { defaultPageSize: 20 });
+    const { page, pageSize, skip, take } = resolvePagination(filter, {
+      defaultPageSize: 20,
+    });
 
-    const andConditions: any[] = [{ isDeleted: false }];
+    const andConditions: unknown[] = [{ isDeleted: false }];
     if (accessibleWhere && Object.keys(accessibleWhere).length > 0) {
       andConditions.push(accessibleWhere);
     }
@@ -119,8 +128,8 @@ export class CustomerService {
     const where = { AND: andConditions };
 
     const [total, items] = await Promise.all([
-      client.customer.count({ where }),
-      client.customer.findMany({
+      (client as any).resource.count({ where }),
+      (client as any).resource.findMany({
         where,
         orderBy: { createdAt: "desc" },
         skip,
@@ -132,22 +141,24 @@ export class CustomerService {
   }
 
   /**
-   * 软删除客户业务保护规则 (ADR-009)
+   * 软删除业务保护规则 (ADR-009)
    */
-  static async deleteCustomer(
+  static async deleteResource(
     client: TenantPrismaClient,
-    customerCode: string,
+    id: string,
     auditCtx?: { userId: string },
   ) {
-    const storeCount = await client.customerStore.count({
-      where: { customerCode, isDeleted: false },
+    const relationCount = await (client as any).subResource.count({
+      where: { resourceId: id, isDeleted: false },
     });
-    if (storeCount > 0) {
-      throw new Error(`该客户下存在 ${storeCount} 家关联门店，禁止删除，请进行“停用”操作`);
+    if (relationCount > 0) {
+      throw new Error(
+        `该条目下存在 ${relationCount} 项强关联子项目，禁止删除，请先进行“停用”操作`,
+      );
     }
 
-    return client.customer.update({
-      where: { customerCode },
+    return (client as any).resource.update({
+      where: { id },
       data: {
         isDeleted: true,
         deletedAt: new Date(),
@@ -168,26 +179,37 @@ export class CustomerService {
 import "server-only";
 import { toPlainData } from "@base/shared";
 import { getAccessibleWhere, pickReadableFields } from "@base/authorization";
-import { getTenantCustomerContext, assertCustomerAbility } from "../../assembly/context";
-import { CustomerSubject } from "./contract";
-import { CustomerService } from "./service";
-import type { CustomerListItem, ListCustomerFilter } from "./types";
+import {
+  getTenantDomainContext,
+  assertDomainAbility,
+} from "../../assembly/context";
+import { ResourceSubject } from "./contract";
+import { ResourceService } from "./service";
+import type { ResourceListItem, ListResourceFilter } from "./types";
 
-export async function listCustomersQuery(filter: ListCustomerFilter = {}) {
-  const { client, ability } = await getTenantCustomerContext();
-  assertCustomerAbility(ability, "read", CustomerSubject);
+export async function listResourcesQuery(filter: ListResourceFilter = {}) {
+  const { client, ability } = await getTenantDomainContext();
+  assertDomainAbility(ability, "read", ResourceSubject);
 
   // 1. 下推行级数据范围（SELF / DEPT / DEPT_TREE / ALL）至数据库物理层
-  const accessibleWhere = getAccessibleWhere(ability, CustomerSubject, "read");
-  const result = await CustomerService.listCustomers(client, filter, accessibleWhere);
+  const accessibleWhere = getAccessibleWhere(ability, ResourceSubject, "read");
+  const result = await ResourceService.listResources(
+    client,
+    filter,
+    accessibleWhere,
+  );
 
   // 2. 物理级列权限脱敏 (HIDDEN 列物理剥离)
-  const items: CustomerListItem[] = result.items.map((item) => {
-    const readable = pickReadableFields(ability, CustomerSubject, item as Record<string, unknown>);
+  const items: ResourceListItem[] = result.items.map((item) => {
+    const readable = pickReadableFields(
+      ability,
+      ResourceSubject,
+      item as Record<string, unknown>,
+    );
     return {
-      id: item.customerCode,
+      id: item.id,
       ...readable,
-    } as unknown as CustomerListItem;
+    } as unknown as ResourceListItem;
   });
 
   return toPlainData({ ...result, items });
@@ -206,7 +228,7 @@ export async function listCustomersQuery(filter: ListCustomerFilter = {}) {
 
 ### 标准规范：宿主聚合 BFF 模式 (Contextual Page Options)
 
-1. **鉴权归宿主**：由宿主业务的 `queries.ts` 提供聚合查询 `get*PageOptionsQuery`，内部只校验宿主自身的读取权限（如 `CustomerSubject`）；
+1. **鉴权归宿主**：由宿主业务的 `queries.ts` 提供聚合查询 `get*PageOptionsQuery`，内部只校验宿主自身的读取权限（如 `ResourceSubject`）；
 2. **底层方法统一复用 (DRY)**：底层 Service 统一提供带 `{ status?: "ACTIVE" }` 过滤的方法，管理端不传 status 查全量，下拉端传 `status: "ACTIVE"` 只查启用项；
 3. **全链路统一命名**：Query、Props、变量一律命名为 `*Options`（如 `categoryOptions`, `tagOptions`）。
 
@@ -254,4 +276,3 @@ export const getXxxPageOptionsQuery = cache(
 3. 列表 Query：返回 **DTO 投影**（Decimal→number、Date→ISO），禁止 Prisma 实体直出。
 4. 页面 options 与 list 使用 `Promise.all` 并行。
 5. 发号在 `service.ts`，禁止 `count(*)+1`。
-

@@ -122,9 +122,10 @@
 
 | 物理目录 | npm 包名（导入用） |
 | :--- | :--- |
-| `packages/domains/customer-center` | `@base/feature-customer-center` |
-| `packages/platform/control-admin` | `@base/feature-control-admin` |
-| `packages/platform/tenant-admin` | `@base/feature-tenant-admin` |
+| `packages/domains/customer-center` | `@domain/customer-center` |
+| `packages/platform/control-admin` | `@platform/control-admin` |
+| `packages/platform/tenant-admin` | `@platform/tenant-admin` |
+| `packages/biz-shared` | `@biz/shared` |
 | `packages/base/ui` 等 | `@base/ui`、`@base/auth`、`@base/authorization`、`@base/db-tenant`、`@base/shared` |
 
 ### 2. 纯净项目工作区拓扑（目标态）
@@ -154,21 +155,22 @@ chenrun-erp-nextjs/
 │               └── registry.generated.ts    # 构建期自发现注册活跃切片
 │
 ├── packages/
-│   ├── base/
+│   ├── base/                                # 纯技术基础设施（0 业务语义）
 │   │   ├── auth/                            # Better Auth
 │   │   ├── authorization/                   # CASL（assertEditableFields 等）
 │   │   ├── db-tenant/                       # TenantDbManager 分库路由
 │   │   ├── db-control/                      # 总控库客户端
 │   │   ├── shared/                          # defineServerAction / toPlainData
-│   │   ├── biz-shared/                      # 跨切片业务中台资产
 │   │   └── ui/                              # shadcn 原语 + 受控 DataTable
 │   │
-│   ├── platform/
-│   │   ├── control-admin/                   # @base/feature-control-admin
-│   │   └── tenant-admin/                    # @base/feature-tenant-admin
+│   ├── biz-shared/                          # 跨业务中台通用资产 (@biz/shared)
 │   │
-│   └── domains/
-│       └── customer-center/                 # @base/feature-customer-center
+│   ├── platform/                            # 平台系统管理套件
+│   │   ├── control-admin/                   # @platform/control-admin
+│   │   └── tenant-admin/                    # @platform/tenant-admin
+│   │
+│   └── domains/                             # 垂直业务领域集群
+│       └── customer-center/                 # @domain/customer-center
 │           ├── prisma/schema.prisma
 │           ├── src/
 │           │   ├── assembly/                # 租户上下文（React cache 记忆化）
@@ -176,7 +178,6 @@ chenrun-erp-nextjs/
 │           │   ├── features/
 │           │   │   └── customer-management/
 │           │   │       ├── contract.ts      # 【契约 SSoT】权限 + 列表 URL（customerSearchParams）
-│           │   │       ├── contract.ts      # CASL 权限契约 SSoT
 │           │   │       ├── schema.ts        # 共享 Zod Schema
 │           │   │       ├── types.ts         # z.infer 纯数据 DTO
 │           │   │       ├── service.ts       # Prisma 事务 / 编号 / 业务写
@@ -187,7 +188,7 @@ chenrun-erp-nextjs/
 │           │   ├── manifest.ts
 │           │   ├── catalog.ts
 │           │   └── index.ts                 # Client-safe 导出
-│           └── package.json                 # "name": "@base/feature-customer-center"
+│           └── package.json                 # "name": "@domain/customer-center"
 │
 └── tooling/db-migrate/                      # 12-Factor 无状态迁移引擎
 ```

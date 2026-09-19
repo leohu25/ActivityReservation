@@ -31,22 +31,22 @@
 
 ```tsx
 // RSC page.tsx — 见 references/9：createResourcePage 或等价 parse + query
-const parsed = await customerSearchParams.parse(searchParams);
-const { items, total } = await listCustomersQuery({
+const parsed = await resourceSearchParams.parse(searchParams);
+const { items, total } = await listResourcesQuery({
   page: parsed.page,
   pageSize: parsed.pageSize,
   keyword: parsed.keyword || undefined,
 });
-return <CustomerView data={items} total={total} />;
+return <ResourceView data={items} total={total} />;
 
 // Client View — 一体 DataTable + useListSearch（非手拼 Root + navigateList）
-const list = useListSearch(customerSearchParams);
+const list = useListSearch(resourceSearchParams);
 <DataTable
   {...list.dataTableProps}
   data={data}
   columns={columns}
   total={total}
-  subject={customerPageContract.subject}
+  subject={resourcePageContract.subject}
 />;
 ```
 
@@ -64,9 +64,9 @@ const list = useListSearch(customerSearchParams);
 ```tsx
 import { toast } from "@base/ui";
 
-toast.success("客户创建成功");
-toast.error(res.error || "删除客户失败");
-toast.warning("检测到该客户存在未结款项");
+toast.success("记录创建成功");
+toast.error(res.error || "删除记录失败");
+toast.warning("检测到存在关联受限项目");
 ```
 
 ---
@@ -85,10 +85,10 @@ toast.warning("检测到该客户存在未结款项");
 
 ```tsx
 import { DataTable, useListSearch } from "@base/ui";
-import { customerSearchParams, customerPageContract } from "../contract";
+import { resourceSearchParams, resourcePageContract } from "../contract";
 
-export function CustomerView({ data, total, categoryOptions }: Props) {
-  const list = useListSearch(customerSearchParams);
+export function ResourceView({ data, total, options }: Props) {
+  const list = useListSearch(resourceSearchParams);
 
   return (
     <DataTable
@@ -96,10 +96,10 @@ export function CustomerView({ data, total, categoryOptions }: Props) {
       data={data}
       columns={columns}
       total={total}
-      subject={customerPageContract.subject}
-      title="客户档案"
-      description="维护企业客户主数据..."
-      keywordPlaceholder="搜索客户编码、名称、联系人、电话..."
+      subject={resourcePageContract.subject}
+      title="资源档案"
+      description="维护主数据与业务条目..."
+      keywordPlaceholder="搜索编码、名称、标签..."
       onExport={handleExport}
       onCreate={() => setModal({ open: true, mode: "create" })}
       statusOptions={[
@@ -108,7 +108,7 @@ export function CustomerView({ data, total, categoryOptions }: Props) {
       ]}
       statusValue={String(list.params.status ?? "")}
       onStatusChange={(v) => list.patch({ status: v || "" })}
-      filterExtra={<客户分类 Select />}  {/* 扩展插槽：与默认筛选并排 */}
+      filterExtra={<CategorySelect />}  {/* 扩展插槽：与默认筛选并排 */}
     />
   );
 }
@@ -125,7 +125,7 @@ export function CustomerView({ data, total, categoryOptions }: Props) {
 
 ```tsx
 // 标准范式（推荐）
-const list = useListSearch(customerSearchParams);
+const list = useListSearch(resourceSearchParams);
 <DataTable {...list.dataTableProps} data={data} columns={columns} total={total} ... />
 
 // 页面装配优先 createResourcePage（见 references/9-crud-resource-paradigm.md）
@@ -139,7 +139,7 @@ const list = useListSearch(customerSearchParams);
   data={data}
   columns={columns}
   rowKey={(item) => item.id}
-  subject="Customer"
+  subject="Resource"
   page={page}
   pageSize={pageSize}
   total={total}
@@ -147,7 +147,7 @@ const list = useListSearch(customerSearchParams);
 >
   <DataTable.Header
     category="BUSINESS WORKSPACE"
-    title="客户档案"
+    title="资源档案"
     description="按业务清单维护查询字段、状态流、业务数据与操作留痕。"
     actions={
       <DataTable.Toolbar>
@@ -164,7 +164,7 @@ const list = useListSearch(customerSearchParams);
 
   <DataTable.FilterBar onSearch={handleSearch} onReset={handleReset}>
     <DataTable.InputGroup label="关键字" className="w-64">
-      <Input placeholder="单号 / 名称 / 客户" />
+      <Input placeholder="单号 / 名称 / 标识" />
     </DataTable.InputGroup>
     <DataTable.InputGroup label="状态" className="w-36">
       <Select ... />
@@ -291,10 +291,10 @@ const list = useListSearch(customerSearchParams);
 列定义上声明 `defaultVisible` / `lockVisible`：
 
 ```tsx
-const columns: ColumnDef<Customer>[] = [
-  { id: "code", header: "客户编码", lockVisible: true, cell: (r) => r.code },
-  { id: "name", header: "客户名称", cell: (r) => r.name },
-  { id: "secret", header: "内部成本", field: "secretCost", defaultVisible: false, cell: ... },
+const columns: ColumnDef<ResourceItem>[] = [
+  { id: "code", header: "编码", lockVisible: true, cell: (r) => r.code },
+  { id: "name", header: "名称", cell: (r) => r.name },
+  { id: "secret", header: "内部指标", field: "secretMetric", defaultVisible: false, cell: ... },
 ];
 ```
 
@@ -323,7 +323,7 @@ const columns: ColumnDef<Customer>[] = [
 <DataTable.DetailDrawer
   record={viewing}
   onClose={() => setViewing(null)}
-  title={(r) => `客户详情：${r.name}`}
+  title={(r) => `记录详情：${r.name}`}
   description="主数据只读视图 · 操作过程自动留痕"
   footer={(r, close) => (
     <>
@@ -345,10 +345,10 @@ const columns: ColumnDef<Customer>[] = [
   {(r) => (
     <DataTable.FormSection title="基本信息">
       <DataTable.FormFieldGrid columns={2}>
-        <DataTable.InputGroup label="客户编码">
+        <DataTable.InputGroup label="编码">
           <span>{r.code}</span>
         </DataTable.InputGroup>
-        <DataTable.InputGroup label="客户名称">
+        <DataTable.InputGroup label="名称">
           <span>{r.name}</span>
         </DataTable.InputGroup>
       </DataTable.FormFieldGrid>
@@ -365,47 +365,47 @@ const columns: ColumnDef<Customer>[] = [
 import { z, FormModal, type FormFieldSchema } from "@base/ui";
 
 // 1. 真实 Zod Schema 校验（负责格式验证与运行时拦截）
-const customerSchema = z.object({
-  customerCode: z.string().min(3, "编码至少3位").describe("客户编码"),
-  customerName: z.string().min(2, "全称至少2个字符").describe("客户全称"),
-  contactPhone: z
+const resourceSchema = z.object({
+  code: z.string().min(3, "编码至少3位").describe("业务编码"),
+  name: z.string().min(2, "名称至少2个字符").describe("业务名称"),
+  phone: z
     .string()
     .regex(/^1\d{10}$/, "手机号格式不正确")
     .describe("联系电话"),
-  settlementType: z.enum(["CASH", "MONTHLY_30"]).describe("结算方式"),
+  type: z.enum(["TYPE_A", "TYPE_B"]).describe("业务类型"),
 });
 
 // 2. UI 渲染字段配置（负责控件类型、网格布局与提示）
-const customerFormFields: FormFieldSchema[] = [
+const resourceFormFields: FormFieldSchema[] = [
   {
-    name: "customerCode",
-    label: "客户编码",
+    name: "code",
+    label: "业务编码",
     type: "text",
     required: true,
-    placeholder: "如: CUST-001",
+    placeholder: "如: ITEM-001",
     disabled: true, // 编辑或查看时锁定
   },
   {
-    name: "customerName",
-    label: "客户全称",
+    name: "name",
+    label: "业务全称",
     type: "text",
     required: true,
-    placeholder: "工商全称",
+    placeholder: "标准全称",
   },
   {
-    name: "contactPhone",
+    name: "phone",
     label: "联系电话",
     type: "text",
     required: true,
   },
   {
-    name: "settlementType",
-    label: "结算方式",
+    name: "type",
+    label: "业务类型",
     type: "select",
     required: true,
     options: [
-      { label: "现结", value: "CASH" },
-      { label: "月结30天", value: "MONTHLY_30" },
+      { label: "类型 A", value: "TYPE_A" },
+      { label: "类型 B", value: "TYPE_B" },
     ],
   },
 ];
@@ -415,20 +415,20 @@ const customerFormFields: FormFieldSchema[] = [
   mode={formMode} // "create" | "edit" | "view"
   title={
     formMode === "create"
-      ? "新增客户"
+      ? "新增记录"
       : formMode === "edit"
-        ? "编辑客户"
-        : "客户档案详情"
+        ? "编辑记录"
+        : "记录档案详情"
   }
-  schema={customerSchema} // 👈 传入真正的 Zod Schema，自动激活 safeParse 运行时校验
-  fields={customerFormFields}
+  schema={resourceSchema} // 👈 传入真正的 Zod Schema，自动激活 safeParse 运行时校验
+  fields={resourceFormFields}
   initialValues={currentRecord}
   onClose={() => setModalOpen(false)}
   onSubmit={async (values) => {
     if (formMode === "create") {
-      await createCustomerAction(values);
+      await createResourceAction(values);
     } else {
-      await updateCustomerAction(currentRecord.id, values);
+      await updateResourceAction(currentRecord.id, values);
     }
   }}
 />;
@@ -447,14 +447,14 @@ const customerFormFields: FormFieldSchema[] = [
 import { z, createColumnsFromSchema, type ColumnDef } from "@base/ui";
 
 const entitySchema = z.object({
-  customerCode: z.string().describe("客户编码"),
-  customerName: z.string().describe("客户全称"),
-  creditLimit: z.number().describe("授信额度"),
+  code: z.string().describe("编码"),
+  name: z.string().describe("名称"),
+  amount: z.number().describe("金额"),
   status: z.string().describe("状态"),
 });
 
 // 自动生成列定义：自动继承 describe 描述，数值字段自动右对齐 (align: 'right')
-const columns: ColumnDef<CustomerItem>[] = createColumnsFromSchema(entitySchema, {
+const columns: ColumnDef<ResourceItem>[] = createColumnsFromSchema(entitySchema, {
   overrides: {
     creditLimit: {
       format: (val) => `¥${Number(val).toLocaleString()}`,
@@ -481,23 +481,23 @@ const columns: ColumnDef<CustomerItem>[] = createColumnsFromSchema(entitySchema,
   open={open}
   onOpenChange={setOpen}
   record={editing}
-  title={(r) => (r ? `编辑客户：${r.name}` : "新建客户")}
+  title={(r) => (r ? `编辑记录：${r.name}` : "新建记录")}
   description="操作过程自动留痕"
   onSubmit={handleSubmit}
   headerExtra={
     <DataTable.FormBanner
-      title="客户主数据"
-      description="保存后立即进入客户列表，操作自动留痕。"
+      title="记录主数据"
+      description="保存后立即进入列表，操作自动留痕。"
     />
   }
 >
   {({ record }) => (
     <DataTable.FormSection title="基本信息">
       <DataTable.FormFieldGrid columns={4}>
-        <DataTable.InputGroup label="客户编码">
+        <DataTable.InputGroup label="编码">
           <Input defaultValue={record?.code} />
         </DataTable.InputGroup>
-        <DataTable.InputGroup label="客户名称">
+        <DataTable.InputGroup label="名称">
           <Input defaultValue={record?.name} />
         </DataTable.InputGroup>
         <DataTable.AuthField

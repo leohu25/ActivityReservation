@@ -2,11 +2,11 @@ import {
 	QuoteView,
 	customerQuoteSearchParams,
 	type QuoteListItem,
-} from "@base/feature-customer-center/quotation-management";
+} from "@domain/customer-center/quotation-management";
 import {
 	listQuotesQuery,
 	getQuotePageOptionsQuery,
-} from "@base/feature-customer-center/quotation-management/server";
+} from "@domain/customer-center/quotation-management/server";
 
 interface PageProps {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;

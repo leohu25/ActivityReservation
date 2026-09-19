@@ -24,6 +24,7 @@
 | DEBT-013 | 2026-09-12 | @implementer | packages/features/tenant-admin, packages/features/control-admin | 历史遗留视图（EmployeeView、PositionView、RolePermissionManager、MigrationsView）存在手写原生 <table> DOM 标签，违反红线 3 | 已全部重构为 @base/ui Table 原子组件与 DataTable 标准表格，红线门禁强校验通过 | 高 | 已解决 |
 | DEBT-014 | 2026-09-18 | @implementer | packages/domains/customer-center + packages/base/ui | StoreView / QuoteView / RoleListView 仍使用已 `@deprecated` 的 `useListUrlNav`（及依赖它的 `useDataTableState`），未切换 `defineListSearchParams` + `useListSearch` 标杆 | 全仓已 100% 切换至 defineListSearchParams + useListSearch 标杆，已物理删除 useListUrlNav 与 useDataTableState 源码及测试 | 中 | 已解决 |
 | DEBT-015 | 2026-09-18 | @implementer | packages/base/ui DataTable | `searchPlacement="toolbar"` / `advancedFilters` / `advancedTriggerText` 为可选高级抽屉形态，易与推荐扩展插槽 **`filterExtra`（未废弃）** 混淆 | 已从 DataTable 彻底物理移除 searchPlacement / advancedFilters / advancedTriggerText，全仓统一收敛为 filterExtra 扁平工业风交互 | 低 | 已解决 |
+| DEBT-016 | 2026-09-18 | @implementer | packages/*, apps/* | 历史遗留 package.json 采用混沌的 `@base/feature-*` 和 `@base/biz-shared` 命名，导致业务包被赋予基座前缀，违背物理分层与 DDD 领域语义 | 已全面规范化为 `@domain/*`（垂直业务）、`@platform/*`（平台套件）、`@biz/shared`（中台资产）与 `@base/*`（纯技术基础设施）四维拓扑，全仓对齐并消灭别扭感 | 高 | 已解决 |
 
 ---
 

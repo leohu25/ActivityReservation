@@ -2,8 +2,8 @@ import {
   RoleListView,
   roleSearchParams,
   type TenantRoleItem,
-} from "@base/feature-tenant-admin/role-management";
-import { searchTenantRolesQuery } from "@base/feature-tenant-admin/role-management/server";
+} from "@platform/tenant-admin/role-management";
+import { searchTenantRolesQuery } from "@platform/tenant-admin/role-management/server";
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

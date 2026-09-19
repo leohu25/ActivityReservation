@@ -2,11 +2,11 @@ import {
   EmployeeView,
   employeeSearchParams,
   type EmployeeItem,
-} from "@base/feature-tenant-admin/org-management";
+} from "@platform/tenant-admin/org-management";
 import {
   listEmployeesPagedQuery,
   getEmployeePageOptionsQuery,
-} from "@base/feature-tenant-admin/org-management/server";
+} from "@platform/tenant-admin/org-management/server";
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

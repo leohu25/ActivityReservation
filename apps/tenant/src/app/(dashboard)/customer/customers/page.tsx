@@ -2,11 +2,11 @@ import {
 	CustomerView,
 	customerSearchParams,
 	type CustomerListItem,
-} from "@base/feature-customer-center/customer-management";
+} from "@domain/customer-center/customer-management";
 import {
 	listCustomersQuery,
 	getCustomerPageOptionsQuery,
-} from "@base/feature-customer-center/customer-management/server";
+} from "@domain/customer-center/customer-management/server";
 
 interface PageProps {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;

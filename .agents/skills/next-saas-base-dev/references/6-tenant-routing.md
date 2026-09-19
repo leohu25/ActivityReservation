@@ -13,36 +13,26 @@
 3. **View（Client）**：只声明 `subject`，消费 `useAbility()` / DataTable 积木
 
 ```tsx
-// apps/tenant/src/app/(dashboard)/customer/layout.tsx
-import { CustomerAbilityBoundary } from "@base/feature-customer-center/shared";
-import { CustomerSubject } from "@base/feature-customer-center/customer-management";
-import { CustomerStoreSubject } from "@base/feature-customer-center/store-management";
-import { CustomerQuoteSubject } from "@base/feature-customer-center/quotation-management";
-import {
-  CustomerCategorySubject,
-  CustomerTagSubject,
-} from "@base/feature-customer-center/customer-management/classification";
+// apps/tenant/src/app/(dashboard)/<domain>/layout.tsx
+import { SliceAbilityBoundary } from "@domain/<domain>/shared";
+import { ResourceASubject } from "@domain/<domain>/resource-a";
+import { ResourceBSubject } from "@domain/<domain>/resource-b";
 import { getTenantSubjectPermissions } from "@/kernel";
 
-export default async function CustomerLayout({
+export default async function DomainLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [customer, store, quote, category, tag] = await Promise.all([
-    getTenantSubjectPermissions(CustomerSubject),
-    getTenantSubjectPermissions(CustomerStoreSubject),
-    getTenantSubjectPermissions(CustomerQuoteSubject),
-    getTenantSubjectPermissions(CustomerCategorySubject),
-    getTenantSubjectPermissions(CustomerTagSubject),
+  const [resourceA, resourceB] = await Promise.all([
+    getTenantSubjectPermissions(ResourceASubject),
+    getTenantSubjectPermissions(ResourceBSubject),
   ]);
 
   return (
-    <CustomerAbilityBoundary
-      permissions={{ customer, store, quote, category, tag }}
-    >
+    <SliceAbilityBoundary permissions={{ resourceA, resourceB }}>
       {children}
-    </CustomerAbilityBoundary>
+    </SliceAbilityBoundary>
   );
 }
 ```
@@ -53,11 +43,11 @@ import {
   XxxView,
   xxxSearchParams,
   type XxxListItem,
-} from "@base/feature-<domain>/<resource>";
+} from "@domain/<domain>/<resource>";
 import {
   listXxxQuery,
   getXxxPageOptionsQuery,
-} from "@base/feature-<domain>/<resource>/server";
+} from "@domain/<domain>/<resource>/server";
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -99,43 +89,43 @@ import {
   type TenantFeatureManifest,
 } from "@base/authorization";
 import {
-  CustomerSubject,
-  customerPageContract,
-} from "./features/customer-management/contract";
+  ResourceASubject,
+  resourceAPageContract,
+} from "./features/resource-a/contract";
 import {
-  CustomerStoreSubject,
-  storePageContract,
-} from "./features/store-management/contract";
+  ResourceBSubject,
+  resourceBPageContract,
+} from "./features/resource-b/contract";
 
-export const customerManifest: TenantFeatureManifest = {
-  id: "customer-center",
-  name: "客户中心",
+export const domainManifest: TenantFeatureManifest = {
+  id: "<domain-id>",
+  name: "<业务领域名称>",
   /** 切片贡献的标准功能页面池（切片内无需重复写 featureId/featureName，由容器自动注入） */
   pages: [
     {
-      pageKey: "customer-customers",
-      defaultLabel: "客户档案",
-      href: "/customer/customers",
-      defaultIcon: "Users",
+      pageKey: "<domain>-resource-a",
+      defaultLabel: "资源 A 档案",
+      href: "/<domain>/resource-a",
+      defaultIcon: "FileText",
       requiredAction: StandardAction.READ,
-      requiredSubject: CustomerSubject,
+      requiredSubject: ResourceASubject,
     },
     {
-      pageKey: "customer-stores",
-      defaultLabel: "门店档案",
-      href: "/customer/stores",
-      defaultIcon: "Store",
+      pageKey: "<domain>-resource-b",
+      defaultLabel: "资源 B 档案",
+      href: "/<domain>/resource-b",
+      defaultIcon: "Layers",
       requiredAction: StandardAction.READ,
-      requiredSubject: CustomerStoreSubject,
+      requiredSubject: ResourceBSubject,
     },
   ],
   permissionModules: [
     {
-      moduleKey: "customer",
-      label: "客户中心",
-      iconName: "UserCheck",
+      moduleKey: "<domain>",
+      label: "<业务领域名称>",
+      iconName: "Folder",
       order: 10,
-      pages: [customerPageContract, storePageContract],
+      pages: [resourceAPageContract, resourceBPageContract],
     },
   ],
 };
@@ -150,31 +140,26 @@ export const customerManifest: TenantFeatureManifest = {
 
 ---
 
-## 3. 契约 100% 对齐自动化测试 (`CustomerView.test.tsx`)
+## 3. 契约 100% 对齐自动化测试 (`ResourceView.test.tsx`)
 
 用 **AbilityProvider 包裹**注入权限，禁止给 View 塞 `permissions` prop：
 
 ```tsx
 import { TenantAbilityProvider } from "@base/authorization";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
-import { CustomerView } from "./CustomerView";
+import { ResourceView } from "./ResourceView";
 
-test("CustomerView 与 customerPageContract 契约 100% 对齐", () => {
+test("ResourceView 与 resourcePageContract 契约 100% 对齐", () => {
   const html = renderToString(
     <TenantAbilityProvider
       snapshots={{
-        subject: "Customer",
+        subject: "Resource",
         actions: ["read", "create", "update", "delete", "export"],
         fieldPolicies: {},
       }}
     >
       <NuqsTestingAdapter>
-        <CustomerView
-          data={mockCustomers}
-          total={mockCustomers.length}
-          categoryOptions={[]}
-          tagOptions={[]}
-        />
+        <ResourceView data={mockData} total={mockData.length} options={[]} />
       </NuqsTestingAdapter>
     </TenantAbilityProvider>,
   );

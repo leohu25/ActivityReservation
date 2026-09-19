@@ -291,9 +291,12 @@ for (const root of scanRoots) {
 }
 
 const internalImportRegex =
-  /from\s+["'](@base\/[^"'/]+)(?:\/[^"']*)?["']|import\s+["'](@base\/[^"'/]+)(?:\/[^"']*)?["']/g;
-const internalPackagePathRegex = /["']@base\/[^"']+\/src\//g;
-const featurePackagePrefix = "@base/feature-";
+  /from\s+["'](@(?:base|platform|domain|biz)\/[^"'/]+)(?:\/[^"']*)?["']|import\s+["'](@(?:base|platform|domain|biz)\/[^"'/]+)(?:\/[^"']*)?["']/g;
+const internalPackagePathRegex = /["']@(base|platform|domain|biz)\/[^"']+\/src\//g;
+const isFeaturePackage = (name) =>
+  name?.startsWith("@domain/") ||
+  name?.startsWith("@platform/") ||
+  name?.startsWith("@base/feature-");
 const horizontalPlatformPackages = new Set([
   "@base/auth",
   "@base/authorization",
@@ -301,6 +304,7 @@ const horizontalPlatformPackages = new Set([
   "@base/db-tenant",
   "@base/ui",
   "@base/shared",
+  "@biz/shared",
   "@base/biz-shared",
 ]);
 
@@ -330,8 +334,8 @@ for (const pkg of workspacePackages) {
       const importedPkg = match[1] || match[2];
       if (importedPkg === pkg.name) continue;
       if (
-        pkg.name?.startsWith(featurePackagePrefix) &&
-        importedPkg.startsWith(featurePackagePrefix)
+        isFeaturePackage(pkg.name) &&
+        isFeaturePackage(importedPkg)
       ) {
         violations.push({
           file: relPath,
@@ -343,6 +347,7 @@ for (const pkg of workspacePackages) {
       if (
         pkg.name === "@base/ui" &&
         (importedPkg === "@base/authorization" ||
+          importedPkg === "@biz/shared" ||
           importedPkg === "@base/biz-shared" ||
           importedPkg === "@base/auth" ||
           importedPkg.startsWith("@base/db-"))
@@ -354,7 +359,13 @@ for (const pkg of workspacePackages) {
           code: `import from "${importedPkg}"`,
         });
       }
-      if (pkg.name === "@base/shared" && importedPkg.startsWith("@base/")) {
+      if (
+        pkg.name === "@base/shared" &&
+        (importedPkg.startsWith("@base/") ||
+          importedPkg.startsWith("@platform/") ||
+          importedPkg.startsWith("@domain/") ||
+          importedPkg.startsWith("@biz/"))
+      ) {
         violations.push({
           file: relPath,
           line: 1,
@@ -372,7 +383,7 @@ for (const pkg of workspacePackages) {
       }
       if (
         horizontalPlatformPackages.has(pkg.name) &&
-        importedPkg.startsWith(featurePackagePrefix)
+        isFeaturePackage(importedPkg)
       ) {
         violations.push({
           file: relPath,
@@ -400,7 +411,7 @@ const forbiddenForeignKeyContainsRegex =
   /(customerCode|storeCode|deptId|supplierCode)\s*:\s*{\s*contains\s*:/;
 
 for (const pkg of workspacePackages) {
-  if (pkg.name?.startsWith(featurePackagePrefix)) {
+  if (isFeaturePackage(pkg.name)) {
     const pkgFiles = allFiles.filter((f) => {
       const rel = path.relative(workspaceRoot, f).replace(/\\/g, "/");
       // 豁免主数据自身服务（如 customer-management/service.ts 本身是 Customer 主表，可以搜 customerCode）

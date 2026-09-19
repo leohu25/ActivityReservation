@@ -9,7 +9,7 @@ import {
   type TenantMenuNode,
 } from "@base/authorization";
 import { getTenantDbManager } from "@base/db-tenant";
-import { tenantAdminManifest } from "@base/feature-tenant-admin/manifest";
+import { tenantAdminManifest } from "@platform/tenant-admin/manifest";
 import {
   globalTenantCatalog,
   globalTenantPageCatalog,

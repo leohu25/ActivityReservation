@@ -1,9 +1,9 @@
-import { CustomerSubject } from "@base/feature-customer-center/customer-management";
-import { CustomerCategorySubject } from "@base/feature-customer-center/customer-management/category";
-import { CustomerTagSubject } from "@base/feature-customer-center/customer-management/tag";
-import { CustomerQuoteSubject } from "@base/feature-customer-center/quotation-management";
-import { CustomerAbilityBoundary } from "@base/feature-customer-center/shared";
-import { CustomerStoreSubject } from "@base/feature-customer-center/store-management";
+import { CustomerSubject } from "@domain/customer-center/customer-management";
+import { CustomerCategorySubject } from "@domain/customer-center/customer-management/category";
+import { CustomerTagSubject } from "@domain/customer-center/customer-management/tag";
+import { CustomerQuoteSubject } from "@domain/customer-center/quotation-management";
+import { CustomerAbilityBoundary } from "@domain/customer-center/shared";
+import { CustomerStoreSubject } from "@domain/customer-center/store-management";
 import { getTenantSubjectPermissions } from "@/kernel";
 
 /** Customer Center Business Area 的统一 CASL Provider 装配边界。 */

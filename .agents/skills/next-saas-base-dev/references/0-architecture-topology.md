@@ -9,14 +9,13 @@
 ## 一、 核心分层概念（中英对照）
 
 1. **`Business Area / Feature Group`（业务领域 / 特性集群）**：
-   - 业务切片：`packages/domains/<business-area>/`（如 `customer-center`）。
+   - 业务切片：`packages/domains/<business-area>/`（如 `<sales-domain>`、`<inventory-domain>` 等）。
    - 平台业务：`packages/platform/<area>/`（如 `tenant-admin`、`control-admin`）。
-   - 历史文档中的 `packages/domains/*` 指向已迁移；以仓库现目录为准。
 2. **`Feature`（核心业务特性 / 独立业务功能）**：
-   - 对应 `src/features/<feature>/`（如 `tenant-management`, `customer-management`）。
+   - 对应 `src/features/<feature>/`（如 `<resource>-management`）。
    - 具备完整的业务闭环与垂直切片，内部自包含契约、类型、服务、Query、Action 与 UI。
 3. **`Sub-Feature`（子特性 / 附属业务能力）**：
-   - 对应 `src/features/<feature>/<sub-feature>/`（如客户管理下的 `classification` 分类与标签）。
+   - 对应 `src/features/<feature>/<sub-feature>/`（如某主特性下的分类、标签或明细配置）。
    - 仅在主特性存在稳定独立的子实体且用例复杂时嵌套。
 4. **`Vertical Slice / Use Case`（垂直切片 / 业务用例）**：
    - 贯穿 UI → Server Query/Action → Service → DB 的最小端到端业务闭环。
@@ -97,7 +96,7 @@ contract.ts (契约)       ui/ (组件)                            queries.ts (�
 
 ### 绝对红线禁忌
 
-1. **外部禁止穿透内部路径**：外部应用（`apps/control`, `apps/tenant` 等）**严禁**直接 `import ... from "@base/feature-xxx/src/..."`，只能通过 `package.json#exports` 暴露的语义子路径引用。
+1. **外部禁止穿透内部路径**：外部应用（`apps/control`, `apps/tenant` 等）**严禁**直接 `import ... from "@domain/xxx/src/..."` 或 `@platform/xxx/src/...`，只能通过 `package.json#exports` 暴露的语义子路径引用。
 2. **读写分离与服务端物理隔离**：
    - **读（Read）**：RSC `page.tsx` 直接通过 `./<feature>/server` 调用 `queries.ts` 读取数据，严禁通过 Server Action 绕读。
    - **写（Write）**：Client 组件通过 `actions.ts` 提交变更，必须被 `defineServerAction` 包装。
@@ -114,7 +113,7 @@ contract.ts (契约)       ui/ (组件)                            queries.ts (�
 
 ```json
 {
-  "name": "@base/feature-example",
+  "name": "@domain/example",
   "exports": {
     "./feature-a": "./src/features/feature-a/public.ts",
     "./feature-a/server": "./src/features/feature-a/public.server.ts",
@@ -138,6 +137,7 @@ contract.ts (契约)       ui/ (组件)                            queries.ts (�
    - 提取各 Feature 的 `contract.ts`、`types.ts`、`queries.ts`、`public.ts` 与 `public.server.ts`；
    - 将单测移至 Feature 目录下就近共存 (`service.test.ts` / `<View>.test.tsx`)。
 3. **跨 Feature 真实共用收敛至 `src/shared/`**：仅当守卫（如 `control-guard.ts`）或上下文在多个 Feature 间真实共享时放入 `src/shared/`。
+
 ---
 
 ## 六、 垂直切片的三级共享拓扑与依赖流向法则 (Three-Tier Shared & Dependency Law)
@@ -147,36 +147,32 @@ contract.ts (契约)       ui/ (组件)                            queries.ts (�
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ Level 1：全仓跨业务大域（Cross-Domain: 跨 Package）                                   │
-│ • 范围：客户中心 (customer-center) ↔ 订单中心 (order-center) ↔ 采购中心 (procurement) │
+│ • 范围：业务大域 A (@domain/area-a) ↔ 业务大域 B (@domain/area-b)                     │
 │ • 规则：【强隔离】严禁跨包私下穿透引用！                                              │
 │ • 共享机制：必须走全局基座横向共享包（经 package.json 显式声明 "workspace:*"）：      │
-│   - @base/biz-shared（业务中台共享资产：统一流水发号器、审批流状态机、主子表明细等）   │
+│   - @biz/shared（业务中台共享资产：统一流水发号器、审批流状态机、主子表明细等）         │
 │   - @base/shared（底层纯技术工具：toPlainData, resolvePagination, Result 等）          │
 │   - @base/ui（工业风设计系统与通用组件）                                               │
 └───────────────────────────────────────────┬────────────────────────────────────────────┘
                                             │
 ┌───────────────────────────────────────────▼────────────────────────────────────────────┐
 │ Level 2：单业务包内、并列的一级业务切片（Intra-Domain / Cross-Feature）                │
-│ • 范围：例如 packages/domains/customer-center/src/features/ 下并列的：                 │
-│   ├── customer-management/   (客户档案，包含分类、标签)                                │
-│   ├── store-management/      (门店管理)                                                │
-│   └── quotation-management/  (报价单管理)                                              │
-│ • 关系：属于同一业务大域，但彼此是独立自治的业务模块（客户档案 ≠ 报价单，耦合度低）    │
+│ • 范围：例如 packages/domains/<area>/src/features/ 下并列的：                          │
+│   ├── feature-a/             (独立业务特性 A)                                          │
+│   └── feature-b/             (独立业务特性 B)                                          │
+│ • 关系：属于同一业务大域，但彼此是独立自治的业务模块，耦合度低                         │
 │ • 规则：【同域弱耦合】一级切片之间严禁深层穿透私有实现！                              │
 │         跨 Feature 共享的数据库上下文、权限快照边界、联合 Subject 类型等，              │
 │         必须统一收敛在当前 Package 本地的 src/shared/ 中进行解耦共享！                │
-│         （例如：customer-center/src/shared/contract-types.ts / tenant-context.ts）     │
+│         （例如：packages/domains/<area>/src/shared/contract-types.ts）                 │
 └───────────────────────────────────────────┬────────────────────────────────────────────┘
                                             │
 ┌───────────────────────────────────────────▼────────────────────────────────────────────┐
 │ Level 3：单个二级业务切片内部的极细子切片（Sub-Feature: 强内聚聚合根）                 │
-│ • 范围：例如 customer-management 内部的：                                              │
-│   ├── category/ (客户分类)                                                             │
-│   └── tag/      (客户标签)                                                             │
-│   又如 role-management 内部的：                                                        │
-│   ├── role-definition/ (角色定义与CRUD)                                                │
-│   └── role-permission/ (角色权限矩阵编排)                                              │
-│ • 关系：【天然高内聚】业务生命周期完全捆绑，属于同一领域聚合根（没有角色何来权限？）   │
+│ • 范围：例如某一 Feature 内部的：                                                      │
+│   ├── sub-slice-a/           (核心主定义与 CRUD)                                       │
+│   └── sub-slice-b/           (强从属附属能力或矩阵编排)                                │
+│ • 关系：【天然高内聚】业务生命周期完全捆绑，属于同一领域聚合根                         │
 │ • 规则：【直接消化】这一层严禁过度设计！坚决不抽琐碎的 micro-shared 目录，             │
 │         子切片之间坦然互相直接引用类型与服务，保持代码路径扁平、心智负担最小。        │
 └────────────────────────────────────────────────────────────────────────────────────────┘
@@ -185,9 +181,8 @@ contract.ts (契约)       ui/ (组件)                            queries.ts (�
 ### 依赖判断黄金自检清单
 
 - **问题 1：我要调用的东西在另一个独立的 npm package 里吗？**
-  - 是 ➔ **Level 1**：必须通过 `@base/biz-shared` 或 `@base/shared` 共享，严禁相对路径横向越界。
+  - 是 ➔ **Level 1**：必须通过 `@biz/shared` 或 `@base/shared` 共享，严禁相对路径横向越界。
 - **问题 2：我要调用的东西在同一个包内，但在另一个同级的并列 Feature（一级切片）里吗？**
   - 是 ➔ **Level 2**：必须收敛至本 Package 的 `src/shared/`，严禁深层穿透到对方 Feature 的私有 service 或内部组件。
 - **问题 3：我要调用的东西在同一个 Feature（二级切片）内部的兄弟 Sub-Feature 目录吗？**
   - 是 ➔ **Level 3**：直接相对引用，不建 micro-shared，拥抱聚合根内部的必要高内聚。
-

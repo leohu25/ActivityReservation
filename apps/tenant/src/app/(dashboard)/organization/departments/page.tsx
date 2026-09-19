@@ -4,8 +4,8 @@ import { getServerAuthRuntime } from "@base/auth";
 import {
   DepartmentView,
   type DepartmentTreeNode,
-} from "@base/feature-tenant-admin/org-management";
-import { listDepartmentTreeQuery } from "@base/feature-tenant-admin/org-management/server";
+} from "@platform/tenant-admin/org-management";
+import { listDepartmentTreeQuery } from "@platform/tenant-admin/org-management/server";
 import { Card } from "@base/ui";
 
 /**

@@ -1,5 +1,5 @@
 import { getTenantWorkbenchData } from "@/kernel";
-import { WorkbenchView } from "@base/feature-tenant-admin/workbench";
+import { WorkbenchView } from "@platform/tenant-admin/workbench";
 
 /**
  * 工作台页面（极薄服务端组件）

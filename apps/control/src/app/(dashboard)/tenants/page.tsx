@@ -2,8 +2,8 @@ import React from "react";
 import {
   TenantsView,
   tenantSearchParams,
-} from "@base/feature-control-admin/tenant-management";
-import { listTenantsPagedQuery } from "@base/feature-control-admin/tenant-management/server";
+} from "@platform/control-admin/tenant-management";
+import { listTenantsPagedQuery } from "@platform/control-admin/tenant-management/server";
 
 export const dynamic = "force-dynamic";
 

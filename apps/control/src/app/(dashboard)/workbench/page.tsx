@@ -1,6 +1,6 @@
 import React from "react";
-import { OverviewView } from "@base/feature-control-admin/platform-overview";
-import { getControlStatsQuery } from "@base/feature-control-admin/platform-overview/server";
+import { OverviewView } from "@platform/control-admin/platform-overview";
+import { getControlStatsQuery } from "@platform/control-admin/platform-overview/server";
 
 export const dynamic = "force-dynamic";
 

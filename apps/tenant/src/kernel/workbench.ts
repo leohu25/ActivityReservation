@@ -16,13 +16,13 @@ import {
 	type ResolvedDepartmentTopology,
 } from "@base/db-tenant";
 import { toPlainData } from "@base/shared";
-import { customerCatalog } from "@base/feature-customer-center/catalog";
-import { CustomerSubject } from "@base/feature-customer-center/customer-management";
+import { customerCatalog } from "@domain/customer-center/catalog";
+import { CustomerSubject } from "@domain/customer-center/customer-management";
 import type {
 	EmployeeProfileDTO,
 	WorkbenchDataDTO,
 	WorkbenchPageData,
-} from "@base/feature-tenant-admin/workbench";
+} from "@platform/tenant-admin/workbench";
 
 export type { EmployeeProfileDTO, WorkbenchDataDTO, WorkbenchPageData };
 

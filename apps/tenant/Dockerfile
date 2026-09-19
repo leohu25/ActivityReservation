@@ -22,7 +22,7 @@ COPY packages/base/db-control/package.json ./packages/base/db-control/
 COPY packages/base/db-tenant/package.json ./packages/base/db-tenant/
 COPY packages/base/shared/package.json ./packages/base/shared/
 COPY packages/base/ui/package.json ./packages/base/ui/
-COPY packages/base/biz-shared/package.json ./packages/base/biz-shared/
+COPY packages/biz-shared/package.json ./packages/biz-shared/
 COPY packages/platform/control-admin/package.json ./packages/platform/control-admin/
 COPY packages/platform/tenant-admin/package.json ./packages/platform/tenant-admin/
 COPY packages/domains/procurement-center/package.json ./packages/domains/procurement-center/

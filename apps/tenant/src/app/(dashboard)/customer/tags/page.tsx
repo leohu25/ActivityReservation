@@ -1,8 +1,8 @@
 import {
 	TagView,
 	customerTagSearchParams,
-} from "@base/feature-customer-center/customer-management/tag";
-import { listTagsQuery } from "@base/feature-customer-center/customer-management/tag/server";
+} from "@domain/customer-center/customer-management/tag";
+import { listTagsQuery } from "@domain/customer-center/customer-management/tag/server";
 
 interface PageProps {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;

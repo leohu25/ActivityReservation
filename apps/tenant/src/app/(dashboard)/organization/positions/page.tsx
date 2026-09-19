@@ -2,8 +2,8 @@ import {
   PositionView,
   positionSearchParams,
   type PositionItem,
-} from "@base/feature-tenant-admin/org-management";
-import { listPositionsPagedQuery } from "@base/feature-tenant-admin/org-management/server";
+} from "@platform/tenant-admin/org-management";
+import { listPositionsPagedQuery } from "@platform/tenant-admin/org-management/server";
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

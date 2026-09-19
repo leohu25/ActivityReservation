@@ -10,55 +10,55 @@
 
 权限契约由 **Resource + Subject + Action + Field** 四维显式绑定组成，加上功能池唯一标识 **PageKey**，禁止根据名称推测映射关系：
 
-| 维度     | 强制命名                                                                | SSoT 规则                                                                                                                                                                                 |
-| -------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Resource | `<domain>.<singular_resource>`；全小写，段内 `snake_case`，默认恰好两段 | 在 `contract.ts` 导出 `XxxResource` 常量；Descriptor 与 Manifest 只引用常量。例：`material.item_master`、`customer.store`。禁止裸 key、大小写、复数漂移。确需更深层级必须先在本规范登记。 |
-| Subject  | `PascalCase`                                                            | 实体型 Subject 必须与真实 Prisma model 同名；非实体能力只能使用门禁内有界白名单，并在定义处写明 capability 例外原因。                                                                     |
-| Action   | 小写动词或 `snake_case` 动作                                            | CRUD/导入导出使用共享 `StandardAction`；领域动作使用 `as const` 对象，如 `QuoteAction.AUDIT`。Contract、Manifest、guard、`ability.can`、`assert*Ability` 禁止魔法字符串。                 |
-| Field    | `camelCase`                                                             | 每个 Subject 有自己的 `XxxField = {...} as const` 字典；实体型字段必须存在于对应 Prisma model；受控列与字段策略调用点只引用字段常量。                                                     |
-| PageKey  | 全小写 `kebab-case`，包含至少一个中划线                                 | 切片贡献功能页面池的唯一标识，例如 `customer-stores`、`material-categories`。门禁正则 `/^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$/` 强制校验，杜绝驼峰或下划线混杂。                                |
+| 维度     | 强制命名                                                                | SSoT 规则                                                                                                                                                                  |
+| -------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Resource | `<domain>.<singular_resource>`；全小写，段内 `snake_case`，默认恰好两段 | 在 `contract.ts` 导出 `XxxResource` 常量；Descriptor 与 Manifest 只引用常量。例：`domain.resource`。禁止裸 key、大小写、复数漂移。确需更深层级必须先在本规范登记。         |
+| Subject  | `PascalCase`                                                            | 实体型 Subject 必须与真实 Prisma model 同名；非实体能力只能使用门禁内有界白名单，并在定义处写明 capability 例外原因。                                                      |
+| Action   | 小写动词或 `snake_case` 动作                                            | CRUD/导入导出使用共享 `StandardAction`；领域动作使用 `as const` 对象，如 `DomainAction.AUDIT`。Contract、Manifest、guard、`ability.can`、`assert*Ability` 禁止魔法字符串。 |
+| Field    | `camelCase`                                                             | 每个 Subject 有自己的 `XxxField = {...} as const` 字典；实体型字段必须存在于对应 Prisma model；受控列与字段策略调用点只引用字段常量。                                      |
+| PageKey  | 全小写 `kebab-case`，包含至少一个中划线                                 | 切片贡献功能页面池的唯一标识，例如 `<domain>-<resource-a>`。门禁正则 `/^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$/` 强制校验，杜绝驼峰或下划线混杂。                                  |
 
 TypeScript 中使用 `as const` 常量对象和推导 union，禁止使用 TypeScript 原生 `enum`（消除 IIFE 胶水与打包冗余）：
 
 ```ts
-export const ItemSubject = { MASTER: "ItemMaster" } as const;
-export type ItemSubject = (typeof ItemSubject)[keyof typeof ItemSubject];
-export const ItemResource = { MASTER: "material.item_master" } as const;
-export const ItemAction = { ...StandardAction, PUBLISH: "publish" } as const;
-export const ItemMasterField = { ITEM_CODE: "itemCode" } as const;
+export const SampleSubject = { MASTER: "SampleMaster" } as const;
+export type SampleSubject = (typeof SampleSubject)[keyof typeof SampleSubject];
+export const SampleResource = { MASTER: "domain.sample_master" } as const;
+export const SampleAction = { ...StandardAction, PUBLISH: "publish" } as const;
+export const SampleMasterField = { CODE: "code" } as const;
 ```
 
 ### 严禁函数入参类型降解（反“假强类型”防线）
 
 在定义服务端鉴权守卫（如 `assert*Ability`）或接收 `as const` 常量对象的任何业务函数时，**严禁将入参声明为宽泛的 `string`**。
-必须在各切片导出的 `contract-types.ts` 中将本领域的 Subject 与 Action 聚合成联合字面量类型（如 `MaterialSubject`、`MaterialAction`），并在函数入参强类型绑定：
+必须在各切片导出的 `contract-types.ts` 中将本领域的 Subject 与 Action 聚合成联合字面量类型（如 `DomainSubject`、`DomainAction`），并在函数入参强类型绑定：
 
 ```ts
 // ❌ 严禁：宽泛的 string 导致前端/服务端调用时可随意传入拼错的垃圾字符串，击穿类型防线
-export function assertMaterialAbility(ability: AppAbility, action: string, subject: string) { ... }
+export function assertDomainAbility(ability: AppAbility, action: string, subject: string) { ... }
 
 // ✅ 正确：由 as const 派生出的精确联合类型，手写拼错在编译期即刻标红拦截
-export function assertMaterialAbility(
+export function assertDomainAbility(
   ability: AppAbility,
-  action: MaterialAction,
-  subject: MaterialSubject,
+  action: DomainAction,
+  subject: DomainSubject,
 ) { ... }
 ```
 
 Descriptor 必须显式绑定，不允许运行时拼接或约定俗成：
 
 ```ts
-export const itemMasterPageContract: FeaturePagePermissionDescriptor = {
-  resource: ItemResource.MASTER,
-  subject: ItemSubject.MASTER,
+export const sampleResourcePageContract: FeaturePagePermissionDescriptor = {
+  resource: SampleResource.MASTER,
+  subject: SampleSubject.MASTER,
   actions: [{ action: StandardAction.READ, label: "查看" }],
-  configurableFields: [{ field: ItemMasterField.ITEM_CODE, label: "商品编码" }],
+  configurableFields: [{ field: SampleResourceField.CODE, label: "编码" }],
 };
 ```
 
 ### 聚合页面与独立实体 (Composite Pages & Multiple Subjects)
 
-“同一页面/同一 Tab 组”不代表共享 Subject。只要是独立实体且未来可能独立授权（例如 `ItemCategory`、`ItemVariety`、`ItemGrade`，或 `CustomerCategory`、`CustomerTag`）：
+“同一页面/同一 Tab 组”不代表共享 Subject。只要是独立实体且未来可能独立授权（例如 `EntityCategory`、`EntityTag`）：
 
 1. **分别声明独立契约**：必须分别声明各自的 Subject、Resource、Field 和 Descriptor；
 2. **Manifest 消费全部契约**：切片 Manifest 的 `permissionModules.pages` 必须全量消费所有 Descriptor；
@@ -113,57 +113,57 @@ import {
 } from "@base/authorization";
 
 // 1. 实体与资源标识 (CASL Subject & Resource)
-export const CustomerSubject = "Customer";
-export const CustomerResource = "customer.customer";
+export const ResourceSubject = "Resource";
+export const ResourceResource = "domain.resource";
 
 // 2. 字段字典枚举 (消除魔法字符串)
-export const CustomerField = {
-  CUSTOMER_CODE: "customerCode",
-  CUSTOMER_NAME: "customerName",
-  DEFAULT_TAX_RATE: "defaultTaxRate",
-  CREDIT_LIMIT: "creditLimit",
+export const ResourceField = {
+  CODE: "code",
+  NAME: "name",
+  RATE: "rate",
+  AMOUNT: "amount",
   STATUS: "status",
 } as const;
 
 // 3. 受控字段元数据定义
-export const customerConfigurableFields = [
-  { field: CustomerField.CUSTOMER_CODE, label: "客户编码", isSensitive: false },
-  { field: CustomerField.CUSTOMER_NAME, label: "客户名称", isSensitive: false },
+export const resourceConfigurableFields = [
+  { field: ResourceField.CODE, label: "资源编码", isSensitive: false },
+  { field: ResourceField.NAME, label: "资源名称", isSensitive: false },
   {
-    field: CustomerField.DEFAULT_TAX_RATE,
-    label: "默认税率(%)",
+    field: ResourceField.RATE,
+    label: "关键比率",
     isSensitive: true,
   },
   {
-    field: CustomerField.CREDIT_LIMIT,
-    label: "信用额度(元)",
+    field: ResourceField.AMOUNT,
+    label: "受控金额",
     isSensitive: true,
   },
-  { field: CustomerField.STATUS, label: "客户状态", isSensitive: false },
+  { field: ResourceField.STATUS, label: "业务状态", isSensitive: false },
 ] as const;
 
 // 4. 页面级纯数据权限契约 (SSoT)
-export const customerPageContract: FeaturePagePermissionDescriptor = {
-  resource: CustomerResource,
-  subject: CustomerSubject,
-  label: "客户档案管理",
-  path: "/customer/customers",
+export const resourcePageContract: FeaturePagePermissionDescriptor = {
+  resource: ResourceResource,
+  subject: ResourceSubject,
+  label: "资源管理",
+  path: "/<domain>/<resources>",
   actions: [
     {
       action: StandardAction.READ,
-      label: "查看客户",
+      label: "查看记录",
       supportedScopes: STANDARD_DATA_SCOPES,
     },
-    { action: StandardAction.CREATE, label: "新建客户" },
+    { action: StandardAction.CREATE, label: "新建记录" },
     {
       action: StandardAction.UPDATE,
-      label: "修改客户",
+      label: "修改记录",
       supportedScopes: STANDARD_DATA_SCOPES,
     },
-    { action: StandardAction.DELETE, label: "删除客户" },
+    { action: StandardAction.DELETE, label: "删除记录" },
     { action: StandardAction.EXPORT, label: "数据导出" },
   ],
-  configurableFields: customerConfigurableFields.map((f) => ({
+  configurableFields: resourceConfigurableFields.map((f) => ({
     field: f.field,
     label: f.label,
     sensitive: f.isSensitive,
@@ -178,28 +178,32 @@ export const customerPageContract: FeaturePagePermissionDescriptor = {
 权限快照在 **切片 layout** 注入，View **只收业务数据**，不再接收 `permissions`/`ability` props。
 
 ```tsx
-// packages/domains/customer-center/.../ui/CustomerView.tsx
+// packages/domains/<domain>/src/features/<resource>/ui/<Resource>View.tsx
 "use client";
 import { useAbility } from "@base/authorization";
 import { DataTable, useListSearch } from "@base/ui";
-import { customerSearchParams, customerPageContract } from "../contract";
+import {
+  resourceSearchParams,
+  resourcePageContract,
+  ResourceField,
+} from "../contract";
 
 interface Props {
-  data: CustomerListItem[];
+  data: ResourceListItem[];
   total: number;
   // 禁止：permissions / ability props；禁止 initial* 镜像 state
 }
 
-export function CustomerView({ data, total }: Props) {
+export function ResourceView({ data, total }: Props) {
   const ability = useAbility();
-  const list = useListSearch(customerSearchParams);
+  const list = useListSearch(resourceSearchParams);
 
-  const columns: ColumnDef<CustomerListItem>[] = [
+  const columns: ColumnDef<ResourceListItem>[] = [
     {
-      id: "creditLimit",
-      field: CustomerField.CREDIT_LIMIT, // 👈 必须挂载契约字段！
-      header: "授信额度",
-      cell: (row) => formatCurrency(row.creditLimit),
+      id: "code",
+      field: ResourceField.CODE, // 👈 必须挂载契约字段！
+      header: "编码",
+      cell: (row) => row.code,
     },
   ];
 
@@ -209,9 +213,9 @@ export function CustomerView({ data, total }: Props) {
       data={data}
       columns={columns}
       total={total}
-      rowKey={(c) => c.id || c.customerCode}
-      subject={customerPageContract.subject} // 只传 subject
-      title="客户档案"
+      rowKey={(c) => c.id}
+      subject={resourcePageContract.subject} // 只传 subject
+      title="资源档案列表"
     />
   );
 }
@@ -224,20 +228,20 @@ export function CustomerView({ data, total }: Props) {
 标准 CRUD/导出由共享 `StandardAction` 提供；页面特有操作由领域 `as const` 动作对象声明，并由契约、按钮与 Server Action 共同引用：
 
 ```ts
-export const CustomerAction = {
+export const ResourceAction = {
   ...StandardAction,
   TOGGLE_STATUS: "toggle_status",
 } as const;
 
 actions: [
-  { action: CustomerAction.TOGGLE_STATUS, label: "启用/停用客户" },
+  { action: ResourceAction.TOGGLE_STATUS, label: "启用/停用" },
 ]
 
-{ label: "停用客户", action: CustomerAction.TOGGLE_STATUS, onClick: ... }
-assertCustomerAbility(
+{ label: "停用", action: ResourceAction.TOGGLE_STATUS, onClick: ... }
+assertSliceAbility(
   ability,
-  CustomerAction.TOGGLE_STATUS,
-  CustomerSubject,
+  ResourceAction.TOGGLE_STATUS,
+  ResourceSubject,
 );
 ```
 
@@ -247,7 +251,7 @@ assertCustomerAbility(
 
 ## 模块 1.1：Prisma 原生关系过滤与安全搜索范式
 
-在复杂业务单据（如销售订单、采购单、出入库流水）中，数据库底层往往存储外键编码（如 `customerCode` / `storeCode`），而业务用户在界面输入框搜索的是**关联对象的名称**（如客户名称“李四”、门店名称“总店”）。
+在复杂业务单据（如出入库流水、主子表明细单）中，数据库底层往往存储关联实体外键（如 `targetId`），而业务用户在界面输入框搜索的是**关联对象的业务名称**（如“示例名称”）。
 
 为遵循 Prisma 官方最佳实践并消除私有 DSL 历史包袱，框架推行 **Prisma 官方原生嵌套关系过滤（范式 A）**：
 
@@ -261,10 +265,9 @@ assertCustomerAbility(
    if (params.keyword) {
      const q = sanitizeSearchKeyword(params.keyword);
      where.OR = [
-       { orderId: { contains: q, mode: "insensitive" } },
-       { salesPerson: { contains: q, mode: "insensitive" } },
-       { customer: { customerName: { contains: q, mode: "insensitive" } } },
-       { store: { storeName: { contains: q, mode: "insensitive" } } },
+       { docNo: { contains: q, mode: "insensitive" } },
+       { operatorName: { contains: q, mode: "insensitive" } },
+       { targetEntity: { name: { contains: q, mode: "insensitive" } } },
      ];
    }
    ```
@@ -275,7 +278,7 @@ assertCustomerAbility(
    ```tsx
    <DataTable
      {...list.dataTableProps}
-     keywordPlaceholder="搜索订单号、销售员、客户、门店..."
+     keywordPlaceholder="搜索单号、经办人、名称..."
    />
    ```
 

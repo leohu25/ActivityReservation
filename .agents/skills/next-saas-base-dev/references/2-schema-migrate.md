@@ -30,37 +30,37 @@ generator client {
 }
 
 // 业务数据实体定义 (必须强制包含 ADR-009 实体审计与软删除基线字段)
-model Customer {
-  /// 客户编码 (主键)
-  customerCode   String    @id @map("customer_code") @db.VarChar(30)
-  /// 客户名称
-  customerName   String    @map("customer_name") @db.VarChar(100)
-  /// 默认税率(%)
-  defaultTaxRate Decimal?  @map("default_tax_rate") @db.Decimal(5, 2)
-  /// 授信额度(元)
-  creditLimit    Decimal?  @map("credit_limit") @db.Decimal(12, 2)
-  /// 客户状态: ACTIVE(正常) / DISABLED(停用)
-  status         String    @default("ACTIVE") @db.VarChar(10)
+model ResourceItem {
+  /// 业务编码 (主键)
+  code        String    @id @map("code") @db.VarChar(30)
+  /// 业务名称
+  name        String    @map("name") @db.VarChar(100)
+  /// 关键比率
+  rate        Decimal?  @map("rate") @db.Decimal(5, 2)
+  /// 受控金额
+  amount      Decimal?  @map("amount") @db.Decimal(12, 2)
+  /// 业务状态: ACTIVE(正常) / DISABLED(停用)
+  status      String    @default("ACTIVE") @db.VarChar(10)
 
   // ===== 框架强制基础审计与数据范围基线字段 (ADR-009) =====
   /// 创建人用户ID (数据范围 SELF 核心依据)
-  createdById    String    @map("created_by_id") @db.VarChar(50)
+  createdById String    @map("created_by_id") @db.VarChar(50)
   /// 归属部门ID (数据范围 DEPT / DEPT_TREE 核心依据)
-  deptId         String?   @map("dept_id") @db.VarChar(50)
+  deptId      String?   @map("dept_id") @db.VarChar(50)
   /// 最后更新人用户ID
-  updatedById    String?   @map("updated_by_id") @db.VarChar(50)
+  updatedById String?   @map("updated_by_id") @db.VarChar(50)
   /// 软删除标记 (默认 false)
-  isDeleted      Boolean   @default(false) @map("is_deleted")
+  isDeleted   Boolean   @default(false) @map("is_deleted")
   /// 软删除时间
-  deletedAt      DateTime? @map("deleted_at")
+  deletedAt   DateTime? @map("deleted_at")
   /// 软删除操作人用户ID
-  deletedById    String?   @map("deleted_by_id") @db.VarChar(50)
+  deletedById String?   @map("deleted_by_id") @db.VarChar(50)
   /// 创建时间
-  createdAt      DateTime  @default(now()) @map("created_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
   /// 更新时间
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  @@map("customer")
+  @@map("resource_item")
 }
 ```
 
@@ -82,9 +82,9 @@ model Customer {
 >
 > **仅以下四类允许豁免**：
 >
-> - 单据明细从表（如 `CustomerQuoteItem`，随主表级联生命周期）；
-> - 纯多对多关联中间表（如 `CustomerTagAssignment`）；
-> - 全租户共享配置字典表（如 `CustomerTag`，靠自身 `status` 启停用）；
+> - 单据明细从表（如 `OrderDetailItem`，随主表级联生命周期）；
+> - 纯多对多关联中间表（如 `ItemTagAssignment`）；
+> - 全租户共享配置字典表（如 `GlobalTag`，靠自身 `status` 启停用）；
 > - 组织人事基座事实源表（`Department`、`EmployeeProfile` 等）。
 
 ---

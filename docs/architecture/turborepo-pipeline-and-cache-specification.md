@@ -2,7 +2,7 @@
 
 本文件是根目录 `turbo.json` 的**权威架构设计与配置说明文档 (SSoT)**。
 
-Turborepo 在本项目中作为 **Monorepo 构建与任务拓扑调度引擎**，负责管理 16 个工作区包（双端应用 `apps/*`、平台底座 `@base/*`、业务切片 `@base/feature-*` 以及迁移工具）之间的编译期依赖关系、任务执行顺序与增量缓存。
+Turborepo 在本项目中作为 **Monorepo 构建与任务拓扑调度引擎**，负责管理全仓工作区包（双端应用 `apps/*`、平台底座 `@base/*`、中台资产 `@biz/*`、平台套件 `@platform/*`、业务切片 `@domain/*` 以及迁移工具）之间的编译期依赖关系、任务执行顺序与增量缓存。
 
 ---
 
@@ -135,4 +135,4 @@ graph TD
 2. **如何单独运行某个包的任务？**
    - 租户端：`pnpm --filter tenant dev` 或 `pnpm dev:tenant`
    - 总控端：`pnpm --filter control dev` 或 `pnpm dev:control`
-   - 特定特性：`pnpm --filter @base/feature-procurement-center test`
+   - 特定特性：`pnpm --filter @domain/customer-center test`
