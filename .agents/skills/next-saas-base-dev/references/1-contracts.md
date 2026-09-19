@@ -56,16 +56,46 @@ export const sampleResourcePageContract: FeaturePagePermissionDescriptor = {
 };
 ```
 
-### 聚合页面与独立实体 (Composite Pages & Multiple Subjects)
+### 聚合页面与复合场景的两大标准范式 (Composite Pages & Subjects Architecture)
 
-“同一页面/同一 Tab 组”不代表共享 Subject。只要是独立实体且未来可能独立授权（例如 `EntityCategory`、`EntityTag`）：
+在实际业务开发中，经常遇到“一个页面汇聚展示多个业务模块数据”（如工作台汇总卡片、聚合报表、分类与标签多 Tab 页等）。针对此类场景，框架严格定义两大标准范式：
 
-1. **分别声明独立契约**：必须分别声明各自的 Subject、Resource、Field 和 Descriptor；
-2. **Manifest 消费全部契约**：切片 Manifest 的 `permissionModules.pages` 必须全量消费所有 Descriptor；
-3. **复合功能页面必须声明 `subjects` 数组**：在 `manifest.pages` 功能池中，当页面聚合了多个实体时，必须显式声明 `subjects: [SubjectA, SubjectB, ...]`。门禁 `scripts/check/check-permission-contracts.mjs` 对此执行物理级静态强拦截；
-4. **动态菜单遵循 OR 准入原则**：用户拥有其中任意一实体的 `READ` 权限即可看到并访问该菜单，全无权限自动剪枝隐藏；
-5. **角色权限中心行内嵌套展开**：权限管理树按页面容器聚合，并在行内树状展开各子实体，独立配置操作按钮、数据范围与字段；
-6. **服务端按权优雅降级**：页面可以组合查询，但每个 Query/Action 必须校验自己实体对应的 Subject，禁止无条件并发引发 403 白屏崩溃。只有生命周期不可分割、无独立授权语义的值对象/级联明细才允许受聚合根权限代理，并需在契约注释中说明。
+#### 范式一：复用「实体权限键 (Entity Subject)」（默认推荐，轻量高效）
+
+适用于**聚合页面本质上是业务主数据的快捷入口或全权视图**（即“能看实体就能看该卡片，不能看实体就自动隐藏”）：
+
+- **心智原则**：聚合页面自身**不定义任何新的 Subject/Resource**，直接复用各子模块原本导出的实体键（如 `EntityASubject`、`EntityBSubject`）；
+- **动态菜单 OR 准入原则**：用户拥有其中任意一实体的 `READ` 权限即可看到并访问该聚合菜单，全无权限自动剪枝隐藏；在 Manifest 的 `manifest.pages` 中必须显式声明 `subjects: [EntityASubject, EntityBSubject, ...]`；
+- **服务端按权优雅降级（Graceful Degradation）**：聚合页面的服务端装配函数（如 `getTenantWorkbenchData`）中，**严禁无脑并发调用所有 Query 引发 403 连带白屏**！必须按权分支调度：
+  ```ts
+  const [dataA, dataB] = await Promise.all([
+    ability.can("read", EntityASubject) ? listAQuery() : Promise.resolve(null),
+    ability.can("read", EntityBSubject) ? listBQuery() : Promise.resolve(null),
+  ]);
+  ```
+- **前端视觉按权剪枝**：前端根据返回的 `{ canView }` 状态，有权展示卡片，无权卡片自动折叠或隐藏，网格自适应重排；
+- **数据范围与字段脱敏天然继承**：各子 Query 内部原生执行 `getAccessibleWhere` 与 `pickReadableFields`，数据安全性与主模块完全对齐。
+
+#### 范式二：隔离引入「视图权限键 (View/Capability Subject)」（深度隔离，权责解耦）
+
+适用于**聚合页面（如工作台看板、对外统计简报）必须与底层主数据彻底隔离**（即“允许普通员工在工作台看统计摘要，但严禁其进入主模块查阅/导出完整档案主数据”）：
+
+- **心智原则**：在聚合页面自身所属的 `contract.ts` 中，开辟专属的**视图/能力型 Subject 与 Resource**（如 `WorkbenchEntityABrief`、`WorkbenchOverview`），与底层物理实体的 CRUD 权限彻底解耦；
+- **契约规范**：非实体型能力必须在系统白名单备案，声明 `as const` 并导出独立的 Descriptor：
+  ```ts
+  // 视图键 / 能力键定义
+  export const WorkbenchSubject = {
+    BRIEF_A: "WorkbenchEntityABrief",
+  } as const;
+  export const WorkbenchResource = {
+    BRIEF_A: "workbench.entity_a_brief",
+  } as const;
+  ```
+- **权限配置矩阵独立呈现**：在系统角色管理后台中，【主数据维护目录】与【工作台视图能力】呈现为两个完全独立的配置节点，支持精细化授权；
+- **BFF 轻量聚合供给**：后端提供专用的聚合 BFF Query（仅查聚合统计或脱敏摘要），仅断言 `assertDomainAbility(ability, "read", WorkbenchSubject.BRIEF_A)`；
+- **防越权物理阻断**：用户由于没有 `EntityASubject` 的实体权限，即便通过网络工具绕调主数据 Query 或 Action，也会被底层物理层直接 403 拦截，杜绝数据泄露。
+
+---
 
 ### 硬门禁
 
