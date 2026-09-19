@@ -36,6 +36,7 @@ import {
   TableHead,
   TableRow,
   TableCell,
+  Combobox,
   cn,
 } from "@base/ui";
 import {
@@ -747,23 +748,22 @@ export function RolePermissionManager({
                             {/* 数据范围下拉选择 */}
                             <td className="py-2 px-3 text-center">
                               {supportsScope && hasRead ? (
-                                <select
-                                  value={scope}
-                                  disabled={!canUpdate}
-                                  onChange={(e) =>
-                                    handleDataScopeChange(
-                                      entity.resource,
-                                      e.target.value as DataScopeType,
-                                    )
-                                  }
-                                  className="h-7 text-xs rounded border border-slate-200 bg-white px-2 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
-                                >
-                                  {DATA_SCOPE_SELECT_OPTIONS.map((opt) => (
-                                    <option key={opt.value} value={opt.value}>
-                                      {opt.label}
-                                    </option>
-                                  ))}
-                                </select>
+                                <div className="w-[120px] mx-auto">
+                                  <Combobox
+                                    value={scope}
+                                    disabled={!canUpdate}
+                                    options={DATA_SCOPE_SELECT_OPTIONS}
+                                    onChange={(val) => {
+                                      if (val) {
+                                        handleDataScopeChange(
+                                          entity.resource,
+                                          val as DataScopeType,
+                                        );
+                                      }
+                                    }}
+                                    placeholder="数据范围"
+                                  />
+                                </div>
                               ) : (
                                 <span className="text-[11px] text-slate-400 font-mono">
                                   -

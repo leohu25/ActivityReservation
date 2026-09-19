@@ -14,12 +14,7 @@ import {
 	Badge,
 	DataTable,
 	DataTableInputGroup,
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
+	Combobox,
 	type ColumnDef,
 	DataTableRowActions,
 	useListSearch,
@@ -46,6 +41,13 @@ const tagTypeLabels: Record<string, string> = {
  * - URL / 列表搜索由 useListSearch + customerTagSearchParams 自动驱动
  * - 按钮（查询、重置、刷新、导出、新增）100% 由 DataTable 模板组件生成
  */
+const TAG_TYPE_OPTIONS = [
+	{ value: "DELIVERY", label: "配送策略" },
+	{ value: "SETTLEMENT", label: "结算方式" },
+	{ value: "CREDIT", label: "信用分级" },
+	{ value: "OTHER", label: "其他通用" },
+];
+
 export function TagView({ data, total }: TagViewProps) {
 	const ability = useAbility();
 	const list = useListSearch(customerTagSearchParams);
@@ -262,28 +264,18 @@ export function TagView({ data, total }: TagViewProps) {
 				statusValue={String(list.params.status ?? "")}
 				onStatusChange={(v) => list.patch({ status: v || "" })}
 				filterExtra={
-					<DataTableInputGroup label="业务类型" className="w-48">
-						<Select
-							value={String(list.params.tagType || "ALL")}
-							onValueChange={(next) =>
+					<DataTableInputGroup label="业务类型" className="w-52">
+						<Combobox
+							value={String(list.params.tagType ?? "") || null}
+							options={TAG_TYPE_OPTIONS}
+							placeholder="全部类型"
+							clearable={true}
+							onChange={(next) =>
 								list.patch({
-									tagType: !next || next === "ALL" ? "" : next,
+									tagType: next || "",
 								})
 							}
-						>
-							<SelectTrigger className="w-full">
-								<SelectValue placeholder="全部" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectGroup>
-									<SelectItem value="ALL">全部</SelectItem>
-									<SelectItem value="DELIVERY">配送策略</SelectItem>
-									<SelectItem value="SETTLEMENT">结算方式</SelectItem>
-									<SelectItem value="CREDIT">信用分级</SelectItem>
-									<SelectItem value="OTHER">其他通用</SelectItem>
-								</SelectGroup>
-							</SelectContent>
-						</Select>
+						/>
 					</DataTableInputGroup>
 				}
 			/>

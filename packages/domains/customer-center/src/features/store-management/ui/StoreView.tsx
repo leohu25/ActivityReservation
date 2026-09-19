@@ -5,12 +5,7 @@ import { Building2 } from "lucide-react";
 import {
 	DataTable,
 	DataTableInputGroup,
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
+	Combobox,
 	Badge,
 	DataTableRowActions,
 	toast,
@@ -255,6 +250,15 @@ export function StoreView({
 		[handleDelete, handleToggleStatus],
 	);
 
+	const customerSelectOptions = useMemo(
+		() =>
+			customers.map((c) => ({
+				value: c.id,
+				label: c.name,
+			})),
+		[customers],
+	);
+
 	return (
 		<>
 			<DataTable<StoreListItem>
@@ -280,29 +284,18 @@ export function StoreView({
 				statusValue={String(list.params.status ?? "")}
 				onStatusChange={(v) => list.patch({ status: v || "" })}
 				filterExtra={
-					<DataTableInputGroup label="所属客户" className="w-52">
-						<Select
-							value={String(list.params.customerId || "ALL")}
-							onValueChange={(v) =>
+					<DataTableInputGroup label="所属客户" className="w-56">
+						<Combobox
+							value={String(list.params.customerId ?? "") || null}
+							options={customerSelectOptions}
+							placeholder="全部客户"
+							clearable={true}
+							onChange={(v) =>
 								list.patch({
-									customerId: !v || v === "ALL" ? "" : v,
+									customerId: v || "",
 								})
 							}
-						>
-							<SelectTrigger className="w-full">
-								<SelectValue placeholder="全部" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectGroup>
-									<SelectItem value="ALL">全部</SelectItem>
-									{customers.map((c) => (
-										<SelectItem key={c.id} value={c.id}>
-											{c.name}
-										</SelectItem>
-									))}
-								</SelectGroup>
-							</SelectContent>
-						</Select>
+						/>
 					</DataTableInputGroup>
 				}
 			/>
