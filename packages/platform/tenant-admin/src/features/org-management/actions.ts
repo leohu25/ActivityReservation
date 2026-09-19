@@ -19,17 +19,21 @@ import {
   parseCreatePositionInput,
   parseUpdatePositionInput,
 } from "./position.schema";
+import {
+  parseDirectCreateEmployeeInput,
+  parseUpdateEmployeeInput,
+  parseTransferDepartmentInput,
+  parseTransferPositionInput,
+  parseTransferRolesInput,
+} from "./employee.schema";
 import type {
   CreateDepartmentInput,
   UpdateDepartmentInput,
   DepartmentTreeNode,
   PositionItem,
-  DirectCreateEmployeeInput,
   EmployeeItem,
   EmployeeListFilter,
-  TransferDepartmentInput,
   TransferPositionInput,
-  TransferRolesInput,
 } from "./types";
 
 const deptService = new DepartmentService();
@@ -189,7 +193,8 @@ export const listEmployeesAction = defineServerAction(
 );
 
 export const directCreateEmployeeAction = defineServerAction(
-  async (input: DirectCreateEmployeeInput): Promise<EmployeeItem> => {
+  async (raw: unknown): Promise<EmployeeItem> => {
+    const input = parseDirectCreateEmployeeInput(raw);
     const { client, organizationId, ability } = await getTenantAdminContext();
     assertTenantAdminAbility(ability, StandardAction.CREATE, EmployeeSubject);
 
@@ -210,7 +215,8 @@ export const directCreateEmployeeAction = defineServerAction(
 );
 
 export const transferDepartmentAction = defineServerAction(
-  async (input: TransferDepartmentInput): Promise<void> => {
+  async (raw: unknown): Promise<void> => {
+    const input = parseTransferDepartmentInput(raw);
     const { client, organizationId, ability } = await getTenantAdminContext();
     assertTenantAdminAbility(ability, StandardAction.UPDATE, EmployeeSubject);
 
@@ -229,7 +235,8 @@ export const transferDepartmentAction = defineServerAction(
 );
 
 export const transferPositionAction = defineServerAction(
-  async (input: TransferPositionInput): Promise<void> => {
+  async (raw: unknown): Promise<void> => {
+    const input = parseTransferPositionInput(raw);
     const { client, ability } = await getTenantAdminContext();
     assertTenantAdminAbility(ability, StandardAction.UPDATE, EmployeeSubject);
 
@@ -242,7 +249,8 @@ export const transferPositionAction = defineServerAction(
 );
 
 export const transferRolesAction = defineServerAction(
-  async (input: TransferRolesInput): Promise<void> => {
+  async (raw: unknown): Promise<void> => {
+    const input = parseTransferRolesInput(raw);
     const { organizationId, ability } = await getTenantAdminContext();
     assertTenantAdminAbility(ability, StandardAction.UPDATE, EmployeeSubject);
 
@@ -289,4 +297,45 @@ export const resumeEmployeeAction = defineServerAction(
     revalidatePath("/organization/employees");
   },
   "恢复员工失败",
+);
+
+export const updateEmployeeAction = defineServerAction(
+  async (id: string, raw: unknown): Promise<EmployeeItem> => {
+    const input = parseUpdateEmployeeInput(raw);
+    const { client, organizationId, ability } = await getTenantAdminContext();
+    assertTenantAdminAbility(ability, StandardAction.UPDATE, EmployeeSubject);
+
+    const controlPrisma = await getControlDbClient();
+    const data = await empService.updateEmployee(
+      client,
+      controlPrisma,
+      organizationId,
+      id,
+      input,
+    );
+
+    revalidatePath("/organization/employees");
+    revalidatePath("/organization/departments");
+    revalidatePath("/organization/positions");
+    return data;
+  },
+  "更新员工失败",
+);
+
+export const deleteEmployeeAction = defineServerAction(
+  async (employeeId: string): Promise<void> => {
+    const { client, organizationId, ability } = await getTenantAdminContext();
+    assertTenantAdminAbility(ability, StandardAction.DELETE, EmployeeSubject);
+
+    const controlPrisma = await getControlDbClient();
+    await empService.suspendEmployee(
+      client,
+      controlPrisma,
+      organizationId,
+      employeeId,
+    );
+
+    revalidatePath("/organization/employees");
+  },
+  "停用/删除员工失败",
 );

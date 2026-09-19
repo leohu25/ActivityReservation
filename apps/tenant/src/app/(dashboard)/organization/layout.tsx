@@ -1,3 +1,9 @@
+import {
+  DepartmentSubject,
+  EmployeeSubject,
+  PositionSubject,
+} from "@base/feature-tenant-admin/org-management";
+import { RoleSubject } from "@base/feature-tenant-admin/role-management";
 import { TenantAdminAbilityBoundary } from "@base/feature-tenant-admin/shared";
 import { getTenantSubjectPermissions } from "@/kernel";
 
@@ -10,20 +16,21 @@ export default async function OrganizationLayout({
   children: React.ReactNode;
 }) {
   const [employee, department, position, role] = await Promise.all([
-    getTenantSubjectPermissions("Employee"),
-    getTenantSubjectPermissions("Department"),
-    getTenantSubjectPermissions("Position"),
-    getTenantSubjectPermissions("Role"),
+    getTenantSubjectPermissions(EmployeeSubject),
+    getTenantSubjectPermissions(DepartmentSubject),
+    getTenantSubjectPermissions(PositionSubject),
+    getTenantSubjectPermissions(RoleSubject),
   ]);
 
   return (
     <TenantAdminAbilityBoundary
       permissions={{
         subjects: {
-          Employee: employee,
-          Department: department,
-          Position: position,
-          Role: role,
+          [EmployeeSubject]: employee,
+          EmployeeProfile: employee,
+          [DepartmentSubject]: department,
+          [PositionSubject]: position,
+          [RoleSubject]: role,
         },
       }}
     >

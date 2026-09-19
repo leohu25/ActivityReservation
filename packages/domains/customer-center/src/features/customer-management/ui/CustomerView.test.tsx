@@ -154,8 +154,8 @@ test("CustomerView 与 customerPageContract 契约 100% 对齐（无幽灵动作
 	assert.match(fullHtml, /导出/, "具有 export 权限时必须渲染导出按钮");
 	assert.match(
 		fullHtml,
-		/打开操作菜单/,
-		"具有行级操作权限时必须渲染操作菜单触发器",
+		/详情|编辑|删除|停用/,
+		"具有行级操作权限时必须渲染标准平铺行操作按钮",
 	);
 	assert.ok(
 		contractActions.includes("toggle_status"),

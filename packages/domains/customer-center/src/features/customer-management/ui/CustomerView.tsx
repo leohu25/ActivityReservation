@@ -7,12 +7,7 @@ import {
 	DataTableInputGroup,
 	Badge,
 	DataTableRowActions,
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
+	Combobox,
 	useListSearch,
 	toast,
 	type ColumnDef,
@@ -223,29 +218,23 @@ export function CustomerView({
 						record={c}
 						onView={() => setModalState({ open: true, mode: "view", record: c })}
 						onEdit={() => setModalState({ open: true, mode: "edit", record: c })}
-						extraActions={[
-							{
-								label:
-									c.status === MasterDataStatus.ACTIVE ? "停用客户" : "启用客户",
-								action: CustomerAction.TOGGLE_STATUS,
-								collapsed: true,
-								variant:
-									c.status === MasterDataStatus.ACTIVE
-										? "destructive"
-										: "default",
-								onClick: () => handleToggleStatus(c.id, c.status),
-								confirm:
-									c.status === MasterDataStatus.ACTIVE
-										? {
-												title: `确认停用客户 "${c.name}"？`,
-												description:
-													"警告：停用该客户将导致其名下所有关联门店强制同步停用！",
-												confirmText: "确认停用",
-												cancelText: "取消",
-											}
-										: undefined,
-							},
-						]}
+						onToggleStatus={() => handleToggleStatus(c.id, c.status)}
+						toggleStatusOptions={{
+							status: c.status,
+							action: CustomerAction.TOGGLE_STATUS,
+							activeLabel: "停用客户",
+							inactiveLabel: "启用客户",
+							confirm: (record, active) =>
+								active
+									? {
+											title: `确认停用客户 "${record.name}"？`,
+											description:
+												"警告：停用该客户将导致其名下所有关联门店强制同步停用！",
+											confirmText: "确认停用",
+											cancelText: "取消",
+										}
+									: undefined,
+						}}
 						onDelete={() => handleDelete(c.id)}
 						deleteConfirm={{
 							title: `确认删除客户 "${c.name}"？`,
@@ -282,28 +271,20 @@ export function CustomerView({
 				onStatusChange={(v) => list.patch({ status: v || "" })}
 				filterExtra={
 					<DataTableInputGroup label="客户分类" className="w-48">
-						<Select
-							value={String(list.params.categoryId || "ALL")}
-							onValueChange={(next) =>
+						<Combobox
+							value={String(list.params.categoryId || "")}
+							options={categories.map((c) => ({
+								value: c.id,
+								label: c.name,
+							}))}
+							placeholder="全部分类"
+							clearable={true}
+							onChange={(next) =>
 								list.patch({
-									categoryId: !next || next === "ALL" ? "" : next,
+									categoryId: next || "",
 								})
 							}
-						>
-							<SelectTrigger className="w-full">
-								<SelectValue placeholder="全部" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectGroup>
-									<SelectItem value="ALL">全部</SelectItem>
-									{categories.map((c) => (
-										<SelectItem key={c.id} value={c.id}>
-											{c.name}
-										</SelectItem>
-									))}
-								</SelectGroup>
-							</SelectContent>
-						</Select>
+						/>
 					</DataTableInputGroup>
 				}
 			/>

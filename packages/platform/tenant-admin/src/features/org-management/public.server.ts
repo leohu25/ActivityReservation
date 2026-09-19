@@ -5,6 +5,8 @@ export {
   listPositionsQuery,
   listPositionsPagedQuery,
   listEmployeesQuery,
+  listEmployeesPagedQuery,
+  getEmployeePageOptionsQuery,
 } from "./queries";
 export {
   createDepartmentAction,

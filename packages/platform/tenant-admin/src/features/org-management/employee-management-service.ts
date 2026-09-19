@@ -1,10 +1,13 @@
 import { hashPassword } from "better-auth/crypto";
 import type { ControlPrismaClient } from "@base/db-control";
-import type { TenantPrismaClient } from "@base/db-tenant";
+import type { TenantPrismaClient, TenantPrisma } from "@base/db-tenant";
+import { resolvePagination } from "@base/shared";
 import type {
   DirectCreateEmployeeInput,
   EmployeeItem,
   EmployeeListFilter,
+  ListEmployeesFilter,
+  ListEmployeesResult,
   TransferDepartmentInput,
   TransferPositionInput,
   TransferRolesInput,
@@ -19,6 +22,173 @@ import type {
  * 4. 负责员工停用（SUSPENDED）与恢复，停用即时自增权限版本号，严格遵循 R-04（租户停用严禁封禁全局 User）。
  */
 export class EmployeeManagementService {
+  /**
+   * 服务端分页与多维条件联合检索员工档案列表 (标准范式)
+   */
+  async listEmployeesPaged(
+    tenantPrisma: TenantPrismaClient,
+    controlPrisma: ControlPrismaClient,
+    orgId: string,
+    filter: ListEmployeesFilter = {},
+  ): Promise<ListEmployeesResult> {
+    const { page, pageSize, skip, take } = resolvePagination(filter, {
+      defaultPageSize: 10,
+    });
+
+    // 1. 若指定了角色筛选，提前在 Control DB 获取匹配该角色的租户 memberId
+    let roleMemberIds: string[] | undefined;
+    if (filter.role && filter.role.trim().length > 0) {
+      const members = await controlPrisma.member.findMany({
+        where: {
+          organizationId: orgId,
+          role: { contains: filter.role.trim() },
+        },
+        select: { id: true },
+      });
+      roleMemberIds = members.map((m) => m.id);
+      if (roleMemberIds.length === 0) {
+        return { items: [], total: 0, page, pageSize };
+      }
+    }
+
+    // 2. 处理部门层级过滤 (若包含子部门，递归提取全部子孙部门 ID)
+    let departmentFilter: { in: string[] } | string | undefined;
+    if (filter.departmentId) {
+      if (filter.includeChildren) {
+        const allDepts = await tenantPrisma.department.findMany({
+          select: { id: true, parentId: true },
+        });
+        const treeIds = this.collectDepartmentTreeIds(
+          allDepts,
+          filter.departmentId,
+        );
+        departmentFilter = { in: treeIds };
+      } else {
+        departmentFilter = filter.departmentId;
+      }
+    }
+
+    // 3. 构造 Tenant DB 强类型档案查询条件
+    const where: TenantPrisma.EmployeeProfileWhereInput = {};
+
+    if (departmentFilter) {
+      where.departmentId = departmentFilter;
+    }
+    if (filter.positionId) {
+      where.positionId = filter.positionId;
+    }
+    if (filter.status) {
+      where.status = filter.status;
+    }
+    if (roleMemberIds) {
+      where.memberId = { in: roleMemberIds };
+    }
+    if (filter.search && filter.search.trim().length > 0) {
+      const s = filter.search.trim();
+      where.OR = [
+        { nameSnapshot: { contains: s, mode: "insensitive" } },
+        { emailSnapshot: { contains: s, mode: "insensitive" } },
+        { employeeNo: { contains: s, mode: "insensitive" } },
+      ];
+    }
+
+    // 4. 并发统计总数与分页查取当前页档案
+    const [total, profiles] = await Promise.all([
+      tenantPrisma.employeeProfile.count({ where }),
+      tenantPrisma.employeeProfile.findMany({
+        where,
+        include: {
+          department: {
+            select: { id: true, name: true },
+          },
+          position: {
+            select: { id: true, name: true },
+          },
+          manager: {
+            select: { id: true, nameSnapshot: true },
+          },
+        },
+        orderBy: [{ createdAt: "desc" }],
+        skip,
+        take,
+      }),
+    ]);
+
+    if (profiles.length === 0) {
+      return { items: [], total, page, pageSize };
+    }
+
+    // 5. 批量查询关联的 member 角色与全局 User 信息
+    const memberIds = profiles
+      .map((p) => p.memberId)
+      .filter((id): id is string => Boolean(id));
+
+    const memberMap = new Map<
+      string,
+      {
+        roles: string[];
+        email?: string;
+        name?: string;
+        userId?: string;
+      }
+    >();
+
+    if (memberIds.length > 0) {
+      const members = await controlPrisma.member.findMany({
+        where: {
+          organizationId: orgId,
+          id: { in: memberIds },
+        },
+        include: {
+          user: {
+            select: { id: true, email: true, name: true },
+          },
+        },
+      });
+
+      for (const m of members) {
+        const roles = m.role
+          .split(",")
+          .map((r) => r.trim())
+          .filter(Boolean);
+        memberMap.set(m.id, {
+          roles,
+          email: m.user?.email,
+          name: m.user?.name,
+          userId: m.userId,
+        });
+      }
+    }
+
+    // 6. 组装最终展示项
+    const items: EmployeeItem[] = profiles.map((p) => {
+      const memberInfo = p.memberId ? memberMap.get(p.memberId) : undefined;
+      const roles = memberInfo?.roles ?? [];
+
+      return {
+        id: p.id,
+        memberId: p.memberId,
+        userId: p.userId ?? memberInfo?.userId ?? null,
+        employeeNo: p.employeeNo,
+        name: memberInfo?.name || p.nameSnapshot || "未命名员工",
+        email: memberInfo?.email || p.emailSnapshot || "",
+        departmentId: p.departmentId,
+        departmentName: p.department?.name ?? null,
+        positionId: p.positionId,
+        positionName: p.position?.name ?? null,
+        managerEmployeeId: p.managerEmployeeId,
+        managerName: p.manager?.nameSnapshot ?? null,
+        jobTitle: p.jobTitle,
+        roles,
+        status: p.status,
+        joinedAt: p.joinedAt,
+        createdAt: p.createdAt,
+      };
+    });
+
+    return { items, total, page, pageSize };
+  }
+
   /**
    * 多维条件联合查询员工档案列表
    */
@@ -345,6 +515,147 @@ export class EmployeeManagementService {
       status: profile.status,
       joinedAt: profile.joinedAt,
       createdAt: profile.createdAt,
+    };
+  }
+
+  /**
+   * 调换部门 (触发 authorizationVersion++ 动态重算 CASL 数据范围)
+   */
+  async updateEmployee(
+    tenantPrisma: TenantPrismaClient,
+    controlPrisma: ControlPrismaClient,
+    orgId: string,
+    employeeId: string,
+    input: {
+      name?: string;
+      employeeNo?: string | null;
+      departmentId?: string | null;
+      positionId?: string | null;
+      jobTitle?: string | null;
+      roles?: readonly string[];
+    },
+  ): Promise<EmployeeItem> {
+    const profile = await tenantPrisma.employeeProfile.findUnique({
+      where: { id: employeeId },
+    });
+    if (!profile) {
+      throw new Error("目标员工档案不存在");
+    }
+
+    let shouldIncrementAuthVersion = false;
+
+    // 1. 部门校验
+    let targetDeptId = profile.departmentId;
+    if (input.departmentId !== undefined) {
+      targetDeptId = input.departmentId;
+      if (targetDeptId && targetDeptId !== profile.departmentId) {
+        const dept = await tenantPrisma.department.findUnique({
+          where: { id: targetDeptId },
+        });
+        if (!dept) throw new Error("目标部门不存在");
+      }
+      if (targetDeptId !== profile.departmentId) {
+        shouldIncrementAuthVersion = true;
+      }
+    }
+
+    // 2. 岗位校验
+    let targetPosId = profile.positionId;
+    if (input.positionId !== undefined) {
+      targetPosId = input.positionId;
+      if (targetPosId && targetPosId !== profile.positionId) {
+        const pos = await tenantPrisma.position.findUnique({
+          where: { id: targetPosId },
+        });
+        if (!pos) throw new Error("目标岗位不存在");
+      }
+    }
+
+    // 3. 更新 Tenant DB 员工档案
+    const cleanName = input.name?.trim() || profile.nameSnapshot;
+    const cleanEmployeeNo =
+      input.employeeNo !== undefined
+        ? input.employeeNo?.trim() || null
+        : profile.employeeNo;
+
+    const updatedProfile = await tenantPrisma.employeeProfile.update({
+      where: { id: employeeId },
+      data: {
+        nameSnapshot: cleanName,
+        employeeNo: cleanEmployeeNo,
+        departmentId: targetDeptId,
+        positionId: targetPosId,
+        jobTitle:
+          input.jobTitle !== undefined
+            ? input.jobTitle?.trim() || null
+            : profile.jobTitle,
+      },
+      include: {
+        department: { select: { id: true, name: true } },
+        position: { select: { id: true, name: true } },
+        manager: { select: { id: true, nameSnapshot: true } },
+      },
+    });
+
+    // 4. 同步更新 Control DB 用户名
+    if (input.name && profile.userId) {
+      await controlPrisma.user.update({
+        where: { id: profile.userId },
+        data: { name: cleanName },
+      });
+    }
+
+    // 5. 角色同步
+    let roles: string[] = [];
+    if (profile.memberId) {
+      const member = await controlPrisma.member.findUnique({
+        where: { id: profile.memberId },
+      });
+      if (member) {
+        roles = member.role
+          .split(",")
+          .map((r) => r.trim())
+          .filter(Boolean);
+        if (input.roles && input.roles.length > 0) {
+          const newRolesJoined = input.roles.join(",");
+          if (newRolesJoined !== member.role) {
+            await controlPrisma.member.update({
+              where: { id: profile.memberId },
+              data: { role: newRolesJoined },
+            });
+            roles = [...input.roles];
+            shouldIncrementAuthVersion = true;
+          }
+        }
+      }
+    }
+
+    // 6. 权限版本自增
+    if (shouldIncrementAuthVersion) {
+      await controlPrisma.organization.update({
+        where: { id: orgId },
+        data: { authorizationVersion: { increment: 1 } },
+      });
+    }
+
+    return {
+      id: updatedProfile.id,
+      memberId: updatedProfile.memberId,
+      userId: updatedProfile.userId,
+      employeeNo: updatedProfile.employeeNo,
+      name: cleanName,
+      email: profile.emailSnapshot || "",
+      departmentId: updatedProfile.departmentId,
+      departmentName: updatedProfile.department?.name ?? null,
+      positionId: updatedProfile.positionId,
+      positionName: updatedProfile.position?.name ?? null,
+      managerEmployeeId: updatedProfile.managerEmployeeId,
+      managerName: updatedProfile.manager?.nameSnapshot ?? null,
+      jobTitle: updatedProfile.jobTitle,
+      roles,
+      status: updatedProfile.status,
+      joinedAt: updatedProfile.joinedAt,
+      createdAt: updatedProfile.createdAt,
     };
   }
 

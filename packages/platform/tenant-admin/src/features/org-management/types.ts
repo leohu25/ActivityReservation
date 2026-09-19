@@ -108,6 +108,20 @@ export interface EmployeeListFilter {
   readonly search?: string;
 }
 
+/** 员工分页查询过滤条件 */
+export interface ListEmployeesFilter extends EmployeeListFilter {
+  readonly page?: number;
+  readonly pageSize?: number;
+}
+
+/** 员工分页查询结果模型 */
+export interface ListEmployeesResult {
+  readonly items: readonly EmployeeItem[];
+  readonly total: number;
+  readonly page: number;
+  readonly pageSize: number;
+}
+
 /** 直接录入建号创建员工输入 */
 export interface DirectCreateEmployeeInput {
   readonly name: string;
@@ -119,6 +133,16 @@ export interface DirectCreateEmployeeInput {
   readonly jobTitle?: string;
   readonly initialRoleCodes: readonly string[];
   readonly password?: string;
+}
+
+/** 综合更新员工档案输入 */
+export interface UpdateEmployeeInput {
+  readonly name?: string;
+  readonly employeeNo?: string | null;
+  readonly departmentId?: string | null;
+  readonly positionId?: string | null;
+  readonly jobTitle?: string | null;
+  readonly roles?: readonly string[];
 }
 
 /** 调换部门输入 */

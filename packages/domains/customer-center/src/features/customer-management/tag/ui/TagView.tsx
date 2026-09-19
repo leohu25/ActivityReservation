@@ -201,6 +201,24 @@ export function TagView({ data, total }: TagViewProps) {
 									record: t,
 								})
 							}
+							onToggleStatus={() =>
+								handleToggleStatus(
+									t.id,
+									t.status || MasterDataStatus.ACTIVE,
+								)
+							}
+							toggleStatusOptions={{
+								status: t.status,
+								action: CustomerTagAction.TOGGLE_STATUS,
+								confirm: (record, active) => ({
+									title: `确认${active ? "停用" : "启用"}标签 "${record.name}"？`,
+									description: active
+										? "停用后，新建或打标客户时将不可再选用该标签。"
+										: "启用后，该标签恢复正常打标使用。",
+									confirmText: active ? "确认停用" : "确认启用",
+									cancelText: "取消",
+								}),
+							}}
 							onDelete={() => handleDelete(t.id)}
 							deleteConfirm={{
 								title: `确认删除业务标签 "${t.name}"？`,
@@ -208,28 +226,6 @@ export function TagView({ data, total }: TagViewProps) {
 								confirmText: "确认删除",
 								cancelText: "取消",
 							}}
-							extraActions={[
-								{
-									label: isActive ? "停用" : "启用",
-									action: CustomerTagAction.TOGGLE_STATUS,
-									variant: isActive
-										? ("destructive" as const)
-										: ("default" as const),
-									confirm: {
-										title: `确认${isActive ? "停用" : "启用"}标签 "${t.name}"？`,
-										description: isActive
-											? "停用后，新建或打标客户时将不可再选用该标签。"
-											: "启用后，该标签恢复正常打标使用。",
-										confirmText: isActive ? "确认停用" : "确认启用",
-										cancelText: "取消",
-									},
-									onClick: () =>
-										handleToggleStatus(
-											t.id,
-											t.status || MasterDataStatus.ACTIVE,
-										),
-								},
-							]}
 						/>
 					);
 				},

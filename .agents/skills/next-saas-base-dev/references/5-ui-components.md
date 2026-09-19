@@ -247,31 +247,29 @@ const list = useListSearch(customerSearchParams);
 
 > ⚠️ **「详情」置灰避坑红线**：
 > `DataTableRowActions` 内部对内置动作实施闭环检查：若用户拥有 `read` 权限但页面未传递 `onView` 回调，系统会判定为“未配置操作回调”，从而将「详情」按钮**以置灰不可点击态（disabled）暴露在界面上**。
-> **严格规范**：
+> **行级操作严格规范**：
 >
-> 1. **需要详情时**：必须传入 `onView={() => setModal({ open: true, mode: "view", record })}`，且 `FormModal` 必须支持 `mode: "view"`（全字段只读展示）；
-> 2. **不需要详情时**：必须显式传入 `hideView={true}`，严禁漏传导致置灰无响应按钮残留！
+> 1. **增删改查标准形态**：内置 `onView`（查看）、`onEdit`（编辑）、`onDelete`（删除）；若页面不需要某项（例如只读流水无需删除），显式传入 `hideDelete={true}`；
+> 2. **内置停用/启用状态操作**：`onToggleStatus` 已作为官方一等公民内置能力！无需再手动拼接 `extraActions`。通过 `toggleStatusOptions` 传入 status、文案与确认逻辑即可；若实体无此状态字段，不传 `onToggleStatus` 即可自动隐去；
+> 3. **严禁无回调置灰残留**：不需要的操作显式 hide，严禁漏传回调导致灰色不可点击按钮破坏界面质感。
 
 ```tsx
 <DataTable.RowActions
   record={row}
   onView={() => setViewing(row)}
   onEdit={() => setEditing(row)}
-  // 页面不需要删除时：
-  // hideDelete
-  extraActions={[
-    {
-      label: row.status === "ACTIVE" ? "停用" : "启用",
-      variant: row.status === "ACTIVE" ? "destructive" : "default",
-      // 自定义扩展动作：必须与契约 actions 声明的 action 一致
-      action: "toggle_status",
-      onClick: () => handleToggle(row),
-      confirm:
-        row.status === "ACTIVE"
-          ? { title: `确认停用「${row.name}」？`, confirmText: "确认停用" }
-          : undefined,
-    },
-  ]}
+  // 官方内置启停操作（有 status 字段且需要启停控制时传入）：
+  onToggleStatus={() => handleToggle(row)}
+  toggleStatusOptions={{
+    status: row.status,
+    action: "toggle_status",
+    confirm: (record, active) =>
+      active
+        ? { title: `确认停用「${record.name}」？`, confirmText: "确认停用" }
+        : undefined,
+  }}
+  // 页面不需要删除时显式声明：
+  // hideDelete={true}
   onDelete={() => handleDelete(row)}
   deleteConfirm={{
     title: `确认删除「${row.name}」？`,

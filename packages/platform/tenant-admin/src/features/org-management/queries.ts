@@ -8,12 +8,14 @@ import {
   assertTenantAdminAbility,
 } from "../../assembly/context";
 import { getControlDbClient } from "../../shared/server/tenant-context";
+import { getServerAuthRuntime } from "@base/auth";
 import { DepartmentSubject } from "./department.contract";
 import { PositionSubject } from "./position.contract";
 import { EmployeeSubject } from "./employee.contract";
 import { DepartmentService } from "./department-service";
 import { PositionService } from "./position-service";
 import { EmployeeManagementService } from "./employee-management-service";
+import { TenantRoleService } from "../role-management/service";
 import type {
   DepartmentTreeNode,
   PositionItem,
@@ -21,6 +23,8 @@ import type {
   ListPositionsResult,
   EmployeeItem,
   EmployeeListFilter,
+  ListEmployeesFilter,
+  ListEmployeesResult,
 } from "./types";
 
 const deptService = new DepartmentService();
@@ -75,6 +79,61 @@ export async function listPositionsQuery(): Promise<readonly PositionItem[]> {
   });
 
   return toPlainData(items);
+}
+
+export async function listEmployeesPagedQuery(
+  filter: ListEmployeesFilter = {},
+): Promise<ListEmployeesResult> {
+  const { client, organizationId, ability } = await getTenantAdminContext();
+  assertTenantAdminAbility(ability, StandardAction.READ, EmployeeSubject);
+
+  const controlPrisma = await getControlDbClient();
+  const result = await empService.listEmployeesPaged(
+    client,
+    controlPrisma,
+    organizationId,
+    filter,
+  );
+
+  const items: EmployeeItem[] = result.items.map((emp) => {
+    // SAFETY: EmployeeItem is plain data compatible with Record<string, unknown>
+    const record = emp as unknown as Record<string, unknown>;
+    const readable = pickReadableFields(ability, EmployeeSubject, record);
+    // SAFETY: readable 由 pickReadableFields 依据 CASL 过滤，附加唯一标识 id 保障组件展示完整性
+    return {
+      id: emp.id,
+      ...readable,
+    } as unknown as EmployeeItem;
+  });
+
+  return toPlainData({ ...result, items });
+}
+
+export async function getEmployeePageOptionsQuery(): Promise<{
+  departmentTree: readonly DepartmentTreeNode[];
+  positions: readonly PositionItem[];
+  availableRoles: readonly { role: string; name: string }[];
+}> {
+  const { client, organizationId, ability } = await getTenantAdminContext();
+  assertTenantAdminAbility(ability, StandardAction.READ, EmployeeSubject);
+
+  const runtime = getServerAuthRuntime();
+  const roleService = new TenantRoleService(runtime.tenantContextRepository);
+
+  const [departmentTree, positions, tenantRoles] = await Promise.all([
+    deptService.listDepartmentTree(client),
+    posService.listPositions(client),
+    roleService.listTenantRoles(organizationId),
+  ]);
+
+  return toPlainData({
+    departmentTree,
+    positions,
+    availableRoles: tenantRoles.map((r) => ({
+      role: r.role,
+      name: r.name,
+    })),
+  });
 }
 
 export async function listEmployeesQuery(

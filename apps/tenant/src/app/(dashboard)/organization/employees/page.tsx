@@ -1,75 +1,46 @@
-import { headers } from "next/headers";
-import { AlertCircle } from "lucide-react";
-import { getServerAuthRuntime } from "@base/auth";
-import { EmployeeView } from "@base/feature-tenant-admin/org-management";
 import {
-  listDepartmentTreeQuery,
-  listEmployeesQuery,
-  listPositionsQuery,
+  EmployeeView,
+  employeeSearchParams,
+  type EmployeeItem,
+} from "@base/feature-tenant-admin/org-management";
+import {
+  listEmployeesPagedQuery,
+  getEmployeePageOptionsQuery,
 } from "@base/feature-tenant-admin/org-management/server";
-import { listTenantRolesQuery } from "@base/feature-tenant-admin/role-management/server";
-import { Card } from "@base/ui";
+
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
 
 /**
- * 员工档案与人事管理页面 (Server Component - 极薄装配层)
+ * 员工档案与人事管理页面 (标准 Next.js App Router Server Component - 极薄装配层)
  */
-export default async function OrganizationEmployeesPage() {
-  const runtime = getServerAuthRuntime();
-  const session = await runtime.auth.api.getSession({
-    headers: await headers(),
-  });
+export default async function OrganizationEmployeesPage({
+  searchParams,
+}: PageProps) {
+  const parsed = await employeeSearchParams.parse(searchParams);
 
-  const activeOrgId = session?.session.activeOrganizationId;
-
-  if (!activeOrgId) {
-    return (
-      <Card className="border-amber-200 bg-amber-50/50 p-6 text-amber-800 shadow-xs dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200">
-        <div className="flex items-center gap-2 font-bold text-sm">
-          <AlertCircle className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-          <span>请先在工作台或顶部选择并激活一个租户组织</span>
-        </div>
-      </Card>
-    );
-  }
-
-  // 校验组织成员身份
-  const currentMember = await runtime.tenantContextRepository.findMember(
-    activeOrgId,
-    session.user.id,
-  );
-
-  if (!currentMember) {
-    return (
-      <Card className="border-rose-200 bg-rose-50/50 p-6 text-rose-800 shadow-xs dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-200">
-        <div className="flex items-center gap-2 font-bold text-sm">
-          <AlertCircle className="size-4 shrink-0 text-rose-600 dark:text-rose-400" />
-          <span>您当前不是该租户组织的成员，无权访问员工管理</span>
-        </div>
-      </Card>
-    );
-  }
-
-  // 获取租户物理库客户端并联合检索员工、部门树、岗位与角色数据 (含 CASL 门禁与租户物理库路由)
-  const [employees, departmentTree, positions, tenantRoles] = await Promise.all(
-    [
-      listEmployeesQuery(),
-      listDepartmentTreeQuery(),
-      listPositionsQuery(),
-      listTenantRolesQuery(),
-    ],
-  );
-
-  const availableRoles = tenantRoles.map((r) => ({
-    role: r.role,
-    name: r.name,
-  }));
+  const [employeePage, pageOptions] = await Promise.all([
+    listEmployeesPagedQuery({
+      page: parsed.page,
+      pageSize: parsed.pageSize,
+      search: String(parsed.keyword ?? "") || undefined,
+      departmentId: String(parsed.departmentId ?? "") || undefined,
+      includeChildren: String(parsed.includeChildren ?? "") !== "false",
+      positionId: String(parsed.positionId ?? "") || undefined,
+      role: String(parsed.role ?? "") || undefined,
+      status: String(parsed.status ?? "") || undefined,
+    }),
+    getEmployeePageOptionsQuery(),
+  ]);
 
   return (
     <EmployeeView
-      initialEmployees={employees}
-      departmentTree={departmentTree}
-      positions={positions}
-      availableRoles={availableRoles}
+      data={employeePage.items as EmployeeItem[]}
+      total={employeePage.total}
+      departmentTree={pageOptions.departmentTree}
+      positions={pageOptions.positions}
+      availableRoles={pageOptions.availableRoles}
     />
   );
 }

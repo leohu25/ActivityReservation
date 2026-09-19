@@ -1,18 +1,10 @@
 "use client";
 
-import type * as React from "react";
-import * as ReactRuntime from "react";
+import * as React from "react";
 import { Download, Plus, RefreshCw, RotateCcw, Search } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "../ui/select";
+import { Combobox, type ComboboxOption } from "../form/Combobox";
 import { DataTableRoot, type DataTableRootProps } from "./DataTableRoot";
 import { DataTableHeader } from "./DataTableHeader";
 import { DataTableToolbar } from "./DataTableToolbar";
@@ -197,7 +189,7 @@ export function DataTable<TData>({
 
 	const searchInToolbar = searchPlacement === "toolbar";
 	const toolbarVisible = showToolbar ?? showHeader !== false;
-	const [advancedOpen, setAdvancedOpen] = ReactRuntime.useState(false);
+	const [advancedOpen, setAdvancedOpen] = React.useState(false);
 
 	const keywordField = showKeywordFilter ? (
 		<DataTableInputGroup label="关键字" className="min-w-[220px] sm:w-72">
@@ -215,28 +207,23 @@ export function DataTable<TData>({
 		</DataTableInputGroup>
 	) : null;
 
+	const statusComboboxOptions = React.useMemo<ComboboxOption[]>(() => {
+		if (!statusOptions) return [];
+		return statusOptions.map((opt) => ({
+			value: opt.value,
+			label: opt.label,
+		}));
+	}, [statusOptions]);
+
 	const statusField = showStatusFilter ? (
 		<DataTableInputGroup label="状态" className="min-w-[170px] w-auto">
-			<Select
-				value={statusValue ?? statusAllValue}
-				onValueChange={(value) =>
-					onStatusChange?.(value ?? statusAllValue)
-				}
-			>
-				<SelectTrigger className="w-full">
-					<SelectValue placeholder={statusAllLabel} />
-				</SelectTrigger>
-				<SelectContent>
-					<SelectGroup>
-						<SelectItem value={statusAllValue}>{statusAllLabel}</SelectItem>
-						{statusOptions?.map((opt) => (
-							<SelectItem key={opt.value} value={opt.value}>
-								{opt.label}
-							</SelectItem>
-						))}
-					</SelectGroup>
-				</SelectContent>
-			</Select>
+			<Combobox
+				value={statusValue || null}
+				options={statusComboboxOptions}
+				placeholder={statusAllLabel}
+				clearable={true}
+				onChange={(val) => onStatusChange?.(val || statusAllValue)}
+			/>
 		</DataTableInputGroup>
 	) : null;
 

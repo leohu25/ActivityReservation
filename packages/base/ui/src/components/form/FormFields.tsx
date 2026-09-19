@@ -6,14 +6,6 @@ import { Switch } from "../ui/switch";
 import { DatePicker } from "./DatePicker";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Label } from "../ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "../ui/select";
 import { FormFieldGrid } from "./FormLayout";
 import { Combobox, type ComboboxOption } from "./Combobox";
 import { cn } from "../../lib/utils";
@@ -52,6 +44,10 @@ export type FormFieldSchema =
 			readonly searchPlaceholder?: string;
 			readonly emptyText?: string;
 			readonly clearable?: boolean;
+			readonly loading?: boolean;
+			readonly onSearchChange?: (keyword: string) => void;
+			readonly onLoadMore?: () => void;
+			readonly hasMore?: boolean;
 	  })
 	| (BaseField & {
 			readonly type: "textarea";
@@ -198,51 +194,22 @@ function renderFieldControl(
 ) {
 	const isInvalid = Boolean(fieldError);
 
-	if (field.type === "select") {
-		const selectValue =
-			value !== undefined && value !== null && value !== ""
-				? String(value)
-				: undefined;
-
-		return (
-			<Select
-				value={selectValue}
-				onValueChange={setValue}
-				disabled={field.disabled}
-			>
-				<SelectTrigger
-					aria-invalid={isInvalid}
-					className={cn(
-						"w-full",
-						isInvalid && "border-destructive ring-destructive/20",
-					)}
-				>
-					<SelectValue placeholder={field.placeholder || "请选择"} />
-				</SelectTrigger>
-				<SelectContent>
-					<SelectGroup>
-						{field.options.map((opt) => (
-							<SelectItem key={opt.value} value={opt.value}>
-								{opt.label}
-							</SelectItem>
-						))}
-					</SelectGroup>
-				</SelectContent>
-			</Select>
-		);
-	}
-
-	if (field.type === "combobox") {
+	if (field.type === "select" || field.type === "combobox") {
+		// 全量统一使用现代化 Combobox 作为标准下拉，兼具直接点选、模糊打字筛选与清空
 		return (
 			<Combobox
 				value={value ? String(value) : null}
 				onChange={setValue}
 				options={field.options}
-				placeholder={field.placeholder}
-				searchPlaceholder={field.searchPlaceholder}
-				emptyText={field.emptyText}
-				clearable={field.clearable}
+				placeholder={field.placeholder || "请选择..."}
+				searchPlaceholder={"searchPlaceholder" in field ? field.searchPlaceholder : undefined}
+				emptyText={"emptyText" in field ? field.emptyText : undefined}
+				clearable={"clearable" in field ? field.clearable : true}
 				disabled={field.disabled}
+				loading={"loading" in field ? field.loading : false}
+				onSearchChange={"onSearchChange" in field ? field.onSearchChange : undefined}
+				onLoadMore={"onLoadMore" in field ? field.onLoadMore : undefined}
+				hasMore={"hasMore" in field ? field.hasMore : false}
 				className={cn(isInvalid && "border-destructive ring-destructive/20")}
 			/>
 		);

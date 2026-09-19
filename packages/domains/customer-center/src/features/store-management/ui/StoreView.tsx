@@ -227,27 +227,22 @@ export function StoreView({
 						record={s}
 						onView={() => setModalState({ open: true, mode: "view", record: s })}
 						onEdit={() => setModalState({ open: true, mode: "edit", record: s })}
-						extraActions={[
-							{
-								label:
-									s.status === MasterDataStatus.ACTIVE ? "停用门店" : "启用门店",
-								action: CustomerStoreAction.TOGGLE_STATUS,
-								variant:
-									s.status === MasterDataStatus.ACTIVE
-										? "destructive"
-										: "default",
-								onClick: () => handleToggleStatus(s.id, s.status),
-								confirm:
-									s.status === MasterDataStatus.ACTIVE
-										? {
-												title: `确认停用门店 "${s.name}"？`,
-												description: "停用后该门店将无法继续下单或关联配送调度。",
-												confirmText: "确认停用",
-												cancelText: "取消",
-											}
-										: undefined,
-							},
-						]}
+						onToggleStatus={() => handleToggleStatus(s.id, s.status)}
+						toggleStatusOptions={{
+							status: s.status,
+							action: CustomerStoreAction.TOGGLE_STATUS,
+							activeLabel: "停用门店",
+							inactiveLabel: "启用门店",
+							confirm: (record, active) =>
+								active
+									? {
+											title: `确认停用门店 "${record.name}"？`,
+											description: "停用后该门店将无法继续下单或关联配送调度。",
+											confirmText: "确认停用",
+											cancelText: "取消",
+										}
+									: undefined,
+						}}
 						onDelete={() => handleDelete(s.id)}
 						deleteConfirm={{
 							title: `确认删除门店 "${s.name}"？`,

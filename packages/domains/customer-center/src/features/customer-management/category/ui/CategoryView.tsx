@@ -225,6 +225,21 @@ export function CategoryView({
 									defaultParentId: null,
 								})
 							}
+							onToggleStatus={() =>
+								handleToggleStatus(c.id, c.status || "ACTIVE")
+							}
+							toggleStatusOptions={{
+								status: c.status,
+								action: CustomerCategoryAction.TOGGLE_STATUS,
+								confirm: (record, active) => ({
+									title: `确认${active ? "停用" : "启用"}分类 "${record.name}"？`,
+									description: active
+										? "停用后，该分类在新建/修改客户时将不再可选。"
+										: "启用后，该分类可在客户档案中正常选择使用。",
+									confirmText: active ? "确认停用" : "确认启用",
+									cancelText: "取消",
+								}),
+							}}
 							extraActions={[
 								{
 									label: "下级",
@@ -237,23 +252,6 @@ export function CategoryView({
 											record: null,
 											defaultParentId: c.id,
 										}),
-								},
-								{
-									label: isActive ? "停用" : "启用",
-									action: CustomerCategoryAction.TOGGLE_STATUS,
-									variant: isActive
-										? ("destructive" as const)
-										: ("default" as const),
-									confirm: {
-										title: `确认${isActive ? "停用" : "启用"}分类 "${c.name}"？`,
-										description: isActive
-											? "停用后，该分类在新建/修改客户时将不再可选。"
-											: "启用后，该分类可在客户档案中正常选择使用。",
-										confirmText: isActive ? "确认停用" : "确认启用",
-										cancelText: "取消",
-									},
-									onClick: () =>
-										handleToggleStatus(c.id, c.status || "ACTIVE"),
 								},
 							]}
 							onDelete={() => handleDelete(c.id)}

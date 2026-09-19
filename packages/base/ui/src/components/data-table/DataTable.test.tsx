@@ -372,6 +372,55 @@ test("DataTableRowActions: 不传回调时默认仍展示内置操作（有权�
 	assert.match(html, /opacity-50/);
 });
 
+test("DataTableRowActions: 支持内置 onToggleStatus 停用与启用操作", () => {
+	const ability = {
+		can(action: string, subject: string) {
+			if (subject === "Material" && (action === "read" || action === "update")) return true;
+			return false;
+		},
+	};
+
+	// 1. ACTIVE 记录默认呈现「停用」
+	const activeRecord = { ...mockData[0], status: "ACTIVE" };
+	const activeHtml = renderToString(
+		<DataTable.Root
+			data={[activeRecord]}
+			columns={mockColumns}
+			rowKey={(item) => item.id}
+			subject="Material"
+			ability={ability}
+		>
+			<DataTableRowActions
+				record={activeRecord}
+				onView={() => {}}
+				onEdit={() => {}}
+				onToggleStatus={() => {}}
+			/>
+		</DataTable.Root>,
+	);
+	assert.match(activeHtml, /停用/);
+
+	// 2. DISABLED 记录默认呈现「启用」
+	const disabledRecord = { ...mockData[0], status: "DISABLED" };
+	const disabledHtml = renderToString(
+		<DataTable.Root
+			data={[disabledRecord]}
+			columns={mockColumns}
+			rowKey={(item) => item.id}
+			subject="Material"
+			ability={ability}
+		>
+			<DataTableRowActions
+				record={disabledRecord}
+				onView={() => {}}
+				onEdit={() => {}}
+				onToggleStatus={() => {}}
+			/>
+		</DataTable.Root>,
+	);
+	assert.match(disabledHtml, /启用/);
+});
+
 test("DataTableRowActions: hideView/hideEdit/hideDelete 支持按需隐藏", () => {
 	const ability = {
 		can(action: string, subject: string) {

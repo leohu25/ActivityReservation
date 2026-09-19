@@ -193,6 +193,22 @@ export function PositionView({
             onEdit={() =>
               setModalState({ open: true, mode: "edit", record: p })
             }
+            onToggleStatus={() => handleToggleStatus(p)}
+            toggleStatusOptions={{
+              status: p.status,
+              action: PositionAction.TOGGLE_STATUS,
+              activeLabel: "停用岗位",
+              inactiveLabel: "启用岗位",
+              confirm: (record, active) =>
+                active
+                  ? {
+                      title: `确认停用岗位 "${record.name}"？`,
+                      description: "停用后新入职或调岗员工将无法选择该岗位。",
+                      confirmText: "确认停用",
+                      cancelText: "取消",
+                    }
+                  : undefined,
+            }}
             onDelete={() => handleDelete(p)}
             deleteConfirm={{
               title: `确认删除岗位 "${p.name}"？`,
@@ -201,28 +217,6 @@ export function PositionView({
                   ? `警告：该岗位下仍有 ${p.employeeCount} 名在职员工，删除将被系统安全门禁拦截！`
                   : "删除后该岗位字典数据将不可恢复。",
             }}
-            extraActions={[
-              {
-                label:
-                  p.status === MasterDataStatus.ACTIVE ? "停用岗位" : "启用岗位",
-                action: PositionAction.TOGGLE_STATUS,
-                variant:
-                  p.status === MasterDataStatus.ACTIVE
-                    ? "destructive"
-                    : "default",
-                onClick: () => handleToggleStatus(p),
-                confirm:
-                  p.status === MasterDataStatus.ACTIVE
-                    ? {
-                        title: `确认停用岗位 "${p.name}"？`,
-                        description:
-                          "停用后新入职或调岗员工将无法选择该岗位。",
-                        confirmText: "确认停用",
-                        cancelText: "取消",
-                      }
-                    : undefined,
-              },
-            ]}
           />
         ),
       },

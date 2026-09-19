@@ -19,13 +19,15 @@ export const StandardAction = {
  /** 批量删除/批量操作 */
  BATCH_DELETE: "batch_delete",
 
- // --- 单据行级操作 ---
+ // --- 单据行级与状态操作 ---
  /** 查看详情 (对应表格行操作 "查看详情") */
  DETAIL: "detail",
  /** 编辑/修改单据 (对应表格行操作 "编辑/修改") */
  UPDATE: "update",
  /** 删除单据 (对应表格行操作 "删除") */
  DELETE: "delete",
+ /** 启停状态/启用停用生命周期切换 (对应表格行操作 "停用/启用") */
+ TOGGLE_STATUS: "toggle_status",
 } as const;
 
 export type StandardAction =

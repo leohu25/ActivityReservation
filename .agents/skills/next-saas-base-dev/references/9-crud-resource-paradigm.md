@@ -121,6 +121,15 @@ export const deleteXxxAction = defineServerAction(async (id: string) => {
   revalidatePath("/domain/xxx");
   return deleted;
 }, "删除失败");
+
+// 官方内置启停状态操作（若实体具备状态字段）：
+export const toggleXxxStatusAction = defineServerAction(async (id: string) => {
+  const { client, ability, userId } = await getTenantXxxContext();
+  assertXxxAbility(ability, StandardAction.TOGGLE_STATUS, XxxSubject);
+  const updated = await XxxService.toggleStatus(client, id, { userId });
+  revalidatePath("/domain/xxx");
+  return updated;
+}, "切换状态失败");
 ```
 
 直观清晰：`上下文 -> CASL 守卫 -> Zod 验参 -> 调 Service -> revalidatePath`，零多余黑盒。
