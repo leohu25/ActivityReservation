@@ -95,7 +95,7 @@ test("DataTable.Root: 默认一体化白卡容器，可关闭 integratedCard", (
 	);
 	assert.doesNotMatch(
 		bareHtml,
-		/rounded-xl border border-border\/80 bg-card shadow-xs p-5/,
+		/rounded-xl border-border bg-card p-3 shadow-sm/,
 	);
 });
 

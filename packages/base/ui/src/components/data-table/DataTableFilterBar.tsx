@@ -52,7 +52,7 @@ export function DataTableFilterBar({
 	return (
 		<div
 			className={cn(
-				"flex flex-wrap items-center gap-2 border-b border-border/60 pb-3",
+				"flex flex-wrap items-center gap-2 border-b border-border/60 pb-2.5",
 				className,
 			)}
 		>

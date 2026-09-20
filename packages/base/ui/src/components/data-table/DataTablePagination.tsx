@@ -107,7 +107,7 @@ export function DataTablePagination({
 	return (
 		<div
 			className={cn(
-				"flex flex-wrap items-center justify-between gap-3 px-1 py-1 text-xs text-muted-foreground",
+				"flex flex-wrap items-center justify-between gap-2 px-0.5 py-0.5 text-xs text-muted-foreground",
 				className,
 			)}
 		>

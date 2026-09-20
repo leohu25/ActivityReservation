@@ -177,7 +177,7 @@ export function DetailTable<T>({
 											<TableCell
 												key={col.id}
 												className={cn(
-													"px-3 py-2 align-middle",
+													"px-2.5 py-1.5 align-middle text-xs",
 													col.align === "center" && "text-center",
 													col.align === "right" && "text-right",
 												)}

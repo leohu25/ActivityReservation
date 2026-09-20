@@ -24,14 +24,14 @@ export interface QuoteFormModalProps {
 
 type ScopeType = "CUSTOMER" | "STORE" | "REGION";
 
-const emptyItem = (seq: number): CreateQuoteItemInput => ({
-	itemCode: `ITEM_VEG_${String(seq).padStart(3, "0")}`,
-	itemName: "特选生鲜净菜",
-	salesUnit: "kg",
-	unitPriceExclTax: 10.0,
-	unitPriceInclTax: 10.9,
-	taxRate: 9.0,
-	minQty: 5,
+const createEmptyItem = (): CreateQuoteItemInput => ({
+	itemCode: "",
+	itemName: "",
+	salesUnit: "",
+	unitPriceExclTax: 0,
+	unitPriceInclTax: 0,
+	taxRate: 0,
+	minQty: null,
 	maxQty: null,
 	remark: "",
 });
@@ -86,7 +86,7 @@ export function QuoteFormModal({
 				remark: it.remark || "",
 			}));
 		}
-		return [emptyItem(1)];
+		return [];
 	});
 
 	const headerFields: FormFieldSchema[] = useMemo(
@@ -183,7 +183,11 @@ export function QuoteFormModal({
 				field === "maxQty"
 			) {
 				(patch as Record<string, unknown>)[field] =
-					value === "" ? null : Number(value);
+					value === ""
+						? field === "unitPriceExclTax" || field === "taxRate"
+							? 0
+							: null
+						: Number(value);
 			} else {
 				(patch as Record<string, unknown>)[field] = value;
 			}
@@ -213,10 +217,11 @@ export function QuoteFormModal({
 				renderCell: (row, _idx, onChange) => (
 					<Input
 						value={row.itemCode}
+						placeholder="如: ITEM-001"
 						onChange={(e) =>
 							handleItemFieldChange(row, "itemCode", e.target.value, onChange)
 						}
-						className="h-7 w-24 px-1.5 text-xs font-mono"
+						className="h-7 w-28 px-1.5 text-xs font-mono"
 					/>
 				),
 			},
@@ -226,6 +231,7 @@ export function QuoteFormModal({
 				renderCell: (row, _idx, onChange) => (
 					<Input
 						value={row.itemName}
+						placeholder="商品名称"
 						onChange={(e) =>
 							handleItemFieldChange(row, "itemName", e.target.value, onChange)
 						}
@@ -239,10 +245,11 @@ export function QuoteFormModal({
 				renderCell: (row, _idx, onChange) => (
 					<Input
 						value={row.salesUnit}
+						placeholder="如: kg"
 						onChange={(e) =>
 							handleItemFieldChange(row, "salesUnit", e.target.value, onChange)
 						}
-						className="h-7 w-12 px-1.5 text-xs text-center"
+						className="h-7 w-16 px-1.5 text-xs text-center"
 					/>
 				),
 			},
@@ -254,7 +261,12 @@ export function QuoteFormModal({
 					<Input
 						type="number"
 						step="0.01"
-						value={row.unitPriceExclTax}
+						placeholder="0.00"
+						value={
+							row.unitPriceExclTax === 0 && !row.itemCode
+								? ""
+								: row.unitPriceExclTax
+						}
 						onChange={(e) =>
 							handleItemFieldChange(
 								row,
@@ -275,7 +287,10 @@ export function QuoteFormModal({
 					<Input
 						type="number"
 						step="0.1"
-						value={row.taxRate}
+						placeholder="0"
+						value={
+							row.taxRate === 0 && !row.itemCode ? "" : row.taxRate
+						}
 						onChange={(e) =>
 							handleItemFieldChange(row, "taxRate", e.target.value, onChange)
 						}
@@ -377,15 +392,31 @@ export function QuoteFormModal({
 				title: "报价明细条目",
 				description: "含税单价 = 不含税单价 × (1 + 税率/100)，自动计算",
 				columns: itemColumns,
-				onAddRow: () => emptyItem(items.length + 1),
+				onAddRow: () => createEmptyItem(),
 				addText: "添加商品",
-				minRows: 1,
+				emptyText: "暂无报价商品，请点击右上角【添加商品】进行录入",
+				minRows: 0,
 			}}
 			initialItems={items}
 			onSubmit={async (
 				formValues: Record<string, unknown>,
 				{ items: detailItems }: { items: CreateQuoteItemInput[] },
 			) => {
+				if (!detailItems || detailItems.length === 0) {
+					toast.error("报价单明细至少需要添加一行商品");
+					throw new Error("报价单明细至少需要添加一行商品");
+				}
+				for (let i = 0; i < detailItems.length; i++) {
+					const it = detailItems[i];
+					if (!it?.itemCode?.trim() || !it?.itemName?.trim()) {
+						toast.error(`第 ${i + 1} 行商品编码和名称不能为空`);
+						throw new Error(`第 ${i + 1} 行商品编码和名称不能为空`);
+					}
+					if (!it?.salesUnit?.trim()) {
+						toast.error(`第 ${i + 1} 行商品单位不能为空`);
+						throw new Error(`第 ${i + 1} 行商品单位不能为空`);
+					}
+				}
 				const payload = {
 					customerId:
 						formValues.scopeType === "CUSTOMER" ||

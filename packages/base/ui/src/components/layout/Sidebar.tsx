@@ -440,12 +440,12 @@ export function Sidebar({
 			collapsible="icon"
 			className="top-12 h-[calc(100svh-3rem)] border-r"
 		>
-			<SidebarHeader className="border-b border-sidebar-border/60">
-				<div className="flex items-center gap-1.5 px-2 text-xs font-bold tracking-wider text-muted-foreground uppercase group-data-[collapsible=icon]:hidden">
+			<SidebarHeader className="h-9 justify-center p-0 px-2.5 border-b border-sidebar-border/70">
+				<div className="flex items-center gap-1.5 px-0.5 text-xs font-bold tracking-wider text-muted-foreground uppercase group-data-[collapsible=icon]:hidden">
 					<Layers className="size-3.5 shrink-0" />
 					<span>核心功能导航</span>
 				</div>
-				<div className="hidden size-8 items-center justify-center group-data-[collapsible=icon]:flex">
+				<div className="hidden size-full items-center justify-center group-data-[collapsible=icon]:flex">
 					<Layers className="size-4 text-muted-foreground" />
 				</div>
 			</SidebarHeader>

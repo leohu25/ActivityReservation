@@ -18,11 +18,13 @@ export const createStoreSchema = z.object({
 		.string()
 		.min(1, "联系人电话为必填项")
 		.regex(/^1[3-9]\d{9}$/, "请输入合法的11位手机号码"),
-	defaultRoute: z.string().optional(),
-	defaultDriver: z.string().optional(),
-	billingContact: z.string().optional(),
+	defaultRoute: z.string().nullable().optional(),
+	defaultDriver: z.string().nullable().optional(),
+	storeTags: z.string().nullable().optional(),
+	billingContact: z.string().nullable().optional(),
 	billingPhone: z
 		.string()
+		.nullable()
 		.optional()
 		.refine(
 			(val) => !val || /^1[3-9]\d{9}$/.test(val),

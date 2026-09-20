@@ -261,14 +261,14 @@ export function DataTableRoot<TData>({
 			{integratedCard ? (
 				<Card
 					className={cn(
-						"w-full gap-3 rounded-xl border-border bg-card p-5 shadow-sm",
+						"w-full gap-2.5 rounded-xl border-border bg-card p-3 shadow-sm",
 						className,
 					)}
 				>
 					{children}
 				</Card>
 			) : (
-				<div className={cn("flex w-full flex-col gap-3", className)}>
+				<div className={cn("flex w-full flex-col gap-2.5", className)}>
 					{children}
 				</div>
 			)}

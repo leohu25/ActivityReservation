@@ -90,7 +90,7 @@ export function DataTableContent<TData = any>({
 					<TableHeader className="bg-muted/50 font-medium">
 						<TableRow className="border-b border-border hover:bg-transparent">
 							{selectable ? (
-								<TableHead className="w-[40px] px-3">
+								<TableHead className="w-[38px] px-2 text-center">
 									<Checkbox
 										checked={isAllSelected}
 										onCheckedChange={toggleSelectAll}
@@ -99,19 +99,19 @@ export function DataTableContent<TData = any>({
 								</TableHead>
 							) : null}
 							{showIndex ? (
-								<TableHead className="w-[52px] px-2 text-center text-xs font-semibold text-muted-foreground">
+								<TableHead className="w-[46px] px-1.5 text-center text-xs font-semibold text-muted-foreground">
 									{indexHeader}
 								</TableHead>
 							) : null}
 							{renderExpandedRow ? (
-								<TableHead className="w-[36px] px-2 text-center" />
+								<TableHead className="w-[34px] px-1.5 text-center" />
 							) : null}
 							{visibleColumns.map((col) => (
 								<TableHead
 									key={col.id}
 									style={{ width: col.width }}
 									className={cn(
-										"text-xs font-semibold text-muted-foreground h-10",
+										"text-xs font-semibold text-muted-foreground h-8.5 px-2.5",
 										col.align === "center" && "text-center",
 										col.align === "right" && "text-right",
 										col.className,
@@ -129,9 +129,9 @@ export function DataTableContent<TData = any>({
 							<TableRow className="hover:bg-transparent">
 								<TableCell
 									colSpan={totalColSpan}
-									className="h-64 text-center p-0"
+									className="h-44 text-center p-0"
 								>
-									{emptyState || <EmptyState />}
+									{emptyState || <EmptyState className="min-h-[180px]" />}
 								</TableCell>
 							</TableRow>
 						) : (
@@ -154,7 +154,7 @@ export function DataTableContent<TData = any>({
 											)}
 										>
 											{selectable ? (
-												<TableCell className="w-[40px] px-3">
+												<TableCell className="w-[38px] px-2 text-center">
 													<Checkbox
 														checked={isSelected}
 														onCheckedChange={() => toggleSelectRow(key)}
@@ -163,12 +163,12 @@ export function DataTableContent<TData = any>({
 												</TableCell>
 											) : null}
 											{showIndex ? (
-												<TableCell className="w-[52px] px-2 text-center font-mono text-[11px] tabular-nums text-muted-foreground">
+												<TableCell className="w-[46px] px-1.5 text-center font-mono text-[11px] tabular-nums text-muted-foreground">
 													{rowNumber}
 												</TableCell>
 											) : null}
 											{renderExpandedRow ? (
-												<TableCell className="w-[36px] px-2 text-center">
+												<TableCell className="w-[34px] px-1.5 text-center">
 													<button
 														type="button"
 														onClick={() => toggleExpandRow(key)}
@@ -188,7 +188,7 @@ export function DataTableContent<TData = any>({
 													key={col.id}
 													style={{ width: col.width }}
 													className={cn(
-														"py-2.5 px-3 text-xs text-foreground border-b-0",
+														"py-1.5 px-2.5 text-xs text-foreground border-b-0",
 														col.align === "center" && "text-center",
 														col.align === "right" && "text-right",
 														col.className,

@@ -27,7 +27,7 @@ export function DataTableHeader({
 	return (
 		<div
 			className={cn(
-				"flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border/40 pb-3",
+				"flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-b border-border/40 pb-2.5",
 				className,
 			)}
 		>

@@ -7,8 +7,8 @@ import {
 	parseUpdateStoreInput,
 } from "./schema";
 
-test("schema.createStoreSchema：合法输入通过解析", () => {
-	const valid = {
+test("schema.createStoreSchema：选填字段为 null 时能正常通过解析", () => {
+	const validWithNulls = {
 		customerId: "CUST-001",
 		name: "杭州总店",
 		regionCode: "REGION_HD_01",
@@ -16,10 +16,16 @@ test("schema.createStoreSchema：合法输入通过解析", () => {
 		address: "西湖区文三路100号",
 		contactPerson: "李四",
 		contactPhone: "13912345678",
+		defaultRoute: null,
+		defaultDriver: null,
+		billingContact: null,
+		billingPhone: null,
+		storeTags: null,
 	};
-	const parsed = parseCreateStoreInput(valid);
+	const parsed = parseCreateStoreInput(validWithNulls);
 	assert.equal(parsed.name, "杭州总店");
-	assert.equal(parsed.customerId, "CUST-001");
+	assert.equal(parsed.defaultRoute, null);
+	assert.equal(parsed.billingPhone, null);
 });
 
 test("schema.createStoreSchema：必填字段缺失校验拦截", () => {

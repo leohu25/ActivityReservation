@@ -45,7 +45,7 @@ export function DashboardShell({
 					{sidebar}
 					<SidebarInset className="min-w-0 flex-1 flex flex-col overflow-hidden bg-background">
 						{!hideTabBar ? <TabBar homeTab={homeTab} sections={navSections} /> : null}
-						<div className="min-w-0 flex-1 overflow-y-auto p-3.5 md:p-4.5 flex flex-col gap-3">
+						<div className="min-w-0 flex-1 overflow-y-auto p-2 md:p-2.5 flex flex-col gap-2">
 							{!hideBreadcrumbs ? (
 								<div className="pb-1">
 									<BreadcrumbBar sections={navSections} />
