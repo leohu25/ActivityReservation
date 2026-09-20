@@ -19,9 +19,7 @@ export const directCreateEmployeeSchema = z.object({
     .default(""),
   departmentId: z
     .string()
-    .optional()
-    .nullable()
-    .default(null),
+    .min(1, "请选择归属部门"),
   positionId: z
     .string()
     .optional()
@@ -66,9 +64,7 @@ export const updateEmployeeSchema = z.object({
     .default(""),
   departmentId: z
     .string()
-    .optional()
-    .nullable()
-    .default(null),
+    .min(1, "请选择归属部门"),
   positionId: z
     .string()
     .optional()

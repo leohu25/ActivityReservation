@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   parseDirectCreateEmployeeInput,
+  parseUpdateEmployeeInput,
   parseTransferDepartmentInput,
   parseTransferPositionInput,
   parseTransferRolesInput,
@@ -33,6 +34,46 @@ test("directCreateEmployeeSchema: 必填项缺失拦截", () => {
       }),
     (err: unknown) => {
       assert.ok(err instanceof Error);
+      return true;
+    },
+  );
+});
+
+test("directCreateEmployeeSchema: 归属部门为空拦截", () => {
+  assert.throws(
+    () =>
+      parseDirectCreateEmployeeInput({
+        name: "李四",
+        email: "lisi@company.com",
+        departmentId: "",
+        initialRoleCodes: ["member"],
+      }),
+    (err: unknown) => {
+      assert.ok(err instanceof Error);
+      assert.match(err.message, /请选择归属部门/);
+      return true;
+    },
+  );
+});
+
+test("updateEmployeeSchema: 合法输入通过校验且必填部门", () => {
+  const valid = parseUpdateEmployeeInput({
+    name: "李四",
+    departmentId: "dept-1",
+    roles: ["member"],
+  });
+  assert.equal(valid.departmentId, "dept-1");
+
+  assert.throws(
+    () =>
+      parseUpdateEmployeeInput({
+        name: "李四",
+        departmentId: "",
+        roles: ["member"],
+      }),
+    (err: unknown) => {
+      assert.ok(err instanceof Error);
+      assert.match(err.message, /请选择归属部门/);
       return true;
     },
   );
