@@ -128,8 +128,165 @@ const fields: FormFieldSchema[] = [
 ];
 ```
 
-### 2. 多附件列表模式交互流程
-在具有多附件的复杂业务单据中：
-1. **上传暂存**：用户选择多个文件后直传 MinIO，成功后在前端表单暂存文件元数据数组 `attachments: [{ fileName, fileUrl, storageKey, fileSize, mimeType }]`；
-2. **事务提交**：点击保存单据时，服务端在同一个 Prisma 事务内先创建主业务记录（获取 `targetId`），然后调用 `attachment.createMany` 批量写入附件台账；
-3. **详情展示**：详情页通过 `attachment.findMany({ where: { module, targetId } })` 查出列表，复用 `@base/ui` 的 `<Attachment />` 卡片展示，支持点击预览与原名下载。
+### 2. 多附件列表模式交互流程与完整落地方案 (端到端实战模板)
+
+在需要多附件关联的复杂业务单据（如合同扫描件、发票附件、质检报告）中，必须严格遵循**两阶段上传**与**高效批量查询**规范：
+
+#### ① 写入链路：前端暂存 ➔ 服务端事务原子入库 (`service.ts`)
+新建业务单据时，实体 ID 尚未生成。前端直传 MinIO 成功后在表单中暂存附件元数据数组，保存单据时在事务内先生成主业务主键，再批量绑定写入 `sys_attachment`：
+
+```ts
+export class ResourceService {
+  /**
+   * 创建业务单据并原子绑定多个附件 (事务保证)
+   */
+  static async createResourceWithAttachments(
+    client: TenantPrismaClient,
+    input: CreateResourceInput,
+    auditCtx: { userId: string; deptId: string | null },
+  ) {
+    return client.$transaction(async (tx) => {
+      // 1. 创建主单据获取真实 targetId
+      const record = await tx.resource.create({
+        data: {
+          name: input.name,
+          createdById: auditCtx.userId,
+          deptId: auditCtx.deptId,
+        },
+      });
+
+      // 2. 批量将本次上传的附件挂载到该主单据 (一对多关联，0 中间表)
+      if (input.attachments && input.attachments.length > 0) {
+        await tx.attachment.createMany({
+          data: input.attachments.map((att) => ({
+            module: "resource",             // 锁定当前业务模块
+            targetId: record.id,            // 绑定刚生成的主业务 ID
+            fieldKey: att.fieldKey || "default", // 槽位：如 contract/invoice/report
+            fileName: att.fileName,         // 原始中文文件名
+            storageKey: att.storageKey,     // 存储内部 Key
+            fileUrl: att.fileUrl,           // 访问 URL
+            fileSize: BigInt(att.fileSize), // 字节体积
+            mimeType: att.mimeType,
+            createdById: auditCtx.userId,
+            deptId: auditCtx.deptId,
+          })),
+        });
+      }
+
+      return record;
+    });
+  }
+}
+```
+
+#### ② 读取链路 A：【列表页】批量加载附件（严禁 N+1 循环查询）(`queries.ts`)
+在业务列表分页（如一页 20 条）需要展示附件统计或缩略图时，必须采用 **“主表分页 + 单次 IN 批量查附件 + 内存 Map 聚合”** 的高性能范式，仅需 2 次轻量 SQL：
+
+```ts
+import "server-only";
+import { toPlainData, resolvePagination } from "@base/shared";
+
+export async function listResourcesPagedQuery(filter: ListFilter) {
+  const { client } = await getTenantDbContext();
+  const { page, pageSize, skip, take } = resolvePagination(filter);
+
+  // 1. 第一步：分页查出当页业务数据
+  const [total, items] = await Promise.all([
+    client.resource.count({ where: { isDeleted: false } }),
+    client.resource.findMany({
+      where: { isDeleted: false },
+      skip,
+      take,
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
+
+  if (items.length === 0) {
+    return toPlainData({ items: [], total: 0, page, pageSize });
+  }
+
+  // 2. 第二步：提取主键数组，发一条 IN 索引查询拉取所有关联附件 (避免 N+1)
+  const targetIds = items.map((r) => r.id);
+  const attachments = await client.attachment.findMany({
+    where: {
+      module: "resource",
+      targetId: { in: targetIds },
+      isDeleted: false,
+    },
+    select: {
+      id: true,
+      targetId: true,
+      fieldKey: true,
+      fileName: true,
+      fileUrl: true,
+      fileSize: true,
+      mimeType: true,
+    },
+  });
+
+  // 3. 第三步：在内存中按 targetId 构建高效 Map 索引 (O(N) 性能)
+  const attachmentMap = new Map<string, typeof attachments>();
+  for (const att of attachments) {
+    if (!att.targetId) continue;
+    const list = attachmentMap.get(att.targetId) || [];
+    list.push(att);
+    attachmentMap.set(att.targetId, list);
+  }
+
+  // 4. 第四步：组装最终前端消费 DTO (带附件数量与快速预览图)
+  const finalItems = items.map((record) => {
+    const files = attachmentMap.get(record.id) || [];
+    return {
+      ...record,
+      attachments: files,
+      attachmentCount: files.length,
+      coverUrl: files.find((f) => f.fieldKey === "cover")?.fileUrl || null,
+    };
+  });
+
+  return toPlainData({ items: finalItems, total, page, pageSize });
+}
+```
+
+#### ③ 读取链路 B：【详情页/抽屉】单据附件查询 (`queries.ts`)
+详情页展示完整的附件明细列表，直接利用 `(module, targetId)` 复合索引极速返回：
+
+```ts
+export async function getResourceDetailQuery(id: string) {
+  const { client } = await getTenantDbContext();
+
+  // 并发查询单据详情与附件列表
+  const [detail, attachments] = await Promise.all([
+    client.resource.findUniqueOrThrow({ where: { id } }),
+    client.attachment.findMany({
+      where: {
+        module: "resource",
+        targetId: id,
+        isDeleted: false,
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
+
+  return toPlainData({
+    ...detail,
+    attachments,
+  });
+}
+```
+
+#### ④ 前端渲染：消费组件与 DataTable 列呈现
+- **列表页呈现**：在表格列中直接展示附件徽章或图片缩略图：
+  ```tsx
+  {
+    header: "附件资料",
+    cell: (row) => (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Paperclip className="size-3.5" />
+        <span>{row.attachmentCount > 0 ? `${row.attachmentCount} 份` : "无"}</span>
+      </div>
+    ),
+  }
+  ```
+- **详情页呈现**：利用 `@base/ui` 的 `Attachment` 工业风套件，按 `mimeType` 动态呈现图标（PDF/Word/Excel/图片），支持原中文文件名展示、字节格式化与点击预览/原名下载。
+
