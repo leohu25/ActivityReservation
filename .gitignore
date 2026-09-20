@@ -40,3 +40,4 @@ lerna-debug.log*
 !.vscode/launch.json
 .idea/
 .claude/
+app-images.tar.gz

@@ -41,6 +41,12 @@ export function createServerAuth(options: ServerAuthOptions) {
     database: prismaAdapter(prisma, { provider: "postgresql" }),
     secret: options.secret,
     baseURL: options.baseURL,
+    // 动态信任所有客户端来源，支持内网穿透、任意反向代理域名及跨域调试
+    trustedOrigins: async (request) => {
+      if (!request) return [];
+      const origin = request.headers.get("origin");
+      return origin ? [origin] : [];
+    },
     emailAndPassword: {
       enabled: true,
     },

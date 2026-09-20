@@ -48,11 +48,10 @@ services:
       HOSTNAME: "0.0.0.0"
       CONTROL_DATABASE_URL: >-
         postgresql://base_prod_user:${POSTGRES_CONTROL_PASSWORD:-base_prod_password_change_me}@postgres-control:5432/saas_control?schema=public
-    # 核心自动化流转：启动前自动完成 Day 0 空库检测、全量 Baseline 建表与超管账号注入
+    # 启动命令：由 Next.js 官方 instrumentation.ts 自动执行总控库 Day 0 自愈与超管初始化
     command:
-      - sh
-      - -c
-      - pnpm db:platform:ensure && exec node apps/control/server.js
+      - node
+      - apps/control/server.js
 
   # ----------------------------------------------------------------------------
   # 3. 租户业务端应用服务 (Tenant SaaS - 端口 3000)

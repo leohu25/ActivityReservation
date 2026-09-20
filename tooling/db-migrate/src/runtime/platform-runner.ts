@@ -291,18 +291,14 @@ export class PlatformMigrationRunner {
           );
         }
 
+        // 1. 执行全量 Baseline SQL（已包含 platform_migration 账本表与全部平台核心表）
         await client.query(this.catalog.baseline.sql);
-        await client.query(`
-          CREATE TABLE "platform_migration" (
-            "version" VARCHAR(30) PRIMARY KEY,
-            "migration_name" VARCHAR(100) NOT NULL,
-            "checksum" VARCHAR(64) NOT NULL,
-            "applied_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-          );
-        `);
+
+        // 2. 登记 Baseline 账本记录
         await client.query(
           `INSERT INTO "platform_migration" ("version", "migration_name", "checksum")
-           VALUES ($1, 'baseline', $2)`,
+           VALUES ($1, 'baseline', $2)
+           ON CONFLICT ("version") DO NOTHING`,
           [this.catalog.baseline.version, this.catalog.baseline.checksum],
         );
         await this.options.seedBootstrapAdmin(client, seedInput);

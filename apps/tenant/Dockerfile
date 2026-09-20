@@ -1,6 +1,7 @@
 # ==============================================================================
 # 租户业务端 (Tenant SaaS) 生产多阶段构建 Dockerfile
-# 基于 Next.js 官方推荐 standalone 模式与轻量生产运行镜像
+# 采用 Turborepo 官方推荐的 `turbo prune` 自动化依赖裁剪机制
+# 无论新增/删除多少个 packages/* 或 domains/*，均由 Turborepo 自动解析依赖，彻底免维护
 # Monorepo 根上下文构建: docker build -t base-tenant:latest -f apps/tenant/Dockerfile .
 # ==============================================================================
 
@@ -10,46 +11,39 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable && corepack prepare pnpm@11.1.2 --activate
 
-# 2. 依赖安装阶段
+# 2. 依赖解析阶段 (Turborepo 智能裁剪)
+FROM base AS pruner
+WORKDIR /app
+RUN npm install -g turbo@^2.4.4
+COPY . .
+RUN turbo prune tenant --docker
+
+# 3. 依赖安装阶段 (仅安装 tenant 及其依赖包的依赖，极致利用 Docker 构建缓存)
 FROM base AS deps
 WORKDIR /app
 
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
-COPY apps/tenant/package.json ./apps/tenant/
-COPY packages/base/auth/package.json ./packages/base/auth/
-COPY packages/base/authorization/package.json ./packages/base/authorization/
-COPY packages/base/db-control/package.json ./packages/base/db-control/
-COPY packages/base/db-tenant/package.json ./packages/base/db-tenant/
-COPY packages/base/shared/package.json ./packages/base/shared/
-COPY packages/base/ui/package.json ./packages/base/ui/
-COPY packages/biz-shared/package.json ./packages/biz-shared/
-COPY packages/platform/control-admin/package.json ./packages/platform/control-admin/
-COPY packages/platform/tenant-admin/package.json ./packages/platform/tenant-admin/
-COPY packages/domains/procurement-center/package.json ./packages/domains/procurement-center/
-COPY packages/domains/customer-center/package.json ./packages/domains/customer-center/
-COPY packages/domains/material-center/package.json ./packages/domains/material-center/
-COPY packages/domains/order-center/package.json ./packages/domains/order-center/
-COPY tooling/db-migrate/package.json ./tooling/db-migrate/
+COPY --from=pruner /app/out/pnpm-lock.yaml /app/out/pnpm-workspace.yaml ./
+COPY --from=pruner /app/out/json/ ./
 
 RUN pnpm install --frozen-lockfile
 
-# 3. 编译阶段 (Next.js Standalone 构建)
+# 4. 编译构建阶段 (Next.js Standalone 构建)
 FROM base AS builder
 WORKDIR /app
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/tenant/node_modules ./apps/tenant/node_modules
+COPY --from=pruner /app/out/full/ ./
+# 补充其余工程上下文
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-# 运行 Feature 同步、Prisma 客户端生成与独立打包
-RUN pnpm sync:features && \
-    pnpm --filter @base/db-control generate && \
-    pnpm --filter @base/db-tenant generate && \
-    pnpm --filter tenant build
+# 利用 Turborepo 原生拓扑流水线执行构建 (自动触发 codegen -> generate -> build)
+RUN pnpm exec turbo run build --filter=tenant
 
-# 4. 生产运行阶段 (Next.js 官方标准 Runner)
+# 5. 生产运行阶段 (Next.js 官方标准 Runner)
 FROM base AS runner
 WORKDIR /app
 

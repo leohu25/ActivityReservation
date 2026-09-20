@@ -34,7 +34,9 @@
     "db:tenant:diff": "pnpm --filter @base/db-migrate exec tsx src/cli.ts diff --scope tenant",
     "db:tenant:diff:sql": "pnpm --filter @base/db-migrate exec tsx src/cli.ts diff:sql --scope tenant",
     "// 5. 辅助与缓存清理": "",
-    "clean:cache": "node scripts/clean.mjs"
+    "clean:cache": "node scripts/clean.mjs",
+    "// 6. 生产容器构建与部署 (Docker)": "",
+    "docker:build": "node scripts/docker/build-images.mjs"
   },
   "devDependencies": {
     "eslint": "^9.39.5",

@@ -62,12 +62,10 @@ class FakeClient {
         "tenant_database",
         "tenant_migration",
         "user",
+        "platform_migration",
       ]) {
         this.tables.add(table);
       }
-    }
-    if (text.includes('CREATE TABLE "platform_migration"')) {
-      this.tables.add("platform_migration");
     }
     if (text.includes('INSERT INTO "platform_migration"')) {
       this.baselineRecord = {
