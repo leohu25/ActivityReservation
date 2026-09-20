@@ -44,6 +44,8 @@ function createValidFeatureFiles(pkgDir = "packages/domains/demo-feature") {
       "export const OrderSubject = 'Order';\n",
     [`${pkgDir}/src/features/order-management/types.ts`]:
       "export interface OrderItem { id: string; }\n",
+    [`${pkgDir}/src/features/order-management/schema.ts`]:
+      "export const orderSchema = {};\n",
     [`${pkgDir}/src/features/order-management/service.ts`]:
       "export class OrderService {}\n",
     [`${pkgDir}/src/features/order-management/queries.ts`]:

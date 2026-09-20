@@ -389,6 +389,20 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
             code: "types.ts missing",
           });
         }
+        // 如果包含写操作 Action，必须提供匹配的独立 Zod Schema 校验与单测
+        if (hasActions) {
+          const hasSchema = fs.existsSync(
+            path.join(slice.fullPath, "schema.ts"),
+          );
+          if (!hasSchema) {
+            violations.push({
+              file: `${relSliceDir}/schema.ts`,
+              line: 1,
+              rule: `包含写操作 Server Actions 的切片 [${sliceSubpath}] 必须提供独立的 schema.ts 进行运行时 Zod 强校验，严禁堆砌在 contract.ts`,
+              code: "schema.ts missing",
+            });
+          }
+        }
         if (hasQueries || hasActions || hasService) {
           if (!hasPublicServer) {
             violations.push({
@@ -420,6 +434,18 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
           .relative(workspaceRoot, codeFilePath)
           .replace(/\\/g, "/");
         const content = fs.readFileSync(codeFilePath, "utf-8");
+
+        // 契约纯洁性约束：contract.ts 仅收敛权限与元数据常量，严禁导入 Zod 变成大杂烩
+        if (codeFilePath.endsWith("contract.ts")) {
+          if (/from\s+["']zod["']|import\s+.*\{.*z.*\}.*from\s+["']@base\/ui["']/.test(content)) {
+            violations.push({
+              file: relCodePath,
+              line: 1,
+              rule: "契约纯洁性违规：contract.ts 只能定义权限 Subject/Resource 与列表 URL 参数契约，严禁导入 Zod 定义业务实体 Schema (业务 Schema 请移至 schema.ts)",
+              code: "zod import in contract.ts",
+            });
+          }
+        }
 
         // 服务端入口与 Query 必须标记 server-only
         if (
