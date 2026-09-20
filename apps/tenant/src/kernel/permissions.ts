@@ -84,3 +84,18 @@ export async function getTenantSubjectPermissions(
     });
   }
 }
+
+/**
+ * 批量获取多个 Subject 的 CASL 权限纯数据描述 (供复合看板/工作台批量注入 Ability 边界)
+ */
+export async function getTenantMultiSubjectPermissions(
+  subjects: readonly string[],
+): Promise<Record<string, TenantSubjectPermissions>> {
+  const entries = await Promise.all(
+    subjects.map(async (subj) => {
+      const perms = await getTenantSubjectPermissions(subj);
+      return [subj, perms] as const;
+    }),
+  );
+  return Object.fromEntries(entries);
+}

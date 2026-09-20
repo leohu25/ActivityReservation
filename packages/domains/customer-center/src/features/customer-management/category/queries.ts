@@ -57,3 +57,12 @@ export const getCustomerCategoryOptionsQuery = cache(
 		);
 	},
 );
+
+/**
+ * 获取客户分类总数 Server Query (受控于 CustomerCategory 实体读权限)
+ */
+export async function getCategoryCountQuery(): Promise<number> {
+	const { client, ability } = await getTenantCustomerContext();
+	assertCustomerAbility(ability, StandardAction.READ, CustomerCategorySubject);
+	return client.customerCategory.count();
+}

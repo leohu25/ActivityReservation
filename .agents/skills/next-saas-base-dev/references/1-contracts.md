@@ -95,6 +95,23 @@ export const sampleResourcePageContract: FeaturePagePermissionDescriptor = {
 - **BFF 轻量聚合供给**：后端提供专用的聚合 BFF Query（仅查聚合统计或脱敏摘要），仅断言 `assertDomainAbility(ability, "read", WorkbenchSubject.BRIEF_A)`；
 - **防越权物理阻断**：用户由于没有 `EntityASubject` 的实体权限，即便通过网络工具绕调主数据 Query 或 Action，也会被底层物理层直接 403 拦截，杜绝数据泄露。
 
+#### 范式三：双正交「实体键 + 视图键」联合鉴权与非排他多点投射（复杂工作台/聚合看板标准范式）
+
+适用于**聚合工作台不仅有自身的卡片呈现开关（视图键），同时直接消费与挂载底层多个业务实体（实体键），需要双层联合受控且不破坏原生模块完整性**：
+
+- **双正交分工**：
+  1. **实体键 (Entity Subject)**：跨路由全局唯一，由底层切片导出，负责数据级 CRUD、数据范围下推与字段脱敏；
+  2. **视图键 (View Key / Action)**：页面级私有自治，由聚合页面契约导出（如 `Workbench:view_dept_stats`、`Workbench:quick_action`），负责控制交互界面对应卡片与按钮的装配显隐。
+- **多实体非排他投射原则 (Non-Exclusive Projection)**：
+  - 聚合页面在 `manifest.pages` 中通过 `subjects: [PageSubject, EntityASubject, EntityBSubject]` 声明消费的实体；
+  - 权限派生引擎（`deriveMenuAlignedPermissionTree`）将这些实体投射展示在聚合页面下供直接授权，**严禁排他独占，原生业务模块中的管理页面 100% 完整保留**；
+  - 两端对同一实体的勾选状态双向同步（指向底层同一个全局 Subject 授权记录）。
+- **前端联合熔断 (`CompositeGuard`)**：
+  - 前端卡片受控于 `ViewAction` **AND** `EntitySubject:read`；
+  - 任意一项未开启，卡片安全降级展示无权提示，注明受限根因，杜绝越权与白屏。
+- **100% 强类型无魔法值**：
+  - 跨切片挂载实体键时，必须显式在 `package.json` 声明 `workspace:*` 依赖，并通过导出的 `XxxSubject` 常量符号导入，严禁裸手写字符串。
+
 ---
 
 ### 硬门禁

@@ -21,3 +21,12 @@ export async function listDepartmentTreeQuery(): Promise<
   const tree = await deptService.listDepartmentTree(client);
   return toPlainData(tree);
 }
+
+/** 查询当前租户部门总数 Server Query (受控于 Department 实体读权限) */
+export async function getDepartmentCountQuery(): Promise<number> {
+  const { client, ability } = await getTenantAdminContext();
+  assertTenantAdminAbility(ability, StandardAction.READ, DepartmentSubject);
+
+  const count = await client.department.count();
+  return count;
+}

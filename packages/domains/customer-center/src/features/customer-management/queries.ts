@@ -69,3 +69,13 @@ export async function listCustomersQuery(filter: ListCustomerFilter = {}) {
 
 	return toPlainData({ ...result, items });
 }
+
+/** 获取客户档案总数 Server Query (受控于 Customer 实体读权限与数据范围下推) */
+export async function getCustomerCountQuery(): Promise<number> {
+	const { client, ability } = await getTenantCustomerContext();
+	assertCustomerAbility(ability, StandardAction.READ, CustomerSubject);
+	const accessibleWhere = getAccessibleWhere(ability, CustomerSubject, "read");
+	return client.customer.count({
+		where: accessibleWhere,
+	});
+}

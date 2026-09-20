@@ -34,6 +34,10 @@ import {
   TenantMenuItemSubject,
   tenantMenuItemPageContract,
 } from "./features/nav-management/contract";
+import {
+  WorkbenchSubject,
+  workbenchPageContract,
+} from "./features/workbench/contract";
 
 export const tenantAdminManifest: TenantFeatureManifest = {
   id: "tenant-admin",
@@ -45,6 +49,13 @@ export const tenantAdminManifest: TenantFeatureManifest = {
       defaultLabel: "工作台",
       href: "/workbench",
       defaultIcon: "LayoutDashboard",
+      requiredAction: StandardAction.READ,
+      requiredSubject: WorkbenchSubject,
+      subjects: [
+        WorkbenchSubject,
+        DepartmentSubject,
+        RoleSubject,
+      ],
       isSystem: true,
     },
     {
@@ -171,6 +182,13 @@ export const tenantAdminManifest: TenantFeatureManifest = {
     },
   ],
   permissionModules: [
+    {
+      moduleKey: "system-workbench",
+      label: "系统工作台",
+      iconName: "LayoutDashboard",
+      order: 5,
+      pages: [workbenchPageContract],
+    },
     {
       moduleKey: "system-organization",
       label: "组织架构管理",

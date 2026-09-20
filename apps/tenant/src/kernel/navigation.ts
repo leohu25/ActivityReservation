@@ -94,25 +94,7 @@ export async function getAuthorizedTenantNavSections(): Promise<
 
     const defaultSections = deriveNavSections(ALL_TENANT_MANIFESTS);
 
-    // 4. 工作台保底（若自定义树中未挂载工作台，自动在最顶端补充系统基座工作台）
-    const hasWorkbench = resultSections.some((sec) =>
-      sec.items.some((item) => {
-        if ("href" in item && item.href === "/workbench") return true;
-        if ("items" in item && Array.isArray(item.items)) {
-          return item.items.some((sub) => sub.href === "/workbench");
-        }
-        return false;
-      }),
-    );
-    if (!hasWorkbench) {
-      const baseSections = filterNavSections(
-        defaultSections.filter((s) => s.id === "base"),
-        can,
-      );
-      resultSections.unshift(...baseSections);
-    }
-
-    // 5. 防锁死容灾自动注入 (Anti-Lockout Fallback Injection)
+    // 4. 防锁死容灾自动注入 (Anti-Lockout Fallback Injection)
     // 检查已授权菜单中是否包含管理入口（例如 /settings/navigation）
     const hasNavManagement = resultSections.some((sec) =>
       sec.items.some((item) => {
@@ -138,3 +120,58 @@ export async function getAuthorizedTenantNavSections(): Promise<
     return [];
   }
 }
+
+/**
+ * 从已授权导航分区树中提取首个可访问的有效叶子路由 (First Accessible Leaf Route)
+ * 用于登录后或根路由访问时的动态自适应重定向，避免硬编码 /workbench 导致的 403 越权碰撞
+ */
+export function getFirstAccessiblePath(
+  navSections: readonly FeatureNavSection[],
+  preferredPath = "/workbench",
+): string {
+  // 1. 如果优先目标路径在授权列表中，优先命中
+  for (const sec of navSections) {
+    for (const item of sec.items) {
+      if ("href" in item && item.href === preferredPath) {
+        return preferredPath;
+      }
+      if ("items" in item && Array.isArray(item.items)) {
+        if (item.items.some((sub) => sub.href === preferredPath)) {
+          return preferredPath;
+        }
+      }
+    }
+  }
+
+  // 2. 否则查找第一个合法的叶子路由
+  for (const sec of navSections) {
+    for (const item of sec.items) {
+      if ("href" in item && item.href && !item.href.startsWith("#")) {
+        return item.href;
+      }
+      if ("items" in item && Array.isArray(item.items)) {
+        const firstValidSub = item.items.find(
+          (sub) => sub.href && !sub.href.startsWith("#"),
+        );
+        if (firstValidSub?.href) {
+          return firstValidSub.href;
+        }
+      }
+    }
+  }
+
+  return "/login";
+}
+
+/**
+ * 获取当前登录成员的首选落地页路径 (动态计算，无缝支持无工作台账号直达首个业务页)
+ */
+export async function getTenantLandingPath(): Promise<string> {
+  try {
+    const navSections = await getAuthorizedTenantNavSections();
+    return getFirstAccessiblePath(navSections);
+  } catch {
+    return "/login";
+  }
+}
+

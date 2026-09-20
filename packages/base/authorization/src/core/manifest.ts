@@ -270,14 +270,19 @@ export function deriveMenuAlignedPermissionTree(
     const matched = resolveMatchingContracts(meta);
     if (matched.length === 0) return null;
 
-    for (const c of matched) {
-      matchedResources.add(c.resource);
-    }
-
     const primary =
       (meta.requiredSubject
         ? matched.find((c) => c.subject === meta.requiredSubject)
         : undefined) || matched[0]!;
+
+    // 仅当实体属于当前页面的主实体，或其实际原生路由与当前页面一致时，才视为主导认领；
+    // 跨路由辅助引用的实体（如工作台挂载客户标签/部门）仅作视图投射，绝不从原生模块中排他吞噬！
+    matchedResources.add(primary.resource);
+    for (const c of matched) {
+      if (c.path && meta.href && c.path === meta.href) {
+        matchedResources.add(c.resource);
+      }
+    }
 
     return {
       ...primary,
@@ -362,7 +367,7 @@ export function deriveMenuAlignedPermissionTree(
 
   processMenuNodes(menuTree);
 
-  // 3. 将未挂载在自定义业务菜单中的系统基座（或未分配受控页面）追加在末尾
+  // 3. 将未挂载在自定义业务菜单中的受控模块页面追加在末尾
   for (const mod of basePermissionTree) {
     const unallocatedPages = mod.pages.filter(
       (p) => !matchedResources.has(p.resource),
@@ -371,9 +376,7 @@ export function deriveMenuAlignedPermissionTree(
       modules.push({
         ...mod,
         moduleKey: `base-${mod.moduleKey}`,
-        label: mod.label.includes("管理")
-          ? mod.label
-          : `${mod.label} (系统内置)`,
+        label: mod.label,
         order: 1000 + (mod.order ?? 0),
         pages: unallocatedPages.map((p) => ({
           ...p,

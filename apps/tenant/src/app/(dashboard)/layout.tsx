@@ -84,11 +84,29 @@ export default async function DashboardLayout({
   // 获取经服务端权限引擎裁切后的授权导航菜单（纯数据，无未授权项，无空分组）
   const navSections = await getAuthorizedTenantNavSections();
 
+  // 动态检索已授权菜单中是否包含工作台入口；若无则设为 null，TabBar 绝不强驻工作台页签
+  const workbenchItem = navSections.flatMap((s) => s.items).find((item) => {
+    if ("href" in item && item.href === "/workbench") return true;
+    if ("items" in item && Array.isArray(item.items)) {
+      return item.items.some((sub) => sub.href === "/workbench");
+    }
+    return false;
+  });
+
+  const homeTab = workbenchItem
+    ? {
+        title: ("label" in workbenchItem && workbenchItem.label) || "工作台",
+        path: "/workbench",
+        closable: false,
+      }
+    : null;
+
   return (
     <DashboardShell
       header={<TopHeader user={user} orgSwitcherSlot={orgBadgeSlot} />}
       sidebar={<Sidebar sections={navSections} />}
       navSections={navSections}
+      homeTab={homeTab}
     >
       {children}
     </DashboardShell>

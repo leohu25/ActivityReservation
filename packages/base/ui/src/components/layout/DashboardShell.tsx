@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { SidebarProvider, SidebarInset } from "../ui/sidebar";
-import { TabBar } from "./TabBar";
+import { TabBar, type TabItem } from "./TabBar";
 import { BreadcrumbBar } from "./BreadcrumbBar";
 import type { NavSection } from "./Sidebar";
 
@@ -10,6 +10,8 @@ export interface DashboardShellProps {
 	readonly children: React.ReactNode;
 	readonly header: React.ReactNode;
 	readonly sidebar: React.ReactNode;
+	/** 默认固定展示的首页标签，传 null 表示无常驻固定首页标签 */
+	readonly homeTab?: TabItem | null;
 	/** 授权导航菜单，用于 TabBar 与 BreadcrumbBar 自动提取页面名称与拓扑链路 */
 	readonly navSections?: readonly NavSection[];
 	/** 是否隐藏顶部多标签页，默认 false */
@@ -27,6 +29,7 @@ export function DashboardShell({
 	children,
 	header,
 	sidebar,
+	homeTab,
 	navSections = [],
 	hideTabBar = false,
 	hideBreadcrumbs = true,
@@ -41,7 +44,7 @@ export function DashboardShell({
 				<div className="flex min-h-0 flex-1 overflow-hidden">
 					{sidebar}
 					<SidebarInset className="min-w-0 flex-1 flex flex-col overflow-hidden bg-background">
-						{!hideTabBar ? <TabBar sections={navSections} /> : null}
+						{!hideTabBar ? <TabBar homeTab={homeTab} sections={navSections} /> : null}
 						<div className="min-w-0 flex-1 overflow-y-auto p-3.5 md:p-4.5 flex flex-col gap-3">
 							{!hideBreadcrumbs ? (
 								<div className="pb-1">

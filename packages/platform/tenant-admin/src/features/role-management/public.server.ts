@@ -1,6 +1,10 @@
 import "server-only";
 
-export { listTenantRolesQuery, searchTenantRolesQuery } from "./queries";
+export {
+  listTenantRolesQuery,
+  searchTenantRolesQuery,
+  getRoleCountQuery,
+} from "./queries";
 export {
   listRolesAction,
   saveRolePermissionsAction,

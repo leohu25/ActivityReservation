@@ -41,15 +41,15 @@
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
 │ 层级 1：切片自包含贡献点 (Feature Manifest)                              │
-│ - 每个 packages/features/<name> 导出独立的 manifest.ts                  │
+│ - 每个 packages/platform/* 与 packages/domains/* 导出独立的 manifest.ts │
 │ - 自描述本特性的导航路由、图标、CASL 权限、敏感字段策略                  │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │ (pnpm dev / build 构建期钩子)
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │ 层级 2：构建期自动发现引擎 (Build-Time Auto-Discovery)                   │
-│ - scripts/sync-features.mjs (极速 10ms 扫描切片 manifest.ts)           │
-│ - 自动生成 packages/features/tenant-admin/src/registry.generated.ts    │
+│ - scripts/sync/sync-features.mjs (极速 10ms 扫描切片 manifest.ts)      │
+│ - 自动生成 apps/tenant/src/kernel/registry.generated.ts (遵循 ADR-006)  │
 │ - 纯静态 TypeScript 导入，零运行时 I/O，100% Tree-Shaking 与类型安全   │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │ (导出聚合派生工具)
@@ -248,3 +248,27 @@ export * from "./manifest";
 | **应用层薄度** | `apps/tenant/src/lib` 充斥重度鉴权装配 | **`apps/tenant/src/lib` 物理删除，layout 仅 70 行** |
 | **运行时性能** | 易踩 Turbopack 动态 import 黑盒大坑 | **构建期极速生成静态 TS 注册表，0 运行时 I/O 开销** |
 | **权限安全** | 客户端依赖 `allowedPermissions` 进行前端隐藏 | **服务端使用 CASL 引擎在生成 HTML 前预先安全过滤** |
+
+---
+
+## 八、 高阶架构范式：实体键 vs 视图键双正交解耦与多实体非排他投射
+
+在工业级 ERP 的复杂工作台、聚合大屏与跨切片看板中，系统确立了最高层级的权限建模法典：
+
+### 1. 双正交权限解耦原则 (Dual-Orthogonal Permissions)
+
+| 权限维度 | 标识属性 | 作用域与生命周期 | 职责防线 |
+| :--- | :--- | :--- | :--- |
+| **实体键 (Entity Key / Subject)** | PascalCase（与 Prisma 模型同名），如 `CustomerTag`、`Department` | **跨路由全局唯一**。无论从工作台、原生管理菜单还是 API 访问，判定结果 100% 绝对一致。 | **兜底数据安全**：严格执行 CASL 读写下推、数据范围 (DataScope) 与敏感字段脱敏 (FieldPolicy)。 |
+| **视图键 (View/Capability Key)** | 所属页面的专属 Subject/Action，如 `Workbench:view_tags`、`quick_action` | **页面级私有自治**。仅作用于当前视图界面组件/卡片的装配呈现。 | **界面体验定制**：针对不同岗位角色自由裁剪可见卡片与操作通道，无需破坏底层实体权限。 |
+
+### 2. 多实体非排他投射架构 (Non-Exclusive Composite Projections)
+
+- **打破排他独占**：聚合页面（如 `/workbench`）通过 `subjects: [WorkbenchSubject, DepartmentSubject, CustomerTagSubject]` 跨路由引用外部业务实体时，**仅作为该实体的只读/操作投影视图**；
+- **原生模块物理保留**：底层权限派生引擎（`deriveMenuAlignedPermissionTree`）严禁因聚合页面的引用而将实体从其原生模块（组织架构管理、客户中心）中剔除；
+- **双向联动同步**：管理员在工作台下配置或在原生管理菜单下配置，修改的均是当前角色对该实体的全局权限声明，底层状态自然互通同步。
+
+### 3. 严禁魔法字符串 (Zero Magic Strings)
+
+跨切片引用任何业务实体时，必须在 `package.json` 中显式声明依赖，并通过对应切片公开契约直接导入强类型常量符号（如 `import { CustomerTagSubject } from "@domain/customer-center/..."`），严禁手写未经验证的裸字符串。
+

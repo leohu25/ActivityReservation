@@ -40,8 +40,8 @@ export interface TabItem {
 }
 
 export interface TabBarProps {
-	/** 默认固定展示的首页标签 */
-	readonly homeTab?: TabItem;
+	/** 默认固定展示的首页标签，传 null 表示无常驻固定首页标签 */
+	readonly homeTab?: TabItem | null;
 	/** 用于根据 pathname 自动匹配标签名称的导航配置 */
 	readonly sections?: readonly NavSection[];
 	readonly className?: string;
@@ -101,7 +101,8 @@ export function TabBar({
 	const pathname = rawPathname ?? "";
 	const router = useSafeRouter();
 
-	const [tabs, setTabs] = useState<TabItem[]>([homeTab]);
+	const initialTabs = homeTab ? [homeTab] : [];
+	const [tabs, setTabs] = useState<TabItem[]>(initialTabs);
 	const [canScrollLeft, setCanScrollLeft] = useState(false);
 	const [canScrollRight, setCanScrollRight] = useState(false);
 	const [isOverflowing, setIsOverflowing] = useState(false);
@@ -117,13 +118,19 @@ export function TabBar({
 			if (saved) {
 				const parsed = JSON.parse(saved) as TabItem[];
 				if (Array.isArray(parsed) && parsed.length > 0) {
-					// 确保包含 homeTab 且排在首位
-					const hasHome = parsed.some((t) => t.path === homeTab.path);
-					const normalized = hasHome
-						? parsed
-						: [homeTab, ...parsed.filter((t) => t.path !== homeTab.path)];
-					setTabs(normalized);
-					return;
+					if (homeTab) {
+						// 确保包含 homeTab 且排在首位
+						const hasHome = parsed.some((t) => t.path === homeTab.path);
+						const normalized = hasHome
+							? parsed
+							: [homeTab, ...parsed.filter((t) => t.path !== homeTab.path)];
+						setTabs(normalized);
+						return;
+					} else {
+						// 若无固定 homeTab，直接恢复已保存的有效标签
+						setTabs(parsed);
+						return;
+					}
 				}
 			}
 		} catch {
@@ -143,9 +150,10 @@ export function TabBar({
 				findTitleByPath(sections, pathname) ||
 				pathname.split("/").pop() ||
 				"新标签";
+			const closable = homeTab ? pathname !== homeTab.path : true;
 			const next = [
 				...prev,
-				{ title, path: pathname, closable: pathname !== homeTab.path },
+				{ title, path: pathname, closable },
 			];
 			try {
 				sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
@@ -154,7 +162,7 @@ export function TabBar({
 			}
 			return next;
 		});
-	}, [pathname, sections, homeTab.path]);
+	}, [pathname, sections, homeTab]);
 
 	// 检测横向滚动状态与是否溢出
 	const checkScroll = useCallback(() => {
@@ -266,8 +274,11 @@ export function TabBar({
 
 				// 如果关闭的是当前激活标签，则导航至相邻标签
 				if (pathname === targetPath) {
-					const nextActive = next[index] ?? next[index - 1] ?? homeTab;
-					router?.push(nextActive.path);
+					const fallbackTab = homeTab ?? next[0];
+					const nextActive = next[index] ?? next[index - 1] ?? fallbackTab;
+					if (nextActive) {
+						router?.push(nextActive.path);
+					}
 				}
 				return next;
 			});
@@ -282,11 +293,12 @@ export function TabBar({
 				const target = prev.find((t) => t.path === targetPath);
 				if (!target) return prev;
 
-				const next =
-					target.path === homeTab.path ? [homeTab] : [homeTab, target];
+				const next = homeTab
+					? (target.path === homeTab.path ? [homeTab] : [homeTab, target])
+					: [target];
 				persistTabs(next);
 
-				if (pathname !== targetPath && pathname !== homeTab.path) {
+				if (pathname !== targetPath && (!homeTab || pathname !== homeTab.path)) {
 					router?.push(targetPath);
 				}
 				return next;
@@ -324,11 +336,12 @@ export function TabBar({
 				const index = prev.findIndex((t) => t.path === targetPath);
 				if (index === -1) return prev;
 
-				// 保留 homeTab 以及 target 及其右侧的所有标签
 				const rightPart = prev.slice(index);
-				const next = rightPart.some((t) => t.path === homeTab.path)
-					? rightPart
-					: [homeTab, ...rightPart.filter((t) => t.path !== homeTab.path)];
+				const next = homeTab
+					? (rightPart.some((t) => t.path === homeTab.path)
+						? rightPart
+						: [homeTab, ...rightPart.filter((t) => t.path !== homeTab.path)])
+					: rightPart;
 
 				persistTabs(next);
 
@@ -342,13 +355,23 @@ export function TabBar({
 		[pathname, router, homeTab],
 	);
 
-	// 关闭所有标签 (仅保留 homeTab)
+	// 关闭所有标签 (仅保留 homeTab 或当前活动页)
 	const closeAllTabs = useCallback(() => {
-		const next = [homeTab];
-		setTabs(next);
-		persistTabs(next);
-		if (pathname !== homeTab.path) {
-			router?.push(homeTab.path);
+		if (homeTab) {
+			const next = [homeTab];
+			setTabs(next);
+			persistTabs(next);
+			if (pathname !== homeTab.path) {
+				router?.push(homeTab.path);
+			}
+		} else {
+			// 若无 homeTab，保留当前正在浏览的唯一标签
+			setTabs((prev) => {
+				const current = prev.find((t) => t.path === pathname) ?? prev[0];
+				const next = current ? [current] : [];
+				persistTabs(next);
+				return next;
+			});
 		}
 	}, [homeTab, pathname, router]);
 
@@ -385,9 +408,11 @@ export function TabBar({
 			>
 				{tabs.map((tab, idx) => {
 					const isActive = pathname === tab.path;
-					const isHome = tab.path === homeTab.path;
+					const isHome = Boolean(homeTab && tab.path === homeTab.path);
 					const isLast = idx === tabs.length - 1;
-					const isFirstClosable = idx <= 1 && tabs[0]?.path === homeTab.path;
+					const isFirstClosable = homeTab
+						? idx <= 1 && tabs[0]?.path === homeTab.path
+						: idx === 0;
 
 					return (
 						<ContextMenu key={tab.path}>
@@ -476,7 +501,7 @@ export function TabBar({
 										tabs.length <= 1 ||
 										(tabs.length === 2 &&
 											tabs.some(
-												(t) => t.path === homeTab.path && t.path !== tab.path,
+												(t) => Boolean(homeTab && t.path === homeTab.path) && t.path !== tab.path,
 											))
 									}
 									onClick={() => closeOtherTabs(tab.path)}
@@ -582,7 +607,11 @@ export function TabBar({
 					</DropdownMenuItem>
 
 					<DropdownMenuItem
-						disabled={currentTabIndex <= 1 && tabs[0]?.path === homeTab.path}
+						disabled={
+							homeTab
+								? currentTabIndex <= 1 && tabs[0]?.path === homeTab.path
+								: currentTabIndex <= 0
+						}
 						onClick={() => currentTab && closeLeftTabs(currentTab.path)}
 						className="gap-2 cursor-pointer"
 					>

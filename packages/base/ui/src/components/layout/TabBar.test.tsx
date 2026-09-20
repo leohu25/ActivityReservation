@@ -23,27 +23,15 @@ test("TabBar 正确渲染默认固定首页标签与操作菜单", () => {
   assert.ok(html.includes("[scrollbar-width:none]"));
 });
 
-test("TabBar 正确渲染导航配置中的标题提取支持", () => {
-  const mockSections = [
-    {
-      id: "orders",
-      title: "订单中心",
-      items: [
-        {
-          id: "sales-orders",
-          label: "销售订单",
-          href: "/order/sales-orders",
-        },
-      ],
-    },
-  ];
-
+test("TabBar 支持 homeTab 为 null 时不渲染固定工作台标签", () => {
   const html = renderToString(
     React.createElement(TabBar, {
-      homeTab: { title: "工作台", path: "/workbench", closable: false },
-      sections: mockSections,
+      homeTab: null,
+      sections: [],
     }),
   );
 
-  assert.ok(html.includes("工作台"));
+  assert.ok(!html.includes("工作台"));
+  assert.ok(!html.includes('href="/workbench"'));
 });
+

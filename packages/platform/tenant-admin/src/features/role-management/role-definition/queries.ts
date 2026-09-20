@@ -48,3 +48,17 @@ export async function searchTenantRolesQuery(
 
   return toPlainData(result);
 }
+
+/** 获取租户角色总数 Server Query (受控于 Role 实体读权限) */
+export async function getRoleCountQuery(): Promise<number> {
+  const { organizationId, ability } = await getTenantAdminContext();
+  const canReadOrgRole = ability.can(StandardAction.READ, RoleSubject);
+  if (!canReadOrgRole) {
+    throw new Error("无权访问角色列表");
+  }
+
+  const runtime = getServerAuthRuntime();
+  const service = new TenantRoleService(runtime.tenantContextRepository);
+  const roles = await service.listTenantRoles(organizationId);
+  return roles.length;
+}
