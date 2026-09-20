@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { presignedUploadSchema, saveAttachmentSchema } from "./contract";
+import { presignedUploadSchema, saveAttachmentSchema } from "./schema";
 
 test("presignedUploadSchema: 校验合法图片上传参数", () => {
   const valid = presignedUploadSchema.parse({
