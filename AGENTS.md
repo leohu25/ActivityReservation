@@ -30,6 +30,7 @@
 - **提交信息必须使用中文 (Chinese Commit Message)**：Git 提交信息必须严格遵循 Conventional Commits 规范，且 Header 说明与 Body 详细要点**必须使用中文书写**（例如 `feat(material): 实现物料与工艺BOM中心及全仓权限四维契约标准化`），严禁使用全英文提交信息；
 - **门禁由钩子兜底 (No manual gate runs)**：日常开发**不要**手动全量运行 `pnpm verify`（耗时且由 Git `pre-commit` 自动兜底）；即时反馈仅对改动文件执行同级单测或类型检查；
 - **单源状态收敛**：特性开发进度与真实交付证据严格记录至 `feature_list.json` 与沙盒 `progress.md`；
+- **插件条件路由 (Optional Plugin Routing)**：运行时按需探测宿主能力（若当前环境存在 `typesafe_evaluate` 则动态路由至 `.harness/plugins/jev-evaluator.md` 启用辅助判断，不存在则直接跳过路由，平滑保持原生工作流）；
 - **保持整洁可重启**：结束时工作区随时可重新无损运行 `pnpm init`（或 `node scripts/init.mjs`）。
 
 ---
@@ -117,4 +118,5 @@ node .harness/lifecycle/session-end.mjs
 | **团队架构决策 (ADR)**      | `.harness/memory/adr/`                                                     | 核心决策记录（ADR-001 ~ ADR-009 分层、分库、权限、审计基线）                       |
 | **团队持久记忆**            | `.harness/memory/`                                                         | 避坑经验 (`learnings.md`) 与技术债台账 (`technical-debt.md`)                       |
 | **多智能体编排 (按需选用)** | `.harness/agents/index.md`                                                 | **仅在复杂多阶段或跨模块并行任务中选用**：Coordinator 编排与角色契约               |
+| **Harness 可选扩展插件**   | `.harness/plugins/`                                                        | 可选插件契约目录（如 Jev 判断器 jev-evaluator.md）；环境命中时动态路由，未命中不路由 |
 | **生命周期钩子脚本**        | `.harness/lifecycle/`                                                      | 环境启动检查 (`bootstrap.mjs`, `session-start.mjs`) 与收尾校验 (`session-end.mjs`) |
