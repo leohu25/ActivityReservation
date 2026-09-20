@@ -105,14 +105,19 @@ export const domainManifest: TenantFeatureManifest = {
     {
       pageKey: "<domain>-resource-a",
       defaultLabel: "资源 A 档案",
+      /** 所属推荐目录分组名称（例如 '营销中心'；为空则默认归集至所属切片名称，独立顶级单页如工作台可不填） */
+      group: "<推荐目录分组名称>",
       href: "/<domain>/resource-a",
       defaultIcon: "FileText",
       requiredAction: StandardAction.READ,
       requiredSubject: ResourceASubject,
+      /** 核心受保护功能（禁止从菜单删除/隐藏，防止系统配置入口锁死，如菜单管理/角色权限） */
+      isProtected: false,
     },
     {
       pageKey: "<domain>-resource-b",
       defaultLabel: "资源 B 档案",
+      group: "<推荐目录分组名称>",
       href: "/<domain>/resource-b",
       defaultIcon: "Layers",
       requiredAction: StandardAction.READ,
@@ -131,12 +136,21 @@ export const domainManifest: TenantFeatureManifest = {
 };
 ```
 
-> **核心设计规范（解耦与单一源头）**：
+> **核心设计规范（解耦与单一源头 SSoT）**：
 >
-> 1. **切片只管能力，不管菜单**：业务切片通过 `pages` 贡献标准功能页面，彻底消除过时的 `navSections` 嵌套伪契约；
-> 2. **消除重复冗余**：每个页面无需重复手写 `featureId` 与 `featureName`，系统在派生时自动从 Manifest 的 `id` 与 `name` 继承注入；
-> 3. **动态多级菜单与权限解耦**：租户在界面上无论是创建 2 级还是 3 级目录、对菜单项重命名、还是挂载外部链接，都不会破坏底层 CASL 权限；
-> 4. **角色权限自动对齐**：角色权限管理界面自动调用 `deriveMenuAlignedPermissionTree`，100% 按照租户当前生效的业务菜单树展示大纲，并以【查看 (read)】权限作为页面访问与菜单点亮的联动开关。
+> 1. **切片只管能力，不管菜单（绝对 SSoT）**：所有切片统一仅通过 `pages` 贡献标准功能页面，彻底消除并废除过时的 `navSections` 嵌套伪契约。切片页面通过自描述属性 `group?: string` 声明所属推荐目录；
+> 2. **自愈与约定优于配置**：
+>    - 若页面未声明 `group` 且为普通业务页面，系统自动以切片的 `manifest.name` 聚合为对应业务大目录（如“客户中心”）；
+>    - 若复合切片（如系统管理）声明了不同 `group`，系统自动聚拢拆分为多个对应目录（如“组织架构”、“企业设置”）；
+>    - 若顶级独立单页（如“工作台”）不声明 `group`，系统自动将其独立置顶渲染；
+> 3. **视觉分区标头（`SECTION` 一等公民节点）**：
+>    - 动态菜单节点支持 `itemType: "GROUP" | "PAGE" | "LINK" | "SECTION"`；
+>    - `SECTION` 节点用于划分大区视觉分割线，服务端剪枝引擎将其 1:1 映射为 `<SidebarGroupLabel>` 静态小灰字标头；
+> 4. **三重防反锁死容灾体系**：
+>    - **UI 防线**：对标记 `isProtected: true` 的核心治理节点，前端配置树禁用删除与隐藏按键；
+>    - **API 防线**：`saveMenuTreeAction` 服务端强校验断言，缺失核心入口物理拒绝保存；
+>    - **运行时防线**：`getAuthorizedTenantNavSections` 服务端检测到管理员菜单缺失关键入口时自动注入系统管理兜底区；无需在顶部栏堆砌多余的静态链接；
+> 5. **角色权限自动对齐**：角色权限管理界面自动调用 `deriveMenuAlignedPermissionTree`，100% 按照租户当前生效的业务菜单树展示大纲，并以【查看 (read)】权限作为页面访问与菜单点亮的联动开关。
 
 ---
 

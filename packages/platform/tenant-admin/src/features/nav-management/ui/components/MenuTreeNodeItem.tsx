@@ -11,6 +11,8 @@ import {
   Trash2,
   ChevronRight,
   ChevronDown,
+  ShieldCheck,
+  Bookmark,
 } from "lucide-react";
 import { DynamicNavIcon } from "@base/ui";
 import type {
@@ -44,11 +46,13 @@ export function MenuTreeNodeItem({
   onDeleteNode,
 }: MenuTreeNodeItemProps) {
   const hasChildren = Boolean(node.children && node.children.length > 0);
+  const isSection = node.itemType === "SECTION";
   const isGroup = node.itemType === "GROUP";
   const isLink = node.itemType === "LINK";
   const isSelected = selectedNodeId === node.id;
   const isExpanded = expandedNodes[node.id] ?? true;
   const pageMeta = node.pageKey ? pageMap.get(node.pageKey) : null;
+  const isProtected = Boolean(node.isProtected || pageMeta?.isProtected);
   const labelText =
     node.customLabel || pageMeta?.defaultLabel || node.externalUrl || "未命名";
 
@@ -65,7 +69,7 @@ export function MenuTreeNodeItem({
       >
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           {/* 折叠切换图标 */}
-          {hasChildren || isGroup ? (
+          {hasChildren || isGroup || isSection ? (
             <button
               type="button"
               className="p-0.5 hover:bg-muted rounded text-muted-foreground"
@@ -90,6 +94,8 @@ export function MenuTreeNodeItem({
               name={node.customIcon}
               className="size-3.5 shrink-0 text-muted-foreground"
             />
+          ) : isSection ? (
+            <Bookmark className="size-3.5 shrink-0 text-primary" />
           ) : isGroup ? (
             <Folder className="size-3.5 shrink-0 text-amber-500" />
           ) : isLink ? (
@@ -100,7 +106,20 @@ export function MenuTreeNodeItem({
             <FileText className="size-3.5 shrink-0 text-muted-foreground" />
           )}
 
-          <span className="truncate flex-1">{labelText}</span>
+          <span className="truncate flex-1 font-medium">{labelText}</span>
+
+          {isSection && (
+            <span className="text-[9px] text-primary bg-primary/10 border border-primary/25 px-1 py-0 rounded shrink-0 font-medium">
+              分区标头
+            </span>
+          )}
+
+          {isProtected && (
+            <span className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 px-1 py-0 rounded shrink-0 flex items-center gap-0.5">
+              <ShieldCheck className="size-2.5" />
+              保护
+            </span>
+          )}
 
           {node.isVisible === false && (
             <span className="text-[10px] text-muted-foreground bg-muted px-1 rounded shrink-0">
@@ -150,23 +169,38 @@ export function MenuTreeNodeItem({
             <ArrowDown className="size-2.5" />
           </Button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-4 text-muted-foreground hover:text-destructive"
-            title="删除此项"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeleteNode(node.id);
-            }}
-          >
-            <Trash2 className="size-2.5" />
-          </Button>
+          {isProtected ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-4 text-muted-foreground/30 cursor-not-allowed hover:bg-transparent"
+              title="系统核心受保护功能不可删除，防止丢失管理入口"
+              disabled
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              <Trash2 className="size-2.5" />
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-4 text-muted-foreground hover:text-destructive"
+              title="删除此项"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteNode(node.id);
+              }}
+            >
+              <Trash2 className="size-2.5" />
+            </Button>
+          )}
         </div>
       </div>
 
       {/* 递归子树渲染 */}
-      {(hasChildren || isGroup) && isExpanded && node.children && (
+      {(hasChildren || isGroup || isSection) && isExpanded && node.children && (
         <div className="space-y-0.5 border-l border-border/40 ml-3">
           {node.children.map((child) => (
             <MenuTreeNodeItem

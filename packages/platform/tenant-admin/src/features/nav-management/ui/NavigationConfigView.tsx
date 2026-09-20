@@ -6,7 +6,6 @@ import {
   CardContent,
   Button,
   Badge,
-  PageShell,
   MasterDetailShell,
   ConfirmDialog,
   toast,
@@ -50,28 +49,40 @@ export function NavigationConfigView({
   const router = useSafeRouter();
   const [isPending, startTransition] = useTransition();
 
-  // 1. 树状数据状态
+  // 1. 树状数据状态：若租户数据库已有自定义配置则直接加载；若从未配置过，则自动加载系统出厂推荐树供预览与微调
   const [tree, setTree] = useState<TenantMenuNode[]>(() => {
     if (data.currentTree && data.currentTree.length > 0) {
       return [...data.currentTree];
     }
-    return [];
+    return buildRecommendedBusinessTree(data.availablePages);
   });
 
   const [isConfigured, setIsConfigured] = useState<boolean>(() => {
-    return Boolean(
-      data.currentTree && data.currentTree.length > 0,
-    );
+    return Boolean(data.currentTree && data.currentTree.length > 0);
   });
 
   // 2. 当前选中的节点 ID
   const [selectedNodeId, setSelectedNodeId] = useState<string>(() => {
-    return data.currentTree?.[0]?.id || "";
+    if (data.currentTree && data.currentTree.length > 0) {
+      return data.currentTree[0]?.id || "";
+    }
+    const recommended = buildRecommendedBusinessTree(data.availablePages);
+    return recommended[0]?.id || "";
   });
 
   // 3. 目录展开折叠状态
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>(
-    {},
+    () => {
+      const exp: Record<string, boolean> = {};
+      const initialNodes =
+        data.currentTree && data.currentTree.length > 0
+          ? data.currentTree
+          : buildRecommendedBusinessTree(data.availablePages);
+      for (const item of initialNodes) {
+        exp[item.id] = true;
+      }
+      return exp;
+    },
   );
 
   // 4. 业务功能池搜索关键词
@@ -120,16 +131,18 @@ export function NavigationConfigView({
       ) {
         continue;
       }
-      const existing = map.get(p.featureId);
+      const groupKey = p.group ? `${p.featureId}:${p.group}` : p.featureId;
+      const groupName = p.group || p.featureName;
+      const existing = map.get(groupKey);
       if (existing) {
         existing.pages.push(p);
       } else {
-        map.set(p.featureId, { featureName: p.featureName, pages: [p] });
+        map.set(groupKey, { featureName: groupName, pages: [p] });
       }
     }
 
-    return Array.from(map.entries()).map(([featureId, data]) => ({
-      featureId,
+    return Array.from(map.entries()).map(([key, data]) => ({
+      featureId: key,
       featureName: data.featureName,
       pages: data.pages,
     }));
@@ -271,6 +284,17 @@ export function NavigationConfigView({
   // 4. 更新当前选中节点
   const handleUpdateNode = (patch: Partial<TenantMenuNode>) => {
     if (!selectedNodeId) return;
+    const meta = selectedNode?.pageKey
+      ? pageMap.get(selectedNode.pageKey)
+      : null;
+    if (
+      (selectedNode?.isProtected || meta?.isProtected) &&
+      patch.isVisible === false
+    ) {
+      toast.error("系统核心受保护功能必须保持可见，不可隐藏！");
+      return;
+    }
+
     function update(nodes: readonly TenantMenuNode[]): TenantMenuNode[] {
       return nodes.map((node) => {
         if (node.id === selectedNodeId) {
@@ -287,8 +311,23 @@ export function NavigationConfigView({
   };
 
   // 5. 切换选中节点类型
-  const handleChangeNodeType = (newType: "PAGE" | "LINK" | "GROUP") => {
+  const handleChangeNodeType = (
+    newType: "PAGE" | "LINK" | "GROUP" | "SECTION",
+  ) => {
     if (!selectedNode) return;
+    const meta = selectedNode.pageKey
+      ? pageMap.get(selectedNode.pageKey)
+      : null;
+    if (
+      (selectedNode.isProtected || meta?.isProtected) &&
+      newType !== "PAGE"
+    ) {
+      toast.error(
+        "系统核心受保护功能必须保持为功能页面类型，不可转为外部链接、目录或分区！",
+      );
+      return;
+    }
+
     const patch: Record<string, unknown> = { itemType: newType };
     if (newType === "PAGE") {
       patch.externalUrl = null;
@@ -303,6 +342,13 @@ export function NavigationConfigView({
     } else if (newType === "GROUP") {
       patch.pageKey = null;
       patch.externalUrl = null;
+      if (!selectedNode.children) {
+        patch.children = [];
+      }
+    } else if (newType === "SECTION") {
+      patch.pageKey = null;
+      patch.externalUrl = null;
+      patch.customIcon = null;
       if (!selectedNode.children) {
         patch.children = [];
       }
@@ -360,6 +406,37 @@ export function NavigationConfigView({
 
   // 7. 删除节点
   const handleDeleteNode = (nodeId: string) => {
+    // 递归检查要删除的子树中是否包含受保护的核心节点
+    function containsProtected(n: TenantMenuNode): boolean {
+      const meta = n.pageKey ? pageMap.get(n.pageKey) : null;
+      if (n.isProtected || meta?.isProtected) return true;
+      if (n.children && n.children.length > 0) {
+        return n.children.some(containsProtected);
+      }
+      return false;
+    }
+
+    function findTarget(
+      nodes: readonly TenantMenuNode[],
+    ): TenantMenuNode | null {
+      for (const n of nodes) {
+        if (n.id === nodeId) return n;
+        if (n.children) {
+          const found = findTarget(n.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+
+    const targetNode = findTarget(tree);
+    if (targetNode && containsProtected(targetNode)) {
+      toast.error(
+        "该节点（或其子项）包含系统核心受保护功能，不可删除，防止丢失管理入口！",
+      );
+      return;
+    }
+
     function remove(nodes: readonly TenantMenuNode[]): TenantMenuNode[] {
       return nodes
         .filter((n) => n.id !== nodeId)
@@ -435,15 +512,16 @@ export function NavigationConfigView({
     toast.success("已载入系统推荐的业务菜单结构，可在界面继续微调并保存");
   };
 
-  // 11. 清空自定义业务菜单
-  const handleClearAll = () => {
+  // 11. 恢复出厂预设菜单
+  const handleResetToDefault = () => {
     startTransition(async () => {
       const res = await resetMenuTreeAction(data.availablePages);
       if (res.success) {
-        setTree([]);
-        setSelectedNodeId("");
+        const fresh = buildRecommendedBusinessTree(data.availablePages);
+        setTree(fresh);
+        setSelectedNodeId(fresh[0]?.id || "");
         setIsConfigured(false);
-        toast.success("已清空自定义业务菜单，侧边栏仅展示系统基础项");
+        toast.success("已恢复出厂默认预设，数据库个性化记录已重置");
         router?.refresh();
       } else {
         toast.error(res.error || "操作失败");
@@ -452,236 +530,246 @@ export function NavigationConfigView({
   };
 
   return (
-    <PageShell
-      className="gap-3"
-      title="业务导航菜单配置"
-      description="配置租户业务大菜单与多级子功能；系统管理（工作台、组织架构、权限管理、企业设置）由底座权限直接控制，无需在此配置。"
-      actions={
-        <div className="flex items-center gap-2">
-          {isConfigured ? (
-            <Badge
-              variant="default"
-              className="text-xs bg-emerald-600 text-white"
-            >
-              已启用自定义业务菜单
-            </Badge>
-          ) : (
-            <Badge
-              variant="outline"
-              className="text-xs text-muted-foreground bg-muted/40"
-            >
-              未配置 (仅显示系统基座)
-            </Badge>
-          )}
-
-          {tree.length > 0 ? (
-            <ConfirmDialog
-              title="确认清空自定义业务菜单？"
-              description="清空后数据库将不再保存自定义业务菜单，侧边栏将仅展示工作台和系统设置项。"
-              confirmText="确认清空"
-              variant="destructive"
-              onConfirm={handleClearAll}
-              trigger={
-                <Button variant="outline" size="sm" disabled={isPending}>
-                  <RotateCcw className="size-3.5 mr-1.5" />
-                  清空配置
-                </Button>
-              }
-            />
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleLoadRecommendedTemplate}
-              disabled={isPending}
-            >
-              <Download className="size-3.5 mr-1.5" />
-              载入推荐业务模板
-            </Button>
-          )}
-
+    <MasterDetailShell
+      className="h-[calc(100vh-5.5rem)] min-h-[560px] border border-border/80 rounded-lg bg-card shadow-xs"
+      masterWidth="w-full lg:w-80 xl:w-[320px]"
+      masterHeader={
+        <div className="flex items-center justify-between w-full">
+          <span className="text-xs font-semibold flex items-center gap-1.5">
+            <Layers className="size-3.5 text-primary" />
+            <span>业务菜单树</span>
+          </span>
           <Button
-            variant="default"
+            variant="outline"
             size="sm"
-            onClick={handleSave}
-            disabled={isPending}
-            className="bg-primary hover:bg-primary/90"
+            className="h-6 text-[11px] px-2"
+            onClick={handleAddRootItem}
+            title="新建顶级菜单项"
           >
-            <Save className="size-3.5 mr-1.5" />
-            {isPending ? "保存中..." : "保存并生效"}
+            <Plus className="size-3 mr-1" />
+            新增顶级
           </Button>
         </div>
       }
-    >
-      <MasterDetailShell
-        masterWidth="w-full lg:w-[280px]"
-        masterHeader={
-          <div className="flex items-center justify-between w-full">
-            <span className="text-xs font-semibold flex items-center gap-1.5">
-              <Layers className="size-3.5 text-primary" />
-              <span>业务菜单树</span>
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-6 text-[11px] px-2"
-              onClick={handleAddRootItem}
-              title="新建顶级菜单项"
-            >
-              <Plus className="size-3 mr-1" />
-              新增顶级
-            </Button>
+      master={
+        <div className="space-y-0.5">
+          {tree.length === 0 ? (
+            <div className="py-12 px-3 text-center space-y-3">
+              <div className="size-8 rounded-full bg-muted/60 flex items-center justify-center mx-auto text-muted-foreground">
+                <Sparkles className="size-4" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-foreground">
+                  尚未配置任何业务菜单
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  租户左侧边栏当前仅展示工作台和系统设置。
+                </p>
+              </div>
+              <div className="pt-2 flex flex-col gap-1.5">
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-7 text-xs w-full"
+                  onClick={handleLoadRecommendedTemplate}
+                >
+                  <Download className="size-3 mr-1" />
+                  一键载入出厂推荐菜单
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs w-full"
+                  onClick={handleAddRootItem}
+                >
+                  <Plus className="size-3 mr-1" />
+                  从空白手工创建
+                </Button>
+              </div>
+            </div>
+          ) : (
+            tree.map((node) => (
+              <MenuTreeNodeItem
+                key={node.id}
+                node={node}
+                selectedNodeId={selectedNodeId}
+                expandedNodes={expandedNodes}
+                pageMap={pageMap}
+                onSelectNode={setSelectedNodeId}
+                onToggleExpand={(id) =>
+                  setExpandedNodes((prev) => ({ ...prev, [id]: !prev[id] }))
+                }
+                onAddChild={handleAddChildToNode}
+                onMoveNode={handleMoveNode}
+                onDeleteNode={handleDeleteNode}
+              />
+            ))
+          )}
+        </div>
+      }
+      detailHeader={
+        <div className="flex flex-wrap items-center justify-between w-full gap-2">
+          {/* 左侧：节点类型快速切换组 */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground shrink-0">
+              <Sliders className="size-3.5 text-primary" />
+              <span>类型:</span>
+            </div>
+
+            {selectedNode ? (
+              <div className="flex items-center rounded-md border border-border/80 p-0.5 bg-muted/60 text-xs">
+                <button
+                  type="button"
+                  onClick={() => handleChangeNodeType("PAGE")}
+                  className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                    selectedNode.itemType === "PAGE"
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+                  }`}
+                >
+                  功能页面
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChangeNodeType("LINK")}
+                  className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                    selectedNode.itemType === "LINK"
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+                  }`}
+                >
+                  外部链接
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChangeNodeType("GROUP")}
+                  className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                    selectedNode.itemType === "GROUP"
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+                  }`}
+                >
+                  目录分组
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChangeNodeType("SECTION")}
+                  className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                    selectedNode.itemType === "SECTION"
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+                  }`}
+                >
+                  分区标头
+                </button>
+              </div>
+            ) : (
+              <span className="text-xs text-muted-foreground">未选择节点</span>
+            )}
           </div>
-        }
-        master={
-          <div className="max-h-[calc(100vh-250px)] min-h-[300px] overflow-y-auto space-y-0.5">
-            {tree.length === 0 ? (
-              <div className="py-12 px-3 text-center space-y-3">
-                <div className="size-8 rounded-full bg-muted/60 flex items-center justify-center mx-auto text-muted-foreground">
-                  <Sparkles className="size-4" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-medium text-foreground">
-                    尚未配置任何业务菜单
-                  </p>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    租户左侧边栏当前仅展示工作台和系统设置。
-                  </p>
-                </div>
-                <div className="pt-2 flex flex-col gap-1.5">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="h-7 text-xs w-full"
-                    onClick={handleLoadRecommendedTemplate}
-                  >
-                    <Download className="size-3 mr-1" />
-                    一键载入出厂推荐菜单
-                  </Button>
+
+          {/* 右侧：全局保存与状态操作组 */}
+          <div className="flex items-center gap-2">
+            {isConfigured ? (
+              <Badge
+                variant="default"
+                className="text-[11px] bg-emerald-600 text-white font-normal h-6"
+              >
+                个性化配置已生效
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30 font-normal h-6"
+              >
+                出厂预设模式
+              </Badge>
+            )}
+
+            {isConfigured ? (
+              <ConfirmDialog
+                title="确认恢复出厂预设菜单？"
+                description="恢复后将清空租户数据库中的个性化菜单配置，重新生效平台最新的出厂推荐树与自动升级能力。"
+                confirmText="确认恢复预设"
+                variant="destructive"
+                onConfirm={handleResetToDefault}
+                trigger={
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 text-xs w-full"
-                    onClick={handleAddRootItem}
+                    className="h-6.5 text-xs px-2"
+                    disabled={isPending}
                   >
-                    <Plus className="size-3 mr-1" />
-                    从空白手工创建
+                    <RotateCcw className="size-3 mr-1" />
+                    恢复出厂
                   </Button>
-                </div>
-              </div>
+                }
+              />
             ) : (
-              tree.map((node) => (
-                <MenuTreeNodeItem
-                  key={node.id}
-                  node={node}
-                  selectedNodeId={selectedNodeId}
-                  expandedNodes={expandedNodes}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-6.5 text-xs px-2"
+                onClick={handleLoadRecommendedTemplate}
+                disabled={isPending}
+              >
+                <Download className="size-3 mr-1" />
+                重新载入
+              </Button>
+            )}
+
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleSave}
+              disabled={isPending}
+              className="h-6.5 text-xs px-2.5 bg-primary hover:bg-primary/90"
+            >
+              <Save className="size-3 mr-1" />
+              {isPending ? "保存中..." : "保存生效"}
+            </Button>
+          </div>
+        </div>
+      }
+      detail={
+        <div className="space-y-3">
+          {selectedNode ? (
+            <Card className="border border-border/80 shadow-xs">
+              <CardContent className="p-3">
+                <NodePropertyForm
+                  selectedNode={selectedNode}
+                  availableParentGroups={availableParentGroups}
+                  categorizedPages={categorizedPages}
                   pageMap={pageMap}
-                  onSelectNode={setSelectedNodeId}
-                  onToggleExpand={(id) =>
-                    setExpandedNodes((prev) => ({ ...prev, [id]: !prev[id] }))
-                  }
-                  onAddChild={handleAddChildToNode}
-                  onMoveNode={handleMoveNode}
-                  onDeleteNode={handleDeleteNode}
+                  onUpdateNode={handleUpdateNode}
+                  onSelectPageKey={(val) => {
+                    const meta = pageMap.get(val);
+                    handleUpdateNode({
+                      pageKey: val,
+                      customIcon:
+                        meta?.defaultIcon || selectedNode.customIcon,
+                    });
+                  }}
+                  onMoveToParent={handleMoveToParent}
                 />
-              ))
-            )}
-          </div>
-        }
-        detailHeader={
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2">
-              <Sliders className="size-4 text-primary" />
-              <span className="text-xs font-semibold">节点属性编辑</span>
-              {selectedNode && (
-                <Badge variant="outline" className="text-[10px] font-mono">
-                  ID: {selectedNode.id}
-                </Badge>
-              )}
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="py-8 text-center text-xs text-muted-foreground">
+              请从左侧树中点击选择一个菜单项，或点击 [+] 新增一项以进行配置
             </div>
+          )}
 
-            {selectedNode && (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center rounded-md border border-border p-0.5 bg-muted/30 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => handleChangeNodeType("PAGE")}
-                    className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
-                      selectedNode.itemType === "PAGE"
-                        ? "bg-background text-foreground shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    功能页面
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleChangeNodeType("LINK")}
-                    className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
-                      selectedNode.itemType === "LINK"
-                        ? "bg-background text-foreground shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    外部链接
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleChangeNodeType("GROUP")}
-                    className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
-                      selectedNode.itemType === "GROUP"
-                        ? "bg-background text-foreground shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    目录分组
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        }
-        detail={
-          <div className="space-y-4">
-            {selectedNode ? (
-              <Card className="border border-border/80 shadow-xs">
-                <CardContent className="p-4">
-                  <NodePropertyForm
-                    selectedNode={selectedNode}
-                    availableParentGroups={availableParentGroups}
-                    categorizedPages={categorizedPages}
-                    pageMap={pageMap}
-                    onUpdateNode={handleUpdateNode}
-                    onSelectPageKey={(val) => {
-                      const meta = pageMap.get(val);
-                      handleUpdateNode({
-                        pageKey: val,
-                        customIcon:
-                          meta?.defaultIcon || selectedNode.customIcon,
-                      });
-                    }}
-                    onMoveToParent={handleMoveToParent}
-                  />
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="py-12 text-center text-xs text-muted-foreground">
-                请从左侧树中点击选择一个菜单项，或点击 [+] 新增一项以进行配置
-              </div>
-            )}
-
-            {/* 可用功能页面池 */}
-            <AvailablePagePool
-              categorizedPages={categorizedPages}
-              poolSearch={poolSearch}
-              onSearchChange={setPoolSearch}
-              pageMountCounts={pageMountCounts}
-              onMountPage={handleMountPage}
-            />
-          </div>
-        }
-      />
-    </PageShell>
+          {/* 可用功能页面池 */}
+          <AvailablePagePool
+            categorizedPages={categorizedPages}
+            poolSearch={poolSearch}
+            onSearchChange={setPoolSearch}
+            pageMountCounts={pageMountCounts}
+            onMountPage={handleMountPage}
+          />
+        </div>
+      }
+    />
   );
 }

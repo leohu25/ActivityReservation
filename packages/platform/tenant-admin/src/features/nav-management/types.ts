@@ -6,7 +6,7 @@ import type {
 export interface SaveMenuItemInput {
   readonly id?: string;
   readonly parentId?: string | null;
-  readonly itemType: "GROUP" | "PAGE" | "LINK";
+  readonly itemType: "GROUP" | "PAGE" | "LINK" | "SECTION";
   readonly pageKey?: string | null;
   readonly externalUrl?: string | null;
   readonly openInNewTab?: boolean;

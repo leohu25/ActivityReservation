@@ -59,6 +59,8 @@ export interface FeaturePageInput {
   readonly pageKey: string;
   /** 默认显示中文名称（例如 '分类与品种'） */
   readonly defaultLabel: string;
+  /** 所属推荐目录分组名称（例如 '组织架构'、'企业设置'；若不提供则业务切片默认归入所属 featureName，顶级独立页如工作台可不填） */
+  readonly group?: string;
   /** 物理路由地址（例如 '/materials/categories'） */
   readonly href: string;
   /** 默认推荐图标名称（例如 'Layers', 'Store'） */
@@ -74,12 +76,18 @@ export interface FeaturePageInput {
   readonly subjects?: readonly string[];
   /** 徽标或额外提示（可选） */
   readonly badge?: string;
+  /** 是否属于系统内置功能（例如工作台、组织架构、系统设置等） */
+  readonly isSystem?: boolean;
+  /** 是否属于核心受保护功能（禁止删除、禁止取消可见，防止自锁死） */
+  readonly isProtected?: boolean;
 }
 
 /**
  * 标准功能页面元数据契约（供功能池与动态菜单引用，纯数据兼容 RSC 跨端序列化）
  */
 export interface StandardPageDescriptor extends FeaturePageInput {
+  /** 所属推荐目录分组名称（例如 '组织架构'、'企业设置'） */
+  readonly group?: string;
   /** 所属业务切片标识（自动继承 Manifest.id） */
   readonly featureId: string;
   /** 所属业务切片中文名（自动继承 Manifest.name） */
@@ -92,8 +100,8 @@ export interface StandardPageDescriptor extends FeaturePageInput {
 export interface TenantMenuNode {
   readonly id: string;
   readonly parentId?: string | null;
-  /** 节点类型: "GROUP"（目录大菜单）| "PAGE"（具体功能页面）| "LINK"（外部链接） */
-  readonly itemType: "GROUP" | "PAGE" | "LINK";
+  /** 节点类型: "GROUP"（目录大菜单）| "PAGE"（具体功能页面）| "LINK"（外部链接）| "SECTION"（分区标头） */
+  readonly itemType: "GROUP" | "PAGE" | "LINK" | "SECTION";
   /** 若为 PAGE，则关联 StandardPageDescriptor.pageKey */
   readonly pageKey?: string | null;
   /** 若为 LINK，则为外部跳转完整 URL (如 "https://bi.company.com") */
@@ -108,6 +116,10 @@ export interface TenantMenuNode {
   readonly sortOrder: number;
   /** 是否可见 */
   readonly isVisible?: boolean;
+  /** 是否属于系统内置功能 */
+  readonly isSystem?: boolean;
+  /** 是否属于核心受保护功能（前端禁用删除/隐藏，防止自锁死） */
+  readonly isProtected?: boolean;
   /** 子节点列表 */
   readonly children?: readonly TenantMenuNode[];
 }
@@ -460,22 +472,99 @@ export function deriveNavSections(
   >();
 
   for (const manifest of sortedManifests) {
-    if (!manifest.navSections) continue;
-
-    for (const section of manifest.navSections) {
-      const existing = sectionMap.get(section.id);
-      if (existing) {
-        if (!existing.title && section.title) {
-          existing.title = section.title;
+    if (manifest.navSections && manifest.navSections.length > 0) {
+      for (const section of manifest.navSections) {
+        const existing = sectionMap.get(section.id);
+        if (existing) {
+          if (!existing.title && section.title) {
+            existing.title = section.title;
+          }
+          existing.items.push(...section.items);
+        } else {
+          sectionMap.set(section.id, {
+            title: section.title,
+            order: section.order ?? manifest.order ?? 100,
+            items: [...section.items],
+          });
         }
-        existing.items.push(...section.items);
-      } else {
-        sectionMap.set(section.id, {
-          title: section.title,
-          order: section.order ?? manifest.order ?? 100,
-          items: [...section.items],
+      }
+      continue;
+    }
+
+    // 若切片未显式提供 navSections，以 pages 声明为单一事实源自动派生出厂导航拓扑 (SSoT)
+    if (manifest.pages && manifest.pages.length > 0) {
+      // 1. 无 group 的顶级独立项（如 workbench）归入 base 分区
+      const standalonePages = manifest.pages.filter(
+        (p) => !p.group && p.pageKey === "workbench",
+      );
+      if (standalonePages.length > 0) {
+        const baseSection = sectionMap.get("base") || {
+          order: 0,
+          items: [],
+        };
+        for (const p of standalonePages) {
+          baseSection.items.push({
+            id: p.pageKey,
+            label: p.defaultLabel,
+            icon: p.defaultIcon,
+            href: p.href,
+            requiredAction: p.requiredAction || "read",
+            requiredSubject: p.requiredSubject,
+            subjects: p.subjects,
+            badge: p.badge,
+          });
+        }
+        sectionMap.set("base", baseSection);
+      }
+
+      // 2. 按 group（若未声明则用 manifest.name）自动聚拢为目录
+      const pagesToGroup = manifest.pages.filter(
+        (p) => p.pageKey !== "workbench",
+      );
+      const groupMap = new Map<
+        string,
+        (FeaturePageInput | StandardPageDescriptor)[]
+      >();
+      for (const p of pagesToGroup) {
+        const groupName = p.group || manifest.name;
+        const list = groupMap.get(groupName) || [];
+        list.push(p);
+        groupMap.set(groupName, list);
+      }
+
+      const isSystem = manifest.id === "tenant-admin";
+      const sectionId = isSystem ? "system" : manifest.id;
+      const sectionTitle = isSystem ? "系统管理" : manifest.name;
+      const sectionOrder = manifest.order ?? (isSystem ? 30 : 10);
+
+      const currentSection = sectionMap.get(sectionId) || {
+        title: sectionTitle,
+        order: sectionOrder,
+        items: [],
+      };
+
+      for (const [groupName, groupItems] of groupMap.entries()) {
+        const firstIcon =
+          groupItems[0]?.defaultIcon || (isSystem ? "Settings" : "Folder");
+        const groupId = `group-${groupName}`;
+        currentSection.items.push({
+          id: groupId,
+          label: groupName,
+          icon: firstIcon,
+          items: groupItems.map((p) => ({
+            id: p.pageKey,
+            label: p.defaultLabel,
+            icon: p.defaultIcon,
+            href: p.href,
+            requiredAction: p.requiredAction || "read",
+            requiredSubject: p.requiredSubject,
+            subjects: p.subjects,
+            badge: p.badge,
+          })),
         });
       }
+
+      sectionMap.set(sectionId, currentSection);
     }
   }
 
@@ -601,6 +690,9 @@ export function derivePageList(
           seenPageKeys.add(p.pageKey);
           pages.push({
             ...p,
+            group: p.group,
+            isSystem: p.isSystem ?? (manifest.id === "tenant-admin"),
+            isProtected: p.isProtected ?? false,
             featureId:
               "featureId" in p && p.featureId ? p.featureId : manifest.id,
             featureName:
@@ -631,6 +723,9 @@ export function derivePageList(
                   featureId: manifest.id,
                   featureName: manifest.name,
                   badge: child.badge,
+                  isSystem: manifest.id === "tenant-admin",
+                  isProtected:
+                    key === "settings-navigation" || key === "settings-roles",
                 });
               }
             }
@@ -649,6 +744,9 @@ export function derivePageList(
                 featureId: manifest.id,
                 featureName: manifest.name,
                 badge: leaf.badge,
+                isSystem: manifest.id === "tenant-admin",
+                isProtected:
+                  key === "settings-navigation" || key === "settings-roles",
               });
             }
           }
@@ -705,7 +803,8 @@ export function buildMenuTree(
     nodeMap.set(r.id, {
       id: r.id,
       parentId: r.parentId || null,
-      itemType: (r.itemType as "GROUP" | "PAGE" | "LINK") || "PAGE",
+      itemType:
+        (r.itemType as "GROUP" | "PAGE" | "LINK" | "SECTION") || "PAGE",
       pageKey: r.pageKey || null,
       externalUrl: r.externalUrl || null,
       openInNewTab: Boolean(r.openInNewTab),
@@ -830,24 +929,50 @@ export function pruneDynamicMenuTree(
     .filter((n) => n.isVisible !== false)
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
-  const items: (FeatureNavItem | FeatureNavGroup)[] = [];
+  const sections: FeatureNavSection[] = [];
+  let sectionOrder = 1;
+  const defaultItems: (FeatureNavItem | FeatureNavGroup)[] = [];
 
   for (const node of visibleNodes) {
-    const pruned = pruneNode(node);
-    if (pruned) {
-      items.push(pruned);
+    if (node.itemType === "SECTION") {
+      // 收集 SECTION 分区标头下的所有子项 (支持子 GROUP, 子 PAGE, 子 LINK)
+      const sortedChildren = [...(node.children || [])]
+        .filter((c) => c.isVisible !== false)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+      const sectionItems: (FeatureNavItem | FeatureNavGroup)[] = [];
+      for (const child of sortedChildren) {
+        const pruned = pruneNode(child);
+        if (pruned) {
+          sectionItems.push(pruned);
+        }
+      }
+
+      // 如果当前分区下所有子项均无访问权限，整分区自动隐藏，不留空标头
+      if (sectionItems.length > 0) {
+        sections.push({
+          id: node.id,
+          title: node.customLabel || undefined,
+          order: sectionOrder++,
+          items: sectionItems,
+        });
+      }
+    } else {
+      // 非 SECTION 节点（如顶级独立工作台）
+      const pruned = pruneNode(node);
+      if (pruned) {
+        defaultItems.push(pruned);
+      }
     }
   }
 
-  if (items.length === 0) {
-    return [];
+  if (defaultItems.length > 0) {
+    sections.unshift({
+      id: "base",
+      order: 0,
+      items: defaultItems,
+    });
   }
 
-  return [
-    {
-      id: "dynamic-nav",
-      order: 0,
-      items,
-    },
-  ];
+  return sections;
 }

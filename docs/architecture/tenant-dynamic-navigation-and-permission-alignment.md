@@ -66,6 +66,8 @@ export interface StandardPageDescriptor {
   readonly pageKey: string;
   /** 默认显示中文名称（如 '门店档案'） */
   readonly defaultLabel: string;
+  /** 所属推荐目录分组名称（例如 '组织架构'、'企业设置'；为空则默认归入切片名称） */
+  readonly group?: string;
   /** 物理路由地址（如 '/customer/stores'） */
   readonly href: string;
   /** 默认推荐图标名称（如 'Store'） */
@@ -74,6 +76,10 @@ export interface StandardPageDescriptor {
   readonly requiredSubject?: string;
   /** 关联的 CASL 权限动作（默认为 'read'） */
   readonly requiredAction?: string;
+  /** 是否属于系统内置功能 */
+  readonly isSystem?: boolean;
+  /** 是否属于核心受保护功能（禁止删除/隐藏，防止系统配置入口锁死） */
+  readonly isProtected?: boolean;
   /** 所属业务切片标识（如 'customer-center'） */
   readonly featureId: string;
   /** 所属业务切片中文名（如 '客户中心'） */
@@ -89,8 +95,8 @@ export interface StandardPageDescriptor {
 export interface TenantMenuNode {
   readonly id: string;
   readonly parentId?: string | null;
-  /** 统一节点类型：GROUP(目录分组) | PAGE(功能页面) | LINK(外部链接) */
-  readonly itemType: "GROUP" | "PAGE" | "LINK";
+  /** 统一节点类型：GROUP(目录分组) | PAGE(功能页面) | LINK(外部链接) | SECTION(分区标头) */
+  readonly itemType: "GROUP" | "PAGE" | "LINK" | "SECTION";
   /** 若为 PAGE，绑定 StandardPageDescriptor.pageKey */
   readonly pageKey?: string | null;
   /** 若为 LINK，配置完整跳转 URL (如 'https://bi.company.com') */
@@ -105,6 +111,8 @@ export interface TenantMenuNode {
   readonly sortOrder: number;
   /** 是否可见 */
   readonly isVisible?: boolean;
+  /** 是否属于核心受保护功能（前端禁用删除/隐藏） */
+  readonly isProtected?: boolean;
   /** 子节点列表 (递归支持多层级) */
   readonly children?: readonly TenantMenuNode[];
 }
@@ -194,16 +202,20 @@ model TenantMenuItem {
 
 ---
 
-## 五、 系统菜单（工作台与企业设置）刚性隔离决策分析
+## 五、 单一事实来源 (SSoT) 与三重防反锁死容灾体系
 
-在本次重构中，我们严格将**系统基座菜单**从**租户业务菜单添加配置器**中抽离。业界对标与架构利弊分析如下：
+系统已全面废止 `navSections` 树形重复声明，收敛为以 `pages` 为唯一契约的单一事实源（SSoT），并通过三重纵深防御彻底解决自锁死风险（无需在顶部栏额外堆砌多余静态链接）：
 
-| 对比维度         | 允许租户自由删除系统菜单                                                                                                 | 刚性隔离系统底座菜单（当前实现）                                                                                                             |
-| :--------------- | :----------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------- |
-| **租户可用性**   | 极易发生**租户自锁死 (Lockout)**：管理员不小心把“权限管理”或“菜单配置”删掉，导致全租户丧失配置入口，必须平台超管连库救砖 | **零自锁死风险**：系统设置入口永远存在，仅按 CASL 权限对非管理员安全隐藏                                                                     |
-| **职责边界**     | 概念混淆：把“日常进销存业务流”与“平台基础设施运维”混在一个池子里                                                         | **权责分明**：日常业务菜单按需自定义，平台基座能力由平台统一保障稳定性和合规性                                                               |
-| **平台版本演进** | 灾难性维护：平台上线“安全审计”或“新配置项”时，存量租户必须手动去配菜单才能露出                                           | **平滑演进**：平台升级新能力后，授权角色登录立即可见，无运维心智负担                                                                         |
-| **业界主流实践** | 几乎没有成熟企业级软件采用该做法                                                                                         | **Salesforce / Workday**（Setup 平台控制台全局独立）；**飞书 / 钉钉**（企业管理后台固定常驻）；**用友 / 金蝶**（系统管理作为独立基础工作区） |
+| 防线层级 | 防御机制 | 技术实现 | 兜底效果 |
+| :--- | :--- | :--- | :--- |
+| **第一道防线 (UI 交互)** | 核心节点禁用删除与隐藏 | `MenuTreeNodeItem` & `NodePropertyForm` | 对 `isProtected: true` 的核心项（导航设置、角色权限）隐藏删除垃圾桶，禁用隐藏开关，仅允许改名、调序 |
+| **第二道防线 (API 校验)** | 服务端保存事务刚性拦截 | `NavManagementService.saveMenuTree` | 强校验断言：提交树中必须包含有效可见的核心管理入口，未包含物理拒绝持久化并抛出明确错误 |
+| **第三道防线 (运行时容灾)** | 服务端剪枝引擎自动兜底注入 | `apps/tenant/src/kernel/navigation.ts` | 管理员登录时，若因历史数据缺失核心管理入口，运行时引擎自动在底部注入系统管理分区，确保入口永不消失 |
+
+### 视觉分区标头 (`SECTION`) 机制
+- 动态树支持 `itemType: "SECTION"` 作为视觉大区分割标头；
+- 服务端剪枝引擎将其 1:1 映射为 `FeatureNavSection.title`，由底座 `Sidebar` 原生渲染为静态小灰字标头（`<SidebarGroupLabel>`）；
+- 默认出厂推荐树自动包含【业务中心】与【系统管理】两大 `SECTION`，管理员亦可在配置端自由新增、重命名或调整分区标头。
 
 ---
 

@@ -52,6 +52,21 @@ export class NavManagementService {
     userId: string,
     pageList: readonly StandardPageDescriptor[],
   ): Promise<NavigationConfigData> {
+    // 防锁死强校验：如果提交了自定义菜单项，必须保留核心受保护功能且保持可见
+    if (input.items && input.items.length > 0) {
+      const protectedPages = pageList.filter((p) => p.isProtected);
+      for (const p of protectedPages) {
+        const found = input.items.find(
+          (item) => item.pageKey === p.pageKey && item.isVisible !== false,
+        );
+        if (!found) {
+          throw new Error(
+            `保存失败：系统核心受保护功能【${p.defaultLabel}】（${p.pageKey}）必须保留在可见菜单树中，以防丢失管理入口造成自锁死。`,
+          );
+        }
+      }
+    }
+
     await this.tenantPrisma.$transaction(async (tx) => {
       // 1. 清理原有记录
       await tx.tenantMenuItem.deleteMany({});

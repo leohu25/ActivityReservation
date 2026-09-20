@@ -35,6 +35,7 @@ export {
   type FeaturePagePermissionDescriptor,
   type FeatureModulePermissionDescriptor,
   type TenantFeatureManifest,
+  type FeaturePageInput,
   type StandardPageDescriptor,
   type TenantMenuNode,
 } from "./core/manifest";

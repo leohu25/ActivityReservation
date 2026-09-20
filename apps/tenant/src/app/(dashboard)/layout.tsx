@@ -1,7 +1,7 @@
 import React from "react";
 import { headers } from "next/headers";
 import { getServerAuthRuntime } from "@base/auth";
-import { TopHeader, Sidebar, DashboardShell, Badge } from "@base/ui";
+import { TopHeader, Sidebar, DashboardShell } from "@base/ui";
 import { redirect } from "next/navigation";
 import { Building2 } from "lucide-react";
 import { getAuthorizedTenantNavSections } from "@/kernel";

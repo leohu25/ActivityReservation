@@ -12,6 +12,7 @@ import {
   buildMenuTree,
   deriveMenuAlignedPermissionTree,
   type TenantFeatureManifest,
+  type StandardPageDescriptor,
   type TenantMenuNode,
 } from "./manifest";
 
@@ -525,4 +526,105 @@ test("pruneDynamicMenuTree 支持多 Subject 复合页面的 OR 准入原则", (
   // 场景 3: 两个权限都没有 -> 菜单被安全剪枝隐藏
   const sectionsNone = pruneDynamicMenuTree(tree, catalog, () => false);
   assert.equal(sectionsNone.length, 0);
+});
+
+test("derivePageList 能够正确保留 isSystem 与 isProtected 属性", () => {
+  const mockSystemManifest: TenantFeatureManifest = {
+    id: "tenant-admin",
+    name: "系统管理",
+    pages: [
+      {
+        pageKey: "settings-navigation",
+        defaultLabel: "菜单导航",
+        href: "/settings/navigation",
+        isSystem: true,
+        isProtected: true,
+      },
+      {
+        pageKey: "org-employees",
+        defaultLabel: "员工管理",
+        href: "/org/employees",
+        isSystem: true,
+      },
+    ],
+  };
+
+  const pages = derivePageList([mockSystemManifest]);
+  assert.equal(pages.length, 2);
+  const navPage = pages.find((p) => p.pageKey === "settings-navigation");
+  assert.equal(navPage?.isSystem, true);
+  assert.equal(navPage?.isProtected, true);
+
+  const empPage = pages.find((p) => p.pageKey === "org-employees");
+  assert.equal(empPage?.isSystem, true);
+  assert.equal(empPage?.isProtected, false);
+});
+
+test("pruneDynamicMenuTree 正确将 SECTION 节点解析为独立 FeatureNavSection 分区标头", () => {
+  const mockCatalog = new Map<string, StandardPageDescriptor>([
+    [
+      "customer-list",
+      {
+        pageKey: "customer-list",
+        defaultLabel: "客户档案",
+        href: "/customer/customers",
+        featureId: "customer-center",
+        featureName: "客户中心",
+        requiredAction: "read",
+        requiredSubject: "Customer",
+      },
+    ],
+    [
+      "org-employees",
+      {
+        pageKey: "org-employees",
+        defaultLabel: "员工管理",
+        href: "/organization/employees",
+        featureId: "tenant-admin",
+        featureName: "系统管理",
+        requiredAction: "read",
+        requiredSubject: "Employee",
+      },
+    ],
+  ]);
+
+  const tree: TenantMenuNode[] = [
+    {
+      id: "sec-biz",
+      itemType: "SECTION",
+      customLabel: "业务中心",
+      sortOrder: 1,
+      children: [
+        {
+          id: "node-customer",
+          parentId: "sec-biz",
+          itemType: "PAGE",
+          pageKey: "customer-list",
+          sortOrder: 1,
+        },
+      ],
+    },
+    {
+      id: "sec-sys",
+      itemType: "SECTION",
+      customLabel: "系统管理",
+      sortOrder: 2,
+      children: [
+        {
+          id: "node-emp",
+          parentId: "sec-sys",
+          itemType: "PAGE",
+          pageKey: "org-employees",
+          sortOrder: 1,
+        },
+      ],
+    },
+  ];
+
+  const sections = pruneDynamicMenuTree(tree, mockCatalog, () => true);
+  assert.equal(sections.length, 2);
+  assert.equal(sections[0].title, "业务中心");
+  assert.equal(sections[0].items.length, 1);
+  assert.equal(sections[1].title, "系统管理");
+  assert.equal(sections[1].items.length, 1);
 });

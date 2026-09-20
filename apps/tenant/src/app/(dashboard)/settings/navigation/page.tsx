@@ -4,7 +4,7 @@ import { getServerAuthRuntime } from "@base/auth";
 import { NavigationConfigView } from "@platform/tenant-admin/nav-management";
 import { getNavigationConfigQuery } from "@platform/tenant-admin/nav-management/server";
 import { Card } from "@base/ui";
-import { globalBusinessPageList } from "@/kernel";
+import { globalTenantPageList } from "@/kernel";
 
 /**
  * 租户导航菜单与分组动态编排页面 (Server Component - 极薄装配线)
@@ -65,9 +65,9 @@ export default async function SettingsNavigationPage() {
     );
   }
 
-  // 服务端拉取租户动态导航配置与纯业务可用功能池 (排除工作台与系统管理)
+  // 服务端拉取租户动态导航配置与全量功能池 (含业务中心与系统管理)
   const navigationConfig = await getNavigationConfigQuery(
-    globalBusinessPageList,
+    globalTenantPageList,
   );
 
   return <NavigationConfigView data={navigationConfig} />;

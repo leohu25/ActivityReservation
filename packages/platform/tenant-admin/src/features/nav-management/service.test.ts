@@ -185,3 +185,91 @@ test("NavManagementService 一键重置清空自定义菜单并安全回退", as
   assert.equal(resetRes.isDefault, true);
   assert.equal(resetRes.currentTree.length, 0);
 });
+
+test("NavManagementService 防锁死拦截：若提交的菜单树移除了核心受保护页面则抛错拒绝", async () => {
+  const prisma = createMockPrisma();
+  const service = new NavManagementService(prisma);
+
+  const pagesWithProtected: readonly StandardPageDescriptor[] = [
+    ...mockAvailablePages,
+    {
+      pageKey: "settings-navigation",
+      defaultLabel: "菜单导航设置",
+      href: "/settings/navigation",
+      defaultIcon: "FolderTree",
+      featureId: "tenant-admin",
+      featureName: "系统管理",
+      isSystem: true,
+      isProtected: true,
+    },
+  ];
+
+  // 尝试保存一个不含 "settings-navigation" 的菜单树 -> 应被拦截
+  await assert.rejects(
+    async () => {
+      await service.saveMenuTree(
+        {
+          items: [
+            {
+              id: "node-customer",
+              itemType: "PAGE",
+              pageKey: "customer.list",
+              sortOrder: 1,
+              isVisible: true,
+            },
+          ],
+        },
+        "user_admin",
+        pagesWithProtected,
+      );
+    },
+    (err: Error) => {
+      assert.match(err.message, /系统核心受保护功能【菜单导航设置】/);
+      return true;
+    },
+  );
+
+  // 包含受保护节点但被设为 isVisible: false -> 也应被拦截
+  await assert.rejects(
+    async () => {
+      await service.saveMenuTree(
+        {
+          items: [
+            {
+              id: "node-nav",
+              itemType: "PAGE",
+              pageKey: "settings-navigation",
+              sortOrder: 1,
+              isVisible: false,
+            },
+          ],
+        },
+        "user_admin",
+        pagesWithProtected,
+      );
+    },
+    (err: Error) => {
+      assert.match(err.message, /系统核心受保护功能【菜单导航设置】/);
+      return true;
+    },
+  );
+
+  // 正确包含受保护节点且可见 -> 成功保存
+  const successRes = await service.saveMenuTree(
+    {
+      items: [
+        {
+          id: "node-nav",
+          itemType: "PAGE",
+          pageKey: "settings-navigation",
+          sortOrder: 1,
+          isVisible: true,
+        },
+      ],
+    },
+    "user_admin",
+    pagesWithProtected,
+  );
+  assert.equal(successRes.isDefault, false);
+  assert.equal(successRes.currentTree.length, 1);
+});

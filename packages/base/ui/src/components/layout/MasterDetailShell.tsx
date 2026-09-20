@@ -55,7 +55,7 @@ export function MasterDetailShell({
         )}
       >
         {masterHeader ? (
-          <div className="px-4 py-3 border-b bg-card shrink-0 flex items-center justify-between">
+          <div className="h-12 px-4 border-b border-border/80 bg-card shrink-0 flex items-center justify-between">
             {masterHeader}
           </div>
         ) : null}
@@ -65,12 +65,12 @@ export function MasterDetailShell({
       {/* Detail 主展示区 */}
       <main className="flex-1 flex flex-col min-w-0 bg-background overflow-hidden">
         {detailHeader ? (
-          <div className="px-6 py-4 border-b bg-card/60 shrink-0 flex items-center justify-between">
+          <div className="h-12 px-4 border-b border-border/80 bg-card shrink-0 flex items-center justify-between">
             {detailHeader}
           </div>
         ) : null}
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4">
           {hasSelected ? detail : emptyDetail || null}
         </div>
 
