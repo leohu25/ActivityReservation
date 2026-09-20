@@ -46,7 +46,7 @@ export const architectureRedlineRules = {
     },
   ],
 
-  // 3. 严禁穿透工作区内部源码目录
+  // 3. 严禁穿透工作区内部源码目录与跨兄弟切片私调
   "no-restricted-imports": [
     "error",
     {
@@ -55,6 +55,16 @@ export const architectureRedlineRules = {
           group: ["@base/*/src/*"],
           message:
             "【架构红线】严禁通过 /src/ 穿透工作区包内部实现；必须使用 package.json exports 声明的公共入口。",
+        },
+        {
+          group: ["../**/service", "../*-service"],
+          message:
+            "【架构红线】严禁通过相对路径直接调用兄弟业务切片的私有 service 实现；跨切片集成必须通过 public.server 或共享契约。",
+        },
+        {
+          group: ["../**/actions"],
+          message:
+            "【架构红线】严禁通过相对路径直接调用兄弟业务切片的私有 actions 实现；跨切片集成必须在应用装配层完成。",
         },
       ],
     },

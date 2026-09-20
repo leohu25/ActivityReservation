@@ -102,140 +102,154 @@ function walkCodeFiles(dir, files = []) {
 }
 
 export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
-  const domainsDir = path.join(workspaceRoot, "packages/domains");
-  if (!fs.existsSync(domainsDir)) {
-    return { violations: [] };
-  }
+  const scanDirs = [
+    {
+      dir: path.join(workspaceRoot, "packages/domains"),
+      isDomainPackage: true,
+    },
+    {
+      dir: path.join(workspaceRoot, "packages/platform"),
+      isDomainPackage: false,
+    },
+  ];
 
   const violations = [];
-  const domainEntries = fs.readdirSync(domainsDir, { withFileTypes: true });
 
-  for (const entry of domainEntries) {
-    if (!entry.isDirectory()) continue;
-    const pkgName = entry.name;
+  for (const { dir: dirPath, isDomainPackage } of scanDirs) {
+    if (!fs.existsSync(dirPath)) continue;
+    const pkgEntries = fs.readdirSync(dirPath, { withFileTypes: true });
 
-    const pkgDir = path.join(domainsDir, pkgName);
-    const srcDir = path.join(pkgDir, "src");
-    const pkgJsonPath = path.join(pkgDir, "package.json");
+    for (const entry of pkgEntries) {
+      if (!entry.isDirectory()) continue;
+      const pkgName = entry.name;
 
-    if (!fs.existsSync(pkgJsonPath)) continue;
+      const pkgDir = path.join(dirPath, pkgName);
+      const srcDir = path.join(pkgDir, "src");
+      const pkgJsonPath = path.join(pkgDir, "package.json");
 
-    let pkgJson;
-    try {
-      pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, "utf-8"));
-    } catch (err) {
-      violations.push({
-        file: path.relative(workspaceRoot, pkgJsonPath).replace(/\\/g, "/"),
-        line: 1,
-        rule: "package.json 无法解析为有效 JSON",
-        code: String(err.message),
-      });
-      continue;
-    }
+      if (!fs.existsSync(pkgJsonPath)) continue;
 
-    const hasFeaturesDir = fs.existsSync(path.join(srcDir, "features"));
-    // 凡是未标记 pending migration 且非 control 的租户包，或者已经创建了 src/features 的包，均须严格遵守
-    const isTarget = hasFeaturesDir || !PENDING_MIGRATION_PACKAGES.has(pkgName);
-
-    if (!isTarget) continue;
-
-    const relPkgDir = path.relative(workspaceRoot, pkgDir).replace(/\\/g, "/");
-
-    // 1. 检查是否存在 src/features 目录
-    if (!hasFeaturesDir) {
-      violations.push({
-        file: `${relPkgDir}/src`,
-        line: 1,
-        rule: "业务特性包必须采用 Feature-based Vertical Slice 架构，缺少 src/features/ 目录",
-        code: `${relPkgDir}/src/features`,
-      });
-      continue;
-    }
-
-    // 2. 检查基础契约文件 (业务领域包必须具备 manifest/catalog/租户上下文)
-    const manifestPath = path.join(srcDir, "manifest.ts");
-    if (!fs.existsSync(manifestPath)) {
-      violations.push({
-        file: `${relPkgDir}/src/manifest.ts`,
-        line: 1,
-        rule: "业务特性包必须在 src/manifest.ts 导出自描述特性清单 TenantFeatureManifest (ADR-005/006)",
-        code: "manifest.ts missing",
-      });
-    }
-
-    const catalogPath = path.join(srcDir, "catalog.ts");
-    if (!fs.existsSync(catalogPath)) {
-      violations.push({
-        file: `${relPkgDir}/src/catalog.ts`,
-        line: 1,
-        rule: "业务特性包必须在 src/catalog.ts 导出 CASL 权限目录 PermissionCatalog",
-        code: "catalog.ts missing",
-      });
-    }
-
-    // 检查 shared/server 租户上下文隔离
-    const sharedServerContext = path.join(srcDir, "shared/server/context.ts");
-    const sharedServerTenantContext = path.join(
-      srcDir,
-      "shared/server/tenant-context.ts",
-    );
-    if (
-      !fs.existsSync(sharedServerContext) &&
-      !fs.existsSync(sharedServerTenantContext)
-    ) {
-      violations.push({
-        file: `${relPkgDir}/src/shared/server`,
-        line: 1,
-        rule: "业务特性包必须在 src/shared/server/ 下维护租户物理库与鉴权上下文 (context.ts 或 tenant-context.ts)",
-        code: "shared/server context missing",
-      });
-    }
-
-    // 检查 AbilityBoundary 权限能力边界组件规范与 "use client" 强约束
-    const allSrcFiles = walkCodeFiles(srcDir);
-    const boundaryFiles = allSrcFiles.filter((f) =>
-      /AbilityBoundary\.tsx$/.test(f),
-    );
-
-    if (boundaryFiles.length === 0) {
-      violations.push({
-        file: `${relPkgDir}/src`,
-        line: 1,
-        rule: "租户业务特性包必须在 src/shared/ui/ 或类似共享路径下定义 *AbilityBoundary.tsx 权限能力边界组件 (ADR-003/008)",
-        code: "*AbilityBoundary.tsx missing",
-      });
-    }
-
-    for (const boundaryFile of boundaryFiles) {
-      const relBoundaryPath = path
-        .relative(workspaceRoot, boundaryFile)
-        .replace(/\\/g, "/");
-      const content = fs.readFileSync(boundaryFile, "utf-8");
-
-      // 强校验 1: 必须在头部声明 "use client";
-      if (!/^\s*["']use client["'];/m.test(content)) {
+      let pkgJson;
+      try {
+        pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, "utf-8"));
+      } catch (err) {
         violations.push({
-          file: relBoundaryPath,
+          file: path.relative(workspaceRoot, pkgJsonPath).replace(/\\/g, "/"),
           line: 1,
-          rule: '权限能力边界组件 (*AbilityBoundary.tsx) 必须在文件头部显式声明 "use client"; 作为 Client Component 容器运行，防止内部实例化 CASL Ability 并在透传给 UI Provider 时触发 Next.js RSC 跨端序列化异常 (ADR-003/008)',
-          code: 'missing "use client"',
+          rule: "package.json 无法解析为有效 JSON",
+          code: String(err.message),
         });
+        continue;
       }
 
-      // 强校验 2: 组件命名规范必须为 export function/const *AbilityBoundary
-      const hasBoundaryExport =
-        /export\s+(function|const)\s+[A-Za-z0-9_]*AbilityBoundary\b/.test(
-          content,
+      const hasFeaturesDir = fs.existsSync(path.join(srcDir, "features"));
+      // 凡是未标记 pending migration 的包，或者已经创建了 src/features 的包，均须严格遵守
+      const isTarget =
+        hasFeaturesDir || !PENDING_MIGRATION_PACKAGES.has(pkgName);
+
+      if (!isTarget) continue;
+
+      const relPkgDir = path.relative(workspaceRoot, pkgDir).replace(/\\/g, "/");
+
+      // 1. 检查是否存在 src/features 目录
+      if (!hasFeaturesDir) {
+        violations.push({
+          file: `${relPkgDir}/src`,
+          line: 1,
+          rule: "业务特性包必须采用 Feature-based Vertical Slice 架构，缺少 src/features/ 目录",
+          code: `${relPkgDir}/src/features`,
+        });
+        continue;
+      }
+
+      // 2. 检查租户域切片基础契约文件 (仅租户业务域与租户系统管理必须具备 manifest/catalog/租户上下文)
+      const isTenantSaaS = isDomainPackage || pkgName === "tenant-admin";
+
+      if (isTenantSaaS) {
+        const manifestPath = path.join(srcDir, "manifest.ts");
+        if (!fs.existsSync(manifestPath)) {
+          violations.push({
+            file: `${relPkgDir}/src/manifest.ts`,
+            line: 1,
+            rule: "业务特性包必须在 src/manifest.ts 导出自描述特性清单 TenantFeatureManifest (ADR-005/006)",
+            code: "manifest.ts missing",
+          });
+        }
+
+        const catalogPath = path.join(srcDir, "catalog.ts");
+        if (!fs.existsSync(catalogPath)) {
+          violations.push({
+            file: `${relPkgDir}/src/catalog.ts`,
+            line: 1,
+            rule: "业务特性包必须在 src/catalog.ts 导出 CASL 权限目录 PermissionCatalog",
+            code: "catalog.ts missing",
+          });
+        }
+
+        // 检查 shared/server 租户上下文隔离
+        const sharedServerContext = path.join(srcDir, "shared/server/context.ts");
+        const sharedServerTenantContext = path.join(
+          srcDir,
+          "shared/server/tenant-context.ts",
         );
-      if (!hasBoundaryExport) {
-        violations.push({
-          file: relBoundaryPath,
-          line: 1,
-          rule: "权限能力边界组件导出名称必须遵循 *AbilityBoundary 统一语义规范 (如 CustomerAbilityBoundary)",
-          code: "export *AbilityBoundary missing",
-        });
+        if (
+          !fs.existsSync(sharedServerContext) &&
+          !fs.existsSync(sharedServerTenantContext)
+        ) {
+          violations.push({
+            file: `${relPkgDir}/src/shared/server`,
+            line: 1,
+            rule: "业务特性包必须在 src/shared/server/ 下维护租户物理库与鉴权上下文 (context.ts 或 tenant-context.ts)",
+            code: "shared/server context missing",
+          });
+        }
+
+        // 检查 AbilityBoundary 权限能力边界组件规范与 "use client" 强约束
+        const allSrcFiles = walkCodeFiles(srcDir);
+        const boundaryFiles = allSrcFiles.filter((f) =>
+          /AbilityBoundary\.tsx$/.test(f),
+        );
+
+        if (boundaryFiles.length === 0) {
+          violations.push({
+            file: `${relPkgDir}/src`,
+            line: 1,
+            rule: "租户业务特性包必须在 src/shared/ui/ 或类似共享路径下定义 *AbilityBoundary.tsx 权限能力边界组件 (ADR-003/008)",
+            code: "*AbilityBoundary.tsx missing",
+          });
+        }
+
+        for (const boundaryFile of boundaryFiles) {
+          const relBoundaryPath = path
+            .relative(workspaceRoot, boundaryFile)
+            .replace(/\\/g, "/");
+          const content = fs.readFileSync(boundaryFile, "utf-8");
+
+          // 强校验 1: 必须在头部声明 "use client";
+          if (!/^\s*["']use client["'];/m.test(content)) {
+            violations.push({
+              file: relBoundaryPath,
+              line: 1,
+              rule: '权限能力边界组件 (*AbilityBoundary.tsx) 必须在文件头部显式声明 "use client"; 作为 Client Component 容器运行，防止内部实例化 CASL Ability 并在透传给 UI Provider 时触发 Next.js RSC 跨端序列化异常 (ADR-003/008)',
+              code: 'missing "use client"',
+            });
+          }
+
+          // 强校验 2: 组件命名规范必须为 export function/const *AbilityBoundary
+          const hasBoundaryExport =
+            /export\s+(function|const)\s+[A-Za-z0-9_]*AbilityBoundary\b/.test(
+              content,
+            );
+          if (!hasBoundaryExport) {
+            violations.push({
+              file: relBoundaryPath,
+              line: 1,
+              rule: "权限能力边界组件导出名称必须遵循 *AbilityBoundary 统一语义规范 (如 CustomerAbilityBoundary)",
+              code: "export *AbilityBoundary missing",
+            });
+          }
+        }
       }
-    }
 
     // 检查 shared/public.ts
     const sharedPublic = path.join(srcDir, "shared/public.ts");
@@ -268,8 +282,8 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
         });
       }
 
-      // 业务领域包必须导出 ./manifest
-      if (!exportsField["./manifest"]) {
+      // 业务领域包必须导出 ./manifest (平台总控 control-admin 无租户动态菜单 manifest)
+      if (isTenantSaaS && !exportsField["./manifest"]) {
         violations.push({
           file: `${relPkgDir}/package.json`,
           line: 1,
@@ -360,58 +374,45 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
           (f.endsWith("-service.ts") && !f.endsWith(".test.ts")),
       );
 
-      // 判断切片类型：
-      // A. 纯视图/装配切片 (如 workbench): 有 public.ts 与 types.ts，无专属数据库表
-      const isPureViewSlice =
-        !hasContract && !hasQueries && !hasActions && !hasService && hasTypes;
-
-      // B. 纯契约切片 (如 audit-log): 仅对外定义契约供外部使用
-      const isPureContractSlice =
-        hasContract && !hasQueries && !hasActions && !hasService;
-
-      // C. 规范业务切片 (具有读写与领域逻辑)
-      const isBusinessSlice = !isPureViewSlice && !isPureContractSlice;
-
-      if (isBusinessSlice) {
-        if (!hasContract) {
+      // 规范业务切片强契约要求 (所有切片均须结构同构，彻底废除纯契约/纯视图豁免后门)
+      if (!hasContract) {
+        violations.push({
+          file: `${relSliceDir}/contract.ts`,
+          line: 1,
+          rule: `业务切片 [${sliceSubpath}] 必须提供 contract.ts 定义权限契约与 Subject 常量 (SSoT)`,
+          code: "contract.ts missing",
+        });
+      }
+      if (!hasTypes) {
+        violations.push({
+          file: `${relSliceDir}/types.ts`,
+          line: 1,
+          rule: `业务切片 [${sliceSubpath}] 必须提供 types.ts 集中管理切片内领域类型与 DTO`,
+          code: "types.ts missing",
+        });
+      }
+      // 如果包含写操作 Action，必须提供匹配的独立 Zod Schema 校验与单测
+      if (hasActions) {
+        const hasSchema = fs.existsSync(
+          path.join(slice.fullPath, "schema.ts"),
+        );
+        if (!hasSchema) {
           violations.push({
-            file: `${relSliceDir}/contract.ts`,
+            file: `${relSliceDir}/schema.ts`,
             line: 1,
-            rule: `业务切片 [${sliceSubpath}] 必须提供 contract.ts 定义权限契约与 Subject 常量 (SSoT)`,
-            code: "contract.ts missing",
+            rule: `包含写操作 Server Actions 的切片 [${sliceSubpath}] 必须提供独立的 schema.ts 进行运行时 Zod 强校验，严禁堆砌在 contract.ts`,
+            code: "schema.ts missing",
           });
         }
-        if (!hasTypes) {
+      }
+      if (hasQueries || hasActions || hasService) {
+        if (!hasPublicServer) {
           violations.push({
-            file: `${relSliceDir}/types.ts`,
+            file: `${relSliceDir}/public.server.ts`,
             line: 1,
-            rule: `业务切片 [${sliceSubpath}] 必须提供 types.ts 集中管理切片内领域类型与 DTO`,
-            code: "types.ts missing",
+            rule: `包含服务端能力的业务切片 [${sliceSubpath}] 必须提供 public.server.ts 作为纯服务端安全导出入口`,
+            code: "public.server.ts missing",
           });
-        }
-        // 如果包含写操作 Action，必须提供匹配的独立 Zod Schema 校验与单测
-        if (hasActions) {
-          const hasSchema = fs.existsSync(
-            path.join(slice.fullPath, "schema.ts"),
-          );
-          if (!hasSchema) {
-            violations.push({
-              file: `${relSliceDir}/schema.ts`,
-              line: 1,
-              rule: `包含写操作 Server Actions 的切片 [${sliceSubpath}] 必须提供独立的 schema.ts 进行运行时 Zod 强校验，严禁堆砌在 contract.ts`,
-              code: "schema.ts missing",
-            });
-          }
-        }
-        if (hasQueries || hasActions || hasService) {
-          if (!hasPublicServer) {
-            violations.push({
-              file: `${relSliceDir}/public.server.ts`,
-              line: 1,
-              rule: `包含服务端能力的业务切片 [${sliceSubpath}] 必须提供 public.server.ts 作为纯服务端安全导出入口`,
-              code: "public.server.ts missing",
-            });
-          }
         }
       }
 
@@ -501,20 +502,22 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
         }
 
         // 严禁通过相对路径直接越权调用兄弟 Feature 的私有实现文件 (如 ../other/service, ../other/actions)
+        // 注意：同一切片聚合包内（如 org-management 下的子切片 employee 引用 department/public.server 或兄弟目录）跨 Feature 聚合检查
         const siblingPrivateImport =
-          /from\s+["']\.\.\/([a-zA-Z0-9_-]+)\/(queries|actions|service|.*-service)["']/;
+          /from\s+["']\.\.\/(?!public)(?!shared)([a-zA-Z0-9_-]+)\/(queries|actions|service|.*-service)["']/;
         const matchSibling = content.match(siblingPrivateImport);
         if (matchSibling) {
           violations.push({
             file: relCodePath,
             line: 1,
-            rule: `严禁通过相对路径直接调用兄弟切片私有实现 [${matchSibling[1]}]: 跨切片集成必须在 apps/* 装配层或通过契约与 shared 完成`,
+            rule: `严禁通过相对路径直接调用兄弟切片私有实现 [${matchSibling[1]}]: 跨切片集成必须通过 public.server 或共享契约`,
             code: matchSibling[0],
           });
         }
       }
     }
   }
+}
 
   return { violations };
 }

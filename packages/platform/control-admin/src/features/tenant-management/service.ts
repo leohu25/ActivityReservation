@@ -2,6 +2,7 @@ import { resolvePagination } from "@base/shared";
 import {
   PrismaControlDbRepository,
   TenantDatabaseStatus,
+  type ControlPrisma,
   type ControlPrismaClient,
 } from "@base/db-control";
 import {
@@ -150,7 +151,7 @@ export class TenantManagementService {
     const status = params?.status?.trim();
 
     // 构建过滤条件
-    const where: any = {};
+    const where: ControlPrisma.OrganizationWhereInput = {};
 
     if (kw) {
       where.OR = [
@@ -158,7 +159,9 @@ export class TenantManagementService {
         { slug: { contains: kw, mode: "insensitive" } },
         {
           tenantDatabase: {
-            databaseName: { contains: kw, mode: "insensitive" },
+            is: {
+              databaseName: { contains: kw, mode: "insensitive" },
+            },
           },
         },
       ];
@@ -166,8 +169,9 @@ export class TenantManagementService {
 
     if (status) {
       where.tenantDatabase = {
-        ...(where.tenantDatabase || {}),
-        status,
+        is: {
+          status: status as TenantDatabaseStatus,
+        },
       };
     }
 

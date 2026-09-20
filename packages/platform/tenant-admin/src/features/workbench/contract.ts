@@ -5,6 +5,7 @@ import {
 
 export const WorkbenchResource = "system:workbench";
 export const WorkbenchSubject = "Workbench";
+export type WorkbenchSubject = typeof WorkbenchSubject;
 
 export const WorkbenchAction = {
   ...StandardAction,

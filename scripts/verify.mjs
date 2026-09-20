@@ -96,6 +96,13 @@ const checks = [
 		args: [path.join(WORKSPACE_ROOT, "scripts/check/check-boundary.mjs")],
 	},
 	{
+		label: "框架防护",
+		cmd: nodePath,
+		args: [
+			path.join(WORKSPACE_ROOT, "scripts/check/check-framework-tamper.mjs"),
+		],
+	},
+	{
 		label: "红线扫描",
 		cmd: nodePath,
 		args: [path.join(WORKSPACE_ROOT, "scripts/check/check-redlines.mjs")],

@@ -14,9 +14,9 @@ import { getControlDbClient } from "../../../shared/server/tenant-context";
 import { getServerAuthRuntime } from "@base/auth";
 import { EmployeeSubject } from "./contract";
 import { EmployeeManagementService } from "./service";
-import { DepartmentService } from "../department/service";
-import { PositionService } from "../position/service";
-import { TenantRoleService } from "../../role-management/service";
+import { DepartmentService } from "../department/public.server";
+import { PositionService } from "../position/public.server";
+import { TenantRoleService } from "../../role-management/public.server";
 import type { DepartmentTreeNode } from "../department/types";
 import type { PositionItem } from "../position/types";
 import type {

@@ -34,6 +34,24 @@ const eslintConfig = defineConfig([
       "no-restricted-syntax": "off",
     },
   },
+  // 契约纯洁性：contract.ts 只能声明权限 Subject/Resource 与列表 URL 契约，严禁在 IDE 级别直接导入 Zod
+  {
+    files: ["**/contract.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "zod",
+              message:
+                "【契约纯洁性红线】contract.ts 严禁导入 zod 定义实体 Schema。业务 Schema 请统一放置在同级 schema.ts 中。",
+            },
+          ],
+        },
+      ],
+    },
+  },
   // 租户/角色切换等特殊上下文免除 reload 限制
   {
     files: ["**/OrgSwitcher.tsx", "**/RolePermissionManager.tsx"],

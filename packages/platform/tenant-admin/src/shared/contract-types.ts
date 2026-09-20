@@ -19,6 +19,7 @@ import type {
   AuditLogPermissionSubject,
 } from "../features/audit-log/contract";
 import type { TenantMenuItemSubject } from "../features/nav-management/contract";
+import type { WorkbenchSubject } from "../features/workbench/contract";
 
 /** 企业系统管理受控实体/能力 Subject 强类型联合 */
 export type TenantAdminSubjectType =
@@ -33,7 +34,8 @@ export type TenantAdminSubjectType =
   | AuditLogOperationSubject
   | AuditLogLoginSubject
   | AuditLogPermissionSubject
-  | TenantMenuItemSubject;
+  | TenantMenuItemSubject
+  | WorkbenchSubject;
 
 /** 企业系统管理受控操作 Action 强类型联合 */
 export type TenantAdminActionType = StandardAction;
