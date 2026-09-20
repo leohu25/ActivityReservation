@@ -13,6 +13,7 @@ export interface EmployeeItem {
   readonly managerEmployeeId: string | null;
   readonly managerName: string | null;
   readonly jobTitle: string | null;
+  readonly avatarUrl?: string | null;
   readonly roles: readonly string[];
   readonly status: string;
   readonly joinedAt: Date | null;
@@ -49,6 +50,7 @@ export interface DirectCreateEmployeeInput {
   readonly positionId?: string | null;
   readonly managerEmployeeId?: string | null;
   readonly jobTitle?: string | null;
+  readonly avatarUrl?: string | null;
   readonly initialRoleCodes?: readonly string[];
 }
 

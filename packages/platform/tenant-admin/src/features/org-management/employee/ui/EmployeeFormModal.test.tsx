@@ -68,6 +68,7 @@ test("EmployeeFormModal [新建模式]: 渲染新建员工标题、必填字段�
   assert.match(html, /员工姓名/);
   assert.match(html, /登录邮箱/);
   assert.match(html, /归属部门/);
+  assert.match(html, /员工证件头像/);
   assert.match(html, /初始登录密码/);
   assert.match(html, /立即创建并入职/);
   assert.match(html, /分配系统业务角色/);
@@ -91,6 +92,7 @@ test("EmployeeFormModal [编辑模式]: 回填员工档案并锁定账号邮箱"
   assert.match(html, /wang@company.com/);
   assert.match(html, /CR-0089/);
   assert.match(html, /归属部门/);
+  assert.match(html, /员工证件头像/);
   assert.match(html, /保存修改/);
 });
 

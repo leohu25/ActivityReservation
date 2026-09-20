@@ -16,6 +16,8 @@
     "./nav-management": "./src/features/nav-management/public.ts",
     "./nav-management/server": "./src/features/nav-management/public.server.ts",
     "./audit-log": "./src/features/audit-log/public.ts",
+    "./attachment": "./src/features/attachment/public.ts",
+    "./attachment/server": "./src/features/attachment/public.server.ts",
     "./shared": "./src/shared/public.ts",
     "./shared/server": "./src/shared/server/context.ts"
   },
@@ -36,6 +38,7 @@
     "@base/db-control": "workspace:*",
     "@base/db-tenant": "workspace:*",
     "@base/shared": "workspace:*",
+    "@base/storage": "workspace:*",
     "@base/ui": "workspace:*",
     "better-auth": "1.7.3",
     "lucide-react": "^1.41.0",

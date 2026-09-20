@@ -1,0 +1,26 @@
+{
+  "name": "@base/storage",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "tsx --test --test-reporter=../../../scripts/reporter/fail-only-reporter.mjs src/*.test.ts src/**/*.test.ts",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "tsx": "^4.20.6",
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.758.0",
+    "@aws-sdk/s3-request-presigner": "^3.758.0",
+    "zod": "^4.6.1"
+  }
+}

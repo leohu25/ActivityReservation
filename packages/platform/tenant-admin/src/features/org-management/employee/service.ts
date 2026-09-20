@@ -188,6 +188,7 @@ export class EmployeeManagementService {
         managerEmployeeId: p.managerEmployeeId,
         managerName: p.manager?.nameSnapshot ?? null,
         jobTitle: p.jobTitle,
+        avatarUrl: p.avatarUrl ?? null,
         roles,
         status: p.status,
         joinedAt: p.joinedAt,
@@ -344,6 +345,7 @@ export class EmployeeManagementService {
         managerEmployeeId: p.managerEmployeeId,
         managerName: p.manager?.nameSnapshot ?? null,
         jobTitle: p.jobTitle,
+        avatarUrl: p.avatarUrl ?? null,
         roles,
         status: p.status,
         joinedAt: p.joinedAt,
@@ -490,6 +492,7 @@ export class EmployeeManagementService {
         nameSnapshot: cleanName,
         emailSnapshot: cleanEmail,
         jobTitle: input.jobTitle?.trim() || null,
+        avatarUrl: input.avatarUrl?.trim() || null,
         status: "ACTIVE",
         joinedAt: new Date(),
       },
@@ -520,6 +523,7 @@ export class EmployeeManagementService {
       managerEmployeeId: profile.managerEmployeeId,
       managerName: profile.manager?.nameSnapshot ?? null,
       jobTitle: profile.jobTitle,
+      avatarUrl: profile.avatarUrl ?? null,
       roles: input.initialRoleCodes,
       status: profile.status,
       joinedAt: profile.joinedAt,
@@ -541,6 +545,7 @@ export class EmployeeManagementService {
       departmentId?: string | null;
       positionId?: string | null;
       jobTitle?: string | null;
+      avatarUrl?: string | null;
       roles?: readonly string[];
     },
   ): Promise<EmployeeItem> {
@@ -592,12 +597,20 @@ export class EmployeeManagementService {
       data: {
         nameSnapshot: cleanName,
         employeeNo: cleanEmployeeNo,
-        departmentId: targetDeptId,
-        positionId: targetPosId,
+        department: targetDeptId
+          ? { connect: { id: targetDeptId } }
+          : { disconnect: true },
+        position: targetPosId
+          ? { connect: { id: targetPosId } }
+          : { disconnect: true },
         jobTitle:
           input.jobTitle !== undefined
             ? input.jobTitle?.trim() || null
             : profile.jobTitle,
+        avatarUrl:
+          input.avatarUrl !== undefined
+            ? input.avatarUrl?.trim() || null
+            : profile.avatarUrl,
       },
       include: {
         department: { select: { id: true, name: true } },
@@ -661,6 +674,7 @@ export class EmployeeManagementService {
       managerEmployeeId: updatedProfile.managerEmployeeId,
       managerName: updatedProfile.manager?.nameSnapshot ?? null,
       jobTitle: updatedProfile.jobTitle,
+      avatarUrl: updatedProfile.avatarUrl ?? null,
       roles,
       status: updatedProfile.status,
       joinedAt: updatedProfile.joinedAt,
@@ -695,7 +709,11 @@ export class EmployeeManagementService {
 
     await tenantPrisma.employeeProfile.update({
       where: { id: input.employeeId },
-      data: { departmentId: input.targetDepartmentId },
+      data: {
+        department: input.targetDepartmentId
+          ? { connect: { id: input.targetDepartmentId } }
+          : { disconnect: true },
+      },
     });
 
     // 核心闭环：部门变更立即触发权限版本自增，使 CASL 下推数据范围立即重算
@@ -730,7 +748,11 @@ export class EmployeeManagementService {
 
     await tenantPrisma.employeeProfile.update({
       where: { id: input.employeeId },
-      data: { positionId: input.targetPositionId },
+      data: {
+        position: input.targetPositionId
+          ? { connect: { id: input.targetPositionId } }
+          : { disconnect: true },
+      },
     });
   }
 

@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Label } from "../ui/label";
 import { FormFieldGrid } from "./FormLayout";
 import { Combobox, type ComboboxOption } from "./Combobox";
+import { ImageUpload } from "../upload/ImageUpload";
 import { cn } from "../../lib/utils";
 
 export interface FormFieldOption {
@@ -64,6 +65,22 @@ export type FormFieldSchema =
 			readonly type: "radio";
 			readonly options: readonly FormFieldOption[];
 			readonly direction?: "row" | "column";
+	  })
+	| (BaseField & {
+			readonly type: "image";
+			readonly module?: string;
+			readonly accept?: string;
+			readonly maxSizeMB?: number;
+			readonly onUploadAction?: (params: {
+				module: string;
+				fileName: string;
+				fileSize: number;
+				mimeType: string;
+			}) => Promise<{
+				success: boolean;
+				data?: { uploadUrl: string; fileUrl: string };
+				error?: string;
+			}>;
 	  })
 	| (BaseField & {
 			readonly type: "custom";
@@ -267,6 +284,20 @@ function renderFieldControl(
 					</Label>
 				))}
 			</RadioGroup>
+		);
+	}
+
+	if (field.type === "image") {
+		return (
+			<ImageUpload
+				value={value ? String(value) : null}
+				onChange={setValue}
+				disabled={field.disabled}
+				module={field.module || "common"}
+				accept={field.accept}
+				maxSizeMB={field.maxSizeMB}
+				onUploadAction={field.onUploadAction}
+			/>
 		);
 	}
 

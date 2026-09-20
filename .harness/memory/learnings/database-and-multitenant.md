@@ -31,3 +31,38 @@
   1. **基线版本漂移识别**：先比对代码中 `baseline.version` 与本地数据库 `platform_migration` 账本中的 `version`；若 SQL 内容与 SHA256 Checksum 一致，仅版本标识不同，可安全执行 SQL 对齐；
   2. **Turbopack 编译脏缓存清理**：在修改底层 DB 协议或重构依赖后，清理 `.next` 缓存目录（`rm -rf apps/<app>/.next`）；
   3. **智能体操作铁律（必须事先跟用户确认）**：严禁静默修改数据库或静默清理缓存；诊断出该类问题时，必须向用户清晰展示诊断依据、即将执行的 SQL/命令及影响范围，待用户明确确认后方可执行。
+
+---
+
+## 4. Prisma 逻辑外键与关系更新陷阱 (`relationMode = "prisma"` 与 `XOR` 推导)
+
+- **痛点与现象**：
+  在全仓强制 `relationMode = "prisma"` 架构下，底层 PostgreSQL 数据库完全是逻辑外键（无任何物理外键约束），仅包含普通字段 `department_id varchar` 与索引。开发人员习惯性在更新操作时直接传递外键标量：
+  ```ts
+  await prisma.employeeProfile.update({
+    where: { id },
+    data: { departmentId: targetDeptId },
+  });
+  ```
+  在运行时却触发 Prisma 参数校验器报错拦截：
+  `Unknown argument departmentId. Did you mean department? Available options are: department, position...`
+- **深层技术根因**：
+  1. 虽然数据库底层无物理约束，但 Prisma Schema 中为了支持应用层联查声明了 `@relation` 辅助字段；
+  2. Prisma 编译器为带关系的模型生成了互斥的入参签名：`data: XOR<UpdateInput, UncheckedUpdateInput>`；
+  3. 当 `data` 中传入多个字段时，Prisma 查询编译器默认优先以 `UpdateInput`（关系驱动型）作为候选校验白名单，在该白名单中只允许关系名（如 `department`），标量外键 `departmentId` 被判定为未知参数。
+- **最佳实践与铁律**：
+  - **凡是在 Schema 中声明了 `@relation` 的关联字段，服务层更新时一律采用 Prisma 官方嵌套关系语法**：
+    ```ts
+    data: {
+      nameSnapshot: cleanName,
+      department: targetDeptId
+        ? { connect: { id: targetDeptId } }
+        : { disconnect: true },
+      position: targetPosId
+        ? { connect: { id: targetPosId } }
+        : { disconnect: true },
+    }
+    ```
+  - **落盘透明性**：由于配置了 `relationMode = "prisma"`，数据库最终执行的 SQL 依然仅仅是普通的字段更新 `SET "department_id" = $1`，不会触发物理约束与死锁；
+  - **强类型自检**：必须从 `@base/db-tenant` 导入 `TenantPrisma`，入参和返回 100% 严控强类型，严禁降解为 `any`。
+

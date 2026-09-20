@@ -14,6 +14,7 @@ export * from "./components/ui";
 export * from "./components/data-table";
 export * from "./components/auth";
 export * from "./components/form";
+export * from "./components/upload/ImageUpload";
 export {
 	Combobox,
 	type ComboboxOption,

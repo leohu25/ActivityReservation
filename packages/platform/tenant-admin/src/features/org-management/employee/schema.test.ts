@@ -15,11 +15,13 @@ test("directCreateEmployeeSchema: 合法输入通过校验", () => {
     employeeNo: "EMP-001",
     departmentId: "dept-1",
     positionId: "pos-1",
+    avatarUrl: "http://127.0.0.1:9000/bucket/avatar.jpg",
     initialRoleCodes: ["member", "buyer"],
   };
   const parsed = parseDirectCreateEmployeeInput(input);
   assert.equal(parsed.name, "李四");
   assert.equal(parsed.email, "lisi@company.com");
+  assert.equal(parsed.avatarUrl, "http://127.0.0.1:9000/bucket/avatar.jpg");
   assert.equal(parsed.password, "123456");
   assert.equal(parsed.initialRoleCodes.length, 2);
 });

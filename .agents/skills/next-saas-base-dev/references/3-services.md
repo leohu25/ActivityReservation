@@ -269,6 +269,53 @@ export const getXxxPageOptionsQuery = cache(
 
 ---
 
+## 5. 逻辑外键与关系更新规范 (Prisma Nested Connect/Disconnect)
+
+### 核心架构原则与防坑红线
+
+本项目全仓通过门禁强制配置 `relationMode = "prisma"`（底层 PostgreSQL 消除物理外键与跨表死锁，仅保留普通索引）。
+在 Prisma Schema 中，为了让应用层能方便地使用 `include: { department: true }` 关联读取，通常会声明应用层逻辑关系辅助字段：
+
+```prisma
+departmentId  String?      @map("department_id")
+department    Department?  @relation(fields: [departmentId], references: [id])
+```
+
+### 强类型更新标准范式 (SSoT)
+
+**【铁律】凡是在 Schema 中声明了 `@relation` 的逻辑关联字段，在 Service 执行 `update` 时，必须统一使用 Prisma 强类型嵌套关联语法，严禁直接向 `update` 传递裸外键标量！**
+
+```ts
+// ❌ 错误示范：极易触发 Prisma XOR 推导冲突，导致运行时拦截抛出 Unknown argument
+await client.employeeProfile.update({
+  where: { id: employeeId },
+  data: {
+    departmentId: targetDeptId, // 💥 触发：Unknown argument departmentId. Did you mean department?
+    positionId: targetPosId,
+  },
+});
+
+// ✅ 官方标准示范：100% 命中 UpdateInput 强类型契约，平滑落盘
+await client.employeeProfile.update({
+  where: { id: employeeId },
+  data: {
+    nameSnapshot: cleanName,
+    // 存在 targetDeptId 则 connect 关联；为空或 null 则 disconnect 解除
+    department: targetDeptId
+      ? { connect: { id: targetDeptId } }
+      : { disconnect: true },
+    position: targetPosId
+      ? { connect: { id: targetPosId } }
+      : { disconnect: true },
+  },
+});
+```
+
+- **底层执行保证**：由于底层配置了 `relationMode = "prisma"`，数据库最终执行的依然是普通字段更新 SQL（`UPDATE "employee_profile" SET "department_id" = $1 ...`），不会触碰任何数据库物理约束；
+- **全链路强类型**：必须从 `@base/db-tenant` 引入 `TenantPrisma`，严禁在 Service 或单测中使用 `any`。
+
+---
+
 ## 查询层约定（已固化通用标准）
 
 1. `queries.ts` 首行 `import "server-only"`。

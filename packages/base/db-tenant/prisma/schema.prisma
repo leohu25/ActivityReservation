@@ -87,6 +87,8 @@ model EmployeeProfile {
   emailSnapshot     String           @default("") @map("email_snapshot")
   /// 职务头衔/对外称谓
   jobTitle          String?          @map("job_title")
+  /// 员工头像/工牌照 URL
+  avatarUrl         String?          @map("avatar_url")
   /// 员工在职状态: ACTIVE(在职) / TERMINATED(离职) / SUSPENDED(停职)
   status            String           @default("ACTIVE")
   /// 入职报到时间
@@ -184,4 +186,47 @@ model TenantMenuItem {
   @@index([parentId, sortOrder])
   @@index([isDeleted])
   @@map("tenant_menu_item")
+}
+
+/// 通用业务附件元数据模型 (Tenant DB 物理隔离，严格对齐 ADR-009 实体审计基线)
+model Attachment {
+  /// 附件主键ID
+  id          String    @id @default(cuid()) @db.VarChar(36)
+  /// 归属业务模块 (如 employee, customer, item 等)
+  module      String    @db.VarChar(50)
+  /// 关联业务实体主键ID (如员工档案ID、客户ID)
+  targetId    String?   @map("target_id") @db.VarChar(64)
+  /// 业务字段标识 (如 avatar, id_card, attachment 等)
+  fieldKey    String?   @map("field_key") @db.VarChar(50)
+  /// 原始文件名
+  fileName    String    @map("file_name") @db.VarChar(255)
+  /// 对象存储内部 Key
+  storageKey  String    @map("storage_key") @db.VarChar(500)
+  /// 访问 URL
+  fileUrl     String    @map("file_url") @db.VarChar(1000)
+  /// 文件大小 (字节)
+  fileSize    BigInt    @map("file_size")
+  /// MIME 类型
+  mimeType    String    @map("mime_type") @db.VarChar(100)
+
+  /// 创建人 ID (必填，审计基线)
+  createdById String    @default("system") @map("created_by_id") @db.VarChar(64)
+  /// 归属部门 ID (选填，支持部门数据范围权限过滤)
+  deptId      String?   @map("dept_id") @db.VarChar(64)
+  /// 更新人 ID (选填)
+  updatedById String?   @map("updated_by_id") @db.VarChar(64)
+  /// 创建时间 (必填)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  /// 更新时间 (必填)
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  /// 软删除标记 (必填)
+  isDeleted   Boolean   @default(false) @map("is_deleted")
+  /// 软删除时间 (选填)
+  deletedAt   DateTime? @map("deleted_at")
+  /// 软删除人 ID (选填)
+  deletedById String?   @map("deleted_by_id") @db.VarChar(64)
+
+  @@index([targetId, module])
+  @@index([createdById])
+  @@map("attachment")
 }

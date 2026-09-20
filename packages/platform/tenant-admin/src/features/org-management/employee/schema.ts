@@ -35,6 +35,11 @@ export const directCreateEmployeeSchema = z.object({
     .max(50, "职务职称最多50个字符")
     .optional()
     .default(""),
+  avatarUrl: z
+    .string()
+    .optional()
+    .nullable()
+    .default(null),
   initialRoleCodes: z
     .array(z.string())
     .min(1, "请至少选择一个初始系统角色"),
@@ -75,6 +80,11 @@ export const updateEmployeeSchema = z.object({
     .max(50, "职务职称最多50个字符")
     .optional()
     .default(""),
+  avatarUrl: z
+    .string()
+    .optional()
+    .nullable()
+    .default(null),
   roles: z
     .array(z.string())
     .min(1, "员工必须至少保留一个业务角色"),

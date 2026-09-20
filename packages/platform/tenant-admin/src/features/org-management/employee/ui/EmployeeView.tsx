@@ -126,9 +126,17 @@ export function EmployeeView({
         header: "员工信息",
         cell: (emp: EmployeeItem) => (
           <div className="flex items-center gap-2.5">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-              {emp.name.slice(0, 1)}
-            </div>
+            {emp.avatarUrl ? (
+              <img
+                src={emp.avatarUrl}
+                alt={emp.name}
+                className="size-8 shrink-0 rounded-full object-cover border border-border/80"
+              />
+            ) : (
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                {emp.name.slice(0, 1)}
+              </div>
+            )}
             <div className="min-w-0">
               <div className="font-bold text-foreground truncate">{emp.name}</div>
               <div className="text-[11px] text-muted-foreground font-mono truncate">

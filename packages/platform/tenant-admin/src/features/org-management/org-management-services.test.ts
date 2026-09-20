@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import type { ControlPrismaClient } from "@base/db-control";
-import type { TenantPrismaClient } from "@base/db-tenant";
+import type { TenantPrismaClient, TenantPrisma } from "@base/db-tenant";
 import { DepartmentService } from "./department/service";
 import { PositionService } from "./position/service";
 import { EmployeeManagementService } from "./employee/service";
@@ -41,6 +41,7 @@ interface FakeEmployeeProfile {
   nameSnapshot: string;
   emailSnapshot: string;
   jobTitle: string | null;
+  avatarUrl?: string | null;
   status: string;
   joinedAt: Date | null;
   terminatedAt: Date | null;
@@ -668,14 +669,24 @@ test("EmployeeManagementService 直接录入建号、调岗调部门与版本号
           );
         return null;
       },
-      async findMany({ where }: { where?: any }) {
+      async findMany({
+        where,
+      }: {
+        where?: TenantPrisma.EmployeeProfileWhereInput;
+      }) {
         return profiles
           .filter((p) => {
             if (where?.departmentId) {
-              if (where.departmentId.in) {
-                if (!where.departmentId.in.includes(p.departmentId))
+              const deptFilter = where.departmentId;
+              if (
+                typeof deptFilter === "object" &&
+                deptFilter !== null &&
+                "in" in deptFilter &&
+                Array.isArray(deptFilter.in)
+              ) {
+                if (!p.departmentId || !deptFilter.in.includes(p.departmentId))
                   return false;
-              } else if (p.departmentId !== where.departmentId) {
+              } else if (p.departmentId !== deptFilter) {
                 return false;
               }
             }
@@ -714,12 +725,29 @@ test("EmployeeManagementService 直接录入建号、调岗调部门与版本号
         data,
       }: {
         where: { id: string };
-        data: Partial<FakeEmployeeProfile>;
+        data:
+          | TenantPrisma.EmployeeProfileUpdateInput
+          | TenantPrisma.EmployeeProfileUncheckedUpdateInput;
       }) {
         const p = profiles.find((item) => item.id === where.id);
         if (!p) throw new Error("Profile not found");
         Object.assign(p, data);
-        return p;
+        if ("department" in data && data.department?.connect?.id) {
+          p.departmentId = data.department.connect.id;
+        } else if ("department" in data && data.department?.disconnect) {
+          p.departmentId = null;
+        }
+        if ("position" in data && data.position?.connect?.id) {
+          p.positionId = data.position.connect.id;
+        } else if ("position" in data && data.position?.disconnect) {
+          p.positionId = null;
+        }
+        return {
+          ...p,
+          department: departments.find((d) => d.id === p.departmentId),
+          position: positions.find((pos) => pos.id === p.positionId),
+          manager: profiles.find((m) => m.id === p.managerEmployeeId),
+        };
       },
     },
   } as unknown as TenantPrismaClient;

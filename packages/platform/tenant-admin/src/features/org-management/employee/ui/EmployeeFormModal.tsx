@@ -11,6 +11,7 @@ import {
   directCreateEmployeeAction,
   updateEmployeeAction,
 } from "../actions";
+import { getUploadPresignedUrlAction } from "../../../attachment/actions";
 import {
   directCreateEmployeeSchema,
   updateEmployeeSchema,
@@ -75,6 +76,7 @@ export function EmployeeFormModal({
         positionId: "",
         managerEmployeeId: null,
         jobTitle: "",
+        avatarUrl: "",
         initialRoleCodes: ["member"],
         password: "123456",
       };
@@ -86,6 +88,7 @@ export function EmployeeFormModal({
       departmentId: record?.departmentId ?? "",
       positionId: record?.positionId ?? "",
       jobTitle: record?.jobTitle ?? "",
+      avatarUrl: record?.avatarUrl ?? "",
       roles: record?.roles ? [...record.roles] : [],
     };
   }, [isCreate, record, defaultDeptId]);
@@ -150,6 +153,15 @@ export function EmployeeFormModal({
           label: `${p.name} (${p.code})`,
         })),
       },
+      {
+        name: "avatarUrl",
+        label: "员工证件头像",
+        type: "image",
+        module: "employee",
+        disabled: isView,
+        onUploadAction: getUploadPresignedUrlAction,
+        span: 2,
+      },
     ];
 
     if (isCreate) {
@@ -200,6 +212,7 @@ export function EmployeeFormModal({
         positionId: values.positionId ? String(values.positionId) : null,
         managerEmployeeId: null,
         jobTitle: String(values.jobTitle ?? "").trim(),
+        avatarUrl: values.avatarUrl ? String(values.avatarUrl).trim() : null,
         initialRoleCodes: selectedRoles,
         password: String(values.password ?? "").trim() || "123456",
       };
@@ -217,6 +230,7 @@ export function EmployeeFormModal({
         departmentId: String(values.departmentId ?? ""),
         positionId: values.positionId ? String(values.positionId) : null,
         jobTitle: String(values.jobTitle ?? "").trim(),
+        avatarUrl: values.avatarUrl ? String(values.avatarUrl).trim() : null,
         roles: selectedRoles,
       };
 

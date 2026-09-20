@@ -21,6 +21,7 @@
       "@base/authorization": ["packages/base/authorization/src/index.ts"],
       "@base/db-control": ["packages/base/db-control/src/index.ts"],
       "@base/db-tenant": ["packages/base/db-tenant/src/index.ts"],
+      "@base/storage": ["packages/base/storage/src/index.ts"],
       "@base/ui": ["packages/base/ui/src/index.ts"],
       "@base/ui/*": ["packages/base/ui/src/*"],
       "@biz/shared": ["packages/biz-shared/src/index.ts"],
@@ -68,6 +69,12 @@
       ],
       "@platform/tenant-admin/audit-log": [
         "packages/platform/tenant-admin/src/features/audit-log/public.ts"
+      ],
+      "@platform/tenant-admin/attachment": [
+        "packages/platform/tenant-admin/src/features/attachment/public.ts"
+      ],
+      "@platform/tenant-admin/attachment/server": [
+        "packages/platform/tenant-admin/src/features/attachment/public.server.ts"
       ],
       "@platform/tenant-admin/shared": [
         "packages/platform/tenant-admin/src/shared/public.ts"
