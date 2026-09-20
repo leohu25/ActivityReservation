@@ -126,6 +126,7 @@ tooling/db-migrate                  12-Factor 迁移引擎
 | 路由 / page / Manifest         | `references/6-tenant-routing.md`                                      |
 | CASL Provider                  | `references/7-casl-ability-provider.md`                               |
 | 基座包                         | `references/8-base-infrastructure.md`                                 |
+| **对象存储与多态附件**         | `references/10-storage-and-attachments.md`                            |
 | 目标架构规格                   | `docs/architecture/refactoring-architecture-and-official-patterns.md` |
 | 系统全景                       | `docs/ARCHITECTURE.md`                                                |
 

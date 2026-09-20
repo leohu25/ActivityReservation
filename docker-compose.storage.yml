@@ -1,7 +1,7 @@
 services:
   minio:
     image: minio/minio:latest
-    container_name: erp-storage-minio
+    container_name: base-storage-minio
     restart: unless-stopped
     ports:
       - "9000:9000"
@@ -11,7 +11,7 @@ services:
       MINIO_ROOT_PASSWORD: minioadmin
     command: server /data --console-address ":9001"
     volumes:
-      - minio_data:/data
+      - base_storage_minio_data:/data
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 5s
@@ -20,7 +20,7 @@ services:
 
   createbuckets:
     image: minio/mc:latest
-    container_name: erp-storage-init
+    container_name: base-storage-init
     depends_on:
       minio:
         condition: service_healthy
@@ -33,4 +33,5 @@ services:
       "
 
 volumes:
-  minio_data:
+  base_storage_minio_data:
+    name: base_storage_minio_data

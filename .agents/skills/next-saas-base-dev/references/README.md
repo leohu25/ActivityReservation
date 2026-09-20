@@ -13,8 +13,9 @@
 | `5-ui-components.md`          | `DataTable` chrome、`useListSearch`、`FormModal` |
 | `6-tenant-routing.md`         | `createResourcePage`、manifest、单测             |
 | `7-casl-ability-provider.md`  | AbilityProvider / subject                        |
-| `8-base-infrastructure.md`    | `@base/*` 职责与依赖铁律                         |
-| `9-crud-resource-paradigm.md` | **标准资源 CRUD 最佳范式 (8 步 SOP)**            |
+| `8-base-infrastructure.md`     | `@base/*` 职责与依赖铁律                         |
+| `9-crud-resource-paradigm.md`  | **标准资源 CRUD 最佳范式 (8 步 SOP)**            |
+| `10-storage-and-attachments.md`| **对象存储、图片上传与多态附件标准范式**         |
 
 ## 现行约定速查
 
