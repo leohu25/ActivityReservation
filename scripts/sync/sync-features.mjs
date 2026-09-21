@@ -30,8 +30,8 @@ const platformTenantAdminDir = path.resolve(
   rootDir,
   "packages/platform/tenant-admin",
 );
-const targetDir = path.resolve(rootDir, "apps/tenant/src/kernel");
-const targetFile = path.resolve(targetDir, "registry.generated.ts");
+const targetDir = path.resolve(rootDir, "packages/runtime/tenant/src");
+const targetFile = path.resolve(targetDir, "registry.ts");
 
 function discoverFeatureManifests() {
   const discovered = [];

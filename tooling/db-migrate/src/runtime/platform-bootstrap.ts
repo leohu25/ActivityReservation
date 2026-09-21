@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { generateUuidV7 } from "@base/shared";
 import { hashPassword } from "better-auth/crypto";
 import type pg from "pg";
 import type { PlatformBootstrapAdminInput } from "../core/types";
@@ -20,7 +20,7 @@ export async function seedPlatformBootstrapAdmin(
     'SELECT "id" FROM "user" WHERE "email" = $1 LIMIT 1',
     [email],
   );
-  const userId = existingUser.rows[0]?.id ?? `usr_${randomUUID()}`;
+  const userId = existingUser.rows[0]?.id ?? generateUuidV7();
   if (existingUser.rows.length === 0) {
     await client.query(
       `INSERT INTO "user" (
@@ -41,8 +41,8 @@ export async function seedPlatformBootstrapAdmin(
       `INSERT INTO "account" (
         "id", "account_id", "provider_id", "user_id", "password",
         "created_at", "updated_at"
-      ) VALUES ($1, $2, 'credential', $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-      [`acc_${randomUUID()}`, userId, passwordHash],
+      ) VALUES ($1, $2, 'credential', $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      [generateUuidV7(), userId, userId, passwordHash],
     );
   }
 }

@@ -10,8 +10,8 @@ datasource db {
 
 /// 租户业务基础档案数据字典项表 (租户全域共享配置字典，通过 status 启停用)
 model TenantDictItem {
-  /// 字典项主键ID (UUID/CUID)
-  id          String   @id @default(cuid()) @db.VarChar(60)
+  /// 字典项主键ID (UUIDv7)
+  id          String   @id @default(uuid(7)) @db.Uuid
   /// 字典类型编码 (as const 枚举分类，例如 CUSTOMER_LEVEL)
   type        String   @map("type") @db.VarChar(50)
   /// 字典项业务编码 (同一 type 下唯一)

@@ -9,7 +9,6 @@ import { diffSchema } from "./generation/diff";
 import {
 	generateBaseline,
 	generateMigration,
-	generateRuntimeCatalog,
 } from "./generation/generate";
 import { getMigrationCatalog } from "./runtime/catalog";
 import {
@@ -127,7 +126,6 @@ async function main(): Promise<void> {
 			allowDestructive: Boolean(options["allow-destructive"]),
 			approval,
 		});
-		generateRuntimeCatalog(workspaceRoot);
 		console.log(
 			`Generated ${scope} migration ${result.version}_${result.name}`,
 		);
@@ -155,11 +153,6 @@ async function main(): Promise<void> {
 				`\x1b[32m✔ [${scope}] 当前 Schema 已是最新状态，所需 SQL 为空。\x1b[0m`,
 			);
 		}
-		return;
-	}
-	if (command === "catalog") {
-		generateRuntimeCatalog(workspaceRoot);
-		console.log("Generated runtime migration catalog");
 		return;
 	}
 	if (command === "check") {

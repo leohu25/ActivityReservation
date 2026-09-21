@@ -54,8 +54,8 @@ graph TD
 
 - **类型**：Root Task（前缀 `//#` 表示只在根目录执行一次，不拆分到各个子 package）。
 - **职责**：
-  1. 调用 `scripts/sync/sync-features.mjs`：全自动扫描所有垂直业务切片 (`packages/features/*`) 的 `src/manifest.ts`，动态生成 `apps/tenant/src/kernel/registry.generated.ts`（包含导航树、Manifest 注册表与 CASL 权限目录）；
-  2. 调用 `scripts/sync/sync-tenant-schema.mjs`：将所有业务切片的 `prisma/schema.prisma` 与底座 Schema 自动聚合为 `packages/db-tenant/prisma/schema.generated.prisma`。
+  1. 调用 `scripts/sync/sync-features.mjs`：全自动扫描所有垂直业务切片 (`packages/domains/*`) 的 `src/manifest.ts`，动态生成 `packages/runtime/tenant/src/registry.ts`（包含导航树、Manifest 注册表与 CASL 权限目录）；
+  2. 调用 `scripts/sync/sync-tenant-schema.mjs`：将所有业务切片的 `prisma/schema.prisma` 与底座 Schema 自动聚合为 `packages/runtime/db/prisma/schema.prisma`。
 - **监听输入 (`inputs`)**：
   - `packages/features/**/src/manifest.ts`
   - `packages/features/**/prisma/schema.prisma`
@@ -63,8 +63,8 @@ graph TD
   - `packages/db-tenant/prisma/schema.prisma`
   - `scripts/sync/**`
 - **缓存产物 (`outputs`)**：
-  - `apps/tenant/src/kernel/registry.generated.ts`
-  - `packages/db-tenant/prisma/schema.generated.prisma`
+  - `packages/runtime/tenant/src/registry.ts`
+  - `packages/runtime/db/prisma/schema.prisma`
 - **增量缓存效果**：当上述输入文件未发生变动时，Turborepo 会在 **20ms** 内命中缓存，直接跳过生成过程。
 
 ---

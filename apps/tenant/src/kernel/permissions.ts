@@ -6,7 +6,7 @@ import { toPlainData } from "@base/shared";
 import {
   globalTenantCatalog,
   type GlobalTenantSubject,
-} from "./registry.generated";
+} from "@runtime/tenant";
 
 export type { GlobalTenantSubject };
 

@@ -10,12 +10,12 @@ datasource db {
 
 /// 客户分类表：支持多级层级树结构（如餐饮连锁、企事业单位、生鲜超市）
 model CustomerCategory {
-  /// 分类主键ID (UUID/CUID)
-  id          String   @id @default(cuid()) @db.VarChar(36)
+  /// 分类主键ID (UUIDv7)
+  id          String   @id @default(uuid(7)) @db.Uuid
   /// 分类名称（如：机关食堂、品牌连锁）
   name        String   @map("name") @db.VarChar(50)
   /// 父级分类主键ID（支持多级分类树，根级为空）
-  parentId    String?  @map("parent_id") @db.VarChar(36)
+  parentId    String?  @map("parent_id") @db.Uuid
   /// 分类业务描述
   description String?  @db.VarChar(200)
   /// 状态：ACTIVE(启用) / DISABLED(停用)
@@ -39,12 +39,12 @@ model CustomerCategory {
 
 /// 客户标签字典表：用于筛选、统计、报价与配送策略
 model CustomerTag {
-  /// 标签主键ID (UUID/CUID)
-  id          String   @id @default(cuid()) @db.VarChar(36)
+  /// 标签主键ID (UUIDv7)
+  id          String   @id @default(uuid(7)) @db.Uuid
   /// 标签名称（如：早间配送、VIP客户、学校食堂）
   name        String   @map("name") @db.VarChar(50)
-  /// 业务标签类型ID：存储基础档案 tenant_dict_item 的主键 id (老表追加字段设为可选，应用层强制必填)
-  tagTypeId   String?  @map("tag_type_id") @db.VarChar(60)
+  /// 业务标签类型ID：关联基础档案 tenant_dict_item 的主键 id
+  tagTypeId   String?  @map("tag_type_id") @db.Uuid
   /// 标签业务说明
   description String?  @db.VarChar(200)
   /// 状态：ACTIVE(启用) / DISABLED(停用)
@@ -64,12 +64,12 @@ model CustomerTag {
 
 /// 客户档案主表：维护企业级客户的基本信息与结算主数据
 model Customer {
-  /// 客户主键ID (UUID/CUID)
-  id               String   @id @default(cuid()) @db.VarChar(36)
+  /// 客户主键ID (UUIDv7)
+  id               String   @id @default(uuid(7)) @db.Uuid
   /// 客户企业名称
   name             String   @map("name") @db.VarChar(100)
   /// 所属客户分类主键ID
-  categoryId       String   @map("category_id") @db.VarChar(36)
+  categoryId       String   @map("category_id") @db.Uuid
   /// 核心联系人姓名
   contactPerson    String   @map("contact_person") @db.VarChar(50)
   /// 联系电话
@@ -129,9 +129,9 @@ model Customer {
 /// 客户与标签多对多关联表
 model CustomerTagAssignment {
   /// 客户主键ID
-  customerId String   @map("customer_id") @db.VarChar(36)
+  customerId String   @map("customer_id") @db.Uuid
   /// 标签主键ID
-  tagId      String   @map("tag_id") @db.VarChar(36)
+  tagId      String   @map("tag_id") @db.Uuid
   /// 关联打标时间
   createdAt  DateTime @default(now()) @map("created_at")
 
@@ -144,10 +144,10 @@ model CustomerTagAssignment {
 
 /// 门店档案主表：客户下属的履约单位（订单、配送、签收、对账最小主体）
 model CustomerStore {
-  /// 门店主键ID (UUID/CUID)
-  id              String   @id @default(cuid()) @db.VarChar(36)
+  /// 门店主键ID (UUIDv7)
+  id              String   @id @default(uuid(7)) @db.Uuid
   /// 所属客户主键ID（外键关联 Customer.id）
-  customerId      String   @map("customer_id") @db.VarChar(36)
+  customerId      String   @map("customer_id") @db.Uuid
   /// 门店详细名称（如：海淀中关村一店）
   name            String   @map("name") @db.VarChar(100)
   /// 门店配送收货详细地址
@@ -203,14 +203,14 @@ model CustomerStore {
 
 /// 门店报价单主表：按客户+门店+区域维护的商品定价单头
 model CustomerQuote {
-  /// 报价单主键ID (UUID/CUID)
-  id              String    @id @default(cuid()) @db.VarChar(36)
+  /// 报价单主键ID (UUIDv7)
+  id              String    @id @default(uuid(7)) @db.Uuid
   /// 报价单业务单号（对外沟通展示与防重，格式 QUOT-YYYYMMDD-XXXX）
   quoteNo         String    @unique @map("quote_no") @db.VarChar(30)
   /// 适用客户主键ID（与 storeId、regionCode 构成维度优先级）
-  customerId      String?   @map("customer_id") @db.VarChar(36)
+  customerId      String?   @map("customer_id") @db.Uuid
   /// 适用门店主键ID（为空则适用于该客户下属所有门店）
-  storeId         String?   @map("store_id") @db.VarChar(36)
+  storeId         String?   @map("store_id") @db.Uuid
   /// 适用区域编码（客户与门店均为空时，作为该区域通用报价单）
   regionCode      String?   @map("region_code") @db.VarChar(50)
   /// 报价单拟定日期
@@ -265,10 +265,10 @@ model CustomerQuote {
 
 /// 门店报价单明细表：具体商品的含税与不含税单价及起订限制
 model CustomerQuoteItem {
-  /// 报价明细行主键ID (UUID/CUID)
-  id                String   @id @default(cuid()) @db.VarChar(36)
+  /// 报价明细行主键ID (UUIDv7)
+  id                String   @id @default(uuid(7)) @db.Uuid
   /// 所属报价单主表ID
-  quoteId           String   @map("quote_id") @db.VarChar(36)
+  quoteId           String   @map("quote_id") @db.Uuid
   /// 商品档案唯一编码（关联物料商品中心）
   itemCode          String   @map("item_code") @db.VarChar(50)
   /// 商品名称（如：特级上海青(净菜)）

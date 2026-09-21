@@ -7,7 +7,7 @@ import {
   TenantDatabaseSeeder,
   createDefaultPgSqlExecutorFactory,
 } from "@base/db-tenant";
-import { DatabaseMigrationService } from "@base/db-migrate";
+import { DatabaseMigrationService } from "@tool/db-migrate";
 import { assertControlAdmin } from "../../shared/server/control-guard";
 import type { MigrationDashboardData, TenantFleetItem } from "./types";
 

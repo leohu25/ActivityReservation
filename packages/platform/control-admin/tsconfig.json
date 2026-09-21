@@ -4,11 +4,7 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@/components/ui/*": ["../../base/ui/src/components/ui/*"],
-      "@/hooks/*": ["../../base/ui/src/hooks/*"],
-      "@base/ui": ["../../base/ui/src/index.ts"],
-      "@base/ui/*": ["../../base/ui/src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"]

@@ -26,8 +26,6 @@
       "@base/ui/*": ["packages/base/ui/src/*"],
       "@biz/shared": ["packages/biz-shared/src/index.ts"],
       "@biz/shared/*": ["packages/biz-shared/src/*"],
-      "@/components/ui/*": ["packages/base/ui/src/components/ui/*"],
-      "@/hooks/*": ["packages/base/ui/src/hooks/*"],
       "@platform/control-admin": [
         "packages/platform/control-admin/src/index.ts"
       ],
@@ -98,7 +96,10 @@
         "packages/domains/order-center/src/index.ts"
       ],
       "@base/feature-order-center/*": ["packages/domains/order-center/src/*"],
-      "@base/db-migrate": ["tooling/db-migrate/src/index.ts"]
+      "@tool/db-migrate": ["tooling/db-migrate/src/index.ts"],
+      "@tool/db-migrate/*": ["tooling/db-migrate/src/*"],
+      "@runtime/db": ["packages/runtime/db/index.ts"],
+      "@runtime/tenant": ["packages/runtime/tenant/src/index.ts"]
     }
   },
   "exclude": ["node_modules"]

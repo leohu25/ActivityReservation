@@ -57,7 +57,4 @@ export function checkMigrationArtifacts(workspaceRootInput?: string): void {
   const workspaceRoot = findWorkspaceRoot(workspaceRootInput);
   checkScope(workspaceRoot, "platform");
   checkScope(workspaceRoot, "tenant");
-  if (!fs.existsSync(getRuntimeCatalogPath(workspaceRoot))) {
-    throw new Error("Generated runtime migration catalog is missing");
-  }
 }

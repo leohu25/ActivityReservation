@@ -1,8 +1,8 @@
 import { hashPassword } from "better-auth/crypto";
+import { generateUuidV7, resolvePagination } from "@base/shared";
 import type { ControlPrismaClient } from "@base/db-control";
 import type { TenantPrismaClient, TenantPrisma } from "@base/db-tenant";
 import type { PrismaQueryCondition } from "@base/authorization";
-import { resolvePagination } from "@base/shared";
 import type {
   DirectCreateEmployeeInput,
   EmployeeItem,
@@ -445,10 +445,9 @@ export class EmployeeManagementService {
       }
     } else {
       // 创建新 User 与初始凭证 Account
-      const newUserId = `usr_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
       targetUser = await controlPrisma.user.create({
         data: {
-          id: newUserId,
+          id: generateUuidV7(),
           email: cleanEmail,
           name: cleanName,
           emailVerified: true,
@@ -458,7 +457,7 @@ export class EmployeeManagementService {
       const hashedPassword = await hashPassword(plainPassword);
       await controlPrisma.account.create({
         data: {
-          id: `acc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          id: generateUuidV7(),
           accountId: targetUser.id,
           providerId: "credential",
           userId: targetUser.id,
@@ -468,7 +467,7 @@ export class EmployeeManagementService {
     }
 
     // 4. 在 Control DB 中创建当前租户的 Member 记录
-    const memberId = `mem_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const memberId = generateUuidV7();
     const roleString = input.initialRoleCodes.join(",");
 
     const createdMember = await controlPrisma.member.create({

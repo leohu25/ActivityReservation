@@ -130,10 +130,8 @@ export class DepartmentService {
       }
     }
 
-    const newId = `dept_${cleanCode.toLowerCase().replace(/[^a-z0-9_]/g, "_")}_${Date.now()}`;
     const created = await tenantPrisma.department.create({
       data: {
-        id: newId,
         name: cleanName,
         code: cleanCode,
         parentId: input.parentId ?? null,

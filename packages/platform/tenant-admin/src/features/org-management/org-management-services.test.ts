@@ -166,6 +166,7 @@ test("DepartmentService 部门树形层级加载、防环调换与 Fail-Closed �
       async create({ data }: { data: FakeDepartment }) {
         const item = {
           ...data,
+          id: data.id ?? `dept_mock_${Date.now()}`,
           createdAt: new Date(),
           updatedAt: new Date(),
         };

@@ -1,3 +1,5 @@
+import { generateUuidV7 } from "@base/shared";
+import { TENANT_BASE_SEED_SQL } from "@runtime/db";
 import type {
   TenantSqlExecutor,
   TenantSqlExecutorFactory,
@@ -62,7 +64,8 @@ export interface TenantSeedResult {
 
 /**
  * 租户独立物理数据库基线数据种子初始化引擎 (Tenant Database Seeder)
- * 职责：在租户物理库完成基线 Schema 迁移后，幂等初始化：
+ * 职责：在租户物理库完成基线 Schema 迁移后，直接消费从 @runtime/db 导入的原生 SQL 种子 TENANT_BASE_SEED_SQL
+ * 幂等初始化：
  * 1. 企业根部门 (ROOT)
  * 2. 基础岗位字典 (总经理、主管、业务专员)
  * 3. 初始 Owner 员工档案 (在职激活态)
@@ -101,7 +104,11 @@ export class TenantDatabaseSeeder {
     executor: TenantSqlExecutor,
     input: TenantSeedInput,
   ): Promise<TenantSeedResult> {
-    // 1. 根部门 (Department): 检查是否已存在 code='ROOT' 的部门
+    // 1. 显式执行预置 packages/runtime/db/seeds/tenant-seed.sql 原生 SQL 文件
+    const posGmId = generateUuidV7();
+    const posSupervisorId = generateUuidV7();
+    const posSpecialistId = generateUuidV7();
+
     const existingDepts = await executor.query<{ id: string }>(
       'SELECT id FROM "department" WHERE "code" = $1 LIMIT 1',
       ["ROOT"],
@@ -111,39 +118,26 @@ export class TenantDatabaseSeeder {
     if (existingDepts.length > 0 && existingDepts[0]?.id) {
       rootDeptId = existingDepts[0].id;
     } else {
-      rootDeptId = "dept_root";
-      await executor.execute(
-        `INSERT INTO "department" (
-          "id", "name", "code", "parent_id", "leader_member_id", "sort", "status", "created_at", "updated_at"
-        ) VALUES (
-          $1, $2, $3, NULL, $4, 0, 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-        )`,
-        [rootDeptId, input.organizationName, "ROOT", input.ownerMemberId],
-      );
+      rootDeptId = generateUuidV7();
     }
 
-    // 2. 基础岗位字典 (Position): 逐项检查并插入缺失的默认岗位
-    let seededPositionsCount = 0;
-    for (const pos of DEFAULT_TENANT_POSITIONS) {
-      const existingPos = await executor.query<{ id: string }>(
-        'SELECT id FROM "position" WHERE "code" = $1 LIMIT 1',
-        [pos.code],
-      );
+    // 执行前先检查已存在的岗位数量
+    const existingPositionsBefore = await executor.query<{ id: string }>(
+      'SELECT id FROM "position" WHERE "code" IN (\'pos_gm\', \'pos_supervisor\', \'pos_specialist\')',
+    );
 
-      if (existingPos.length === 0) {
-        await executor.execute(
-          `INSERT INTO "position" (
-            "id", "name", "code", "description", "sort", "status", "created_at", "updated_at"
-          ) VALUES (
-            $1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-          )`,
-          [pos.code, pos.name, pos.code, pos.description, pos.sort, pos.status],
-        );
-        seededPositionsCount++;
-      }
-    }
+    await executor.execute(TENANT_BASE_SEED_SQL, [
+      rootDeptId,
+      input.organizationName,
+      input.ownerMemberId,
+      posGmId,
+      posSupervisorId,
+      posSpecialistId,
+    ]);
 
-    // 3. Owner 员工档案 (EmployeeProfile): 检查是否已存在 member_id=ownerMemberId 的档案
+    const seededPositionsCount = Math.max(0, 3 - existingPositionsBefore.length);
+
+    // 2. Owner 员工档案 (EmployeeProfile): 检查是否已存在 member_id=ownerMemberId 的档案
     const existingProfiles = await executor.query<{ id: string }>(
       'SELECT id FROM "employee_profile" WHERE "member_id" = $1 LIMIT 1',
       [input.ownerMemberId],
@@ -153,7 +147,7 @@ export class TenantDatabaseSeeder {
     if (existingProfiles.length > 0 && existingProfiles[0]?.id) {
       ownerEmployeeProfileId = existingProfiles[0].id;
     } else {
-      ownerEmployeeProfileId = `emp_${input.organizationId}_owner`;
+      ownerEmployeeProfileId = generateUuidV7();
       const now = new Date();
       await executor.execute(
         `INSERT INTO "employee_profile" (
@@ -188,7 +182,7 @@ export class TenantDatabaseSeeder {
 }
 
 /**
- * 便捷导出单例辅助函数：执行租户基线数据填充
+ * 便捷导出：针对独立租户 SQL 执行器一键灌装初始基线数据
  */
 export async function seedTenantBaseline(
   executor: TenantSqlExecutor,

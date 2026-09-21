@@ -5,7 +5,7 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     try {
-      const { ensurePlatformDatabase } = await import("@base/db-migrate");
+      const { ensurePlatformDatabase } = await import("@tool/db-migrate");
       const result = await ensurePlatformDatabase();
       if (result.status === "INITIALIZED") {
         process.stdout.write(

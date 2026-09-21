@@ -19,9 +19,7 @@
 			}
 		],
 		"paths": {
-			"@/*": ["./src/*"],
-			"@/components/ui/*": ["../../packages/base/ui/src/components/ui/*"],
-			"@/hooks/*": ["../../packages/base/ui/src/hooks/*"]
+			"@/*": ["./src/*"]
 		}
 	},
 	"include": [

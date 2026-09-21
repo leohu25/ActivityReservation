@@ -1,5 +1,5 @@
 {
-  "name": "@base/db-migrate",
+  "name": "@tool/db-migrate",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -23,6 +23,7 @@
     "@base/db-control": "workspace:*",
     "@base/db-tenant": "workspace:*",
     "@base/shared": "workspace:*",
+    "@runtime/db": "workspace:*",
     "better-auth": "1.7.3",
     "pg": "^8.23.0"
   },

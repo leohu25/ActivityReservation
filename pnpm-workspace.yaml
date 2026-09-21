@@ -4,6 +4,7 @@ packages:
   - "packages/biz-shared"
   - "packages/platform/*"
   - "packages/domains/*"
+  - "packages/runtime/*"
   - "tooling/*"
 
 allowBuilds:

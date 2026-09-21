@@ -12,14 +12,14 @@ datasource db {
 
 /// 部门拓扑模型 (用于数据范围 DEPT / DEPT_TREE 判定)
 model Department {
-  /// 部门主键ID (UUID/CUID)
-  id             String   @id
+  /// 部门主键ID (UUIDv7)
+  id             String   @id @default(uuid(7)) @db.Uuid
   /// 部门名称
   name           String
   /// 部门业务编码
   code           String   @unique
   /// 父级部门ID (支持树状拓扑)
-  parentId       String?  @map("parent_id")
+  parentId       String?  @map("parent_id") @db.Uuid
   /// 部门分管领导/主管成员ID (关联平台 Member.id)
   leaderMemberId String?  @map("leader_member_id")
   /// 显示排序权重 (数字越小越靠前)
@@ -41,7 +41,7 @@ model Department {
 /// 岗位模型 (实现 Position != Role 物理正交解耦)
 model Position {
   /// 岗位主键ID
-  id          String            @id @default(cuid())
+  id          String            @id @default(uuid(7)) @db.Uuid
   /// 岗位名称
   name        String
   /// 岗位业务编码
@@ -66,7 +66,7 @@ model Position {
 /// 租户内员工档案模型 (对应 Control DB Member.id，组织人事与数据范围事实源)
 model EmployeeProfile {
   /// 员工档案主键ID
-  id                String           @id @default(cuid())
+  id                String           @id @default(uuid(7)) @db.Uuid
   /// 关联平台租户成员主键 (Control DB Member.id)
   memberId          String?          @unique @map("member_id")
   /// 关联平台用户账号ID (Control DB User.id)
@@ -76,11 +76,11 @@ model EmployeeProfile {
   /// 员工工号 (企业内部唯一)
   employeeNo        String?          @unique @map("employee_no")
   /// 所属部门主键ID
-  departmentId      String?          @map("department_id")
+  departmentId      String?          @map("department_id") @db.Uuid
   /// 所属岗位主键ID
-  positionId        String?          @map("position_id")
+  positionId        String?          @map("position_id") @db.Uuid
   /// 直属上级经理档案ID
-  managerEmployeeId String?          @map("manager_employee_id")
+  managerEmployeeId String?          @map("manager_employee_id") @db.Uuid
   /// 员工姓名快照 (冗余展示与防变更穿透)
   nameSnapshot      String           @default("") @map("name_snapshot")
   /// 员工工作邮箱快照
@@ -116,7 +116,7 @@ model EmployeeProfile {
 /// 租户企业扩展资料模型 (与平台 Organization 动静分离)
 model CompanyProfile {
   /// 企业扩展资料主键ID
-  id           String   @id @default(cuid())
+  id           String   @id @default(uuid(7)) @db.Uuid
   /// 企业主体注册全称
   companyName  String   @map("company_name")
   /// 企业简称/品牌名
@@ -146,9 +146,9 @@ model CompanyProfile {
 /// 租户动态导航菜单配置模型 (支持现场层级调整、自定义别名与跨切片灵活编排)
 model TenantMenuItem {
   /// 节点主键ID
-  id           String    @id @default(cuid())
+  id           String    @id @default(uuid(7)) @db.Uuid
   /// 父节点ID (空表示顶级大菜单/顶级单页)
-  parentId     String?   @map("parent_id")
+  parentId     String?   @map("parent_id") @db.Uuid
   /// 节点类型: GROUP(大菜单/目录分组) | PAGE(具体功能页面) | LINK(外部链接)
   itemType     String    @default("PAGE") @map("item_type")
   /// 关联的标准页面键名 (若 itemType="PAGE"，对应 StandardPageDescriptor.pageKey)
@@ -191,7 +191,7 @@ model TenantMenuItem {
 /// 通用业务附件元数据模型 (Tenant DB 物理隔离，严格对齐 ADR-009 实体审计基线)
 model Attachment {
   /// 附件主键ID
-  id          String    @id @default(cuid()) @db.VarChar(36)
+  id          String    @id @default(uuid(7)) @db.Uuid
   /// 归属业务模块 (如 employee, customer, item 等)
   module      String    @db.VarChar(50)
   /// 关联业务实体主键ID (如员工档案ID、客户ID)

@@ -23,9 +23,9 @@ for (const envFile of candidateEnvFiles) {
   }
 }
 
-// 租户 Prisma 基础配置（指向全量聚合后的 Canonical Schema）
+// 租户 Prisma 基础配置（指向 @runtime/db 聚合后的 Canonical Schema）
 export default defineConfig({
-  schema: "prisma/schema.generated.prisma",
+  schema: "../../runtime/db/prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },

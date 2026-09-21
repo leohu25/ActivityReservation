@@ -171,6 +171,6 @@ npx shadcn@latest add <component-name> -y -c packages/base/ui
 
 ### 场景 4：升级 `tooling/db-migrate` 数据库演进引擎
 
-1. 运行 `pnpm --filter @base/db-migrate test` 验证状态机和咨询锁逻辑；
+1. 运行 `pnpm --filter @tool/db-migrate test` 验证状态机和咨询锁逻辑；
 2. 若涉及基线迁移文件变更，运行 `pnpm db:migrate:generate` 重新生成静态 `runtime-catalog.ts`；
 3. 验证冷启动自愈逻辑（空库初装、已有库增量追平、损坏库拦截）。

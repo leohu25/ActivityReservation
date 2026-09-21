@@ -30,12 +30,12 @@
 在 `turbo.json` 中声明为根任务 `//#codegen`，配置了严格的文件 Hash 监听范围：
 
 - **监听输入 (`inputs`)**：`packages/features/**/{manifest.ts,schema.prisma,package.json}`、`packages/db-tenant/prisma/schema.prisma`、`scripts/sync/**`
-- **缓存产物 (`outputs`)**：`apps/tenant/src/kernel/registry.generated.ts`、`packages/db-tenant/prisma/schema.generated.prisma`
+- **缓存产物 (`outputs`)**：`packages/runtime/tenant/src/registry.ts`、`packages/runtime/db/prisma/schema.prisma`
 
 #### 1. 注册表生成 (`scripts/sync/sync-features.mjs`)
 
 - **扫描机制**：扫描 `packages/features/*`（排除 `control-admin`），匹配 `src/manifest.ts`。按 `tenant-admin` 置顶、其余字典序排序。
-- **生成产物**：`apps/tenant/src/kernel/registry.generated.ts`（导出 `ALL_TENANT_MANIFESTS`、CASL `globalTenantCatalog`、侧边栏导航、权限树）。
+- **生成产物**：`packages/runtime/tenant/src/registry.ts`（导出 `ALL_TENANT_MANIFESTS`、CASL `globalTenantCatalog`、侧边栏导航、权限树）。
 - **运行特性**：**幂等保护**，内容未变跳过磁盘写入，避免触发 Turbopack 热重载。依据 **ADR-006** 解耦切片间依赖。
 
 #### 2. 租户 Schema 聚合 (`scripts/sync/sync-tenant-schema.mjs`)
@@ -43,7 +43,7 @@
 - **聚合机制**：以 `packages/db-tenant/prisma/schema.prisma` 为底座，合并各业务切片 `prisma/schema.prisma`。
 - **扩展语法**：支持 `// @db-migrate-extension ModelName` 声明切片侧模型扩展字段。
 - **冲突拦截**：模型重复定义、扩展无主模型、同名字段类型契约冲突时硬报错中断。
-- **生成产物**：`packages/db-tenant/prisma/schema.generated.prisma`（自动挂载 `@prisma/client-tenant` 生成头）。
+- **生成产物**：`packages/runtime/db/prisma/schema.prisma`（自动挂载 `@prisma/client-tenant` 生成头）。
 
 ---
 
@@ -52,7 +52,7 @@
 遵循 Next.js 官方生命周期标准，总控库的 Day 0 初始化由 **`apps/control/src/instrumentation.ts`** 的 `register()` 钩子在服务启动时自动完成：
 
 1. **环境探测**：Next.js Node 运行时启动时在后台触发一次；
-2. **底层引擎**：调用 `@base/db-migrate` 导出的 `ensurePlatformDatabase()`；
+2. **底层引擎**：调用 `@tool/db-migrate` 导出的 `ensurePlatformDatabase()`；
 3. **安全事务**：在 PostgreSQL 咨询锁保护下检查库状态（`EMPTY` / `PARTIAL` / `READY` / `UPGRADE_REQUIRED`）；
 4. **自动建表与播种**：未就绪时自动应用平台基线 SQL 建表，并使用 Better Auth 相同算法哈希密码创建初始超管；
 5. **控制台自描述**：服务拉起时自动输出 `[Control DB] 平台总控库自愈就绪 (状态: READY, 当前版本: ...)`。
@@ -88,7 +88,7 @@
 3. **迁移链连续性**：按序检验各版本 `previousVersion` 链接，杜绝迁移分叉与断链；
 4. **Catalog 就绪性**：确认预编译运行时文件存在。
 
-> 注：`@base/db-migrate` 包的 `check` 任务已被挂载至 `turbo run check`，在执行 `pnpm check` 或 `git commit` 时自动校验。
+> 注：`@tool/db-migrate` 包的 `check` 任务已被挂载至 `turbo run check`，在执行 `pnpm check` 或 `git commit` 时自动校验。
 
 ---
 

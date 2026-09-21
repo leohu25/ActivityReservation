@@ -23,6 +23,7 @@
 		"decimal.js": "^10.6.0",
 		"p-retry": "^8.0.1",
 		"radash": "^12.1.1",
-		"superjson": "^2.2.6"
+		"superjson": "^2.2.6",
+		"uuidv7": "^1.2.1"
 	}
 }

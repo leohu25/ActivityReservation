@@ -30,7 +30,7 @@ test("packages/db-tenant/prisma.config.ts should safely load apps/tenant/.env.lo
   const configModule = await import(configPath);
   const config = configModule.default;
   assert.ok(config, "prisma.config.ts 必须有效导出配置对象");
-  assert.equal(config.schema, "prisma/schema.generated.prisma");
+  assert.equal(config.schema, "../../runtime/db/prisma/schema.prisma");
   assert.ok(config.datasource, "必须包含 datasource 配置");
   assert.equal(typeof config.datasource.url, "string");
 });

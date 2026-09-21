@@ -19,8 +19,8 @@ model Department {
 
 /// 采购订单业务模型 (核心 ERP 业务切片与 CASL 授权实体)
 model PurchaseOrder {
-  /// 采购订单主键ID (CUID)
-  id           String      @id @default(cuid())
+  /// 采购订单主键ID (UUIDv7)
+  id           String      @id @default(uuid(7)) @db.Uuid
   /// 采购订单流水单号 (唯一)
   orderNo      String      @unique @map("order_no")
   /// 供应商名称

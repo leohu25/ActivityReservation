@@ -161,6 +161,16 @@ const checks = [
 		],
 	},
 	{
+		label: "组件封装",
+		cmd: nodePath,
+		args: [
+			path.join(
+				WORKSPACE_ROOT,
+				"scripts/check/check-import-encapsulation.mjs",
+			),
+		],
+	},
+	{
 		label: "门禁单测",
 		cmd: nodePath,
 		args: [

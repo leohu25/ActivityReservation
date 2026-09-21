@@ -2,6 +2,29 @@
 CREATE SCHEMA IF NOT EXISTS "public";
 
 -- CreateTable
+CREATE TABLE "attachment" (
+    "id" UUID NOT NULL,
+    "module" VARCHAR(50) NOT NULL,
+    "target_id" VARCHAR(64),
+    "field_key" VARCHAR(50),
+    "file_name" VARCHAR(255) NOT NULL,
+    "storage_key" VARCHAR(500) NOT NULL,
+    "file_url" VARCHAR(1000) NOT NULL,
+    "file_size" BIGINT NOT NULL,
+    "mime_type" VARCHAR(100) NOT NULL,
+    "created_by_id" VARCHAR(64) NOT NULL DEFAULT 'system',
+    "dept_id" VARCHAR(64),
+    "updated_by_id" VARCHAR(64),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+    "is_deleted" BOOLEAN NOT NULL DEFAULT false,
+    "deleted_at" TIMESTAMP(3),
+    "deleted_by_id" VARCHAR(64),
+
+    CONSTRAINT "attachment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "bom_header" (
     "id" TEXT NOT NULL,
     "bom_code" VARCHAR(50) NOT NULL,
@@ -101,7 +124,7 @@ CREATE TABLE "bom_process" (
 
 -- CreateTable
 CREATE TABLE "company_profile" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
     "company_name" TEXT NOT NULL,
     "short_name" TEXT,
     "credit_code" TEXT,
@@ -119,9 +142,9 @@ CREATE TABLE "company_profile" (
 
 -- CreateTable
 CREATE TABLE "customer" (
-    "id" VARCHAR(36) NOT NULL,
+    "id" UUID NOT NULL,
     "name" VARCHAR(100) NOT NULL,
-    "category_id" VARCHAR(36) NOT NULL,
+    "category_id" UUID NOT NULL,
     "contact_person" VARCHAR(50) NOT NULL,
     "contact_phone" VARCHAR(20) NOT NULL,
     "settlement_method" VARCHAR(20) NOT NULL,
@@ -148,9 +171,9 @@ CREATE TABLE "customer" (
 
 -- CreateTable
 CREATE TABLE "customer_category" (
-    "id" VARCHAR(36) NOT NULL,
+    "id" UUID NOT NULL,
     "name" VARCHAR(50) NOT NULL,
-    "parent_id" VARCHAR(36),
+    "parent_id" UUID,
     "description" VARCHAR(200),
     "status" VARCHAR(10) NOT NULL DEFAULT 'ACTIVE',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -161,10 +184,10 @@ CREATE TABLE "customer_category" (
 
 -- CreateTable
 CREATE TABLE "customer_quote" (
-    "id" VARCHAR(36) NOT NULL,
+    "id" UUID NOT NULL,
     "quote_no" VARCHAR(30) NOT NULL,
-    "customer_id" VARCHAR(36),
-    "store_id" VARCHAR(36),
+    "customer_id" UUID,
+    "store_id" UUID,
     "region_code" VARCHAR(50),
     "quote_date" DATE NOT NULL,
     "effective_date" DATE NOT NULL,
@@ -189,8 +212,8 @@ CREATE TABLE "customer_quote" (
 
 -- CreateTable
 CREATE TABLE "customer_quote_item" (
-    "id" VARCHAR(36) NOT NULL,
-    "quote_id" VARCHAR(36) NOT NULL,
+    "id" UUID NOT NULL,
+    "quote_id" UUID NOT NULL,
     "item_code" VARCHAR(50) NOT NULL,
     "item_name" VARCHAR(100) NOT NULL,
     "sales_unit" VARCHAR(20) NOT NULL,
@@ -206,8 +229,8 @@ CREATE TABLE "customer_quote_item" (
 
 -- CreateTable
 CREATE TABLE "customer_store" (
-    "id" VARCHAR(36) NOT NULL,
-    "customer_id" VARCHAR(36) NOT NULL,
+    "id" UUID NOT NULL,
+    "customer_id" UUID NOT NULL,
     "name" VARCHAR(100) NOT NULL,
     "address" VARCHAR(200) NOT NULL,
     "contact_person" VARCHAR(50) NOT NULL,
@@ -234,9 +257,9 @@ CREATE TABLE "customer_store" (
 
 -- CreateTable
 CREATE TABLE "customer_tag" (
-    "id" VARCHAR(36) NOT NULL,
+    "id" UUID NOT NULL,
     "name" VARCHAR(50) NOT NULL,
-    "tag_type" VARCHAR(20) NOT NULL,
+    "tag_type_id" UUID,
     "description" VARCHAR(200),
     "status" VARCHAR(10) NOT NULL DEFAULT 'ACTIVE',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -247,8 +270,8 @@ CREATE TABLE "customer_tag" (
 
 -- CreateTable
 CREATE TABLE "customer_tag_assignment" (
-    "customer_id" VARCHAR(36) NOT NULL,
-    "tag_id" VARCHAR(36) NOT NULL,
+    "customer_id" UUID NOT NULL,
+    "tag_id" UUID NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "customer_tag_assignment_pkey" PRIMARY KEY ("customer_id","tag_id")
@@ -256,10 +279,10 @@ CREATE TABLE "customer_tag_assignment" (
 
 -- CreateTable
 CREATE TABLE "department" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "code" TEXT NOT NULL,
-    "parent_id" TEXT,
+    "parent_id" UUID,
     "leader_member_id" TEXT,
     "sort" INTEGER NOT NULL DEFAULT 0,
     "status" TEXT NOT NULL DEFAULT 'ACTIVE',
@@ -271,17 +294,18 @@ CREATE TABLE "department" (
 
 -- CreateTable
 CREATE TABLE "employee_profile" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
     "member_id" TEXT,
     "user_id" TEXT,
     "invitation_id" TEXT,
     "employee_no" TEXT,
-    "department_id" TEXT,
-    "position_id" TEXT,
-    "manager_employee_id" TEXT,
+    "department_id" UUID,
+    "position_id" UUID,
+    "manager_employee_id" UUID,
     "name_snapshot" TEXT NOT NULL DEFAULT '',
     "email_snapshot" TEXT NOT NULL DEFAULT '',
     "job_title" TEXT,
+    "avatar_url" TEXT,
     "status" TEXT NOT NULL DEFAULT 'ACTIVE',
     "joined_at" TIMESTAMP(3),
     "terminated_at" TIMESTAMP(3),
@@ -398,7 +422,7 @@ CREATE TABLE "item_variety" (
 
 -- CreateTable
 CREATE TABLE "position" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "code" TEXT NOT NULL,
     "description" TEXT,
@@ -475,7 +499,7 @@ CREATE TABLE "production_line" (
 
 -- CreateTable
 CREATE TABLE "purchase_order" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
     "order_no" TEXT NOT NULL,
     "supplier_name" TEXT NOT NULL,
     "quantity" INTEGER NOT NULL,
@@ -496,10 +520,10 @@ CREATE TABLE "purchase_order" (
 
 -- CreateTable
 CREATE TABLE "sales_order" (
-    "id" VARCHAR(36) NOT NULL,
+    "id" UUID NOT NULL,
     "order_no" VARCHAR(30) NOT NULL,
-    "customer_id" VARCHAR(36) NOT NULL,
-    "store_id" VARCHAR(36) NOT NULL,
+    "customer_id" UUID NOT NULL,
+    "store_id" UUID NOT NULL,
     "order_date" DATE NOT NULL,
     "delivery_date" DATE NOT NULL,
     "sales_person" VARCHAR(50),
@@ -538,8 +562,8 @@ CREATE TABLE "sales_order" (
 
 -- CreateTable
 CREATE TABLE "sales_order_fee" (
-    "id" VARCHAR(36) NOT NULL,
-    "order_id" VARCHAR(36) NOT NULL,
+    "id" UUID NOT NULL,
+    "order_id" UUID NOT NULL,
     "fee_type" VARCHAR(20) NOT NULL,
     "fee_amount" DECIMAL(10,2) NOT NULL,
     "remark" VARCHAR(200),
@@ -555,8 +579,8 @@ CREATE TABLE "sales_order_fee" (
 
 -- CreateTable
 CREATE TABLE "sales_order_item" (
-    "id" VARCHAR(36) NOT NULL,
-    "order_id" VARCHAR(36) NOT NULL,
+    "id" UUID NOT NULL,
+    "order_id" UUID NOT NULL,
     "item_code" VARCHAR(50) NOT NULL,
     "item_name" VARCHAR(100) NOT NULL,
     "sales_unit" VARCHAR(20) NOT NULL,
@@ -574,9 +598,25 @@ CREATE TABLE "sales_order_item" (
 );
 
 -- CreateTable
+CREATE TABLE "tenant_dict_item" (
+    "id" UUID NOT NULL,
+    "type" VARCHAR(50) NOT NULL,
+    "code" VARCHAR(50) NOT NULL,
+    "name" VARCHAR(100) NOT NULL,
+    "status" VARCHAR(10) NOT NULL DEFAULT 'ACTIVE',
+    "sort" INTEGER NOT NULL DEFAULT 0,
+    "is_default" BOOLEAN NOT NULL DEFAULT false,
+    "remark" VARCHAR(255),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "tenant_dict_item_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "tenant_menu_item" (
-    "id" TEXT NOT NULL,
-    "parent_id" TEXT,
+    "id" UUID NOT NULL,
+    "parent_id" UUID,
     "item_type" TEXT NOT NULL DEFAULT 'PAGE',
     "page_key" TEXT,
     "external_url" TEXT,
@@ -636,6 +676,12 @@ CREATE TABLE "unit_of_measure" (
 
     CONSTRAINT "unit_of_measure_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE INDEX "attachment_target_id_module_idx" ON "attachment"("target_id", "module");
+
+-- CreateIndex
+CREATE INDEX "attachment_created_by_id_idx" ON "attachment"("created_by_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "bom_header_bom_code_key" ON "bom_header"("bom_code");
@@ -717,6 +763,9 @@ CREATE INDEX "customer_store_status_idx" ON "customer_store"("status");
 
 -- CreateIndex
 CREATE INDEX "customer_store_is_deleted_idx" ON "customer_store"("is_deleted");
+
+-- CreateIndex
+CREATE INDEX "customer_tag_tag_type_id_idx" ON "customer_tag"("tag_type_id");
 
 -- CreateIndex
 CREATE INDEX "customer_tag_status_idx" ON "customer_tag"("status");
@@ -887,6 +936,15 @@ CREATE INDEX "sales_order_item_order_id_idx" ON "sales_order_item"("order_id");
 CREATE INDEX "sales_order_item_item_code_idx" ON "sales_order_item"("item_code");
 
 -- CreateIndex
+CREATE INDEX "tenant_dict_item_type_status_idx" ON "tenant_dict_item"("type", "status");
+
+-- CreateIndex
+CREATE INDEX "tenant_dict_item_status_idx" ON "tenant_dict_item"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "tenant_dict_item_type_code_key" ON "tenant_dict_item"("type", "code");
+
+-- CreateIndex
 CREATE INDEX "tenant_menu_item_parent_id_sort_order_idx" ON "tenant_menu_item"("parent_id", "sort_order");
 
 -- CreateIndex
@@ -911,6 +969,24 @@ CREATE INDEX "unit_of_measure_created_by_id_idx" ON "unit_of_measure"("created_b
 CREATE INDEX "unit_of_measure_is_deleted_idx" ON "unit_of_measure"("is_deleted");
 
 -- Database Comments
+COMMENT ON TABLE "attachment" IS '通用业务附件元数据模型 (Tenant DB 物理隔离，严格对齐 ADR-009 实体审计基线)';
+COMMENT ON COLUMN "attachment"."id" IS '附件主键ID';
+COMMENT ON COLUMN "attachment"."module" IS '归属业务模块 (如 employee, customer, item 等)';
+COMMENT ON COLUMN "attachment"."target_id" IS '关联业务实体主键ID (如员工档案ID、客户ID)';
+COMMENT ON COLUMN "attachment"."field_key" IS '业务字段标识 (如 avatar, id_card, attachment 等)';
+COMMENT ON COLUMN "attachment"."file_name" IS '原始文件名';
+COMMENT ON COLUMN "attachment"."storage_key" IS '对象存储内部 Key';
+COMMENT ON COLUMN "attachment"."file_url" IS '访问 URL';
+COMMENT ON COLUMN "attachment"."file_size" IS '文件大小 (字节)';
+COMMENT ON COLUMN "attachment"."mime_type" IS 'MIME 类型';
+COMMENT ON COLUMN "attachment"."created_by_id" IS '创建人 ID (必填，审计基线)';
+COMMENT ON COLUMN "attachment"."dept_id" IS '归属部门 ID (选填，支持部门数据范围权限过滤)';
+COMMENT ON COLUMN "attachment"."updated_by_id" IS '更新人 ID (选填)';
+COMMENT ON COLUMN "attachment"."created_at" IS '创建时间 (必填)';
+COMMENT ON COLUMN "attachment"."updated_at" IS '更新时间 (必填)';
+COMMENT ON COLUMN "attachment"."is_deleted" IS '软删除标记 (必填)';
+COMMENT ON COLUMN "attachment"."deleted_at" IS '软删除时间 (选填)';
+COMMENT ON COLUMN "attachment"."deleted_by_id" IS '软删除人 ID (选填)';
 COMMENT ON TABLE "bom_header" IS '工艺 BOM 表头';
 COMMENT ON COLUMN "bom_header"."id" IS 'BOM主键ID';
 COMMENT ON COLUMN "bom_header"."bom_code" IS 'BOM唯一编号';
@@ -998,7 +1074,7 @@ COMMENT ON COLUMN "company_profile"."currency" IS '结算本位币种 (默认 CN
 COMMENT ON COLUMN "company_profile"."created_at" IS '记录创建时间';
 COMMENT ON COLUMN "company_profile"."updated_at" IS '记录更新时间';
 COMMENT ON TABLE "customer_category" IS '客户分类表：支持多级层级树结构（如餐饮连锁、企事业单位、生鲜超市）';
-COMMENT ON COLUMN "customer_category"."id" IS '分类主键ID (UUID/CUID)';
+COMMENT ON COLUMN "customer_category"."id" IS '分类主键ID (UUIDv7)';
 COMMENT ON COLUMN "customer_category"."name" IS '分类名称（如：机关食堂、品牌连锁）';
 COMMENT ON COLUMN "customer_category"."parent_id" IS '父级分类主键ID（支持多级分类树，根级为空）';
 COMMENT ON COLUMN "customer_category"."description" IS '分类业务描述';
@@ -1006,7 +1082,7 @@ COMMENT ON COLUMN "customer_category"."status" IS '状态：ACTIVE(启用) / DIS
 COMMENT ON COLUMN "customer_category"."created_at" IS '创建时间';
 COMMENT ON COLUMN "customer_category"."updated_at" IS '更新时间';
 COMMENT ON TABLE "customer_quote" IS '门店报价单主表：按客户+门店+区域维护的商品定价单头';
-COMMENT ON COLUMN "customer_quote"."id" IS '报价单主键ID (UUID/CUID)';
+COMMENT ON COLUMN "customer_quote"."id" IS '报价单主键ID (UUIDv7)';
 COMMENT ON COLUMN "customer_quote"."quote_no" IS '报价单业务单号（对外沟通展示与防重，格式 QUOT-YYYYMMDD-XXXX）';
 COMMENT ON COLUMN "customer_quote"."customer_id" IS '适用客户主键ID（与 storeId、regionCode 构成维度优先级）';
 COMMENT ON COLUMN "customer_quote"."store_id" IS '适用门店主键ID（为空则适用于该客户下属所有门店）';
@@ -1029,7 +1105,7 @@ COMMENT ON COLUMN "customer_quote"."deleted_by_id" IS '软删除操作人用户I
 COMMENT ON COLUMN "customer_quote"."created_at" IS '创建时间';
 COMMENT ON COLUMN "customer_quote"."updated_at" IS '更新时间';
 COMMENT ON TABLE "customer_quote_item" IS '门店报价单明细表：具体商品的含税与不含税单价及起订限制';
-COMMENT ON COLUMN "customer_quote_item"."id" IS '报价明细行主键ID (UUID/CUID)';
+COMMENT ON COLUMN "customer_quote_item"."id" IS '报价明细行主键ID (UUIDv7)';
 COMMENT ON COLUMN "customer_quote_item"."quote_id" IS '所属报价单主表ID';
 COMMENT ON COLUMN "customer_quote_item"."item_code" IS '商品档案唯一编码（关联物料商品中心）';
 COMMENT ON COLUMN "customer_quote_item"."item_name" IS '商品名称（如：特级上海青(净菜)）';
@@ -1041,9 +1117,9 @@ COMMENT ON COLUMN "customer_quote_item"."min_qty" IS '最小起订量限制';
 COMMENT ON COLUMN "customer_quote_item"."max_qty" IS '最大限购量限制';
 COMMENT ON COLUMN "customer_quote_item"."remark" IS '明细备注说明';
 COMMENT ON TABLE "customer_tag" IS '客户标签字典表：用于筛选、统计、报价与配送策略';
-COMMENT ON COLUMN "customer_tag"."id" IS '标签主键ID (UUID/CUID)';
+COMMENT ON COLUMN "customer_tag"."id" IS '标签主键ID (UUIDv7)';
 COMMENT ON COLUMN "customer_tag"."name" IS '标签名称（如：早间配送、VIP客户、学校食堂）';
-COMMENT ON COLUMN "customer_tag"."tag_type" IS '标签类型：DELIVERY(配送) / SETTLEMENT(结算) / CREDIT(信用) / OTHER(其他)';
+COMMENT ON COLUMN "customer_tag"."tag_type_id" IS '业务标签类型ID：关联基础档案 tenant_dict_item 的主键 id';
 COMMENT ON COLUMN "customer_tag"."description" IS '标签业务说明';
 COMMENT ON COLUMN "customer_tag"."status" IS '状态：ACTIVE(启用) / DISABLED(停用)';
 COMMENT ON COLUMN "customer_tag"."created_at" IS '创建时间';
@@ -1064,6 +1140,7 @@ COMMENT ON COLUMN "employee_profile"."manager_employee_id" IS '直属上级经�
 COMMENT ON COLUMN "employee_profile"."name_snapshot" IS '员工姓名快照 (冗余展示与防变更穿透)';
 COMMENT ON COLUMN "employee_profile"."email_snapshot" IS '员工工作邮箱快照';
 COMMENT ON COLUMN "employee_profile"."job_title" IS '职务头衔/对外称谓';
+COMMENT ON COLUMN "employee_profile"."avatar_url" IS '员工头像/工牌照 URL';
 COMMENT ON COLUMN "employee_profile"."status" IS '员工在职状态: ACTIVE(在职) / TERMINATED(离职) / SUSPENDED(停职)';
 COMMENT ON COLUMN "employee_profile"."joined_at" IS '入职报到时间';
 COMMENT ON COLUMN "employee_profile"."terminated_at" IS '离职归档时间';
@@ -1212,7 +1289,7 @@ COMMENT ON COLUMN "production_line"."deleted_by_id" IS '软删除操作人用户
 COMMENT ON COLUMN "production_line"."created_at" IS '创建时间';
 COMMENT ON COLUMN "production_line"."updated_at" IS '更新时间';
 COMMENT ON TABLE "purchase_order" IS '采购订单业务模型 (核心 ERP 业务切片与 CASL 授权实体)';
-COMMENT ON COLUMN "purchase_order"."id" IS '采购订单主键ID (CUID)';
+COMMENT ON COLUMN "purchase_order"."id" IS '采购订单主键ID (UUIDv7)';
 COMMENT ON COLUMN "purchase_order"."order_no" IS '采购订单流水单号 (唯一)';
 COMMENT ON COLUMN "purchase_order"."supplier_name" IS '供应商名称';
 COMMENT ON COLUMN "purchase_order"."quantity" IS '采购商品总数量';
@@ -1291,6 +1368,17 @@ COMMENT ON COLUMN "sales_order_item"."unit_price_incl_tax" IS '含税销售单�
 COMMENT ON COLUMN "sales_order_item"."tax_rate" IS '适用增值税税率(%)，如 9.00';
 COMMENT ON COLUMN "sales_order_item"."subtotal_amount" IS '明细含税小计金额 (orderQty * unitPriceInclTax)';
 COMMENT ON COLUMN "sales_order_item"."remark" IS '备注说明';
+COMMENT ON TABLE "tenant_dict_item" IS '租户业务基础档案数据字典项表 (租户全域共享配置字典，通过 status 启停用)';
+COMMENT ON COLUMN "tenant_dict_item"."id" IS '字典项主键ID (UUIDv7)';
+COMMENT ON COLUMN "tenant_dict_item"."type" IS '字典类型编码 (as const 枚举分类，例如 CUSTOMER_LEVEL)';
+COMMENT ON COLUMN "tenant_dict_item"."code" IS '字典项业务编码 (同一 type 下唯一)';
+COMMENT ON COLUMN "tenant_dict_item"."name" IS '字典项显示名称';
+COMMENT ON COLUMN "tenant_dict_item"."status" IS '状态：ACTIVE(启用) / DISABLED(停用)';
+COMMENT ON COLUMN "tenant_dict_item"."sort" IS '显示排序权重 (数字越小越靠前)';
+COMMENT ON COLUMN "tenant_dict_item"."is_default" IS '是否默认选中项';
+COMMENT ON COLUMN "tenant_dict_item"."remark" IS '备注说明';
+COMMENT ON COLUMN "tenant_dict_item"."created_at" IS '创建时间';
+COMMENT ON COLUMN "tenant_dict_item"."updated_at" IS '更新时间';
 COMMENT ON TABLE "tenant_menu_item" IS '租户动态导航菜单配置模型 (支持现场层级调整、自定义别名与跨切片灵活编排)';
 COMMENT ON COLUMN "tenant_menu_item"."id" IS '节点主键ID';
 COMMENT ON COLUMN "tenant_menu_item"."parent_id" IS '父节点ID (空表示顶级大菜单/顶级单页)';

@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { generateUuidV7 } from "@base/shared";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
   type Prisma as ControlPrisma,
@@ -226,7 +226,7 @@ export class PrismaControlDbRepository
         },
       },
       create: {
-        id: randomUUID(),
+        id: generateUuidV7(),
         organizationId: input.organizationId,
         role: input.role,
         permission: input.permission,

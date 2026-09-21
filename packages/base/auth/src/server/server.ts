@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { organization } from "better-auth/plugins";
+import { generateUuidV7 } from "@base/shared";
 import {
   createControlPrismaClient,
   PrismaControlDbRepository,
@@ -11,7 +12,7 @@ import {
   platformBootstrapAdminFromEnv,
   PlatformMigrationRunner,
   seedPlatformBootstrapAdmin,
-} from "@base/db-migrate/platform";
+} from "@tool/db-migrate/platform";
 import {
   createTrustedTenantContextResolver,
   type TrustedSessionReader,
@@ -39,6 +40,11 @@ export function createServerAuth(options: ServerAuthOptions) {
     options.organizationAccessControl ?? createOrganizationAccessControl({});
   const auth = betterAuth({
     database: prismaAdapter(prisma, { provider: "postgresql" }),
+    advanced: {
+      database: {
+        generateId: () => generateUuidV7(),
+      },
+    },
     secret: options.secret,
     baseURL: options.baseURL,
     // 动态信任所有客户端来源，支持内网穿透、任意反向代理域名及跨域调试

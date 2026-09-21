@@ -18,18 +18,26 @@ export function getMigrationPackageRoot(workspaceRoot: string): string {
   return path.join(workspaceRoot, "tooling/db-migrate");
 }
 
+export function getDbRuntimeDir(workspaceRoot: string): string {
+  return path.join(workspaceRoot, "packages/runtime/db");
+}
+
 export function getMigrationsDir(
   workspaceRoot: string,
   scope: MigrationScope,
 ): string {
-  return path.join(getMigrationPackageRoot(workspaceRoot), "migrations", scope);
+  return path.join(getDbRuntimeDir(workspaceRoot), "migrations", scope);
 }
 
 export function getBaselinesDir(
   workspaceRoot: string,
   scope: MigrationScope,
 ): string {
-  return path.join(getMigrationPackageRoot(workspaceRoot), "baselines", scope);
+  return path.join(getDbRuntimeDir(workspaceRoot), "baselines", scope);
+}
+
+export function getSeedsDir(workspaceRoot: string): string {
+  return path.join(getDbRuntimeDir(workspaceRoot), "seeds");
 }
 
 export function getRuntimeCatalogPath(workspaceRoot: string): string {

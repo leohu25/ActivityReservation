@@ -1,4 +1,4 @@
-import { resolvePagination } from "@base/shared";
+import { generateUuidV7, resolvePagination } from "@base/shared";
 import {
   PrismaControlDbRepository,
   TenantDatabaseStatus,
@@ -13,7 +13,7 @@ import {
   DatabaseMigrationService,
   TenantDatabaseProvisioner,
   type ProvisionTenantDatabaseResult,
-} from "@base/db-migrate";
+} from "@tool/db-migrate";
 import { hashPassword } from "better-auth/crypto";
 import {
   FieldPolicy,
@@ -374,7 +374,7 @@ export class TenantManagementService {
     if (!adminUser) {
       adminUser = await this.prisma.user.create({
         data: {
-          id: `usr_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          id: generateUuidV7(),
           email: cleanEmail,
           name: input.adminName?.trim() || cleanEmail.split("@")[0],
           emailVerified: true,
@@ -396,7 +396,7 @@ export class TenantManagementService {
       const hashedPassword = await hashPassword(initialPassword);
       await this.prisma.account.create({
         data: {
-          id: `acc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          id: generateUuidV7(),
           accountId: adminUser.id,
           providerId: "credential",
           userId: adminUser.id,
@@ -420,8 +420,8 @@ export class TenantManagementService {
       returnedInitialPassword = input.initialPassword;
     }
 
-    const orgId = `org_${cleanSlug}_${Date.now()}`;
-    const ownerMemberId = `mem_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const orgId = generateUuidV7();
+    const ownerMemberId = generateUuidV7();
     const organization = await this.prisma.organization.create({
       data: {
         id: orgId,
@@ -519,7 +519,7 @@ export class TenantManagementService {
           },
         },
         create: {
-          id: `role_${organization.id}_${r.role}`,
+          id: generateUuidV7(),
           organizationId: organization.id,
           role: r.role,
           permission: serializeRolePermissions(r.payload),
@@ -675,7 +675,7 @@ export class TenantManagementService {
     } else {
       await this.prisma.account.create({
         data: {
-          id: `acc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          id: generateUuidV7(),
           accountId: userId,
           providerId: "credential",
           userId,

@@ -11,12 +11,12 @@
         "packages/domains/**/prisma/schema.prisma",
         "packages/platform/**/package.json",
         "packages/domains/**/package.json",
-        "packages/db-tenant/prisma/schema.prisma",
+        "packages/base/db-tenant/prisma/schema.prisma",
         "scripts/sync/**"
       ],
       "outputs": [
-        "apps/tenant/src/kernel/registry.generated.ts",
-        "packages/db-tenant/prisma/schema.generated.prisma"
+        "packages/runtime/tenant/src/registry.ts",
+        "packages/runtime/db/prisma/schema.prisma"
       ]
     },
     "generate": {

@@ -1,4 +1,6 @@
 import readline from "node:readline";
+import { generateUuidV7 } from "@base/shared";
+import { TENANT_BASE_SEED_SQL } from "@runtime/db";
 import pg from "pg";
 import { getMigrationCatalog } from "./catalog";
 
@@ -197,41 +199,41 @@ export async function resetLocalTenantDatabases(
 					);
 				}
 
-				// 注入默认组织人事种子数据
-				console.log(`    └─ 注入默认部门与岗位种子数据 ...`);
-				await tenantClient.query(
-					`
-          INSERT INTO department (id, name, code, sort, status, created_at, updated_at)
-          VALUES ('dept_root', $1, 'ROOT', 0, 'ACTIVE', NOW(), NOW());
-        `,
-					[target.orgName || "净菜加工"],
-				);
+				// 注入默认组织人事种子数据 (从 @runtime/db 导入 TENANT_BASE_SEED_SQL)
+				console.log(`    └─ 注入默认部门与岗位种子数据 (导入 @runtime/db 种子) ...`);
+				const rootDeptId = generateUuidV7();
+				const posGmId = generateUuidV7();
+				const posSupervisorId = generateUuidV7();
+				const posSpecialistId = generateUuidV7();
 
-				await tenantClient.query(`
-          INSERT INTO position (id, name, code, description, sort, status, created_at, updated_at)
-          VALUES 
-            ('pos_gm', '总经理', 'pos_gm', '企业最高管理负责人', 1, 'ACTIVE', NOW(), NOW()),
-            ('pos_supervisor', '部门主管', 'pos_supervisor', '部门业务管理负责人', 10, 'ACTIVE', NOW(), NOW()),
-            ('pos_specialist', '业务专员', 'pos_specialist', '基层核心业务经办人员', 20, 'ACTIVE', NOW(), NOW());
-        `);
+				await tenantClient.query(TENANT_BASE_SEED_SQL, [
+					rootDeptId,
+					target.orgName || "净菜加工",
+					target.memberId ?? null,
+					posGmId,
+					posSupervisorId,
+					posSpecialistId,
+				]);
 
 				if (target.memberId && target.userId) {
 					console.log(
 						`    └─ 恢复 Owner 员工档案 (${target.userName || target.userEmail}) ...`,
 					);
-					const empId = `emp_${target.organizationId || "default"}_owner`;
+					const empId = generateUuidV7();
 					await tenantClient.query(
 						`
             INSERT INTO employee_profile (
               id, member_id, user_id, employee_no, department_id, position_id, 
               name_snapshot, email_snapshot, job_title, status, joined_at, created_at, updated_at
             )
-            VALUES ($1, $2, $3, 'E0001', 'dept_root', 'pos_gm', $4, $5, '企业所有者', 'ACTIVE', NOW(), NOW(), NOW());
+            VALUES ($1, $2, $3, 'E0001', $4, $5, $6, $7, '企业所有者', 'ACTIVE', NOW(), NOW(), NOW());
           `,
 						[
 							empId,
 							target.memberId,
 							target.userId,
+							rootDeptId,
+							posGmId,
 							target.userName || "管理员",
 							target.userEmail || "admin@example.com",
 						],

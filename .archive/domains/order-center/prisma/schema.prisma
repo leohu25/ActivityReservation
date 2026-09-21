@@ -20,7 +20,7 @@ model Customer {
 // 关联的基础门店模型扩展 (真实 owner 位于 customer-center)
 // @db-migrate-extension CustomerStore
 model CustomerStore {
-  id          String       @id @db.VarChar(36)
+  id          String       @id @db.Uuid
   salesOrders SalesOrder[]
 
   @@map("customer_store")
@@ -29,13 +29,13 @@ model CustomerStore {
 /// 销售订单单头：按 客户 + 门店 + 商品 + 数量 + 交货日期 维度的销售需求主单
 model SalesOrder {
   /// 销售订单主键ID
-  id                  String    @id @default(cuid()) @db.VarChar(36)
+  id                  String    @id @default(uuid(7)) @db.Uuid
   /// 销售订单唯一单号（系统自动生成，格式 SO-YYYYMMDD-XXXX）
   orderNo             String    @unique @map("order_no") @db.VarChar(30)
   /// 客户主键ID（关联 Customer.id）
-  customerId          String    @map("customer_id") @db.VarChar(36)
+  customerId          String    @map("customer_id") @db.Uuid
   /// 门店主键ID（关联 CustomerStore.id）
-  storeId             String    @map("store_id") @db.VarChar(36)
+  storeId             String    @map("store_id") @db.Uuid
   /// 下单日期
   orderDate           DateTime  @map("order_date") @db.Date
   /// 交货日期
@@ -128,9 +128,9 @@ model SalesOrder {
 /// 销售订单明细行：具体采购的商品、数量、单价与履约进度
 model SalesOrderItem {
   /// 订单明细主键ID
-  id                   String    @id @default(cuid()) @db.VarChar(36)
+  id                   String    @id @default(uuid(7)) @db.Uuid
   /// 所属销售订单主键ID
-  orderId              String    @map("order_id") @db.VarChar(36)
+  orderId              String    @map("order_id") @db.Uuid
   /// 商品档案唯一编码
   itemCode             String    @map("item_code") @db.VarChar(50)
   /// 商品名称
@@ -167,9 +167,9 @@ model SalesOrderItem {
 /// 销售订单附加费用明细：快递费、材料费、包装费等，独立复核
 model SalesOrderFee {
   /// 费用主键ID
-  id                   String    @id @default(cuid()) @db.VarChar(36)
+  id                   String    @id @default(uuid(7)) @db.Uuid
   /// 关联订单主键ID
-  orderId              String    @map("order_id") @db.VarChar(36)
+  orderId              String    @map("order_id") @db.Uuid
   /// 费用类型：EXPRESS(快递费) / MATERIAL(材料费) / PACKAGING(包装费) / FREIGHT(运费) / OTHER(其他)
   feeType              String    @map("fee_type") @db.VarChar(20)
   /// 费用金额（正数为应收，负数为折让）

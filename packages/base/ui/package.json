@@ -8,6 +8,12 @@
 	"exports": {
 		".": "./src/index.ts"
 	},
+	"imports": {
+		"#components/*": "./src/components/*",
+		"#ui/*": "./src/components/ui/*",
+		"#hooks/*": "./src/hooks/*",
+		"#lib/*": "./src/lib/*"
+	},
 	"scripts": {
 		"build": "tsc --declaration --emitDeclarationOnly --outDir dist --incremental false --noEmit false",
 		"check": "tsc --noEmit",

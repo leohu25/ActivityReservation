@@ -9,10 +9,10 @@ CREATE TYPE "TenantMigrationStatus" AS ENUM ('PENDING', 'RUNNING', 'SUCCESS', 'F
 
 -- CreateTable
 CREATE TABLE "account" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
     "account_id" TEXT NOT NULL,
     "provider_id" TEXT NOT NULL,
-    "user_id" TEXT NOT NULL,
+    "user_id" UUID NOT NULL,
     "access_token" TEXT,
     "refresh_token" TEXT,
     "id_token" TEXT,
@@ -28,23 +28,23 @@ CREATE TABLE "account" (
 
 -- CreateTable
 CREATE TABLE "invitation" (
-    "id" TEXT NOT NULL,
-    "organization_id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
+    "organization_id" UUID NOT NULL,
     "email" TEXT NOT NULL,
     "role" TEXT,
     "status" TEXT NOT NULL DEFAULT 'pending',
     "expires_at" TIMESTAMP(3) NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "inviter_id" TEXT NOT NULL,
+    "inviter_id" UUID NOT NULL,
 
     CONSTRAINT "invitation_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "member" (
-    "id" TEXT NOT NULL,
-    "organization_id" TEXT NOT NULL,
-    "user_id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
+    "organization_id" UUID NOT NULL,
+    "user_id" UUID NOT NULL,
     "role" TEXT NOT NULL DEFAULT 'member',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -53,7 +53,7 @@ CREATE TABLE "member" (
 
 -- CreateTable
 CREATE TABLE "organization" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "logo" TEXT,
@@ -66,8 +66,8 @@ CREATE TABLE "organization" (
 
 -- CreateTable
 CREATE TABLE "organization_role" (
-    "id" TEXT NOT NULL,
-    "organization_id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
+    "organization_id" UUID NOT NULL,
     "role" TEXT NOT NULL,
     "permission" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -88,23 +88,23 @@ CREATE TABLE "platform_migration" (
 
 -- CreateTable
 CREATE TABLE "session" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
     "expires_at" TIMESTAMP(3) NOT NULL,
     "token" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
     "ip_address" TEXT,
     "user_agent" TEXT,
-    "user_id" TEXT NOT NULL,
-    "active_organization_id" TEXT,
+    "user_id" UUID NOT NULL,
+    "active_organization_id" UUID,
 
     CONSTRAINT "session_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "tenant_database" (
-    "id" TEXT NOT NULL,
-    "organization_id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
+    "organization_id" UUID NOT NULL,
     "cluster_code" TEXT NOT NULL,
     "database_name" TEXT NOT NULL,
     "secret_ref" TEXT NOT NULL,
@@ -118,8 +118,8 @@ CREATE TABLE "tenant_database" (
 
 -- CreateTable
 CREATE TABLE "tenant_migration" (
-    "id" TEXT NOT NULL,
-    "organization_id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
+    "organization_id" UUID NOT NULL,
     "migration_name" TEXT NOT NULL,
     "version" TEXT NOT NULL,
     "batch_id" TEXT,
@@ -137,7 +137,7 @@ CREATE TABLE "tenant_migration" (
 
 -- CreateTable
 CREATE TABLE "user" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "email_verified" BOOLEAN NOT NULL DEFAULT false,
@@ -150,7 +150,7 @@ CREATE TABLE "user" (
 
 -- CreateTable
 CREATE TABLE "verification" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
     "identifier" TEXT NOT NULL,
     "value" TEXT NOT NULL,
     "expires_at" TIMESTAMP(3) NOT NULL,

@@ -53,8 +53,8 @@ tenants/org_001/customer/2026/09/98fb2e71d36a49fa8a23bb6189cf0012.pdf
 ```prisma
 /// 通用业务附件元数据模型 (Tenant DB 物理隔离，严格对齐 ADR-009 实体审计基线)
 model Attachment {
-  /// 附件主键ID
-  id          String    @id @default(cuid()) @db.VarChar(36)
+  /// 附件主键ID (UUIDv7)
+  id          String    @id @default(uuid(7)) @db.Uuid
   
   // --- 多态关联定位三要素 ---
   /// 归属业务模块名 (如 "employee", "customer", "order")

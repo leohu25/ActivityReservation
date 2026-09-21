@@ -35,9 +35,6 @@ importers:
       '@base/db-control':
         specifier: workspace:*
         version: link:../../packages/base/db-control
-      '@base/db-migrate':
-        specifier: workspace:*
-        version: link:../../tooling/db-migrate
       '@base/db-tenant':
         specifier: workspace:*
         version: link:../../packages/base/db-tenant
@@ -50,6 +47,9 @@ importers:
       '@platform/control-admin':
         specifier: workspace:*
         version: link:../../packages/platform/control-admin
+      '@tool/db-migrate':
+        specifier: workspace:*
+        version: link:../../tooling/db-migrate
       better-auth:
         specifier: 1.7.3
         version: 1.7.3(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))(mysql2@3.15.3)(next@16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -129,6 +129,9 @@ importers:
       '@platform/tenant-admin':
         specifier: workspace:*
         version: link:../../packages/platform/tenant-admin
+      '@runtime/tenant':
+        specifier: workspace:*
+        version: link:../../packages/runtime/tenant
       better-auth:
         specifier: 1.7.3
         version: 1.7.3(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))(mysql2@3.15.3)(next@16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -184,7 +187,10 @@ importers:
       '@base/db-control':
         specifier: workspace:*
         version: link:../db-control
-      '@base/db-migrate':
+      '@base/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@tool/db-migrate':
         specifier: workspace:*
         version: link:../../../tooling/db-migrate
       better-auth:
@@ -261,6 +267,9 @@ importers:
 
   packages/base/db-control:
     dependencies:
+      '@base/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@prisma/adapter-pg':
         specifier: 7.10.0
         version: 7.10.0
@@ -283,6 +292,9 @@ importers:
       '@base/db-control':
         specifier: workspace:*
         version: link:../db-control
+      '@base/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@prisma/adapter-pg':
         specifier: 7.10.0
         version: 7.10.0
@@ -292,6 +304,9 @@ importers:
       '@prisma/client-runtime-utils':
         specifier: 7.10.0
         version: 7.10.0
+      '@runtime/db':
+        specifier: workspace:*
+        version: link:../../runtime/db
       pg:
         specifier: ^8.23.0
         version: 8.23.0
@@ -326,6 +341,9 @@ importers:
       superjson:
         specifier: ^2.2.6
         version: 2.2.6
+      uuidv7:
+        specifier: ^1.2.1
+        version: 1.2.1
     devDependencies:
       '@types/node':
         specifier: ^20.19.43
@@ -632,9 +650,6 @@ importers:
       '@base/db-control':
         specifier: workspace:*
         version: link:../../base/db-control
-      '@base/db-migrate':
-        specifier: workspace:*
-        version: link:../../../tooling/db-migrate
       '@base/db-tenant':
         specifier: workspace:*
         version: link:../../base/db-tenant
@@ -644,6 +659,9 @@ importers:
       '@base/ui':
         specifier: workspace:*
         version: link:../../base/ui
+      '@tool/db-migrate':
+        specifier: workspace:*
+        version: link:../../../tooling/db-migrate
       better-auth:
         specifier: 1.7.3
         version: 1.7.3(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))(mysql2@3.15.3)(next@16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -746,6 +764,44 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
 
+  packages/runtime/db:
+    dependencies:
+      '@base/shared':
+        specifier: workspace:*
+        version: link:../../base/shared
+    devDependencies:
+      '@types/node':
+        specifier: ^20.19.43
+        version: 20.19.43
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
+
+  packages/runtime/tenant:
+    dependencies:
+      '@base/authorization':
+        specifier: workspace:*
+        version: link:../../base/authorization
+      '@base/ui':
+        specifier: workspace:*
+        version: link:../../base/ui
+      '@domain/base-archives':
+        specifier: workspace:*
+        version: link:../../domains/base-archives
+      '@domain/customer-center':
+        specifier: workspace:*
+        version: link:../../domains/customer-center
+      '@platform/tenant-admin':
+        specifier: workspace:*
+        version: link:../../platform/tenant-admin
+    devDependencies:
+      '@types/node':
+        specifier: ^20.19.43
+        version: 20.19.43
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
+
   tooling/db-migrate:
     dependencies:
       '@base/db-control':
@@ -757,6 +813,9 @@ importers:
       '@base/shared':
         specifier: workspace:*
         version: link:../../packages/base/shared
+      '@runtime/db':
+        specifier: workspace:*
+        version: link:../../packages/runtime/db
       better-auth:
         specifier: 1.7.3
         version: 1.7.3(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))(mysql2@3.15.3)(next@16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -4223,6 +4282,10 @@ packages:
     resolution: {integrity: sha512-6L+EeigHMQhdaIPNIFUKwfWJSwWFQ8gJbJ2DLOs5sDIegTwR9fRxvnM3uciHKjIZhFz+KAv2emhWMRvDmMcY8A==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  uuidv7@1.2.1:
+    resolution: {integrity: sha512-4kPkK3/XTQW9Hbm4CaqfICn+kY9LJtDVEOfgsRRra/+n2Ofg4NqzRFceAkxvQ/Ud/6BpHOPzj8cirqM7TzTN5Q==}
+    hasBin: true
 
   valibot@1.4.2:
     resolution: {integrity: sha512-gjdCvJ6d3RyHAneqxMYMW9QMCwYMb3jpOO0IyHZV1bnRHFBHrX3VkIILt5XYR0WhwHiH7Mty8ovuPZ/O3gamrg==}
@@ -8037,6 +8100,8 @@ snapshots:
   use-sync-external-store@1.7.0(react@19.2.8):
     dependencies:
       react: 19.2.8
+
+  uuidv7@1.2.1: {}
 
   valibot@1.4.2(typescript@5.8.2):
     optionalDependencies:

@@ -28,7 +28,7 @@
     "@base/auth": "workspace:*",
     "@base/authorization": "workspace:*",
     "@base/db-control": "workspace:*",
-    "@base/db-migrate": "workspace:*",
+    "@tool/db-migrate": "workspace:*",
     "@base/db-tenant": "workspace:*",
     "@base/shared": "workspace:*",
     "@base/ui": "workspace:*",

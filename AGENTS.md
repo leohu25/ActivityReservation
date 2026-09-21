@@ -7,7 +7,8 @@
 - **跨业务中台资产**：`packages/biz-shared`（`@biz/shared` 审批流状态机、单据发号器契约）；
 - **平台系统套件**：`packages/platform/*`（`@platform/control-admin` 平台管控中心、`@platform/tenant-admin` 租户系统设置）；
 - **垂直业务切片**：`packages/domains/*`（各业务切片物理内聚、无横向耦合，例如 `@domain/customer-center` 客户中心等领域）；
-- **迁移引擎与工具**：`tooling/db-migrate`（12-Factor 无状态自愈迁移引擎）；
+- **迁移引擎与工具**：`tooling/db-migrate`（`@tool/db-migrate` 12-Factor 无状态自愈迁移引擎）；
+- **运行时装配事实源**：`packages/runtime/*`（`@runtime/db` 集中数据库事实源与 `packages/runtime/tenant` 特性装配中心）；
 - **全栈开发规范事实源**：本底座派生出的全套开发规范详见 **`.agents/skills/next-saas-base-dev/`**（开工前必须参考）。
 
 ---
