@@ -397,11 +397,12 @@ export function XxxView({ data, total }: { data: XxxItem[]; total: number }) {
 - **分页器与多实体布局**：
   - 分页器严禁禁用（严禁 `showPagination={false}`）；多实体聚合页严禁左右并排挤压，必须在顶部使用横向 Tab 导航。
 
-### ⑧ layout.tsx（路由组 CASL Ability 边界注入 — 绝对必选关键步）
+### ⑧ layout.tsx（切片专属 CASL Ability 边界注入 — 绝对必选关键步）
 
-> **⚠️ 核心防线与高频避坑**：
-> 凡是在该路由组（如 `(dashboard)/settings` 或 `(dashboard)/<area>`）下新增任何子页面，**必须在此处显式补齐对应实体的 `getTenantSubjectPermissions(Subject)`**！
-> 若遗漏，在 Fail-Closed 机制下客户端将拿不到该实体的权限快照，导致页面中 `DataTable` 的所有业务数据列被自动隐藏脱敏（右上角仅显示「列设置 1/1」），新增/编辑/停用/删除按钮完全不显示！
+> **⚠️ 核心架构宪法与高频避坑（严禁借道寄生）**：
+> 1. **业务切片必须挂载在应用层专属的路由组下**（如 `(dashboard)/archives/`），严禁借道塞入不相关的模块（如 `settings`）；
+> 2. **该专属路由组的 `layout.tsx` 必须且仅能消费本切片专属导出的 `*AbilityBoundary`**（如 `BaseArchivesAbilityBoundary`），严禁跨切片借道其他模块的 Boundary；
+> 3. **必须显式补齐对应实体的 `getTenantSubjectPermissions(Subject)`**！若遗漏，在 Fail-Closed 机制下客户端将拿不到该实体的权限快照，导致页面中 `DataTable` 的所有业务数据列被自动隐藏脱敏（右上角仅显示「列设置 1/1」），新增/编辑/停用/删除按钮完全不显示！
 
 ```tsx
 // apps/tenant/src/app/(dashboard)/<area>/layout.tsx
@@ -424,10 +425,8 @@ export default async function AreaLayout({
   return (
     <AreaAbilityBoundary
       permissions={{
-        subjects: {
-          [ResourceASubject]: resourceAPerms,
-          [ResourceBSubject]: resourceBPerms,
-        },
+        resourceA: resourceAPerms,
+        resourceB: resourceBPerms,
       }}
     >
       {children}

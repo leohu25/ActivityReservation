@@ -33,7 +33,7 @@ test("dict.contract: dictItemSearchParams 参数解析与默认值", async () =>
 test("dict.contract: 数据字典契约基本元数据完整性", () => {
 	assert.equal(TenantDictItemSubject, "TenantDictItem");
 	assert.equal(TenantDictItemResource, "base_archives.dict");
-	assert.equal(tenantDictItemPageContract.path, "/settings/dict");
+	assert.equal(tenantDictItemPageContract.path, "/archives/dict");
 
 	const actionNames = tenantDictItemPageContract.actions.map((a) => a.action);
 	assert.ok(actionNames.includes(StandardAction.READ));

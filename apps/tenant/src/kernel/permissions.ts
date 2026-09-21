@@ -3,7 +3,12 @@ import { headers } from "next/headers";
 import { getCurrentTenantContext, getServerAuthRuntime } from "@base/auth";
 import { CaslAbilityFactory, type FieldAccessMode } from "@base/authorization";
 import { toPlainData } from "@base/shared";
-import { globalTenantCatalog } from "./registry.generated";
+import {
+  globalTenantCatalog,
+  type GlobalTenantSubject,
+} from "./registry.generated";
+
+export type { GlobalTenantSubject };
 
 export interface TenantSubjectPermissions {
   readonly actions: readonly string[];
@@ -45,7 +50,7 @@ const getCachedTenantAbilityContext = cache(async () => {
  * （经 globalTenantCatalog 派生，禁止再维护第二份硬编码白名单）。
  */
 export async function getTenantSubjectPermissions(
-  subject: string,
+  subject: GlobalTenantSubject,
 ): Promise<TenantSubjectPermissions> {
   try {
     const { factory, tenantCtx, ability, roleNames } =
@@ -88,14 +93,14 @@ export async function getTenantSubjectPermissions(
 /**
  * 批量获取多个 Subject 的 CASL 权限纯数据描述 (供复合看板/工作台批量注入 Ability 边界)
  */
-export async function getTenantMultiSubjectPermissions(
-  subjects: readonly string[],
-): Promise<Record<string, TenantSubjectPermissions>> {
+export async function getTenantMultiSubjectPermissions<
+  T extends GlobalTenantSubject = GlobalTenantSubject,
+>(subjects: readonly T[]): Promise<Record<T, TenantSubjectPermissions>> {
   const entries = await Promise.all(
     subjects.map(async (subj) => {
       const perms = await getTenantSubjectPermissions(subj);
       return [subj, perms] as const;
     }),
   );
-  return Object.fromEntries(entries);
+  return Object.fromEntries(entries) as Record<T, TenantSubjectPermissions>;
 }

@@ -237,7 +237,7 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
 
           // 强校验 2: 组件命名规范必须为 export function/const *AbilityBoundary
           const hasBoundaryExport =
-            /export\s+(function|const)\s+[A-Za-z0-9_]*AbilityBoundary\b/.test(
+            /export\s+(function|const)\s+([A-Za-z0-9_]*AbilityBoundary)\b/.exec(
               content,
             );
           if (!hasBoundaryExport) {
@@ -247,6 +247,38 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
               rule: "权限能力边界组件导出名称必须遵循 *AbilityBoundary 统一语义规范 (如 CustomerAbilityBoundary)",
               code: "export *AbilityBoundary missing",
             });
+          } else {
+            // 强校验 3: 切片导出的 AbilityBoundary 必须在 apps/tenant 专属 layout.tsx 中被实际消费，严禁闲置或借道寄生
+            const boundaryExportName = hasBoundaryExport[2];
+            const tenantAppDir = path.join(
+              workspaceRoot,
+              "apps/tenant/src/app/(dashboard)",
+            );
+            let isConsumedInTenantLayout = false;
+
+            if (fs.existsSync(tenantAppDir)) {
+              const appFiles = walkCodeFiles(tenantAppDir);
+              const layoutFiles = appFiles.filter((f) =>
+                /\/layout\.(tsx|jsx)$/.test(f),
+              );
+
+              for (const lf of layoutFiles) {
+                const layoutContent = fs.readFileSync(lf, "utf-8");
+                if (layoutContent.includes(boundaryExportName)) {
+                  isConsumedInTenantLayout = true;
+                  break;
+                }
+              }
+
+              if (!isConsumedInTenantLayout) {
+                violations.push({
+                  file: relBoundaryPath,
+                  line: 1,
+                  rule: `业务切片导出的权限边界组件 [${boundaryExportName}] 必须在 apps/tenant 专属父级 layout.tsx 中实际挂载消费，严禁借道其他模块 Layout 寄生或闲置`,
+                  code: `${boundaryExportName} not mounted in apps/tenant/**/layout.tsx`,
+                });
+              }
+            }
           }
         }
       }

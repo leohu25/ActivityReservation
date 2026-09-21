@@ -86,7 +86,7 @@ tooling/db-migrate                  12-Factor 迁移引擎
 ⑤ actions.ts      defineServerAction 直写 → 平铺 export
 ⑥ ui/*FormModal   FormModal 声明式弹窗 + schema/fields + subject（或主单据 FormPage）
 ⑦ ui/*View        useListSearch + DataTable 纯受控视图（带 subject 自动接管权限）
-⑧ layout.tsx      路由组 CASL Ability 边界注入（关键防线：通过 getTenantSubjectPermissions 注入该目录下所有 Subject）
+⑧ layout.tsx      【专属边界防线】必须挂载切片专属路由与本切片专属 *AbilityBoundary（严禁借道寄生到其他模块 Layout）
 ⑨ apps page.tsx   标准 RSC 装配（主列表、new、[id] 路由页直通数据）
 → 单测与 check/test 全绿
 ```

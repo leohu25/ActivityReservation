@@ -85,7 +85,7 @@ export const tenantDictItemPageContract: FeaturePagePermissionDescriptor = {
 	resource: TenantDictItemResource,
 	subject: TenantDictItemSubject,
 	label: "数据字典",
-	path: "/settings/dict",
+	path: "/archives/dict",
 	actions: [
 		{ action: StandardAction.READ, label: "查看字典项" },
 		{ action: StandardAction.CREATE, label: "新建字典项" },

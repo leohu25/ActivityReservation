@@ -1,4 +1,7 @@
 import { TenantAdminAbilityBoundary } from "@platform/tenant-admin/shared";
+import { CompanyProfileSubject } from "@platform/tenant-admin/tenant-settings";
+import { RoleManagementSubject } from "@platform/tenant-admin/role-management";
+import { TenantMenuItemSubject } from "@platform/tenant-admin/nav-management";
 import { getTenantSubjectPermissions } from "@/kernel";
 
 /**
@@ -9,22 +12,19 @@ export default async function SettingsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [companyProfile, roleManagement, tenantMenuItem, tenantDictItem] =
-    await Promise.all([
-      getTenantSubjectPermissions("CompanyProfile"),
-      getTenantSubjectPermissions("RoleManagement"),
-      getTenantSubjectPermissions("TenantMenuItem"),
-      getTenantSubjectPermissions("TenantDictItem"),
-    ]);
+  const [companyProfile, roleManagement, tenantMenuItem] = await Promise.all([
+    getTenantSubjectPermissions(CompanyProfileSubject),
+    getTenantSubjectPermissions(RoleManagementSubject),
+    getTenantSubjectPermissions(TenantMenuItemSubject),
+  ]);
 
   return (
     <TenantAdminAbilityBoundary
       permissions={{
         subjects: {
-          CompanyProfile: companyProfile,
-          RoleManagement: roleManagement,
-          TenantMenuItem: tenantMenuItem,
-          TenantDictItem: tenantDictItem,
+          [CompanyProfileSubject]: companyProfile,
+          [RoleManagementSubject]: roleManagement,
+          [TenantMenuItemSubject]: tenantMenuItem,
         },
       }}
     >

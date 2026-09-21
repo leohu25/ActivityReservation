@@ -107,3 +107,20 @@
      - [ ] 3. 运行 `node scripts/sync/sync-features.mjs` 确保注册表包含新清单；
      - [ ] 4. 编写组件单测时，不仅断言有完整权限时正常显示，还要断言仅有 `read` 权限时写操作被隐藏，形成双向断言防御。
 
+---
+
+## 8. View 层只声明 Subject 与全链路消灭 Subject 魔法字符串 (Zero Magic String Subjects Redline)
+
+- **痛点**：
+  - 在 View 层或 Layout/Page 中随手手写裸字符串字面量（如 `subject="Customer"`、`getTenantSubjectPermissions("Role")`、`getTenantMultiSubjectPermissions(["Department", "CustomerTag"])`）；
+  - 一旦发生实体名重构、多切片重名或手抖拼错，编译器失声，运行时由于查不到该魔法字符串的权限快照，直接静默将页面列和按钮隐藏，排查耗费数小时。
+- **解法与铁律**：
+  1. **View 层规范（2.4 节核心心智）**：
+     - View 层严格通过 `subject={XxxSubject}` 纯受控声明，**必须直接引用切片契约导出的强类型常量符号**，严禁传裸字符串；
+     - `DataTable` 自动接管写按钮与列脱敏；
+  2. **全局统一派生与内核强类型收敛 (GlobalTenantSubject)**：
+     - 通过 `scripts/sync-features.mjs` 自动从所有切片 Manifests 中提取所有页面受控实体的全局联合类型 `GlobalTenantSubject`（0 人工维护开销）；
+     - `getTenantSubjectPermissions` 与 `getTenantMultiSubjectPermissions` 函数入参强制约束为 `GlobalTenantSubject`，从 TypeScript 静态类型层彻底封死逃逸路径；
+  3. **自动化门禁双重拦截 (`scripts/check/check-permission-contracts.mjs`)**：
+     - 门禁脚本扫描 `apps/tenant/src/**` 全量源码，一旦发现 `getTenantSubjectPermissions("...")` 或 `getTenantMultiSubjectPermissions(["..."])` 中存在裸字符串字面量，**提交门禁直接报错硬阻断**，强制提示开发者 `import { XxxSubject }` 替换！
+

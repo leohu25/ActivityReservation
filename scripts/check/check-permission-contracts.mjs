@@ -470,6 +470,50 @@ for (const file of tenantDashboardPages) {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// 架构红线：消灭 Subject 魔法字符串门禁 (Zero Magic String Subjects Redline)
+// 严禁在 getTenantSubjectPermissions 或 getTenantMultiSubjectPermissions 中传入裸字符串字面量
+// ---------------------------------------------------------------------------
+const tenantAppFiles = filesUnder(
+	path.join(root, "apps/tenant/src"),
+	(f) => tsPattern.test(f) && !f.endsWith(".test.ts") && !f.endsWith(".test.tsx"),
+);
+
+for (const file of tenantAppFiles) {
+	const source = fs.readFileSync(file, "utf8");
+
+	// 拦截 getTenantSubjectPermissions("MagicString")
+	for (const match of source.matchAll(
+		/getTenantSubjectPermissions\(\s*["']([A-Za-z0-9_]+)["']\s*\)/g,
+	)) {
+		fail(
+			file,
+			match.index,
+			"subject-safety",
+			"getTenantSubjectPermissions must use strongly typed Subject constant symbol, no magic string",
+			match[1],
+			`import { ${match[1]}Subject } from corresponding slice contract and pass ${match[1]}Subject`,
+		);
+	}
+
+	// 拦截 getTenantMultiSubjectPermissions(["MagicString1", ...])
+	for (const match of source.matchAll(
+		/getTenantMultiSubjectPermissions\(\s*\[\s*([\s\S]*?)\s*\]\s*\)/g,
+	)) {
+		const arrayBody = match[1];
+		for (const strMatch of arrayBody.matchAll(/["']([A-Za-z0-9_]+)["']/g)) {
+			fail(
+				file,
+				match.index + (strMatch.index ?? 0),
+				"subject-safety",
+				"getTenantMultiSubjectPermissions array must contain strongly typed Subject constant symbols, no magic strings",
+				strMatch[1],
+				`import { ${strMatch[1]}Subject } from corresponding slice contract and pass ${strMatch[1]}Subject`,
+			);
+		}
+	}
+}
+
 if (violations.length) {
 	console.error(
 		`\u001b[31m✗ [Permission Contract Violations] found ${violations.length} violation(s)\u001b[0m`,

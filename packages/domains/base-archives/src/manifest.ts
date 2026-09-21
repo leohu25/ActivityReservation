@@ -14,8 +14,8 @@ export const baseArchivesManifest: TenantFeatureManifest = {
 		{
 			pageKey: "base-archives-dict",
 			defaultLabel: "数据字典",
-			group: "基础设置",
-			href: "/settings/dict",
+			group: "基础档案",
+			href: "/archives/dict",
 			defaultIcon: "BookOpen",
 			requiredAction: StandardAction.READ,
 			requiredSubject: TenantDictItemSubject,

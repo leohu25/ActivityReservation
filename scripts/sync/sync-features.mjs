@@ -143,9 +143,17 @@ function generateRegistryCode(features) {
  */
 ${imports.join("\n")}
 
-export const ALL_TENANT_MANIFESTS: readonly TenantFeatureManifest[] = [
+export const ALL_TENANT_MANIFESTS = [
 ${manifestList}
 ] as const;
+
+/**
+ * 自动从全局聚合清单中推导所有切片受控实体的全局 Subject 联合类型 (SSoT)
+ * 新增任何业务切片时由编译期自动发现生成，内核无需手工维护枚举
+ */
+export type GlobalTenantSubject = NonNullable<
+  typeof ALL_TENANT_MANIFESTS[number]["permissionModules"]
+>[number]["pages"][number]["subject"];
 
 /** 纯业务切片清单 (排除系统管理，供业务自定义菜单选用) */
 export const BUSINESS_TENANT_MANIFESTS: readonly TenantFeatureManifest[] = [

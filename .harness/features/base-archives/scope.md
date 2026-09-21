@@ -11,6 +11,8 @@
 - `apps/tenant/src/app/(dashboard)/settings/dict/**`
 - `apps/tenant/src/app/(dashboard)/settings/layout.tsx`
 - `apps/tenant/src/app/(dashboard)/archives/**`
+- `apps/tenant/src/app/(dashboard)/workbench/**`
+- `apps/tenant/src/kernel/**`
 - `apps/tenant/package.json`
 - `tooling/db-migrate/migrations/tenant/**`
 - `tooling/db-migrate/generated/runtime-catalog.ts`

@@ -1,5 +1,11 @@
 import { getTenantWorkbenchData } from "@/kernel";
 import { getTenantMultiSubjectPermissions } from "@/kernel/permissions";
+import { WorkbenchSubject } from "@platform/tenant-admin/workbench";
+import { DepartmentSubject } from "@platform/tenant-admin/org-management";
+import { RoleSubject } from "@platform/tenant-admin/role-management";
+import { CustomerSubject } from "@domain/customer-center/customer-management";
+import { CustomerCategorySubject } from "@domain/customer-center/customer-management/category";
+import { CustomerTagSubject } from "@domain/customer-center/customer-management/tag";
 import { getDepartmentCountQuery } from "@platform/tenant-admin/org-management/server";
 import { getRoleCountQuery } from "@platform/tenant-admin/role-management/server";
 import { getCustomerCountQuery } from "@domain/customer-center/customer-management/server";
@@ -18,14 +24,14 @@ export default async function WorkbenchPage() {
   // 1. 核心租户身份与业务准入上下文
   const workbenchData = await getTenantWorkbenchData();
 
-  // 2. 批量提取工作台自身视图及所涉 5 大业务实体的 CASL 权限快照
+  // 2. 批量提取工作台自身视图及所涉 5 大业务实体的 CASL 权限快照（100% 强类型常量符号，杜绝魔法字符串）
   const permissions = await getTenantMultiSubjectPermissions([
-    "Workbench",
-    "Department",
-    "Role",
-    "Customer",
-    "CustomerCategory",
-    "CustomerTag",
+    WorkbenchSubject,
+    DepartmentSubject,
+    RoleSubject,
+    CustomerSubject,
+    CustomerCategorySubject,
+    CustomerTagSubject,
   ]);
 
   // 3. 并发执行多实体数据查询（故障相互隔离）

@@ -96,16 +96,21 @@ export function SliceAbilityBoundary({
 }
 ```
 
-### 2.2 租户路由 layout（RSC，一次注入）
+### 2.2 租户路由 layout（RSC，专属边界一次注入，严禁借道寄生）
+
+> **⚠️ 核心架构宪法（切片物理内聚与专属边界）**：
+> 1. **每个业务切片在应用层必须拥有专属的路由组目录**（如 `(dashboard)/customer`、`(dashboard)/archives`）；
+> 2. **每个路由组的 `layout.tsx` 必须 100% 且仅能使用本切片专属导出的 `*AbilityBoundary`**（如 `CustomerAbilityBoundary`、`BaseArchivesAbilityBoundary`）；
+> 3. **严禁借道寄生**：严禁将业务切片的页面塞进无关模块（如 `settings`），严禁在其他模块的 Layout/Boundary 中跨切片注入本切片的 Subject！
 
 ```tsx
-// apps/tenant/src/app/(dashboard)/<slice>/layout.tsx
-import { SliceAbilityBoundary } from "@domain/<area>/shared";
-import { ResourceASubject } from "@domain/<area>/<feature-a>";
-import { ResourceBSubject } from "@domain/<area>/<feature-b>";
+// apps/tenant/src/app/(dashboard)/<area>/layout.tsx
+import { AreaAbilityBoundary } from "@domain/<area>/shared";
+import { ResourceASubject } from "@domain/<area>/resource-a";
+import { ResourceBSubject } from "@domain/<area>/resource-b";
 import { getTenantSubjectPermissions } from "@/kernel";
 
-export default async function SliceLayout({
+export default async function AreaLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -116,9 +121,9 @@ export default async function SliceLayout({
   ]);
 
   return (
-    <SliceAbilityBoundary permissions={{ resourceA, resourceB }}>
+    <AreaAbilityBoundary permissions={{ resourceA, resourceB }}>
       {children}
-    </SliceAbilityBoundary>
+    </AreaAbilityBoundary>
   );
 }
 ```
@@ -137,6 +142,7 @@ return <XxxView data={pageData.items} total={pageData.total} />;
 "use client";
 import { useAbility } from "@base/authorization";
 import { DataTable, DataTree } from "@base/ui";
+import { XxxSubject } from "../contract";
 
 export function XxxView({ data, total }: Props) {
   const ability = useAbility(); // 仅导出等需要命令式 can() 时使用
@@ -150,12 +156,17 @@ export function XxxView({ data, total }: Props) {
       columns={columns}
       total={total}
       rowKey={(r) => r.id}
-      subject={XxxSubject} // 只传 subject！
+      subject={XxxSubject} // 👈 必须传：导入的强类型常量符号，严禁手写 "Xxx" 裸字符串！
       title="…"
     />
   );
 }
 ```
+
+> **⚠️ 2.4 核心经验与红线铁律（消灭魔法字符串，端到端强类型）**：
+> 1. **严禁在 View、Page 或 Layout 中手写任何裸字符串作为 Subject**（例如 `subject="Customer"`、`getTenantSubjectPermissions("Role")`）；
+> 2. **必须统一从切片契约中 import 官方导出的强类型常量符号**（如 `CustomerSubject`、`RoleSubject`、`TenantDictItemSubject`）；
+> 3. **全局内核入参收敛**：`getTenantSubjectPermissions` 与 `getTenantMultiSubjectPermissions` 函数入参已被约束为 `GlobalTenantSubject`（由编译期自动从所有切片 Manifests 推导聚合生成，零人工维护成本）。一旦手写魔术字符串或传错拼写，TypeScript 编译期直接强阻断报错！
 
 **禁止**出现在 View Props / Workspace 上：
 

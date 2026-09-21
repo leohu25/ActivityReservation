@@ -32,7 +32,7 @@ export const createTenantDictItemAction = defineServerAction(
 		const input = parseCreateDictItemInput(rawInput);
 		const created = await TenantDictItemService.createDictItem(client, input);
 
-		revalidatePath("/settings/dict");
+		revalidatePath("/archives/dict");
 		return created;
 	},
 	"创建字典项失败",
@@ -50,7 +50,7 @@ export const updateTenantDictItemAction = defineServerAction(
 		const input = parseUpdateDictItemInput(rawInput);
 		const updated = await TenantDictItemService.updateDictItem(client, input);
 
-		revalidatePath("/settings/dict");
+		revalidatePath("/archives/dict");
 		return updated;
 	},
 	"修改字典项失败",
@@ -67,7 +67,7 @@ export const deleteTenantDictItemAction = defineServerAction(
 
 		await TenantDictItemService.deleteDictItem(client, id);
 
-		revalidatePath("/settings/dict");
+		revalidatePath("/archives/dict");
 		return { success: true };
 	},
 	"删除字典项失败",
@@ -89,7 +89,7 @@ export const toggleTenantDictItemStatusAction = defineServerAction(
 			parsed.status as TenantDictItemStatus,
 		);
 
-		revalidatePath("/settings/dict");
+		revalidatePath("/archives/dict");
 		return { success: true };
 	},
 	"切换字典项状态失败",

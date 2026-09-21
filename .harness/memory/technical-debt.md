@@ -26,6 +26,7 @@
 | DEBT-015 | 2026-09-18 | @implementer | packages/base/ui DataTable | `searchPlacement="toolbar"` / `advancedFilters` / `advancedTriggerText` 为可选高级抽屉形态，易与推荐扩展插槽 **`filterExtra`（未废弃）** 混淆 | 已从 DataTable 彻底物理移除 searchPlacement / advancedFilters / advancedTriggerText，全仓统一收敛为 filterExtra 扁平工业风交互 | 低 | 已解决 |
 | DEBT-016 | 2026-09-18 | @implementer | packages/*, apps/* | 历史遗留 package.json 采用混沌的 `@base/feature-*` 和 `@base/biz-shared` 命名，导致业务包被赋予基座前缀，违背物理分层与 DDD 领域语义 | 已全面规范化为 `@domain/*`（垂直业务）、`@platform/*`（平台套件）、`@biz/shared`（中台资产）与 `@base/*`（纯技术基础设施）四维拓扑，全仓对齐并消灭别扭感 | 高 | 已解决 |
 | DEBT-017 | 2026-09-21 | @implementer | packages/domains/*/src/assembly, packages/domains/*/src/shared/server | 各业务切片内重复手写 `getTenantDbContext`（Session/TenantContext/DB连接/员工门禁解析）与 `resolveEmployeeTopology`（部门拓扑解析与 CASL 工厂装配）高度样板代码 | 将通用的租户会话与物理库解析上浮至 `@base/db-tenant` 或 `@base/auth`；并提供高阶工厂（如 `createTenantSliceContext(catalog)`）供切片单行组合装配 | 高 | 待排期(本次提交后立即收敛) |
+| DEBT-018 | 2026-09-21 | @implementer | apps/tenant/src/kernel/permissions.ts, apps/tenant/src/app/(dashboard)/workbench | 内核权限查询函数入参为宽泛的 `string`，页面层（workbench、settings 等）存在硬编码手写 Subject 魔法字符串风险 | 通过 `scripts/sync-features.mjs` 自动推导并导出 `GlobalTenantSubject`（由全仓 Manifests 自动推导，0 人工维护成本），彻底将 `getTenantSubjectPermissions` 入参收敛为强类型，并替换全仓魔法字符串为常量符号 | 高 | 已解决 |
 
 ---
 
