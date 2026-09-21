@@ -77,7 +77,7 @@ export function ControlLogin(): React.JSX.Element {
           showError(msg);
         } else {
           toast.success("注册成功，正在进入控制平面...");
-          router.push("/overview");
+          router.push("/workbench");
           router.refresh();
         }
       } else {
@@ -94,7 +94,7 @@ export function ControlLogin(): React.JSX.Element {
           showError(msg);
         } else {
           toast.success("登录成功，欢迎回到控制平面");
-          router.push("/overview");
+          router.push("/workbench");
           router.refresh();
         }
       }

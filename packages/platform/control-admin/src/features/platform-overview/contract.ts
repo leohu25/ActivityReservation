@@ -13,7 +13,7 @@ export const platformOverviewPageContract: FeaturePagePermissionDescriptor = {
   resource: PlatformOverviewResource,
   subject: PlatformOverviewSubject,
   label: "控制平面运营大盘",
-  path: "/overview",
+  path: "/workbench",
   actions: [
     { action: StandardAction.READ, label: "查看控制平面大盘指标" },
   ],
