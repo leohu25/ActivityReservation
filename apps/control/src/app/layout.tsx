@@ -28,7 +28,7 @@ export default function RootLayout({
     <ThemeProvider>
      <NuqsAdapter>
       {children}
-      <Toaster position="top-right" richColors closeButton />
+      <Toaster position="top-center" richColors closeButton />
      </NuqsAdapter>
     </ThemeProvider>
    </body>

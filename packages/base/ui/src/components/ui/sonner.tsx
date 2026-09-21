@@ -39,6 +39,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast: "cn-toast",
+          closeButton:
+            "!left-auto !right-[-4px] !top-[-4px] !transform-none",
         },
       }}
       {...props}
