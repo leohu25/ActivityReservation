@@ -17,6 +17,7 @@ const PLATFORM_REQUIRED_TABLES = [
   "organization",
   "platform_migration",
   "session",
+  "tenant_account",
   "tenant_database",
   "tenant_migration",
   "user",

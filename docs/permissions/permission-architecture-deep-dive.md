@@ -16,7 +16,7 @@
    - **前端交互防线**：控制菜单显隐、按钮禁用/隐藏、表格列剔除、表单控件只读锁定，保障极致的用户体验（所见即所得）；
    - **后端物理防线**：在 Server Action、RSC Server Query、数据服务层与 SQL 下推层建立坚不可摧的阻断机制，严禁仅依靠前端判断，彻底杜绝直接抓包或伪造 HTTP 请求的越权攻击。
 3. **职责分离与单一事实源 (SSoT)**：
-   - **认证与会话 (Authentication & Identity)**：由 `@base/auth`（Better Auth）统一管理，负责跨租户隔离、会话凭据、租户上下文（`organizationId`）与底层角色标识。
+   - **认证与会话 (Authentication & Identity)**：由 `@base/auth`（基于 Better Auth 核心与官方 `tenantCredentialsPlugin` 扩展插件）统一管理，负责总控平台超管认证、企业三要素（`organizationSlug + account + password`）独立凭据校验、跨租户物理隔离、会话凭据、租户上下文（`organizationId`）与底层角色标识。
    - **授权与决策 (Authorization & Rule Engine)**：由 `@base/authorization`（CASL 规则编译引擎）统一管理，负责四层细粒度权限的定义、编译、决策与 SQL 下推。
    - **业务切片契约 (Contracts)**：各业务切片在 `packages/domains/<domain>/src/features/<feature>/contract.ts` 中自包含维护自己的实体名（Subject）、资源名（Resource）、受控字段枚举与页面权限契约，杜绝硬编码魔法字符串。
 4. **页面认知容器与受控数据模型解耦 (Page-Container & Entity-Subject Decoupling)**：

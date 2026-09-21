@@ -37,7 +37,7 @@ INSERT INTO "employee_profile" (
 ) VALUES (
   $7, $8, $3, 'E0001',
   (SELECT "id" FROM "department" WHERE "code" = 'ROOT' LIMIT 1),
-  'pos_gm',
+  (SELECT "id" FROM "position" WHERE "code" = 'pos_gm' LIMIT 1),
   $9, $10, '企业所有者',
   'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 )

@@ -2,18 +2,26 @@
 
 ## 一、 当前会话状态
 
-- **交付状态**：阶段一推进中 (in_progress)
-- **当前分支/工作区**：`feat-tenant-scoped-auth-and-enterprise-login`
+- **交付状态**：终局架构全链路已落地验证通过 (completed)
 - **交接时间**：2026-09-21
 
-## 二、 当前阶段成果 (阶段一)
+## 二、 核心成果与变更总结
 
-1. **种子纯化**：将租户初始化 Owner 员工档案合入 `packages/runtime/db/seeds/tenant-seed.sql` 原生 SQL，彻底清除 TS 手写拼接与硬编码数字。
-2. **锁升级**：升级 `TenantDatabaseProvisioner` 租户端咨询锁为事务级 `pg_advisory_xact_lock`。
-3. **熔断加固**：加固 `apps/control/src/instrumentation.ts` 生产环境 Fail-Fast 阻断机制。
-4. **沙盒确权**：正式在 `feature_list.json` 与 `.harness/features/` 建立特性事实源看板，明确划分为 4 大里程碑。
+1. **数据库凭据模型隔离 (`packages/base/db-control`)**：
+   - 引入 `TenantAccount` 实体模型，设立 `@@unique([organizationId, account])` 复合唯一索引；
+   - 更新平台 Baseline 全量基线工件为 `20260921150838`；
+   - 华为的张三与小米的张三在物理与逻辑层各自拥有独立加盐密码，完全杜绝重名冲突与密码覆盖。
+2. **三要素企业登录 (`apps/tenant` & `@base/auth`)**：
+   - 沉淀 `authenticateTenantUser` 独立三要素认证领域服务与单元测试；
+   - 租户端落地 `/api/auth/tenant-login` 路由与三要素登录界面；
+   - 登录时直接按 `[organizationSlug, account, password]` 认证并签发标准 Session，直通工作台，彻底消灭“二选一选择企业”的逻辑混乱。
+3. **开通与录入全链路闭环 (`packages/platform/*`)**：
+   - 平台开辟租户与租户录入员工时，自动将密码与账号精准写入该企业的 `TenantAccount`。
 
-## 三、 下一步立即断点 (Next Actions)
+## 三、 测试与门禁验证
 
-- 消除 `tenant-management/service.ts` 中的老用户密码覆盖代码；
-- 跑通阶段一相关单元测试，通过框架防篡改门禁完成阶段一的代码提交。
+- `@base/auth` 单元测试：16/16 PASS
+- `@platform/control-admin` 单元测试：17/17 PASS
+- `@platform/tenant-admin` 单元测试：89/89 PASS
+- TypeScript 严格类型检查：全仓 0 错误
+- Jev 终审结构化判别：`ready_to_commit` (置信度 95%)

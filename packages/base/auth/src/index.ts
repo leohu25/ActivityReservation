@@ -17,6 +17,10 @@ export {
   type ServerAuthRuntime,
 } from "./server/server";
 export {
+  tenantCredentialsPlugin,
+  type TenantCredentialsPluginOptions,
+} from "./server/tenant-credentials-plugin";
+export {
   createTrustedTenantContextResolver,
   type TrustedSessionReader,
   type TrustedTenantContextDependencies,

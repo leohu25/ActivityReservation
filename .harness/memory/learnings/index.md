@@ -17,7 +17,7 @@
 | **修改 Prisma 模型、多租户数据库连接池、运行迁移引擎、数据库基线漂移自愈、对象存储与附件管理** | [`database-and-multitenant.md`](./database-and-multitenant.md) | TenantDbManager LRU 连接池、@base/db-migrate 12-Factor 自愈引擎、Baseline SQL、Prisma 逻辑外键 connect 规范、多态附件 sys_attachment 最佳实践 |
 | **编写 Server Component、Server Actions、跨端数据传输 (toPlainData)、序列化报错** | [`nextjs-and-server-actions.md`](./nextjs-and-server-actions.md) | RSC 直调 Service（禁伪 API）、Server Action 变动适配器、Prisma Decimal/Date 纯数据清洗（toPlainData）、官方配方优先 |
 | **编写或修改构建脚本、Git 门禁拦截、进度记录与交接单维护** | [`engineering-and-scripts.md`](./engineering-and-scripts.md) | 跨平台 Node.js (*.mjs) 强制规范、Git pre-commit 兜底、单源特性状态治理（消除状态双写） |
-| **常量定义、TypeScript 类型报错、代码重构与消除 any 坏味道** | [`architecture-and-types.md`](./architecture-and-types.md) | 彻底消灭 TS 原生 enum、坚守 `as const` 现代字面量范式、强制全链路强类型与零 any 防线 |
+| **常量定义、TypeScript 类型报错、代码重构与消除 any 坏味道、多租户账号与凭证模型** | [`architecture-and-types.md`](./architecture-and-types.md) | 彻底消灭 TS 原生 enum、坚守 `as const` 现代字面量范式、强制全链路强类型与零 any 防线、ToB 多租户凭据隔离与严格字面量保真铁律 (Strict Literal Fidelity) |
 
 ---
 

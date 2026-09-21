@@ -19,7 +19,8 @@
     "@base/db-control": "workspace:*",
     "@base/shared": "workspace:*",
     "@tool/db-migrate": "workspace:*",
-    "better-auth": "1.7.3"
+    "better-auth": "1.7.3",
+    "zod": "^4.6.1"
   },
   "peerDependencies": {
     "react": "^19.0.0"

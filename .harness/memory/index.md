@@ -11,6 +11,7 @@
 - [ADR-007: Better Auth 与 CASL 职责边界（认证与业务授权分离）](adr/ADR-007-authn-vs-authz-boundary.md)
 - [ADR-008: 业务能力垂直内聚、选择性 DDD 与三级共享体系](adr/ADR-008-fdd-slices-with-ddd-aggregates-and-biz-shared.md)
 - [ADR-009: 业务实体基础审计字段基线规范与行级数据范围约束](adr/ADR-009-base-entity-audit-and-data-scope-baseline.md)
+- [ADR-010: 多租户独立凭证模型与企业三要素认证架构](adr/ADR-010-tenant-scoped-credentials-and-enterprise-auth.md)
 
 ## 二、 踩坑经验与避雷库 (Learnings)
 

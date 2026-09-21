@@ -383,7 +383,7 @@ export class TenantManagementService {
     }
 
     const initialPassword = input.initialPassword ?? "Admin123456!";
-    let returnedInitialPassword: string | undefined;
+    const hashedPassword = await hashPassword(initialPassword);
 
     const existingAccount = await this.prisma.account.findFirst({
       where: {
@@ -393,7 +393,6 @@ export class TenantManagementService {
     });
 
     if (!existingAccount) {
-      const hashedPassword = await hashPassword(initialPassword);
       await this.prisma.account.create({
         data: {
           id: generateUuidV7(),
@@ -403,10 +402,6 @@ export class TenantManagementService {
           password: hashedPassword,
         },
       });
-      returnedInitialPassword = initialPassword;
-    } else {
-      // 安全防线：老用户已存在时，严禁覆盖或重设其已有密码，保障跨企业安全性
-      returnedInitialPassword = undefined;
     }
 
     const orgId = generateUuidV7();
@@ -423,6 +418,20 @@ export class TenantManagementService {
             role: "owner",
           },
         },
+      },
+    });
+
+    // 独立租户凭证入库：无论平台 User 是否已存在，在当前租户下建立独立的 TenantAccount
+    // 账号完全忠实于用户输入（支持自定义账号、手机号、邮箱、工号），严禁擅自截断或篡改！
+    await this.prisma.tenantAccount.create({
+      data: {
+        id: generateUuidV7(),
+        organizationId: organization.id,
+        account: cleanEmail,
+        password: hashedPassword,
+        name: adminUser.name,
+        memberId: ownerMemberId,
+        status: "ACTIVE",
       },
     });
 
@@ -550,7 +559,7 @@ export class TenantManagementService {
         slug: cleanSlug,
         databaseName: provisionResult.databaseName,
         status: provisionResult.status,
-        initialPassword: returnedInitialPassword,
+        initialPassword,
       };
     }
 
@@ -570,7 +579,7 @@ export class TenantManagementService {
       slug: cleanSlug,
       databaseName: dbRecord.databaseName,
       status: dbRecord.status,
-      initialPassword: returnedInitialPassword,
+      initialPassword,
     };
   }
 

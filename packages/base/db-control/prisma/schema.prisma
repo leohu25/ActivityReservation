@@ -133,6 +133,7 @@ model Organization {
   roles                OrganizationRole[]
   tenantDatabase       TenantDatabase?
   migrations           TenantMigration[]
+  tenantAccounts       TenantAccount[]
 
   @@map("organization")
 }
@@ -203,6 +204,34 @@ model OrganizationRole {
   @@index([organizationId])
   @@index([role])
   @@map("organization_role")
+}
+
+/// 租户企业私有凭据表 (Tenant-Scoped Account 独立认证事实源)
+model TenantAccount {
+  /// 凭据记录ID
+  id             String       @id @default(uuid(7)) @db.Uuid
+  /// 所属租户企业ID
+  organizationId String       @map("organization_id") @db.Uuid
+  /// 登录账号 (支持手机号、工号、自定义英文用户名，租户内唯一)
+  account        String       @db.VarChar(64)
+  /// Scrypt 加盐哈希加密后的密码凭据
+  password       String       @db.VarChar(255)
+  /// 员工真实姓名
+  name           String       @db.VarChar(100)
+  /// 绑定关联的租户 Member ID (用于精准对齐 CASL 权限)
+  memberId       String?      @map("member_id") @db.Uuid
+  /// 账号状态: ACTIVE (启用) / DISABLED (停用)
+  status         String       @default("ACTIVE") @db.VarChar(20)
+  /// 账号创建时间
+  createdAt      DateTime     @default(now()) @map("created_at")
+  /// 账号更新时间
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, account])
+  @@index([organizationId])
+  @@index([memberId])
+  @@map("tenant_account")
 }
 
 /// 租户物理独立数据库路由事实源 (Database-per-tenant 拓扑总账)

@@ -205,6 +205,7 @@ export async function resetLocalTenantDatabases(
 				const posGmId = generateUuidV7();
 				const posSupervisorId = generateUuidV7();
 				const posSpecialistId = generateUuidV7();
+				const empId = generateUuidV7();
 
 				await tenantClient.query(TENANT_BASE_SEED_SQL, [
 					rootDeptId,
@@ -213,32 +214,11 @@ export async function resetLocalTenantDatabases(
 					posGmId,
 					posSupervisorId,
 					posSpecialistId,
+					empId,
+					target.userId ?? null,
+					target.userName || "企业所有者",
+					target.userEmail || "admin@example.com",
 				]);
-
-				if (target.memberId && target.userId) {
-					console.log(
-						`    └─ 恢复 Owner 员工档案 (${target.userName || target.userEmail}) ...`,
-					);
-					const empId = generateUuidV7();
-					await tenantClient.query(
-						`
-            INSERT INTO employee_profile (
-              id, member_id, user_id, employee_no, department_id, position_id, 
-              name_snapshot, email_snapshot, job_title, status, joined_at, created_at, updated_at
-            )
-            VALUES ($1, $2, $3, 'E0001', $4, $5, $6, $7, '企业所有者', 'ACTIVE', NOW(), NOW(), NOW());
-          `,
-						[
-							empId,
-							target.memberId,
-							target.userId,
-							rootDeptId,
-							posGmId,
-							target.userName || "管理员",
-							target.userEmail || "admin@example.com",
-						],
-					);
-				}
 
 				console.log(
 					`    \x1b[32m✔ 租户物理库 ${dbName} 重置并初始化完毕\x1b[0m`,

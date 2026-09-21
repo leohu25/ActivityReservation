@@ -417,7 +417,7 @@ export class EmployeeManagementService {
       }
     }
 
-    // 3. 在 Control DB 查找或创建 User
+    // 3. 在 Control DB 查找或创建 User (作为平台会话载体)
     let targetUser = await controlPrisma.user.findUnique({
       where: { email: cleanEmail },
     });
@@ -426,6 +426,7 @@ export class EmployeeManagementService {
     if (plainPassword.length < 8) {
       throw new Error("初始密码长度至少为 8 位");
     }
+    const hashedPassword = await hashPassword(plainPassword);
 
     if (targetUser) {
       // 检查是否已经在当前租户中有成员记录
@@ -454,7 +455,6 @@ export class EmployeeManagementService {
         },
       });
 
-      const hashedPassword = await hashPassword(plainPassword);
       await controlPrisma.account.create({
         data: {
           id: generateUuidV7(),
@@ -476,6 +476,33 @@ export class EmployeeManagementService {
         organizationId: orgId,
         userId: targetUser.id,
         role: roleString,
+      },
+    });
+
+    // 4.1 在 Control DB 中创建当前租户专属的独立凭据 TenantAccount
+    // 账号规则：严格保真，优先使用工号；若未填写工号则完整使用邮箱或姓名，绝不擅自截断 @ 字符！
+    const loginAccount = cleanEmployeeNo || cleanEmail || cleanName;
+    await controlPrisma.tenantAccount.upsert({
+      where: {
+        organizationId_account: {
+          organizationId: orgId,
+          account: loginAccount,
+        },
+      },
+      create: {
+        id: generateUuidV7(),
+        organizationId: orgId,
+        account: loginAccount,
+        password: hashedPassword,
+        name: cleanName,
+        memberId: createdMember.id,
+        status: "ACTIVE",
+      },
+      update: {
+        password: hashedPassword,
+        name: cleanName,
+        memberId: createdMember.id,
+        status: "ACTIVE",
       },
     });
 

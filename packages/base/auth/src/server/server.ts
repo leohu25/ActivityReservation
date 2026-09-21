@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { organization } from "better-auth/plugins";
 import { generateUuidV7 } from "@base/shared";
+import { tenantCredentialsPlugin } from "./tenant-credentials-plugin";
 import {
   createControlPrismaClient,
   PrismaControlDbRepository,
@@ -64,6 +65,8 @@ export function createServerAuth(options: ServerAuthOptions) {
         roles: accessControl.roles as never,
         dynamicAccessControl: { enabled: true },
       }),
+      // 官方标准自定义扩展插件：支持企业编码+账号/工号/手机号三要素登录
+      tenantCredentialsPlugin({ prisma }),
     ],
   });
 

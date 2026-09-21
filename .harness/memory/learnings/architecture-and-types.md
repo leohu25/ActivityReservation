@@ -36,3 +36,21 @@
   - 全仓严禁 `any`、`(x as any)` 以及无 SAFETY 注释的暴力强转；
   - 所有输入/输出边界必须通过 Zod Schema 或强类型 Type Guard 收敛；
   - 数据库查询必须完全依托 Prisma 强类型（如 `TenantPrisma.*WhereInput`），确保字段从数据库、服务端 Query、BFF DTO 到前端组件 Props 100% 严格可推导。
+
+---
+
+## 3. ToB 多租户凭证隔离与数据保真铁律 (Strict Literal Fidelity & Scoped Credentials)
+
+- **痛点**：
+  - 将 B2C 全局邮箱账号模型直接套用到企业级 ERP，当不同租户录入同名工号或手机号时，导致跨企业账号合并、密码覆盖与数据串号灾难；
+  - 试图通过自动截断 `@` 字符（`split('@')[0]`）并在查询端写模糊猜测补丁来掩盖缺陷，导致系统丧失确定性，滋生严重技术债。
+- **解法与铁律**：
+  1. **租户作用域复合唯一约束**：
+     - 凭证模型必须声明 `@@unique([organizationId, account])`；
+     - 账号与密码严格归属于特定租户，不同企业随便同名（如工号 `001`、业务员手机号），互不干扰、互不越权；
+  2. **严格字面量保真 (Strict Literal Fidelity)**：
+     - 用户输入什么，数据库就精确存储什么；查询时严格精确匹配；
+     - 严禁擅自截断、转换或猜测用户输入，杜绝任何以错补错的模糊查询补丁；
+  3. **官方插件扩展范式**：
+     - 优先采用框架原生扩展点（如 Better Auth 的 `createAuthEndpoint`、`internalAdapter.createSession` 与 `setSessionCookie`）；
+     - 原生完成会话签发与 Cookie 种植，消除伪网关与中间代理胶水代码。

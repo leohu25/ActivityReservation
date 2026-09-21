@@ -169,6 +169,11 @@ test("TenantManagementService 租户开通逻辑、初始凭证、预置角色�
         return { ...create, ...update };
       },
     },
+    tenantAccount: {
+      async create({ data }: { data: Record<string, unknown> }) {
+        return data;
+      },
+    },
     tenantDatabase: {
       async create({
         data,

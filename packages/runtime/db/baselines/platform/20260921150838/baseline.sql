@@ -102,6 +102,21 @@ CREATE TABLE "session" (
 );
 
 -- CreateTable
+CREATE TABLE "tenant_account" (
+    "id" UUID NOT NULL,
+    "organization_id" UUID NOT NULL,
+    "account" VARCHAR(64) NOT NULL,
+    "password" VARCHAR(255) NOT NULL,
+    "name" VARCHAR(100) NOT NULL,
+    "member_id" UUID,
+    "status" VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "tenant_account_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "tenant_database" (
     "id" UUID NOT NULL,
     "organization_id" UUID NOT NULL,
@@ -200,6 +215,15 @@ CREATE INDEX "session_user_id_idx" ON "session"("user_id");
 CREATE INDEX "session_active_organization_id_idx" ON "session"("active_organization_id");
 
 -- CreateIndex
+CREATE INDEX "tenant_account_organization_id_idx" ON "tenant_account"("organization_id");
+
+-- CreateIndex
+CREATE INDEX "tenant_account_member_id_idx" ON "tenant_account"("member_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "tenant_account_organization_id_account_key" ON "tenant_account"("organization_id", "account");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "tenant_database_organization_id_key" ON "tenant_database"("organization_id");
 
 -- CreateIndex
@@ -243,6 +267,9 @@ ALTER TABLE "organization_role" ADD CONSTRAINT "organization_role_organization_i
 
 -- AddForeignKey
 ALTER TABLE "session" ADD CONSTRAINT "session_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tenant_account" ADD CONSTRAINT "tenant_account_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "tenant_database" ADD CONSTRAINT "tenant_database_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -310,6 +337,16 @@ COMMENT ON COLUMN "session"."ip_address" IS '客户端 IP 地址';
 COMMENT ON COLUMN "session"."user_agent" IS '客户端 User-Agent';
 COMMENT ON COLUMN "session"."user_id" IS '关联用户主键ID';
 COMMENT ON COLUMN "session"."active_organization_id" IS '当前处于激活上下文的租户企业ID';
+COMMENT ON TABLE "tenant_account" IS '租户企业私有凭据表 (Tenant-Scoped Account 独立认证事实源)';
+COMMENT ON COLUMN "tenant_account"."id" IS '凭据记录ID';
+COMMENT ON COLUMN "tenant_account"."organization_id" IS '所属租户企业ID';
+COMMENT ON COLUMN "tenant_account"."account" IS '登录账号 (支持手机号、工号、自定义英文用户名，租户内唯一)';
+COMMENT ON COLUMN "tenant_account"."password" IS 'Scrypt 加盐哈希加密后的密码凭据';
+COMMENT ON COLUMN "tenant_account"."name" IS '员工真实姓名';
+COMMENT ON COLUMN "tenant_account"."member_id" IS '绑定关联的租户 Member ID (用于精准对齐 CASL 权限)';
+COMMENT ON COLUMN "tenant_account"."status" IS '账号状态: ACTIVE (启用) / DISABLED (停用)';
+COMMENT ON COLUMN "tenant_account"."created_at" IS '账号创建时间';
+COMMENT ON COLUMN "tenant_account"."updated_at" IS '账号更新时间';
 COMMENT ON TABLE "tenant_database" IS '租户物理独立数据库路由事实源 (Database-per-tenant 拓扑总账)';
 COMMENT ON COLUMN "tenant_database"."id" IS '数据库拓扑记录ID';
 COMMENT ON COLUMN "tenant_database"."organization_id" IS '关联租户企业ID (1:1 物理隔离绑定)';

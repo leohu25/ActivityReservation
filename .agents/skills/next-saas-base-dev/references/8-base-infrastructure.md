@@ -54,9 +54,20 @@ graph TD
 
 ## 二、 基础设施核心模块演进规范与职责边界
 
-### 1. `@base/auth` — 双端身份认证引擎
+### 1. `@base/auth` — 双端身份认证引擎与企业独立凭据
 
-- **职责**：基于 Better Auth + Organization 插件提供平台端与租户端的账号认证、双因子鉴权、组织关系托管及 Cookie 会话生命周期管理。
+- **职责**：基于 Better Auth 核心 + 官方插件体系提供平台端与租户端的账号认证、双因子鉴权、组织关系托管及 Cookie 会话生命周期管理。
+- **架构范式（已固化）**：
+  - **双平面认证分离**：
+    - **平台总控端 (`apps/control`)**：采用全局超级管理员凭据（`CONTROL_BOOTSTRAP_ADMIN_*`），管理平台级全局资源与多租户拓扑；
+    - **业务租户端 (`apps/tenant`)**：采用严肃 ToB 工业级**“企业编码 (Slug) + 员工账号/工号/手机号 + 密码”**三要素认证；
+  - **租户私有凭据模型 (`TenantAccount`)**：
+    - 账号存储基于 `@@unique([organizationId, account])` 复合唯一索引强制物理与逻辑隔离；
+    - 不同企业随便同名（如工号 `001`、手机号、英文名），各自拥有独立加盐哈希密码，彻底消灭跨企业密码覆盖与同名串号灾难；
+    - **输入严格保真铁律 (Strict Literal Fidelity)**：系统绝对禁止擅自通过 `split("@")[0]` 截断用户输入的邮箱或工号，用户输入什么就精确保存什么、精确匹配什么，严禁在查询端编写模糊猜测补丁；
+  - **官方标准扩展插件 (`tenantCredentialsPlugin`)**：
+    - 严格遵循 Better Auth 官方插件规范，基于 `createAuthEndpoint("/sign-in/tenant", ...)` 挂载原生端点；
+    - 内部使用 `ctx.context.internalAdapter.createSession` 原生签发 Session，使用 `setSessionCookie` 原生种植标准 HttpOnly Cookie，直接直通工作台，杜绝任何中间转发伪网关或选择租户混乱弹窗；
 - **边界红线**：
   - **认证管进门，授权管屋内**：Better Auth 仅负责登录身份合法性，**严禁**使用 Better Auth 的内置权限函数做业务资源级别的细粒度鉴权（业务鉴权统一由 CASL 接管）；
   - 维护双端独立的 Session 校验中间件与服务端上下文提取器。

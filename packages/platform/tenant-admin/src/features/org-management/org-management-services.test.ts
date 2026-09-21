@@ -591,6 +591,17 @@ test("EmployeeManagementService 直接录入建号、调岗调部门与版本号
         return { id: where.id, authorizationVersion: authVersion };
       },
     },
+    tenantAccount: {
+      async upsert({
+        create,
+        update,
+      }: {
+        create: Record<string, unknown>;
+        update: Record<string, unknown>;
+      }) {
+        return { ...create, ...update };
+      },
+    },
   } as unknown as ControlPrismaClient;
 
   const departments: FakeDepartment[] = [

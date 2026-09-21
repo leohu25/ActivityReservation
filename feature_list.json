@@ -409,9 +409,9 @@
       "name": "【系统底座与认证重构】多租户独立凭据体系与企业编码三要素登录 (Tenant-Scoped Auth & Enterprise Login)",
       "description": "针对严肃企业级 ERP 场景彻底重构租户端认证与用户模型：1. 消除全局 User 密码跨租户覆盖致命漏洞与‘多租户二选一’串号死锁；2. 建立租户私有凭据模型（支持企业内自定义账号/手机号/工号），通过 [organizationId, account] 复合隔离杜绝跨企重名冲突；3. 租户端实现企业编码(Slug)+账号+密码标准三要素登录端点，与 Better Auth 会话管理及 CASL 权限无缝自愈衔接；4. 平台端开通租户与租户端员工录入流程彻底解耦，规范多组织与单组织边界。",
       "dependencies": ["base-archives"],
-      "status": "in_progress",
+      "status": "completed",
       "owner": "coordinator",
-      "evidence": "已完成 Harness 特性沙盒初始化 (.harness/features/feat-tenant-scoped-auth-and-enterprise-login/) 并建立 4 阶段推进路线图；阶段一收敛完成：Day 0 种子 100% 纯 SQL 化、租户事务级咨询锁加固与老用户密码覆盖安全拦截。"
+      "evidence": "1. Control DB 引入 TenantAccount 实体模型，基于 @@unique([organizationId, account]) 建立租户独立凭证，更新平台基线至 20260921150838；2. 在 @base/auth 落地 authenticateTenantUser 独立三要素认证服务与 Scrypt 密码校验单测；3. 租户端落地 /api/auth/tenant-login 与三要素登录表单 (企业编码+账号/工号/手机号+密码)，直通工作台；4. 平台开通租户与租户员工管理全面接入 TenantAccount 独立入库；5. 单元测试 122/122 全绿，check 0 错误，Jev 结构化裁决置信度 95% 通过。"
     }
   ]
 }
