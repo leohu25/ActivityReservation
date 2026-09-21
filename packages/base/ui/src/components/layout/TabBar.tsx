@@ -39,6 +39,45 @@ export interface TabItem {
 	readonly closable?: boolean;
 }
 
+export interface TabUpdateEventDetail {
+	readonly path?: string;
+	readonly title: string;
+}
+
+export interface TabCloseEventDetail {
+	readonly path?: string;
+	readonly redirectTo?: string;
+}
+
+/** 供客户端页面主动通知 TabBar 更新指定/当前页签标题 */
+export function updateTabTitle(title: string, path?: string): void {
+	if (typeof window === "undefined") return;
+	window.dispatchEvent(
+		new CustomEvent<TabUpdateEventDetail>("cr:tab:update", {
+			detail: { path, title },
+		}),
+	);
+}
+
+/** 供客户端页面主动通知 TabBar 关闭指定/当前页签，并可选跳至目标路由 */
+export function closeCurrentTab(options?: {
+	path?: string;
+	redirectTo?: string;
+}): void {
+	if (typeof window === "undefined") return;
+	const currentPath =
+		options?.path ||
+		window.location.pathname;
+	window.dispatchEvent(
+		new CustomEvent<TabCloseEventDetail>("cr:tab:close", {
+			detail: {
+				path: currentPath,
+				redirectTo: options?.redirectTo,
+			},
+		}),
+	);
+}
+
 export interface TabBarProps {
 	/** 默认固定展示的首页标签，传 null 表示无常驻固定首页标签 */
 	readonly homeTab?: TabItem | null;
@@ -63,7 +102,9 @@ function findTitleByPath(
 }
 
 function searchTitle(item: NavItem, path: string): string | null {
-	if (item.href && (item.href === path || path.startsWith(`${item.href}/`))) {
+	// 严格精确匹配：只有当 item.href 与 path 完全一致时，才采用菜单 label 作为标签名
+	// 若 path 是深层子路由（如 /customer/customers/cmup9evyk），绝不贪婪截断为父级菜单名，交由页面内部动态设置或兜底标题
+	if (item.href && item.href === path) {
 		return item.label;
 	}
 	const subs = item.items || item.children;
@@ -110,6 +151,190 @@ export function TabBar({
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const tabElementsRef = useRef<Map<string, HTMLElement>>(new Map());
 
+	// 持久化保存
+	const persistTabs = useCallback((newTabs: TabItem[]) => {
+		try {
+			sessionStorage.setItem(STORAGE_KEY, JSON.stringify(newTabs));
+		} catch {
+			// ignore
+		}
+	}, []);
+
+	// 关闭单个标签（安全纯函数状态计算 + 微任务异步导航，彻底杜绝 setState-in-render 冲突）
+	const closeTab = useCallback(
+		(targetPath: string, redirectTo?: string) => {
+			let nextRoute: string | null = null;
+			const cleanTarget = (targetPath || pathname).split("?")[0].split("#")[0];
+
+			setTabs((prev) => {
+				const index = prev.findIndex((t) => {
+					const cleanTab = t.path.split("?")[0].split("#")[0];
+					return cleanTab === cleanTarget;
+				});
+				if (index === -1) return prev;
+				const target = prev[index];
+				if (target && !target.closable) return prev;
+
+				const next = prev.filter((_, i) => i !== index);
+				persistTabs(next);
+
+				// 如果关闭的是当前激活标签，则导航至目标路由或相邻标签
+				const cleanCurrent = pathname.split("?")[0].split("#")[0];
+				if (cleanCurrent === cleanTarget) {
+					if (redirectTo) {
+						nextRoute = redirectTo;
+					} else {
+						const fallbackTab = homeTab ?? next[0];
+						const nextActive = next[index] ?? next[index - 1] ?? fallbackTab;
+						if (nextActive) {
+							nextRoute = nextActive.path;
+						}
+					}
+				}
+				return next;
+			});
+
+			if (nextRoute) {
+				const dest = nextRoute;
+				queueMicrotask(() => {
+					router?.push(dest);
+					router?.refresh();
+				});
+			}
+		},
+		[pathname, router, homeTab, persistTabs],
+	);
+
+	// 关闭其他标签
+	const closeOtherTabs = useCallback(
+		(targetPath: string) => {
+			let shouldNavigate = false;
+
+			setTabs((prev) => {
+				const target = prev.find((t) => t.path === targetPath);
+				if (!target) return prev;
+
+				const next = homeTab
+					? (target.path === homeTab.path ? [homeTab] : [homeTab, target])
+					: [target];
+				persistTabs(next);
+
+				if (pathname !== targetPath && (!homeTab || pathname !== homeTab.path)) {
+					shouldNavigate = true;
+				}
+				return next;
+			});
+
+			if (shouldNavigate) {
+				queueMicrotask(() => {
+					router?.push(targetPath);
+				});
+			}
+		},
+		[pathname, router, homeTab, persistTabs],
+	);
+
+	// 关闭右侧标签
+	const closeRightTabs = useCallback(
+		(targetPath: string) => {
+			let shouldNavigate = false;
+
+			setTabs((prev) => {
+				const index = prev.findIndex((t) => t.path === targetPath);
+				if (index === -1) return prev;
+
+				const next = prev.slice(0, index + 1);
+				persistTabs(next);
+
+				const currentStillExists = next.some((t) => t.path === pathname);
+				if (!currentStillExists) {
+					shouldNavigate = true;
+				}
+				return next;
+			});
+
+			if (shouldNavigate) {
+				queueMicrotask(() => {
+					router?.push(targetPath);
+				});
+			}
+		},
+		[pathname, router, persistTabs],
+	);
+
+	// 关闭左侧标签
+	const closeLeftTabs = useCallback(
+		(targetPath: string) => {
+			let shouldNavigate = false;
+
+			setTabs((prev) => {
+				const index = prev.findIndex((t) => t.path === targetPath);
+				if (index === -1) return prev;
+
+				const rightPart = prev.slice(index);
+				const next = homeTab
+					? (rightPart.some((t) => t.path === homeTab.path)
+						? rightPart
+						: [homeTab, ...rightPart.filter((t) => t.path !== homeTab.path)])
+					: rightPart;
+
+				persistTabs(next);
+
+				const currentStillExists = next.some((t) => t.path === pathname);
+				if (!currentStillExists) {
+					shouldNavigate = true;
+				}
+				return next;
+			});
+
+			if (shouldNavigate) {
+				queueMicrotask(() => {
+					router?.push(targetPath);
+				});
+			}
+		},
+		[pathname, router, homeTab, persistTabs],
+	);
+
+	// 关闭所有标签 (仅保留 homeTab 或当前活动页)
+	const closeAllTabs = useCallback(() => {
+		let nextRoute: string | null = null;
+
+		if (homeTab) {
+			const next = [homeTab];
+			setTabs(next);
+			persistTabs(next);
+			if (pathname !== homeTab.path) {
+				nextRoute = homeTab.path;
+			}
+		} else {
+			setTabs((prev) => {
+				const current = prev.find((t) => t.path === pathname) ?? prev[0];
+				const next = current ? [current] : [];
+				persistTabs(next);
+				return next;
+			});
+		}
+
+		if (nextRoute) {
+			const dest = nextRoute;
+			queueMicrotask(() => {
+				router?.push(dest);
+			});
+		}
+	}, [homeTab, pathname, router, persistTabs]);
+
+	// 刷新当前页面
+	const refreshTab = useCallback(
+		(targetPath?: string) => {
+			if (targetPath && targetPath !== pathname) {
+				router?.push(targetPath);
+			}
+			router?.refresh();
+		},
+		[pathname, router],
+	);
+
 	// 初始化从 sessionStorage 读取历史标签页
 	useEffect(() => {
 		if (typeof window === "undefined") return;
@@ -155,14 +380,43 @@ export function TabBar({
 				...prev,
 				{ title, path: pathname, closable },
 			];
-			try {
-				sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-			} catch {
-				// ignore
-			}
+			persistTabs(next);
 			return next;
 		});
-	}, [pathname, sections, homeTab]);
+	}, [pathname, sections, homeTab, persistTabs]);
+
+	// 支持业务页面主动触发标题更新与安全关闭页签
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+
+		const handleUpdateTab = (event: Event) => {
+			const customEvent = event as CustomEvent<TabUpdateEventDetail>;
+			if (!customEvent.detail || !customEvent.detail.title) return;
+			const targetPath = customEvent.detail.path || pathname;
+
+			setTabs((prev) => {
+				const next = prev.map((t) =>
+					t.path === targetPath ? { ...t, title: customEvent.detail.title } : t,
+				);
+				persistTabs(next);
+				return next;
+			});
+		};
+
+		const handleCloseTab = (event: Event) => {
+			const customEvent = event as CustomEvent<TabCloseEventDetail>;
+			const targetPath = customEvent.detail?.path || pathname;
+			const redirectTo = customEvent.detail?.redirectTo;
+			closeTab(targetPath, redirectTo);
+		};
+
+		window.addEventListener("cr:tab:update", handleUpdateTab);
+		window.addEventListener("cr:tab:close", handleCloseTab);
+		return () => {
+			window.removeEventListener("cr:tab:update", handleUpdateTab);
+			window.removeEventListener("cr:tab:close", handleCloseTab);
+		};
+	}, [pathname, persistTabs, closeTab]);
 
 	// 检测横向滚动状态与是否溢出
 	const checkScroll = useCallback(() => {
@@ -240,141 +494,6 @@ export function TabBar({
 		scrollContainerRef.current?.scrollBy({ left: offset, behavior: "smooth" });
 	};
 
-	// 持久化保存
-	const persistTabs = (newTabs: TabItem[]) => {
-		try {
-			sessionStorage.setItem(STORAGE_KEY, JSON.stringify(newTabs));
-		} catch {
-			// ignore
-		}
-	};
-
-	// 刷新当前页面
-	const refreshTab = useCallback(
-		(targetPath?: string) => {
-			if (targetPath && targetPath !== pathname) {
-				router?.push(targetPath);
-			}
-			router?.refresh();
-		},
-		[pathname, router],
-	);
-
-	// 关闭单个标签
-	const closeTab = useCallback(
-		(targetPath: string) => {
-			setTabs((prev) => {
-				const index = prev.findIndex((t) => t.path === targetPath);
-				if (index === -1) return prev;
-				const target = prev[index];
-				if (target && !target.closable) return prev;
-
-				const next = prev.filter((t) => t.path !== targetPath);
-				persistTabs(next);
-
-				// 如果关闭的是当前激活标签，则导航至相邻标签
-				if (pathname === targetPath) {
-					const fallbackTab = homeTab ?? next[0];
-					const nextActive = next[index] ?? next[index - 1] ?? fallbackTab;
-					if (nextActive) {
-						router?.push(nextActive.path);
-					}
-				}
-				return next;
-			});
-		},
-		[pathname, router, homeTab],
-	);
-
-	// 关闭其他标签
-	const closeOtherTabs = useCallback(
-		(targetPath: string) => {
-			setTabs((prev) => {
-				const target = prev.find((t) => t.path === targetPath);
-				if (!target) return prev;
-
-				const next = homeTab
-					? (target.path === homeTab.path ? [homeTab] : [homeTab, target])
-					: [target];
-				persistTabs(next);
-
-				if (pathname !== targetPath && (!homeTab || pathname !== homeTab.path)) {
-					router?.push(targetPath);
-				}
-				return next;
-			});
-		},
-		[pathname, router, homeTab],
-	);
-
-	// 关闭右侧标签
-	const closeRightTabs = useCallback(
-		(targetPath: string) => {
-			setTabs((prev) => {
-				const index = prev.findIndex((t) => t.path === targetPath);
-				if (index === -1) return prev;
-
-				// 保留到当前 target 以及不可关闭的标签
-				const next = prev.slice(0, index + 1);
-				persistTabs(next);
-
-				// 检查当前路由是否在被关闭的右侧区间
-				const currentStillExists = next.some((t) => t.path === pathname);
-				if (!currentStillExists) {
-					router?.push(targetPath);
-				}
-				return next;
-			});
-		},
-		[pathname, router],
-	);
-
-	// 关闭左侧标签
-	const closeLeftTabs = useCallback(
-		(targetPath: string) => {
-			setTabs((prev) => {
-				const index = prev.findIndex((t) => t.path === targetPath);
-				if (index === -1) return prev;
-
-				const rightPart = prev.slice(index);
-				const next = homeTab
-					? (rightPart.some((t) => t.path === homeTab.path)
-						? rightPart
-						: [homeTab, ...rightPart.filter((t) => t.path !== homeTab.path)])
-					: rightPart;
-
-				persistTabs(next);
-
-				const currentStillExists = next.some((t) => t.path === pathname);
-				if (!currentStillExists) {
-					router?.push(targetPath);
-				}
-				return next;
-			});
-		},
-		[pathname, router, homeTab],
-	);
-
-	// 关闭所有标签 (仅保留 homeTab 或当前活动页)
-	const closeAllTabs = useCallback(() => {
-		if (homeTab) {
-			const next = [homeTab];
-			setTabs(next);
-			persistTabs(next);
-			if (pathname !== homeTab.path) {
-				router?.push(homeTab.path);
-			}
-		} else {
-			// 若无 homeTab，保留当前正在浏览的唯一标签
-			setTabs((prev) => {
-				const current = prev.find((t) => t.path === pathname) ?? prev[0];
-				const next = current ? [current] : [];
-				persistTabs(next);
-				return next;
-			});
-		}
-	}, [homeTab, pathname, router]);
-
 	const currentTabIndex = tabs.findIndex((t) => t.path === pathname);
 	const currentTab = tabs[currentTabIndex];
 
@@ -435,8 +554,8 @@ export function TabBar({
 									className={cn(
 										"group relative flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-all select-none",
 										isActive
-											? "bg-background text-foreground shadow-xs border border-border/80 font-semibold"
-											: "text-muted-foreground hover:bg-background/60 hover:text-foreground border border-transparent",
+											? "bg-background text-foreground shadow-xs border border-border font-semibold"
+											: "bg-background/50 text-muted-foreground border border-border/60 shadow-2xs hover:bg-background/80 hover:text-foreground hover:border-border",
 									)}
 								>
 									{isHome ? (

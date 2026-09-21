@@ -21,11 +21,14 @@
 > 1. **全量遵循 shadcn 官方规范 (No Raw Divs/Controls)**：杜绝裸手写 `div` 布局或裸浏览器原生控件（如原生 `input type="date"`），所有布局排版与交互控件必须基于框架已有的原子与高阶中台组件开发。开发时直接指明使用 `.agents/skills/shadcn/` 最佳范式 Skill；
 > 2. **原子层支持就地修改，禁止套壳伪封装**：新增变体直接修改 `components/ui/` 源码中的 `cva`，严禁为了加几个类名就在外层包一个 1:1 的同名包装壳；
 > 3. **严禁写操作按钮裸奔（必须受控于 CASL）**：标准列表优先使用 `DataTable`（显式配置 `subject` 自动接管 `create`、`export` 与行操作 `DataTableRowActions`）；多级层级树统一使用 `DataTree`；自由定制页面必须通过受控组件 `<ActionButton>` / `<ActionGroup>` 或声明式 `<AuthGuard>` 包裹，严禁在业务中直接渲染无权限受控的裸 `<Button>` 写操作；
-> 4. **平台 UI 基建沉淀主动提问机制 (UI Infrastructure Extraction Trigger)**：在垂直切片实施过程中，一旦发现当前交互模式、明细表、子表单或看板具备通用性，**严禁在切片内部私造或闭门造车，必须主动向用户发起提问**，评估并沉淀至 `@base/ui`；
-> 5. **二次确认只在对话框提示一次**：破坏性操作统一由 `ActionButton` 或 `DataTableRowActions` 的 `ConfirmDialog` 进行模态对话框确认，严禁在回调函数内再次使用浏览器的 `window.confirm` 进行二次弹窗；
-> 6. **消息通知右上角 Toast 弹出**：严禁在页面顶部塞入静态红色大横幅挤压变形表格布局，所有成功、警告与错误提示统一使用右上角 `toast`（基于 `sonner`）；页内粘性反馈用 `FeedbackBanner`（基于 shadcn `Alert`）；
-> 7. **杜绝全页强刷**：严禁 `window.location.reload()`；mutation 默认 Action 内 `revalidatePath`，客户端默认不写 `router.refresh()`；
-> 8. **服务端分页（生产必选）**：`DataTable` 默认不做客户端切片，服务端分页驱动。
+> 4. **单据与表单 CRUD 分级治理（依字段复杂度定形态，严禁一刀切）**：
+>    - **多字段复杂主实体 / 业务单据（核心标准）**：如客户档案、物料主数据、供应商、报价单、销售订单、采购单、出入库单等（字段多、分区块、带明细表 DetailTable、带审批流、需多任务比对），**100% 采用全屏单据工作台 (`FormPage`) 通过独立路由在 TabBar 中打开新页签**；保存后默认留在当前页，由用户主动点击底栏返回或关闭页签；
+>    - **轻量辅助实体 / 字典 / 标签 / 分类（敏捷标准）**：如客户分类、标签管理、计量单位、数据字典等（字段极少，通常 ≤ 4~5 个基础字段），**采用轻量模态窗 (`FormModal`) 或侧边抽屉 (`FormDrawer`) 就地操作**，即开即填即关，避免轻量操作大动干戈开新 Tab，保持高效率与轻快感；
+> 5. **平台 UI 基建沉淀主动提问机制 (UI Infrastructure Extraction Trigger)**：在垂直切片实施过程中，一旦发现当前交互模式、明细表、子表单或看板具备通用性，**严禁在切片内部私造或闭门造车，必须主动向用户发起提问**，评估并沉淀至 `@base/ui`；
+> 6. **二次确认只在对话框提示一次**：破坏性操作统一由 `ActionButton` 或 `DataTableRowActions` 的 `ConfirmDialog` 进行模态对话框确认，严禁在回调函数内再次使用浏览器的 `window.confirm` 进行二次弹窗；
+> 7. **消息通知右上角 Toast 弹出**：严禁在页面顶部塞入静态红色大横幅挤压变形表格布局，所有成功、警告与错误提示统一使用右上角 `toast`（基于 `sonner`）；页内粘性反馈用 `FeedbackBanner`（基于 shadcn `Alert`）；
+> 8. **杜绝全页强刷**：严禁 `window.location.reload()`；mutation 默认 Action 内 `revalidatePath`，客户端默认不写 `router.refresh()`；
+> 9. **服务端分页（生产必选）**：`DataTable` 默认不做客户端切片，服务端分页驱动。
 
 `DataTable.Root` 默认**不做**客户端切片：`data` 必须是服务端返回的**当前页**，`total` 来自 API `count`。
 

@@ -70,6 +70,34 @@ export async function listCustomersQuery(filter: ListCustomerFilter = {}) {
 	return toPlainData({ ...result, items });
 }
 
+/** 获取客户档案详情 Server Query（React.cache 请求级去重） */
+export const getCustomerDetailQuery = cache(async (id: string) => {
+	const { client, ability } = await getTenantCustomerContext();
+	assertCustomerAbility(ability, StandardAction.READ, CustomerSubject);
+
+	const customer = await CustomerService.getCustomer(client, id);
+	if (!customer) return null;
+
+	const readable = pickReadableFields(
+		ability,
+		CustomerSubject,
+		customer as Record<string, unknown>,
+	);
+
+	// 组装标签与门店汇总信息
+	const tagIds = customer.tagAssignments?.map((t) => t.tagId) || [];
+	const customerTags =
+		customer.tagAssignments?.map((t) => t.tag.name).join(", ") || "";
+
+	return toPlainData({
+		...customer,
+		...readable,
+		id: customer.id,
+		tagIds,
+		customerTags,
+	});
+});
+
 /** 获取客户档案总数 Server Query (受控于 Customer 实体读权限与数据范围下推) */
 export async function getCustomerCountQuery(): Promise<number> {
 	const { client, ability } = await getTenantCustomerContext();

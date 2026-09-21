@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import { useMemo, useCallback } from "react";
 import { Store } from "lucide-react";
 import {
 	DataTable,
@@ -9,6 +9,7 @@ import {
 	DataTableRowActions,
 	Combobox,
 	useListSearch,
+	useSafeRouter,
 	toast,
 	type ColumnDef,
 } from "@base/ui";
@@ -27,7 +28,6 @@ import type {
 	CustomerCategoryItem,
 	CustomerTagItem,
 } from "../types";
-import { CustomerFormModal } from "./CustomerFormModal";
 
 export interface CustomerViewProps {
 	data: CustomerListItem[];
@@ -44,26 +44,37 @@ const SETTLEMENT_LABELS: Record<string, string> = {
 
 /**
  * 客户档案列表：少即是多。
- * - URL：defineListSearchParams + useListSearch（默认 page/pageSize/keyword）
- * - UI：DataTable 默认能力 + filterExtra 扩展
- * - 表单：FormModal
+ * - 纯净路由交互：新增/编辑/查看统一导航至独立页面并在 TabBar 开启新页签
+ * - 彻底摒弃弹窗状态与冗余模态组件，符合主流 ERP 全屏单据交互范式
  */
 export function CustomerView({
 	data,
 	total,
 	categoryOptions,
-	tagOptions,
+	tagOptions: _tagOptions,
 }: CustomerViewProps) {
 	const categories = categoryOptions ?? [];
-	const tags = tagOptions ?? [];
 	const ability = useAbility();
 	const list = useListSearch(customerSearchParams);
+	const router = useSafeRouter();
 
-	const [modalState, setModalState] = useState<{
-		open: boolean;
-		mode: "create" | "edit" | "view";
-		record?: CustomerListItem | null;
-	}>({ open: false, mode: "create", record: null });
+	const handleCreate = useCallback(() => {
+		router?.push("/customer/customers/new");
+	}, [router]);
+
+	const handleView = useCallback(
+		(c: CustomerListItem) => {
+			router?.push(`/customer/customers/${c.id}?mode=view`);
+		},
+		[router],
+	);
+
+	const handleEdit = useCallback(
+		(c: CustomerListItem) => {
+			router?.push(`/customer/customers/${c.id}?mode=edit`);
+		},
+		[router],
+	);
 
 	const runAction = useCallback(
 		async (
@@ -216,8 +227,8 @@ export function CustomerView({
 				cell: (c) => (
 					<DataTableRowActions
 						record={c}
-						onView={() => setModalState({ open: true, mode: "view", record: c })}
-						onEdit={() => setModalState({ open: true, mode: "edit", record: c })}
+						onView={() => handleView(c)}
+						onEdit={() => handleEdit(c)}
 						onToggleStatus={() => handleToggleStatus(c.id, c.status)}
 						toggleStatusOptions={{
 							status: c.status,
@@ -259,7 +270,7 @@ export function CustomerView({
 				total={total}
 				{...list.dataTableProps}
 				onExport={handleExport}
-				onCreate={() => setModalState({ open: true, mode: "create" })}
+				onCreate={handleCreate}
 				createText="新增"
 				contentProps={{ selectable: true }}
 				keywordPlaceholder="搜索客户名称、联系人、电话..."
@@ -286,20 +297,6 @@ export function CustomerView({
 							}
 						/>
 					</DataTableInputGroup>
-				}
-			/>
-
-			<CustomerFormModal
-				open={modalState.open}
-				mode={modalState.mode}
-				record={modalState.record}
-				categoryOptions={categories}
-				tagOptions={tags}
-				onClose={() =>
-					setModalState({ open: false, mode: "create", record: null })
-				}
-				onSuccess={() =>
-					setModalState({ open: false, mode: "create", record: null })
 				}
 			/>
 		</>

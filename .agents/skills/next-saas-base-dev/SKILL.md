@@ -57,7 +57,7 @@ tooling/db-migrate                  12-Factor 迁移引擎
 | 5   | 标准列表：`DataTable` 默认 chrome + `useListSearch`；禁业务手绘表壳                                            | `references/5-ui-components.md`               |
 | 6   | 写路径 CASL（Action 内断言 + UI `subject`/门禁）                                                               | `references/4`、`references/7`                |
 | 7   | 列表 URL：`defineListSearchParams`；Client：`useListSearch`                                                    | `references/9-crud-resource-paradigm.md`      |
-| 8   | CRUD 表单：`FormModal` + schema/fields；禁业务层手写字段树 / 直接 RHF                                          | `references/5-ui-components.md`               |
+| 8   | CRUD 表单分级治理：复杂主单据/多字段档案用全屏多页签（`FormPage`）；极简辅助项（分类、标签、字典 ≤ 5 字段）用轻量弹窗（`FormModal`） | `references/5-ui-components.md`               |
 | 9   | Mutation 使用 `defineServerAction` 直写；RSC 装配遵循 Next.js 标准 async 函数；`use server` 平铺导出           | `references/9`、`references/4`                |
 | 10  | 导出走 `exportContractCsv` + 契约字段                                                                          | `references/1-contracts.md`                   |
 | 11  | 原子层 shadcn 规范（`@base/ui` `components/ui/`）                                                              | `.agents/skills/shadcn/`                      |
@@ -84,9 +84,9 @@ tooling/db-migrate                  12-Factor 迁移引擎
 ③ service.ts      领域逻辑（事务 / 发号 / 状态机）
 ④ queries.ts      server-only + cache + DTO
 ⑤ actions.ts      defineServerAction 直写 → 平铺 export
-⑥ ui/*FormModal   FormModal + schema/fields + subject
-⑦ ui/*View        useListSearch + DataTable + filterExtra
-⑧ apps page.tsx   标准 RSC 装配（parse + Promise.all -> View）
+⑥ ui/*FormPage    FormPage 全屏单据 + schema/fields + subject（新页签路由挂载）
+⑦ ui/*View        useListSearch + DataTable + router.push 开启单据页签
+⑧ apps page.tsx   标准 RSC 装配（主列表、new、[id] 路由页直通数据）
 → 单测与 check/test 全绿
 ```
 

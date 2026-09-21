@@ -80,3 +80,61 @@
      - 不需要详情时：必须显式传入 `hideView={true}`，严禁漏传导致灰色不可用按钮暴露；
   3. **标准分页绝不可缺失**：所有列表由 `DataTablePagination` 接管，必须传入有效 `total`；
   4. **多实体页面布局标准**：多实体/多字典页面**严禁左右并排**，必须在顶部横向平铺 Tab 导航，切换 Tab 时独占 100% 全宽标准视图。
+
+---
+
+## 7. React 状态更新器纯函数铁律与跨组件路由调度冲突 (setState-in-render 避坑)
+
+- **痛点**：
+  - 在多标签页（`TabBar`）、模态窗关闭或全局事件中处理标签关闭与跳转时，开发者容易在 `setTabs((prev) => { ... router?.push(targetRoute); })` 的状态更新回调内部直接调用 `router.push()`；
+  - 在 React 19 并发模式与 Next.js Turbopack 运行时中，直接触发致命控制台红字：
+    ```text
+    Cannot update a component (`Router`) while rendering a different component (`TabBar`).
+    To locate the bad setState() call inside `TabBar`, follow the stack trace...
+    ```
+- **核心根因**：
+  - React 的 `setState((prev) => next)` 状态计算函数必须是**绝对纯函数 (Pure Function)**，严禁产生外部可观测的命令式副作用；
+  - `router.push()` 会立即修改 Next.js `Router` 上下文内部的当前导航状态，导致在渲染一个组件的同时强行并发触发另一个组件的 `setState`，破坏了 React 调度时序。
+- **解法与标准行为铁律**：
+  1. **状态计算与副作用彻底解耦**：
+     - `setState` 回调内部**只负责纯数据计算与持久化**（如计算过滤后的 tabs 数组），严禁放置任何 `router.push`、`toast`、API 请求等副作用；
+  2. **路由跳转使用微任务 (`queueMicrotask`) 调度**：
+     - 在状态计算外部通过局部变量提取目标路径，并将路由跳转推入微任务队列，等待当前组件渲染周期的微任务队列时钟到达后再执行：
+       ```ts
+       // 正确范式：解耦并微任务调度
+       let nextRoute: string | null = null;
+       setTabs((prev) => {
+         const next = prev.filter(...);
+         if (needNavigate) nextRoute = calcNextRoute(next);
+         return next;
+       });
+
+       if (nextRoute) {
+         const dest = nextRoute;
+         queueMicrotask(() => {
+           router?.push(dest);
+         });
+       }
+       ```
+
+---
+
+## 8. ERP 全屏单据工作台 (FormPage) 交互规范与“去 AI 模板味”铁律
+
+- **痛点与设计反模式**：
+  1. **单据模态窗（Modal）承载力低下**：传统 ERP 复杂主从单据（包含数十个字段、多区块、从表 DetailTable、审批流）塞在模态弹窗中，导致严重的纵向/横向滚动条，且遮罩锁死用户上下文，无法多任务对照查阅；
+  2. **操作按钮上下冗余重复**：页面顶部右侧放一套“重置/返回/保存”，底部又放一套一模一样的按钮，造成视觉疲劳与布局杂乱；
+  3. **浓烈的“AI 模板味与开发自嗨”**：界面上充斥着说教式的副标题（如“登记客户企业法定名称、联系人及分类归属”、“配置财务结算周期...”），甚至在底部赫然展示“工业级标准单据 · CASL 动态权限校验受控”等开发内部术语，给企业现场操作人员带来极其业余和出戏的观感。
+- **解法与工业级 ERP 交互准则**：
+  1. **表单形态分级分类治理（严禁一刀切）**：
+     - **多字段复杂主数据与业务单据**（客户档案、物料清单、销售订单、出入库单等）：一律采用无遮罩的右侧全屏 `FormPage` 呈现，并在顶部 `TabBar` 自动开启独立动态页签（如 `编辑: 华为技术`）；保存后默认停留在当前页继续后续流转动作；
+     - **极简辅助实体与字典项**（如客户分类、标签管理、计量单位等 ≤ 4~5 个字段的极简录入）：一律采用轻快模态窗 (`FormModal`) 或抽屉 (`FormDrawer`) 就地操作，即开即填即关，避免轻量操作大动干戈开新 Tab，保持敏捷高效；
+  2. **表单元数据 100% 保持无损复用**：
+     - `FormPage` 与 `FormModal` 共享完全一致的元数据协议：`fields`、`sections`、`schema`（Zod）、`detailConfig`（DetailTable）与 CASL `subject`，切换展现形态时无需重写业务字段树；
+  3. **操作按钮收敛于底部粘性操作栏**：
+     - 顶部 Header 只保留返回按钮、单据标题与单据编号/状态 Badge，右侧仅在业务明确需要时提供特定扩展插槽；
+     - 主保存、重置、取消/返回按钮统一收敛在底部粘性底栏（Sticky Footer），符合重度单据从上到下录入至底部直接提交的工业人机工学；
+  4. **坚决去除 AI 味与内部术语**：
+     - **杜绝说教式长说明**：各区块标题回归极简业务概念（“基础信息”、“结算与授信”、“业务归属”），删除所有废话副标题；
+     - **严禁向用户暴露框架实现术语**：严禁在 UI 界面文案中出现“CASL”、“权限校验”、“动态受控”、“工业级标准”等开发者内部自嗨词汇；没有真实审计时间或操作人信息时，底栏左侧一律保持干净留白。
+

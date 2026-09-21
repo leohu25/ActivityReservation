@@ -5,3 +5,4 @@ export * from "./FormDrawer";
 export * from "./FormLayout";
 export * from "./FormFields";
 export * from "./FormModal";
+export * from "./FormPage";

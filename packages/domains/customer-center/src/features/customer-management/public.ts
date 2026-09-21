@@ -1,5 +1,11 @@
 export { CustomerView, type CustomerViewProps } from "./ui/CustomerView";
-export { CustomerFormModal } from "./ui/CustomerFormModal";
+export {
+	CustomerFormPage,
+	type CustomerFormPageProps,
+	type CustomerFormData,
+	DEFAULT_CUSTOMER_VALUES,
+	customerFormZodSchema,
+} from "./ui/CustomerFormPage";
 /** 契约 SSoT：权限 + 列表 URL（customerSearchParams 等） */
 export * from "./contract";
 export type * from "./types";

@@ -56,10 +56,11 @@ export function checkUiFile(_filePath, content) {
   const hasWriteAction = writeActionRegex.test(content);
 
   // 2. 检测是否具备合法的权限受控标记
-  // A. 模板级闭环组件（自带字段三态与操作权限）：DataTable、DataTree、FormModal 等，或属于 FormModal 专属子表单
+  // A. 模板级闭环组件（自带字段三态与操作权限）：DataTable、DataTree、FormModal、FormPage 等，或属于 Form 专属子表单
   const hasTemplateGuard =
-    /\b(DataTable|DataTree|FormModal)\b/.test(content) ||
+    /\b(DataTable|DataTree|FormModal|FormPage)\b/.test(content) ||
     /FormModal\.tsx/.test(_filePath) ||
+    /FormPage\.tsx/.test(_filePath) ||
     /Modal\.tsx/.test(_filePath);
   // B. 分子级受控组件
   const hasMoleculeGuard =
