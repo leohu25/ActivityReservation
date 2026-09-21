@@ -18,7 +18,11 @@ class MemoryTenantSqlExecutor implements TenantSqlExecutor {
   async execute(sql: string, params?: readonly unknown[]): Promise<void> {
     const cleanSql = sql.replace(/\s+/g, " ").trim();
 
-    if (cleanSql.includes('INSERT INTO "department"') || cleanSql.includes('INSERT INTO "position"')) {
+    if (
+      cleanSql.includes('INSERT INTO "department"') ||
+      cleanSql.includes('INSERT INTO "position"') ||
+      cleanSql.includes('INSERT INTO "employee_profile"')
+    ) {
       const p = params ?? [];
       // 处理 tenant-seed.sql 联合执行
       if (this.departments.length === 0) {
@@ -39,24 +43,21 @@ class MemoryTenantSqlExecutor implements TenantSqlExecutor {
           { id: p[5], name: "业务专员", code: "pos_specialist", sort: 20, status: "ACTIVE" },
         );
       }
-      return;
-    }
-
-    if (cleanSql.includes('INSERT INTO "employee_profile"')) {
-      const p = params ?? [];
-      this.profiles.push({
-        id: p[0],
-        userId: p[1],
-        memberId: p[2],
-        employeeNo: p[3],
-        departmentId: p[4],
-        positionId: p[5],
-        nameSnapshot: p[6],
-        emailSnapshot: p[7],
-        jobTitle: p[8],
-        status: p[9],
-        joinedAt: p[10],
-      });
+      if (this.profiles.length === 0) {
+        this.profiles.push({
+          id: p[6],
+          userId: p[7],
+          memberId: p[2],
+          employeeNo: "E0001",
+          departmentId: p[0],
+          positionId: "pos_gm",
+          nameSnapshot: p[8],
+          emailSnapshot: p[9],
+          jobTitle: "企业所有者",
+          status: "ACTIVE",
+          joinedAt: new Date(),
+        });
+      }
       return;
     }
 

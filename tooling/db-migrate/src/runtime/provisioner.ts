@@ -68,11 +68,15 @@ export class TenantDatabaseProvisioner {
     const startedAt = Date.now();
     const executor = await this.sqlExecutorFactory(tenantDatabaseUrl);
     try {
-      await executor.execute("SELECT pg_advisory_lock(hashtext($1))", [
-        `base-tenant-baseline:${organizationId}`,
-      ]);
-      try {
-        const inspection = await this.inspectWithExecutor(executor);
+      // 事务级咨询锁：在事务内获取 pg_advisory_xact_lock 并设置 lock_timeout
+      // 事务提交或回滚时锁自动安全释放，天然免疫连接异常中断与 PgBouncer 事务连接池悬挂
+      return await executor.transaction(async (transaction) => {
+        await transaction.execute("SET LOCAL lock_timeout = '15s'");
+        await transaction.execute("SELECT pg_advisory_xact_lock(hashtext($1))", [
+          `base-tenant-baseline:${organizationId}`,
+        ]);
+
+        const inspection = await this.inspectWithExecutor(transaction);
         if (
           inspection.state === "READY" ||
           inspection.state === "UPGRADE_REQUIRED"
@@ -94,17 +98,15 @@ export class TenantDatabaseProvisioner {
           );
         }
 
-        let seedResult: TenantSeedResult | undefined;
-        await executor.transaction(async (transaction) => {
-          await transaction.execute(this.catalog.baseline.sql);
-          await this.ensureLocalLedger(transaction);
-          await transaction.execute(
-            `INSERT INTO "tenant_schema_migration" ("version", "checksum") VALUES ($1, $2)`,
-            [this.catalog.baseline.version, this.catalog.baseline.checksum],
-          );
-          seedResult = await this.seeder!.seedTenant(transaction, seedInput);
-        });
-        const ready = await this.inspectWithExecutor(executor);
+        await transaction.execute(this.catalog.baseline.sql);
+        await this.ensureLocalLedger(transaction);
+        await transaction.execute(
+          `INSERT INTO "tenant_schema_migration" ("version", "checksum") VALUES ($1, $2)`,
+          [this.catalog.baseline.version, this.catalog.baseline.checksum],
+        );
+        const seedResult = await this.seeder.seedTenant(transaction, seedInput);
+
+        const ready = await this.inspectWithExecutor(transaction);
         if (ready.state !== "READY" && ready.state !== "UPGRADE_REQUIRED") {
           throw new DatabaseInitializationError(
             "BASELINE_EXECUTION_FAILED",
@@ -115,11 +117,7 @@ export class TenantDatabaseProvisioner {
           ...this.toEnsureResult(ready, true, startedAt),
           seedResult,
         };
-      } finally {
-        await executor.execute("SELECT pg_advisory_unlock(hashtext($1))", [
-          `base-tenant-baseline:${organizationId}`,
-        ]);
-      }
+      });
     } finally {
       await executor.close();
     }

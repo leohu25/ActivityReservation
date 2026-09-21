@@ -104,28 +104,35 @@ export class TenantDatabaseSeeder {
     executor: TenantSqlExecutor,
     input: TenantSeedInput,
   ): Promise<TenantSeedResult> {
-    // 1. 显式执行预置 packages/runtime/db/seeds/tenant-seed.sql 原生 SQL 文件
-    const posGmId = generateUuidV7();
-    const posSupervisorId = generateUuidV7();
-    const posSpecialistId = generateUuidV7();
-
+    // 1. 预先探查或分配 ID，保障返回给上层契约的标识准确
     const existingDepts = await executor.query<{ id: string }>(
       'SELECT id FROM "department" WHERE "code" = $1 LIMIT 1',
       ["ROOT"],
     );
+    const rootDeptId =
+      existingDepts.length > 0 && existingDepts[0]?.id
+        ? existingDepts[0].id
+        : generateUuidV7();
 
-    let rootDeptId: string;
-    if (existingDepts.length > 0 && existingDepts[0]?.id) {
-      rootDeptId = existingDepts[0].id;
-    } else {
-      rootDeptId = generateUuidV7();
-    }
-
-    // 执行前先检查已存在的岗位数量
     const existingPositionsBefore = await executor.query<{ id: string }>(
       'SELECT id FROM "position" WHERE "code" IN (\'pos_gm\', \'pos_supervisor\', \'pos_specialist\')',
     );
 
+    const existingProfiles = await executor.query<{ id: string }>(
+      'SELECT id FROM "employee_profile" WHERE "member_id" = $1 LIMIT 1',
+      [input.ownerMemberId],
+    );
+    const ownerEmployeeProfileId =
+      existingProfiles.length > 0 && existingProfiles[0]?.id
+        ? existingProfiles[0].id
+        : generateUuidV7();
+
+    const posGmId = generateUuidV7();
+    const posSupervisorId = generateUuidV7();
+    const posSpecialistId = generateUuidV7();
+
+    // 2. 100% 委托执行 packages/runtime/db/seeds/tenant-seed.sql 原生物理 SQL
+    // 原子完成根部门 (department)、3大基础岗位 (position) 与企业所有者员工档案 (employee_profile)
     await executor.execute(TENANT_BASE_SEED_SQL, [
       rootDeptId,
       input.organizationName,
@@ -133,45 +140,16 @@ export class TenantDatabaseSeeder {
       posGmId,
       posSupervisorId,
       posSpecialistId,
+      ownerEmployeeProfileId,
+      input.ownerUserId,
+      input.ownerName,
+      input.ownerEmail,
     ]);
 
-    const seededPositionsCount = Math.max(0, 3 - existingPositionsBefore.length);
-
-    // 2. Owner 员工档案 (EmployeeProfile): 检查是否已存在 member_id=ownerMemberId 的档案
-    const existingProfiles = await executor.query<{ id: string }>(
-      'SELECT id FROM "employee_profile" WHERE "member_id" = $1 LIMIT 1',
-      [input.ownerMemberId],
+    const seededPositionsCount = Math.max(
+      0,
+      DEFAULT_TENANT_POSITIONS.length - existingPositionsBefore.length,
     );
-
-    let ownerEmployeeProfileId: string;
-    if (existingProfiles.length > 0 && existingProfiles[0]?.id) {
-      ownerEmployeeProfileId = existingProfiles[0].id;
-    } else {
-      ownerEmployeeProfileId = generateUuidV7();
-      const now = new Date();
-      await executor.execute(
-        `INSERT INTO "employee_profile" (
-          "id", "user_id", "member_id", "employee_no", "department_id",
-          "position_id", "name_snapshot", "email_snapshot", "job_title",
-          "status", "joined_at", "created_at", "updated_at"
-        ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-        )`,
-        [
-          ownerEmployeeProfileId,
-          input.ownerUserId,
-          input.ownerMemberId,
-          "E0001",
-          rootDeptId,
-          "pos_gm", // 默认指派总经理岗位
-          input.ownerName,
-          input.ownerEmail,
-          "企业所有者",
-          "ACTIVE",
-          now,
-        ],
-      );
-    }
 
     return {
       rootDepartmentId: rootDeptId,

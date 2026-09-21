@@ -403,6 +403,15 @@
       "status": "completed",
       "owner": "implementer",
       "evidence": "1. 落地 packages/domains/base-archives 切片与 TenantDictItem 数据模型，完成契约/服务/查询/Server Actions/DataTable与FormModal；2. 生成增量迁移 20260921063643_add_tenant_dict_item 并完成实库升级；3. 在 settings/layout.tsx 补齐 TenantDictItem 权限注入，解决 Fail-Closed 判定下按钮与列隐藏问题；4. 全仓流水线升级为 9 步标准流程并登记 DEBT-017 技术债；5. 切片 8/8 单测通过，check 与 boundary/migration 门禁全绿。"
+    },
+    {
+      "id": "feat-tenant-scoped-auth-and-enterprise-login",
+      "name": "【系统底座与认证重构】多租户独立凭据体系与企业编码三要素登录 (Tenant-Scoped Auth & Enterprise Login)",
+      "description": "针对严肃企业级 ERP 场景彻底重构租户端认证与用户模型：1. 消除全局 User 密码跨租户覆盖致命漏洞与‘多租户二选一’串号死锁；2. 建立租户私有凭据模型（支持企业内自定义账号/手机号/工号），通过 [organizationId, account] 复合隔离杜绝跨企重名冲突；3. 租户端实现企业编码(Slug)+账号+密码标准三要素登录端点，与 Better Auth 会话管理及 CASL 权限无缝自愈衔接；4. 平台端开通租户与租户端员工录入流程彻底解耦，规范多组织与单组织边界。",
+      "dependencies": ["base-archives"],
+      "status": "in_progress",
+      "owner": "coordinator",
+      "evidence": "已完成 Harness 特性沙盒初始化 (.harness/features/feat-tenant-scoped-auth-and-enterprise-login/) 并建立 4 阶段推进路线图；阶段一收敛完成：Day 0 种子 100% 纯 SQL 化、租户事务级咨询锁加固与老用户密码覆盖安全拦截。"
     }
   ]
 }

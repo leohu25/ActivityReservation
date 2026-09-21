@@ -404,20 +404,9 @@ export class TenantManagementService {
         },
       });
       returnedInitialPassword = initialPassword;
-    } else if (input.initialPassword) {
-      const hashedPassword = await hashPassword(input.initialPassword);
-      await this.prisma.account.update({
-        where: {
-          providerId_accountId: {
-            providerId: "credential",
-            accountId: adminUser.id,
-          },
-        },
-        data: {
-          password: hashedPassword,
-        },
-      });
-      returnedInitialPassword = input.initialPassword;
+    } else {
+      // 安全防线：老用户已存在时，严禁覆盖或重设其已有密码，保障跨企业安全性
+      returnedInitialPassword = undefined;
     }
 
     const orgId = generateUuidV7();

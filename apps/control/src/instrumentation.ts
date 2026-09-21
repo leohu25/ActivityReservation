@@ -21,6 +21,10 @@ export async function register() {
         "[Control DB] 平台总控库运行时自愈初始化失败:",
         err instanceof Error ? err.message : String(err),
       );
+      // 生产环境下遵循 Fail-Fast 哲学：若总控库存在致命异常（如残缺库或校验和冲突），立即终止进程，防止脏容器带病对外提供服务
+      if (process.env.NODE_ENV === "production") {
+        process.exit(1);
+      }
     }
   }
 }
