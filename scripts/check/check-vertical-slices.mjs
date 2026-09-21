@@ -463,9 +463,12 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
           }
         }
 
-        // mutation actions.ts 必须标记 "use server"
+        // mutation actions.ts 必须标记 "use server" (仅针对定义了具体 action 的叶子文件，不包含仅做 export * 聚合的中转文件)
         if (codeFilePath.endsWith("actions.ts")) {
-          if (!/^\s*["']use server["'];/m.test(content)) {
+          const isReExportOnly = /^\s*(export\s+\*\s+from\s+["'][^"']+["'];?\s*)+$/.test(
+            content.trim(),
+          );
+          if (!isReExportOnly && !/^\s*["']use server["'];/m.test(content)) {
             violations.push({
               file: relCodePath,
               line: 1,
