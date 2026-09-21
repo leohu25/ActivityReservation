@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useMemo, useCallback } from "react";
 import { Building2 } from "lucide-react";
 import {
 	DataTable,
@@ -10,13 +10,12 @@ import {
 	DataTableRowActions,
 	toast,
 	useListSearch,
+	useSafeRouter,
 	type ColumnDef,
-	type FormModalMode,
 } from "@base/ui";
 import { exportContractCsv, MasterDataStatus } from "@base/shared";
 import { useAbility } from "@base/authorization";
 import { updateStoreStatusAction, deleteStoreAction } from "../actions";
-import { StoreFormModal } from "./StoreFormModal";
 import {
 	CustomerStoreAction,
 	CustomerStoreField,
@@ -47,7 +46,8 @@ const DELIVERY_PERIOD_LABELS: Record<string, string> = {
 
 /**
  * 客户中心 - 门店档案管理工作台
- * 遵循现代数智工业风规范，基于 DataTable 与 URL-as-State (nuqs) 驱动
+ * 遵循现代数智工业风规范，基于 DataTable 与 URL 驱动
+ * 新增/编辑/查看统一导航至独立页面并在 TabBar 中打开新页签
  */
 export function StoreView({
 	data,
@@ -55,19 +55,9 @@ export function StoreView({
 	customerOptions = [],
 }: StoreViewProps) {
 	const customers = customerOptions as CustomerListItem[];
-
 	const ability = useAbility();
 	const list = useListSearch(customerStoreSearchParams);
-
-	const [modalState, setModalState] = useState<{
-		open: boolean;
-		mode: FormModalMode;
-		record?: StoreListItem | null;
-	}>({
-		open: false,
-		mode: "create",
-		record: null,
-	});
+	const router = useSafeRouter();
 
 	const runAction = useCallback(
 		async (
@@ -220,8 +210,8 @@ export function StoreView({
 				cell: (s: StoreListItem) => (
 					<DataTableRowActions
 						record={s}
-						onView={() => setModalState({ open: true, mode: "view", record: s })}
-						onEdit={() => setModalState({ open: true, mode: "edit", record: s })}
+						onView={() => router?.push(`/customer/stores/${s.id}?mode=view`)}
+						onEdit={() => router?.push(`/customer/stores/${s.id}?mode=edit`)}
 						onToggleStatus={() => handleToggleStatus(s.id, s.status)}
 						toggleStatusOptions={{
 							status: s.status,
@@ -271,9 +261,7 @@ export function StoreView({
 				total={total}
 				{...list.dataTableProps}
 				onExport={handleExport}
-				onCreate={() =>
-					setModalState({ open: true, mode: "create", record: null })
-				}
+				onCreate={() => router?.push("/customer/stores/new")}
 				createText="新增"
 				contentProps={{ selectable: true }}
 				keywordPlaceholder="搜索门店名称、地址、联系人、客户..."
@@ -297,19 +285,6 @@ export function StoreView({
 							}
 						/>
 					</DataTableInputGroup>
-				}
-			/>
-
-			<StoreFormModal
-				open={modalState.open}
-				mode={modalState.mode}
-				record={modalState.record}
-				customers={customers}
-				onClose={() =>
-					setModalState({ open: false, mode: "create", record: null })
-				}
-				onSuccess={() =>
-					setModalState({ open: false, mode: "create", record: null })
 				}
 			/>
 		</>

@@ -65,7 +65,7 @@ export async function listStoresQuery(filter: ListStoreFilter = {}) {
 	return toPlainData({ ...result, items });
 }
 
-export async function getStoreQuery(id: string) {
+export const getStoreQuery = cache(async (id: string) => {
 	const { client, ability } = await getTenantCustomerContext();
 	assertCustomerAbility(ability, StandardAction.READ, CustomerStoreSubject);
 	const accessibleWhere = getAccessibleWhere(
@@ -86,9 +86,10 @@ export async function getStoreQuery(id: string) {
 		store as Record<string, unknown>,
 	);
 	return toPlainData({
+		...store,
 		...readable,
 		id: store.id,
 		customer: store.customer,
 		quotes: store.quotes,
 	});
-}
+});
