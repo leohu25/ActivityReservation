@@ -180,6 +180,14 @@ Fail-Closed：`actions: []` → 一切拒绝；无 Provider 时 `useOptionalAbil
 
 ---
 
+## 4. 常见避坑：新增子路由导致页面列与按钮“全部消失” (Fail-Closed 陷阱)
+
+- **现象**：新页面已开发完毕，在浏览器打开时，**表格所有业务数据列消失、右上角显示「列设置 1/1」、新增按钮不见**。
+- **根因**：`DataTable` 判定列是否可见依赖 `ability.can("read", subject, col.field)`，新增按钮依赖 `ability.can("create", subject)`。若父级 `layout.tsx` 漏掉了当前新 `Subject` 的加载，客户端 Context 中该实体的 Ability 规则为空，根据 Fail-Closed 机制全部返回 `false`，从而导致除操作列外的所有业务列和写按钮被物理剥离。
+- **解法**：每当新增任何子路由页面时，**必须第一时间在所属路由组的 `layout.tsx` 中补齐 `getTenantSubjectPermissions(NewSubject)`** 并注入到 AbilityBoundary 中。
+
+---
+
 ## 4. 模板与受控分子组件如何吃权限
 
 组件内部统一通过 `useUiAbility()` 判定权限（面向纯接口解耦）：

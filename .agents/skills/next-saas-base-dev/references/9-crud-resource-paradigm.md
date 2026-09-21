@@ -397,7 +397,46 @@ export function XxxView({ data, total }: { data: XxxItem[]; total: number }) {
 - **分页器与多实体布局**：
   - 分页器严禁禁用（严禁 `showPagination={false}`）；多实体聚合页严禁左右并排挤压，必须在顶部使用横向 Tab 导航。
 
-### ⑧ apps page.tsx
+### ⑧ layout.tsx（路由组 CASL Ability 边界注入 — 绝对必选关键步）
+
+> **⚠️ 核心防线与高频避坑**：
+> 凡是在该路由组（如 `(dashboard)/settings` 或 `(dashboard)/<area>`）下新增任何子页面，**必须在此处显式补齐对应实体的 `getTenantSubjectPermissions(Subject)`**！
+> 若遗漏，在 Fail-Closed 机制下客户端将拿不到该实体的权限快照，导致页面中 `DataTable` 的所有业务数据列被自动隐藏脱敏（右上角仅显示「列设置 1/1」），新增/编辑/停用/删除按钮完全不显示！
+
+```tsx
+// apps/tenant/src/app/(dashboard)/<area>/layout.tsx
+import { AreaAbilityBoundary } from "@domain/<area>/shared";
+import { ResourceASubject } from "@domain/<area>/resource-a";
+import { ResourceBSubject } from "@domain/<area>/resource-b";
+import { getTenantSubjectPermissions } from "@/kernel";
+
+export default async function AreaLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  // 一次性并发获取当前路由组下所有需要的 Subject 权限纯数据快照
+  const [resourceAPerms, resourceBPerms] = await Promise.all([
+    getTenantSubjectPermissions(ResourceASubject),
+    getTenantSubjectPermissions(ResourceBSubject),
+  ]);
+
+  return (
+    <AreaAbilityBoundary
+      permissions={{
+        subjects: {
+          [ResourceASubject]: resourceAPerms,
+          [ResourceBSubject]: resourceBPerms,
+        },
+      }}
+    >
+      {children}
+    </AreaAbilityBoundary>
+  );
+}
+```
+
+### ⑨ apps page.tsx
 
 **正统 Next.js App Router 范式**：直接编写标准异步 Server Component，杜绝黑盒过度封装。
 

@@ -394,6 +394,15 @@
       "status": "completed",
       "owner": "implementer",
       "evidence": "【范式已固化】客户档案为 customer-center 唯一黄金标杆：1. 完成主数据全面瘦身去编码，客户/门店/分类/标签全部统一由 cuid id 主键驱动，外键一律 xxxId；2. 单据表 CustomerQuote 保留 quoteNo 唯一业务号；3. 彻底移除各模块日期流水发号器与排他锁；4. 重构 Category, Tag, Customer, Store, Quote 领域服务、Actions、Queries、Zod 与 FormModal/DataTable 界面；5. 落地 pnpm db:tenant:reset 本地一键重置租户库工具（含环境白名单与交互式二次确认）；6. 验证：customer-center 51/51 单测通过、全仓 15 包 check 与 13 套件 200+ 单测全绿。"
+    },
+    {
+      "id": "base-archives",
+      "name": "基础档案与租户业务数据字典切片 (Base Archives & Tenant Dict Center)",
+      "description": "建设租户业务基础档案切片 (@domain/base-archives)：1. 落地租户配置字典表 TenantDictItem (id, type, code, name, status, sort, isDefault, remark)；2. 支持统一枚举类型 (as const) 驱动的跨切片强类型下拉过滤与缓存查询；3. 实现基于 @base/ui DataTable + FormModal 的数据字典管理控制台；4. apps/tenant 路由装配与导航自发现集成。",
+      "dependencies": ["feat-customer-center-official-crud-refactor"],
+      "status": "completed",
+      "owner": "implementer",
+      "evidence": "1. 落地 packages/domains/base-archives 切片与 TenantDictItem 数据模型，完成契约/服务/查询/Server Actions/DataTable与FormModal；2. 生成增量迁移 20260921063643_add_tenant_dict_item 并完成实库升级；3. 在 settings/layout.tsx 补齐 TenantDictItem 权限注入，解决 Fail-Closed 判定下按钮与列隐藏问题；4. 全仓流水线升级为 9 步标准流程并登记 DEBT-017 技术债；5. 切片 8/8 单测通过，check 与 boundary/migration 门禁全绿。"
     }
   ]
 }

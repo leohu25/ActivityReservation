@@ -80,3 +80,30 @@
      - 工作台卡片受控于 `ViewAction` **AND** `EntitySubject:read`；任意一项未开放，卡片展示灰色锁头与原因说明，整页绝不白屏崩溃；
   4. **彻底消灭魔法字符串 (Zero Magic Strings)**：
      - 跨切片引用业务实体时，必须显式在 `package.json` 声明 `workspace:*`，并通过切片公开契约直接导入导出的 `XxxSubject` 常量符号。
+
+---
+
+## 7. 路由组与 Layout 级 CASL 权限注入防线 (Fail-Closed 默认全拒绝与列消失避坑)
+
+- **痛点（经典故障现场）**：
+  - 新增了一个业务页面或管理功能（如 `/settings/dict` 数据字典），页面编写完整且单测全通；但在浏览器打开后，**表格列全部消失、右上角显示「列设置 1/1」、新增/编辑/停用/删除按钮完全不显示**；
+  - **根本原因**：本项目遵循 **Fail-Closed（故障闭锁 / 默认全拒绝）** 安全哲学。`DataTable` 写按钮受控于 `ability.can("create", subject)`，表格列渲染受控于字段级脱敏 `ability.can("read", subject, col.field)`。如果所属路由组的 `layout.tsx`（如 `settings/layout.tsx` 或业务路由的 `layout.tsx`）漏掉了新实体的权限加载，客户端收到的 Ability 快照中该 `Subject` 为空，导致所有绑定了 `field` 的业务列被物理剥离，写操作按钮全部隐藏。
+- **解法与铁律**：
+  1. **路由组 Layout 必须一次性补齐所有子路由涉及的 Subject**：
+     - 在 App Router 架构中，父级 `layout.tsx` 作为权限注入网关，必须通过 `getTenantSubjectPermissions(Subject)` 统一加载该目录下所有子页面的权限纯数据快照，并灌入 AbilityBoundary（如 `<TenantAdminAbilityBoundary>` 或业务专属 Boundary）；
+     - 示例（`settings/layout.tsx`）：
+       ```tsx
+       const [companyProfile, roleManagement, tenantMenuItem, tenantDictItem] =
+         await Promise.all([
+           getTenantSubjectPermissions("CompanyProfile"),
+           getTenantSubjectPermissions("RoleManagement"),
+           getTenantSubjectPermissions("TenantMenuItem"),
+           getTenantSubjectPermissions("TenantDictItem"), // 必须显式补齐！
+         ]);
+       ```
+  2. **新页面挂载核对清单 (Checklist for New Sub-Routes)**：
+     - [ ] 1. 契约中定义好 `Subject`、`actions` 与 `configurableFields`；
+     - [ ] 2. 检查所属目录的 `layout.tsx`，**必须在 `getTenantSubjectPermissions` 中登记该 `Subject`**；
+     - [ ] 3. 运行 `node scripts/sync/sync-features.mjs` 确保注册表包含新清单；
+     - [ ] 4. 编写组件单测时，不仅断言有完整权限时正常显示，还要断言仅有 `read` 权限时写操作被隐藏，形成双向断言防御。
+

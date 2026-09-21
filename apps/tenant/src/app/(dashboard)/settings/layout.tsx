@@ -9,11 +9,13 @@ export default async function SettingsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [companyProfile, roleManagement, tenantMenuItem] = await Promise.all([
-    getTenantSubjectPermissions("CompanyProfile"),
-    getTenantSubjectPermissions("RoleManagement"),
-    getTenantSubjectPermissions("TenantMenuItem"),
-  ]);
+  const [companyProfile, roleManagement, tenantMenuItem, tenantDictItem] =
+    await Promise.all([
+      getTenantSubjectPermissions("CompanyProfile"),
+      getTenantSubjectPermissions("RoleManagement"),
+      getTenantSubjectPermissions("TenantMenuItem"),
+      getTenantSubjectPermissions("TenantDictItem"),
+    ]);
 
   return (
     <TenantAdminAbilityBoundary
@@ -22,6 +24,7 @@ export default async function SettingsLayout({
           CompanyProfile: companyProfile,
           RoleManagement: roleManagement,
           TenantMenuItem: tenantMenuItem,
+          TenantDictItem: tenantDictItem,
         },
       }}
     >

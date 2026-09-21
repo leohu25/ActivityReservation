@@ -40,6 +40,31 @@ export const TENANT_MIGRATION_CATALOG = {
       "rollbackSupported": true,
       "upSql": "-- AlterTable\nALTER TABLE \"employee_profile\" ADD COLUMN     \"avatar_url\" TEXT;\n\n-- CreateTable\nCREATE TABLE \"attachment\" (\n    \"id\" VARCHAR(36) NOT NULL,\n    \"module\" VARCHAR(50) NOT NULL,\n    \"target_id\" VARCHAR(64),\n    \"field_key\" VARCHAR(50),\n    \"file_name\" VARCHAR(255) NOT NULL,\n    \"storage_key\" VARCHAR(500) NOT NULL,\n    \"file_url\" VARCHAR(1000) NOT NULL,\n    \"file_size\" BIGINT NOT NULL,\n    \"mime_type\" VARCHAR(100) NOT NULL,\n    \"created_by_id\" VARCHAR(64) NOT NULL DEFAULT 'system',\n    \"dept_id\" VARCHAR(64),\n    \"updated_by_id\" VARCHAR(64),\n    \"created_at\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updated_at\" TIMESTAMP(3) NOT NULL,\n    \"is_deleted\" BOOLEAN NOT NULL DEFAULT false,\n    \"deleted_at\" TIMESTAMP(3),\n    \"deleted_by_id\" VARCHAR(64),\n\n    CONSTRAINT \"attachment_pkey\" PRIMARY KEY (\"id\")\n);\n\n-- CreateIndex\nCREATE INDEX \"attachment_target_id_module_idx\" ON \"attachment\"(\"target_id\", \"module\");\n\n-- CreateIndex\nCREATE INDEX \"attachment_created_by_id_idx\" ON \"attachment\"(\"created_by_id\");\n\n-- Comments Migration\nCOMMENT ON TABLE \"attachment\" IS '通用业务附件元数据模型 (Tenant DB 物理隔离，严格对齐 ADR-009 实体审计基线)';\nCOMMENT ON COLUMN \"attachment\".\"id\" IS '附件主键ID';\nCOMMENT ON COLUMN \"attachment\".\"module\" IS '归属业务模块 (如 employee, customer, item 等)';\nCOMMENT ON COLUMN \"attachment\".\"target_id\" IS '关联业务实体主键ID (如员工档案ID、客户ID)';\nCOMMENT ON COLUMN \"attachment\".\"field_key\" IS '业务字段标识 (如 avatar, id_card, attachment 等)';\nCOMMENT ON COLUMN \"attachment\".\"file_name\" IS '原始文件名';\nCOMMENT ON COLUMN \"attachment\".\"storage_key\" IS '对象存储内部 Key';\nCOMMENT ON COLUMN \"attachment\".\"file_url\" IS '访问 URL';\nCOMMENT ON COLUMN \"attachment\".\"file_size\" IS '文件大小 (字节)';\nCOMMENT ON COLUMN \"attachment\".\"mime_type\" IS 'MIME 类型';\nCOMMENT ON COLUMN \"attachment\".\"created_by_id\" IS '创建人 ID (必填，审计基线)';\nCOMMENT ON COLUMN \"attachment\".\"dept_id\" IS '归属部门 ID (选填，支持部门数据范围权限过滤)';\nCOMMENT ON COLUMN \"attachment\".\"updated_by_id\" IS '更新人 ID (选填)';\nCOMMENT ON COLUMN \"attachment\".\"created_at\" IS '创建时间 (必填)';\nCOMMENT ON COLUMN \"attachment\".\"updated_at\" IS '更新时间 (必填)';\nCOMMENT ON COLUMN \"attachment\".\"is_deleted\" IS '软删除标记 (必填)';\nCOMMENT ON COLUMN \"attachment\".\"deleted_at\" IS '软删除时间 (选填)';\nCOMMENT ON COLUMN \"attachment\".\"deleted_by_id\" IS '软删除人 ID (选填)';\nCOMMENT ON COLUMN \"employee_profile\".\"avatar_url\" IS '员工头像/工牌照 URL';\n",
       "downSql": "-- AlterTable\nALTER TABLE \"employee_profile\" DROP COLUMN \"avatar_url\";\n\n-- DropTable\nDROP TABLE \"attachment\";"
+    },
+    {
+      "formatVersion": 1,
+      "scope": "tenant",
+      "version": "20260921063643",
+      "name": "add_tenant_dict_item",
+      "previousVersion": "20260920095838",
+      "checksum": "529c22b0bb77bb635d3b3586006b59cfc58cca358c764b37f7c4db8824a4902f",
+      "schemaChecksum": "a5d026977df67cf9c69a6b4d08e455f0356fcfc042ff813ec1ab20ee968bed86",
+      "createdAt": "2026-09-21T06:36:43.029Z",
+      "risks": [
+        {
+          "code": "ADD_UNIQUE_CONSTRAINT",
+          "message": "唯一约束可能与现有重复数据冲突",
+          "statement": "-- CreateIndex\nCREATE UNIQUE INDEX \"tenant_dict_item_type_code_key\" ON \"tenant_dict_item\"(\"type\", \"code\");"
+        }
+      ],
+      "approval": {
+        "reason": "新增租户业务数据字典项表及type与code联合唯一索引",
+        "dataPlan": "全新建表，无存量数据冲突",
+        "rollbackPlan": "DROP TABLE tenant_dict_item"
+      },
+      "rollbackSupported": true,
+      "upSql": "-- CreateTable\nCREATE TABLE \"tenant_dict_item\" (\n    \"id\" VARCHAR(60) NOT NULL,\n    \"type\" VARCHAR(50) NOT NULL,\n    \"code\" VARCHAR(50) NOT NULL,\n    \"name\" VARCHAR(100) NOT NULL,\n    \"status\" VARCHAR(10) NOT NULL DEFAULT 'ACTIVE',\n    \"sort\" INTEGER NOT NULL DEFAULT 0,\n    \"is_default\" BOOLEAN NOT NULL DEFAULT false,\n    \"remark\" VARCHAR(255),\n    \"created_at\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updated_at\" TIMESTAMP(3) NOT NULL,\n\n    CONSTRAINT \"tenant_dict_item_pkey\" PRIMARY KEY (\"id\")\n);\n\n-- CreateIndex\nCREATE INDEX \"tenant_dict_item_type_status_idx\" ON \"tenant_dict_item\"(\"type\", \"status\");\n\n-- CreateIndex\nCREATE INDEX \"tenant_dict_item_status_idx\" ON \"tenant_dict_item\"(\"status\");\n\n-- CreateIndex\nCREATE UNIQUE INDEX \"tenant_dict_item_type_code_key\" ON \"tenant_dict_item\"(\"type\", \"code\");\n\n-- Comments Migration\nCOMMENT ON TABLE \"tenant_dict_item\" IS '租户业务基础档案数据字典项表 (租户全域共享配置字典，通过 status 启停用)';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"id\" IS '字典项主键ID (UUID/CUID)';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"type\" IS '字典类型编码 (as const 枚举分类，例如 CUSTOMER_LEVEL)';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"code\" IS '字典项业务编码 (同一 type 下唯一)';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"name\" IS '字典项显示名称';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"status\" IS '状态：ACTIVE(启用) / DISABLED(停用)';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"sort\" IS '显示排序权重 (数字越小越靠前)';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"is_default\" IS '是否默认选中项';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"remark\" IS '备注说明';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"created_at\" IS '创建时间';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"updated_at\" IS '更新时间';\n",
+      "downSql": "-- DropTable\nDROP TABLE \"tenant_dict_item\";"
     }
   ]
 } as const satisfies MigrationRuntimeCatalog;

@@ -25,6 +25,7 @@
 | DEBT-014 | 2026-09-18 | @implementer | packages/domains/customer-center + packages/base/ui | StoreView / QuoteView / RoleListView 仍使用已 `@deprecated` 的 `useListUrlNav`（及依赖它的 `useDataTableState`），未切换 `defineListSearchParams` + `useListSearch` 标杆 | 全仓已 100% 切换至 defineListSearchParams + useListSearch 标杆，已物理删除 useListUrlNav 与 useDataTableState 源码及测试 | 中 | 已解决 |
 | DEBT-015 | 2026-09-18 | @implementer | packages/base/ui DataTable | `searchPlacement="toolbar"` / `advancedFilters` / `advancedTriggerText` 为可选高级抽屉形态，易与推荐扩展插槽 **`filterExtra`（未废弃）** 混淆 | 已从 DataTable 彻底物理移除 searchPlacement / advancedFilters / advancedTriggerText，全仓统一收敛为 filterExtra 扁平工业风交互 | 低 | 已解决 |
 | DEBT-016 | 2026-09-18 | @implementer | packages/*, apps/* | 历史遗留 package.json 采用混沌的 `@base/feature-*` 和 `@base/biz-shared` 命名，导致业务包被赋予基座前缀，违背物理分层与 DDD 领域语义 | 已全面规范化为 `@domain/*`（垂直业务）、`@platform/*`（平台套件）、`@biz/shared`（中台资产）与 `@base/*`（纯技术基础设施）四维拓扑，全仓对齐并消灭别扭感 | 高 | 已解决 |
+| DEBT-017 | 2026-09-21 | @implementer | packages/domains/*/src/assembly, packages/domains/*/src/shared/server | 各业务切片内重复手写 `getTenantDbContext`（Session/TenantContext/DB连接/员工门禁解析）与 `resolveEmployeeTopology`（部门拓扑解析与 CASL 工厂装配）高度样板代码 | 将通用的租户会话与物理库解析上浮至 `@base/db-tenant` 或 `@base/auth`；并提供高阶工厂（如 `createTenantSliceContext(catalog)`）供切片单行组合装配 | 高 | 待排期(本次提交后立即收敛) |
 
 ---
 

@@ -52,6 +52,7 @@ export const EXEMPT_MODELS = new Set([
   "CompanyProfile",
   "TenantMenuItem",
   // 纯多对多中间关联表 / 只读配置字典表
+  "TenantDictItem", // 租户业务基础档案数据字典表
   "CustomerTagAssignment",
   "CustomerTag",
   "CustomerCategory",

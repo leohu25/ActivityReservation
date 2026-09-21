@@ -12,15 +12,18 @@ import {
   derivePageCatalog,
 } from "@base/authorization";
 import { tenantAdminManifest } from "@platform/tenant-admin/manifest";
+import { baseArchivesManifest } from "@domain/base-archives/manifest";
 import { customerManifest } from "@domain/customer-center/manifest";
 
 export const ALL_TENANT_MANIFESTS: readonly TenantFeatureManifest[] = [
   tenantAdminManifest,
+  baseArchivesManifest,
   customerManifest,
 ] as const;
 
 /** 纯业务切片清单 (排除系统管理，供业务自定义菜单选用) */
 export const BUSINESS_TENANT_MANIFESTS: readonly TenantFeatureManifest[] = [
+  baseArchivesManifest,
   customerManifest,
 ] as const;
 
