@@ -3,7 +3,7 @@ import type { CreateTagInput, UpdateTagInput } from "./types";
 
 export const createTagSchema = z.object({
 	name: z.string().min(1, "标签名称不能为空"),
-	tagType: z.string().min(1, "请选择标签类型"),
+	tagTypeId: z.string().min(1, "请选择业务标签类型"),
 	description: z.string().nullable().optional(),
 });
 
@@ -18,7 +18,7 @@ export function parseCreateTagInput(raw: unknown): CreateTagInput {
 	const parsed = createTagSchema.parse(raw);
 	return {
 		name: parsed.name,
-		tagType: parsed.tagType,
+		tagTypeId: parsed.tagTypeId,
 		description: parsed.description || null,
 	};
 }
@@ -27,7 +27,7 @@ export function parseUpdateTagInput(raw: unknown): UpdateTagInput {
 	const parsed = updateTagSchema.parse(raw);
 	return {
 		name: parsed.name,
-		tagType: parsed.tagType,
+		tagTypeId: parsed.tagTypeId,
 		description:
 			parsed.description === undefined ? undefined : parsed.description || null,
 		status: parsed.status,

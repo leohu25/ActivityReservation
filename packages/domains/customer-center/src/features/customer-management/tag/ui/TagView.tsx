@@ -22,35 +22,27 @@ import {
 } from "@base/ui";
 import { updateTagStatusAction, deleteTagAction } from "../actions";
 import { TagFormModal } from "./TagFormModal";
-import type { CustomerTagItem } from "../types";
+import type { CustomerTagItem, TagTypeOption } from "../types";
 
 export interface TagViewProps {
 	data: CustomerTagItem[];
 	total: number;
+	tagTypeOptions?: readonly TagTypeOption[] | TagTypeOption[];
 }
 
-const tagTypeLabels: Record<string, string> = {
-	DELIVERY: "配送策略",
-	SETTLEMENT: "结算方式",
-	CREDIT: "信用分级",
-	OTHER: "其他通用",
-};
-
-/**
- * 业务标签管理视图：纯单实体标准视图
- * - URL / 列表搜索由 useListSearch + customerTagSearchParams 自动驱动
- * - 按钮（查询、重置、刷新、导出、新增）100% 由 DataTable 模板组件生成
- */
-const TAG_TYPE_OPTIONS = [
-	{ value: "DELIVERY", label: "配送策略" },
-	{ value: "SETTLEMENT", label: "结算方式" },
-	{ value: "CREDIT", label: "信用分级" },
-	{ value: "OTHER", label: "其他通用" },
-];
-
-export function TagView({ data, total }: TagViewProps) {
+export function TagView({ data, total, tagTypeOptions = [] }: TagViewProps) {
 	const ability = useAbility();
 	const list = useListSearch(customerTagSearchParams);
+
+	const tagTypeLabelMap = useMemo(() => {
+		const map: Record<string, string> = {};
+		if (tagTypeOptions) {
+			for (const opt of tagTypeOptions) {
+				map[opt.value] = opt.label;
+			}
+		}
+		return map;
+	}, [tagTypeOptions]);
 
 	// 弹窗状态管理（支持 create / edit / view 三态）
 	const [modalState, setModalState] = useState<{
@@ -108,8 +100,9 @@ export function TagView({ data, total }: TagViewProps) {
 			ability,
 			filename: `客户标签字典_${new Date().toISOString().slice(0, 10)}.csv`,
 			format: {
-				[CustomerTagField.TAG_TYPE]: (t) =>
-					tagTypeLabels[t.tagType ?? "OTHER"] || t.tagType || "OTHER",
+				[CustomerTagField.TAG_TYPE_ID]: (t) =>
+					t.tagType?.name ||
+					(t.tagTypeId ? tagTypeLabelMap[t.tagTypeId] || t.tagTypeId : "—"),
 				[CustomerTagField.STATUS]: (t) =>
 					t.status === MasterDataStatus.ACTIVE ? "启用" : "停用",
 			},
@@ -133,12 +126,16 @@ export function TagView({ data, total }: TagViewProps) {
 			},
 			{
 				id: "tagType",
-				field: CustomerTagField.TAG_TYPE,
+				field: CustomerTagField.TAG_TYPE_ID,
 				header: "业务类型",
 				width: 140,
 				cell: (t: CustomerTagItem) => {
-					const typeKey = t.tagType || "OTHER";
-					const label = tagTypeLabels[typeKey] || typeKey;
+					// 优先从关联的 tagType 实体对象直接渲染（DTO 投影完备性），降级走字典选项 Map
+					const label =
+						t.tagType?.name ||
+						(t.tagTypeId && tagTypeLabelMap[t.tagTypeId]) ||
+						t.tagTypeId ||
+						"—";
 					return (
 						<Badge
 							variant="secondary"
@@ -185,7 +182,6 @@ export function TagView({ data, total }: TagViewProps) {
 				width: 130,
 				align: "right",
 				cell: (t: CustomerTagItem) => {
-					const isActive = t.status === MasterDataStatus.ACTIVE;
 					return (
 						<DataTableRowActions
 							record={t}
@@ -244,7 +240,7 @@ export function TagView({ data, total }: TagViewProps) {
 				rowKey={(t: CustomerTagItem) => t.id}
 				subject={customerTagPageContract.subject}
 				title="业务标签字典"
-				description="维护配送策略、结算方式、信用分级等策略性业务标签。"
+				description="维护各业务场景策略性业务标签及打标规则。"
 				total={total}
 				{...list.dataTableProps}
 				onCreate={() =>
@@ -266,13 +262,16 @@ export function TagView({ data, total }: TagViewProps) {
 				filterExtra={
 					<DataTableInputGroup label="业务类型" className="w-52">
 						<Combobox
-							value={String(list.params.tagType ?? "") || null}
-							options={TAG_TYPE_OPTIONS}
+							value={String(list.params.tagTypeId ?? "") || null}
+							options={tagTypeOptions.map((opt) => ({
+								value: opt.value,
+								label: opt.label,
+							}))}
 							placeholder="全部类型"
 							clearable={true}
 							onChange={(next) =>
 								list.patch({
-									tagType: next || "",
+									tagTypeId: next || "",
 								})
 							}
 						/>
@@ -284,6 +283,7 @@ export function TagView({ data, total }: TagViewProps) {
 				open={modalState.open}
 				mode={modalState.mode}
 				record={modalState.record}
+				tagTypeOptions={tagTypeOptions}
 				onClose={() =>
 					setModalState({ open: false, mode: "create", record: null })
 				}

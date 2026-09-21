@@ -25,7 +25,7 @@ export class CustomerTagService {
 			page?: number;
 			pageSize?: number;
 			keyword?: string;
-			tagType?: string;
+			tagTypeId?: string;
 			status?: CustomerTagStatus;
 		} = {},
 	): Promise<{
@@ -39,8 +39,8 @@ export class CustomerTagService {
 		});
 
 		const where: TenantPrisma.CustomerTagWhereInput = {};
-		if (filter.tagType) {
-			where.tagType = filter.tagType;
+		if (filter.tagTypeId) {
+			where.tagTypeId = filter.tagTypeId;
 		}
 		if (filter.status) {
 			where.status = filter.status;
@@ -63,9 +63,32 @@ export class CustomerTagService {
 			}),
 		]);
 
+		// 批量解析关联字典对象 (无 N+1，遵循 DTO 投影完备性)
+		const dictIds = Array.from(
+			new Set(
+				items
+					.map((t) => t.tagTypeId)
+					.filter((id): id is string => Boolean(id)),
+			),
+		);
+		const dictMap = new Map<
+			string,
+			{ id: string; code: string; name: string }
+		>();
+		if (dictIds.length > 0) {
+			const dictItems = await client.tenantDictItem.findMany({
+				where: { id: { in: dictIds } },
+				select: { id: true, code: true, name: true },
+			});
+			for (const item of dictItems) {
+				dictMap.set(item.id, item);
+			}
+		}
+
 		return {
 			items: items.map((t) => ({
 				...t,
+				tagType: t.tagTypeId ? (dictMap.get(t.tagTypeId) ?? null) : null,
 				status: t.status as CustomerTagStatus,
 			})),
 			total,
@@ -79,11 +102,11 @@ export class CustomerTagService {
 	 */
 	static async listTags(
 		client: TenantPrismaClient,
-		filter?: { tagType?: string; status?: CustomerTagStatus },
+		filter?: { tagTypeId?: string; status?: CustomerTagStatus },
 	): Promise<CustomerTagItem[]> {
 		const where: TenantPrisma.CustomerTagWhereInput = {};
-		if (filter?.tagType) {
-			where.tagType = filter.tagType;
+		if (filter?.tagTypeId) {
+			where.tagTypeId = filter.tagTypeId;
 		}
 		if (filter?.status) {
 			where.status = filter.status;
@@ -94,8 +117,30 @@ export class CustomerTagService {
 			orderBy: { createdAt: "desc" },
 		});
 
+		const dictIds = Array.from(
+			new Set(
+				list
+					.map((t) => t.tagTypeId)
+					.filter((id): id is string => Boolean(id)),
+			),
+		);
+		const dictMap = new Map<
+			string,
+			{ id: string; code: string; name: string }
+		>();
+		if (dictIds.length > 0) {
+			const dictItems = await client.tenantDictItem.findMany({
+				where: { id: { in: dictIds } },
+				select: { id: true, code: true, name: true },
+			});
+			for (const item of dictItems) {
+				dictMap.set(item.id, item);
+			}
+		}
+
 		return list.map((t) => ({
 			...t,
+			tagType: t.tagTypeId ? (dictMap.get(t.tagTypeId) ?? null) : null,
 			status: t.status as CustomerTagStatus,
 		}));
 	}
@@ -111,7 +156,7 @@ export class CustomerTagService {
 		return client.customerTag.create({
 			data: {
 				name: input.name,
-				tagType: input.tagType,
+				tagTypeId: input.tagTypeId,
 				description: input.description,
 				status: MasterDataStatus.ACTIVE,
 			},
@@ -138,7 +183,7 @@ export class CustomerTagService {
 			where: { id },
 			data: {
 				...(input.name !== undefined && { name: input.name }),
-				...(input.tagType !== undefined && { tagType: input.tagType }),
+				...(input.tagTypeId !== undefined && { tagTypeId: input.tagTypeId }),
 				...(input.description !== undefined && {
 					description: input.description,
 				}),

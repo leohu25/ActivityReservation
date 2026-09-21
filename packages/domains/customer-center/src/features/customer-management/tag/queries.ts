@@ -14,7 +14,8 @@ export interface ListTagsFilter {
 	page?: number;
 	pageSize?: number;
 	keyword?: string;
-	tagType?: string;
+	tagTypeId?: string;
+	tagType?: string; // 兼容别名
 	status?: CustomerTagStatus;
 }
 
@@ -31,10 +32,17 @@ export async function listTagsQuery(
 }> {
 	const { client, ability } = await getTenantCustomerContext();
 	assertCustomerAbility(ability, StandardAction.READ, CustomerTagSubject);
-	const filter: ListTagsFilter =
-		typeof filterOrTagType === "string"
-			? { tagType: filterOrTagType }
-			: (filterOrTagType ?? {});
+	let filter: ListTagsFilter;
+	if (typeof filterOrTagType === "string") {
+		filter = { tagTypeId: filterOrTagType };
+	} else if (filterOrTagType) {
+		filter = {
+			...filterOrTagType,
+			tagTypeId: filterOrTagType.tagTypeId ?? filterOrTagType.tagType,
+		};
+	} else {
+		filter = {};
+	}
 	return toPlainData(await CustomerTagService.listTagsPaged(client, filter));
 }
 

@@ -118,3 +118,32 @@ pnpm run db:migrate:baseline:reset:platform
 数据库结构需要修复时必须新增迁移，禁止重写历史。`scripts/check/check-migration-immutability.mjs` 会检查 Git 暂存区，并由 `scripts/verify.mjs` 和 pre-commit 钩子在提交前硬拦截。新增迁移目录允许提交，`generated/runtime-catalog.ts` 可随新增迁移正常更新。
 
 `baseline:reset` 属于需要同步重建对应数据库的受控操作，不是普通提交的豁免开关；执行前必须单独确认影响范围并建立专用重置流程。
+
+---
+
+## 5. 存量数据库平滑演进与老表加字段铁律 (Expand and Contract)
+
+在企业级多租户 SaaS 系统中，各租户物理数据库已常驻大量业务数据。为彻底杜绝租户库升级时因 `contains null values` 抛错导致服务瘫痪，全仓必须严格遵循以下两套场景分流准则：
+
+### 准则一：新建表 vs 老表追加字段清晰界限
+
+| 场景 | 数据库物理约束 (`schema.prisma`) | 应用层校验 (`schema.ts` / Zod) | 解释与依据 |
+| :--- | :--- | :--- | :--- |
+| **新建一张全新表** | 核心业务字段正常 `NOT NULL` (如 `id`, `name`, `status`) | 正常必填校验 | 新表无存量历史包袱，数据库物理非空约束是防止脏数据的必要底线。 |
+| **在已有存量数据的旧表上追加新字段** | **必须声明为可空（带 `?`）** (如 `tagTypeId String?`) | **应用层强校验必填** (如 `z.string().min(1)`) | 存量旧行无历史初值；数据库可空确保秒级平滑升级；应用层卡死入口确保新写入数据 100% 完整。 |
+
+> ⚠️ **禁止手动篡改 SQL 铁律**：
+> 全仓所有的 `migration.sql`、`down.sql` 与 `manifest.json` 必须 100% 由命令 `pnpm db:migrate:generate` 原生生成，严禁手工篡改 SQL 文件。若遇到存量数据不兼容，一律通过修正 Prisma Schema 的可空性重新生成，保证迁移引擎 checksum 事实源绝对一致。
+
+### 准则二：业务数据字典外键关联规范
+
+当业务实体需要关联通用基础档案数据字典（如业务标签类型、行业分类、结算方式）时：
+1. **字段命名与类型**：统一存储数据字典主键 ID，以 `*Id` 结尾并采用可空（如 `tagTypeId String? @map("tag_type_id") @db.VarChar(60)`）；
+2. **场景标识解耦**：业务切片严禁硬编码分类字符串，统一从 `@domain/base-archives/dict` 导出的 `DICT_TYPES` SSoT 常量中注入；
+3. **数据读取与回显**：由装配层调用 `getDictOptionsByTypeQuery(identifier)` 拉取字典项，前端下拉选项以 `value: dict.id` 进行选择，表格回显兼容历史空值显示为 `"—"`。
+
+### 准则三：自动化门禁硬拦截 (`scripts/check/check-migration-safety.mjs`)
+
+仓库已部署自动门禁，在 `pnpm verify` 与 `git commit` 时机械化扫描待提交迁移：
+- 若检测到 `ALTER TABLE ... ADD COLUMN ... NOT NULL` 且未提供 `DEFAULT` 默认值，门禁立即硬性拦截阻断提交，防止向已有表盲目追加非空字段破坏存量租户库。
+

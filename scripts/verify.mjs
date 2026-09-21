@@ -151,6 +151,16 @@ const checks = [
 		],
 	},
 	{
+		label: "迁移安全",
+		cmd: nodePath,
+		args: [
+			path.join(
+				WORKSPACE_ROOT,
+				"scripts/check/check-migration-safety.mjs",
+			),
+		],
+	},
+	{
 		label: "门禁单测",
 		cmd: nodePath,
 		args: [
@@ -166,6 +176,10 @@ const checks = [
 			path.join(
 				WORKSPACE_ROOT,
 				"scripts/check/check-migration-immutability.test.mjs",
+			),
+			path.join(
+				WORKSPACE_ROOT,
+				"scripts/check/check-migration-safety.test.mjs",
 			),
 		],
 	},

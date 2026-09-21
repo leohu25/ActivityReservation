@@ -11,8 +11,18 @@ const mockCategories = [
 ];
 
 const mockTags: CustomerTagItem[] = [
-	{ id: "TAG_VIP", name: "重要客户", tagType: "OTHER" },
-	{ id: "TAG_KA", name: "战略大客户", tagType: "OTHER" },
+	{
+		id: "TAG_VIP",
+		name: "重要客户",
+		tagTypeId: "dict_other",
+		tagType: { id: "dict_other", code: "OTHER", name: "其他通用" },
+	},
+	{
+		id: "TAG_KA",
+		name: "战略大客户",
+		tagTypeId: "dict_other",
+		tagType: { id: "dict_other", code: "OTHER", name: "其他通用" },
+	},
 ];
 
 const mockCustomerRecord: CustomerListItem = {

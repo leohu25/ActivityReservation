@@ -64,7 +64,32 @@ export const TENANT_MIGRATION_CATALOG = {
       },
       "rollbackSupported": true,
       "upSql": "-- CreateTable\nCREATE TABLE \"tenant_dict_item\" (\n    \"id\" VARCHAR(60) NOT NULL,\n    \"type\" VARCHAR(50) NOT NULL,\n    \"code\" VARCHAR(50) NOT NULL,\n    \"name\" VARCHAR(100) NOT NULL,\n    \"status\" VARCHAR(10) NOT NULL DEFAULT 'ACTIVE',\n    \"sort\" INTEGER NOT NULL DEFAULT 0,\n    \"is_default\" BOOLEAN NOT NULL DEFAULT false,\n    \"remark\" VARCHAR(255),\n    \"created_at\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updated_at\" TIMESTAMP(3) NOT NULL,\n\n    CONSTRAINT \"tenant_dict_item_pkey\" PRIMARY KEY (\"id\")\n);\n\n-- CreateIndex\nCREATE INDEX \"tenant_dict_item_type_status_idx\" ON \"tenant_dict_item\"(\"type\", \"status\");\n\n-- CreateIndex\nCREATE INDEX \"tenant_dict_item_status_idx\" ON \"tenant_dict_item\"(\"status\");\n\n-- CreateIndex\nCREATE UNIQUE INDEX \"tenant_dict_item_type_code_key\" ON \"tenant_dict_item\"(\"type\", \"code\");\n\n-- Comments Migration\nCOMMENT ON TABLE \"tenant_dict_item\" IS '租户业务基础档案数据字典项表 (租户全域共享配置字典，通过 status 启停用)';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"id\" IS '字典项主键ID (UUID/CUID)';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"type\" IS '字典类型编码 (as const 枚举分类，例如 CUSTOMER_LEVEL)';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"code\" IS '字典项业务编码 (同一 type 下唯一)';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"name\" IS '字典项显示名称';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"status\" IS '状态：ACTIVE(启用) / DISABLED(停用)';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"sort\" IS '显示排序权重 (数字越小越靠前)';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"is_default\" IS '是否默认选中项';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"remark\" IS '备注说明';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"created_at\" IS '创建时间';\nCOMMENT ON COLUMN \"tenant_dict_item\".\"updated_at\" IS '更新时间';\n",
-      "downSql": "-- DropTable\nDROP TABLE \"tenant_dict_item\";"
+      "downSql": "-- DropTable\nDROP TABLE \"tenant_dict_item\";\n"
+    },
+    {
+      "formatVersion": 1,
+      "scope": "tenant",
+      "version": "20260921094604",
+      "name": "alter_customer_tag_to_dict_id",
+      "previousVersion": "20260921063643",
+      "checksum": "b3d84b0385e6d6d946734c30cd05426b274b9ef4b8be586b7f1de75c29b43128",
+      "schemaChecksum": "fb80d9d36c0dc2c6cff71dfc96e0425233c279c7eeedbb4be3d51fe442bf8e51",
+      "createdAt": "2026-09-21T09:46:04.510Z",
+      "risks": [
+        {
+          "code": "DROP_COLUMN",
+          "message": "删除字段可能造成不可逆数据丢失",
+          "statement": "-- AlterTable\nALTER TABLE \"customer_tag\" DROP COLUMN \"tag_type\",\nADD COLUMN     \"tag_type_id\" VARCHAR(60);"
+        }
+      ],
+      "approval": {
+        "reason": "将客户标签类型字段规范迁移为tag_type_id关联数据字典主键",
+        "dataPlan": "存量老表追加tag_type_id可空字段，应用层强制必填",
+        "rollbackPlan": "可回滚重建tag_type字段"
+      },
+      "rollbackSupported": true,
+      "upSql": "-- AlterTable\nALTER TABLE \"customer_tag\" DROP COLUMN \"tag_type\",\nADD COLUMN     \"tag_type_id\" VARCHAR(60);\n\n-- CreateIndex\nCREATE INDEX \"customer_tag_tag_type_id_idx\" ON \"customer_tag\"(\"tag_type_id\");\n\n-- Comments Migration\nCOMMENT ON COLUMN \"customer_tag\".\"tag_type_id\" IS '业务标签类型ID：存储基础档案 tenant_dict_item 的主键 id (老表追加字段设为可选，应用层强制必填)';\n",
+      "downSql": "-- DropIndex\nDROP INDEX \"customer_tag_tag_type_id_idx\";\n\n-- AlterTable\nALTER TABLE \"customer_tag\" DROP COLUMN \"tag_type_id\",\nADD COLUMN     \"tag_type\" VARCHAR(20) NOT NULL;\n\n-- Comments Rollback\nCOMMENT ON COLUMN \"customer_tag\".\"tag_type\" IS '标签类型：DELIVERY(配送) / SETTLEMENT(结算) / CREDIT(信用) / OTHER(其他)';\n"
     }
   ]
 } as const satisfies MigrationRuntimeCatalog;

@@ -36,8 +36,10 @@ export interface UpdateDictItemInput {
 
 /** 供前端 Select / Radio / Combobox 等直接消费的精简选项契约 */
 export interface DictOption {
+	id?: string;
 	label: string;
-	value: string;
+	value: string; // 默认存储字典项主键 ID
+	code?: string; // 字典项业务编码
 	isDefault?: boolean;
 	sort?: number;
 }

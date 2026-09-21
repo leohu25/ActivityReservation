@@ -16,7 +16,7 @@ test("tag.contract: customerTagSearchParams 解析参数与默认值", async () 
 			page: "2",
 			pageSize: "20",
 			keyword: "VIP",
-			tagType: "DELIVERY",
+			tagTypeId: "dict_deliv_1",
 			status: "ACTIVE",
 		}),
 	);
@@ -24,7 +24,7 @@ test("tag.contract: customerTagSearchParams 解析参数与默认值", async () 
 		page: 2,
 		pageSize: 20,
 		keyword: "VIP",
-		tagType: "DELIVERY",
+		tagTypeId: "dict_deliv_1",
 		status: "ACTIVE",
 	});
 });
@@ -42,5 +42,5 @@ test("tag.contract: 客户标签契约基本元数据完整性", () => {
 	assert.ok(actionNames.includes(CustomerTagAction.TOGGLE_STATUS));
 
 	assert.equal(CustomerTagField.NAME, "name");
-	assert.equal(CustomerTagField.TAG_TYPE, "tagType");
+	assert.equal(CustomerTagField.TAG_TYPE_ID, "tagTypeId");
 });

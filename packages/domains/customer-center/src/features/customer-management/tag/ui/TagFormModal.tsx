@@ -5,7 +5,7 @@ import { FormModal, type FormFieldSchema, toast } from "@base/ui";
 import { createTagAction, updateTagAction } from "../actions";
 import { CustomerTagSubject } from "../contract";
 import { createTagSchema, type CreateTagSchema } from "../schema";
-import type { CustomerTagItem } from "../types";
+import type { CustomerTagItem, TagTypeOption } from "../types";
 
 export interface TagFormModalProps {
 	readonly open?: boolean;
@@ -14,6 +14,7 @@ export interface TagFormModalProps {
 	readonly onClose: () => void;
 	readonly onSuccess?: () => void;
 	readonly inline?: boolean;
+	readonly tagTypeOptions?: readonly TagTypeOption[] | TagTypeOption[];
 }
 
 /** 客户业务标签表单：标准 FormModal 驱动（支持 create / edit / view 模式） */
@@ -24,17 +25,44 @@ export function TagFormModal({
 	onClose,
 	onSuccess,
 	inline,
+	tagTypeOptions = [],
 }: TagFormModalProps) {
 	const isEdit = mode === "edit";
 	const isView = mode === "view";
 
+	const resolvedTagOptions = useMemo(() => {
+		const raw = tagTypeOptions ?? [];
+		const options = raw.map((opt) => ({
+			value: opt.value,
+			label: opt.code ? `${opt.label} (${opt.code})` : opt.label,
+		}));
+		const recordTagTypeId = record?.tagTypeId;
+		if (recordTagTypeId && !options.some((o) => o.value === recordTagTypeId)) {
+			const label = record.tagType
+				? `${record.tagType.name} (${record.tagType.code}) [已停用/历史]`
+				: `${recordTagTypeId} (已停用/未匹配)`;
+			options.push({
+				value: recordTagTypeId,
+				label,
+			});
+		}
+		return options;
+	}, [tagTypeOptions, record?.tagTypeId, record?.tagType]);
+
+	const defaultTagTypeId = useMemo(() => {
+		if (record?.tagTypeId) return record.tagTypeId;
+		const activeDefault = tagTypeOptions?.find((o) => o.isDefault)?.value;
+		if (activeDefault) return activeDefault;
+		return resolvedTagOptions[0]?.value || "";
+	}, [record?.tagTypeId, tagTypeOptions, resolvedTagOptions]);
+
 	const initialValues: CreateTagSchema = useMemo(
 		() => ({
 			name: record?.name || "",
-			tagType: record?.tagType || "DELIVERY",
+			tagTypeId: defaultTagTypeId,
 			description: record?.description || "",
 		}),
-		[record],
+		[record, defaultTagTypeId],
 	);
 
 	const fields: FormFieldSchema[] = useMemo(
@@ -47,16 +75,11 @@ export function TagFormModal({
 				placeholder: "如: VIP专属、早间必达",
 			},
 			{
-				name: "tagType",
+				name: "tagTypeId",
 				label: "标签业务类型",
 				type: "select" as const,
 				required: true,
-				options: [
-					{ value: "DELIVERY", label: "配送策略 (DELIVERY)" },
-					{ value: "SETTLEMENT", label: "结算方式 (SETTLEMENT)" },
-					{ value: "CREDIT", label: "信用分级 (CREDIT)" },
-					{ value: "OTHER", label: "其他通用 (OTHER)" },
-				],
+				options: resolvedTagOptions,
 			},
 			{
 				name: "description",
@@ -66,7 +89,7 @@ export function TagFormModal({
 				placeholder: "标签打标规则与适用场景",
 			},
 		],
-		[],
+		[resolvedTagOptions],
 	);
 
 	const title = isView
@@ -103,7 +126,7 @@ export function TagFormModal({
 				if (isEdit && record) {
 					const res = await updateTagAction(record.id, {
 						name: values.name,
-						tagType: values.tagType,
+						tagTypeId: values.tagTypeId,
 						description: values.description || null,
 					});
 					if (!res.success) {
@@ -114,7 +137,7 @@ export function TagFormModal({
 				} else {
 					const res = await createTagAction({
 						name: values.name,
-						tagType: values.tagType,
+						tagTypeId: values.tagTypeId,
 						description: values.description || null,
 					});
 					if (!res.success) {

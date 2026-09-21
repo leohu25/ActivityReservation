@@ -65,6 +65,7 @@ tooling/db-migrate                  12-Factor 迁移引擎
 | 13  | 测试同级共存；实体审计+软删除基线；提交前人工审阅 + 中文 Conventional Commits；禁 `--no-verify`                | `AGENTS.md`、`references/2-schema-migrate.md` |
 | 14  | 严禁用 `any` 降解，强制 TypeScript 强类型（Prisma/Zod/DTO/Props 端到端可推导；禁 `any` / `(x as any)`）        | `AGENTS.md`、`references/3-services.md`       |
 | 15  | **架构中立性与业务零耦合**：Skill 严禁硬编码当前项目特定业务逻辑与实体，示例一律抽象化，确保跨项目 100% 可移植 | 本规约「零、核心分工原则」                    |
+| 16  | **存量平滑演进与老表加字段铁律**：老表追加字段必须在数据库设为可空（带 `?`），应用层（Zod/表单）卡必填；严禁老表追加无默认值 NOT NULL 字段导致存量库崩溃；严禁手写/篡改迁移 SQL，统一由 `db:migrate:generate` 标准生成 | `references/2-schema-migrate.md` |
 
 **作废 / 禁止用于新代码**（仅存量迁移过渡的标 `@deprecated`）：
 

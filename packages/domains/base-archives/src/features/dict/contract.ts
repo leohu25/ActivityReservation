@@ -14,6 +14,10 @@ export const DICT_TYPES = {
 	CUSTOMER_SOURCE: "CUSTOMER_SOURCE", // 客户来源 (如：线上广告、主动拜访、老客转介)
 	INDUSTRY_TYPE: "INDUSTRY_TYPE", // 行业分类 (如：餐饮食品、电子电器、机械制造)
 
+	// 业务标签
+	CUSTOMER_TAG_TYPE: "CUSTOMER_TAG_TYPE", // 客户标签业务类型 (如：配送策略、结算方式、信用分级)
+	TAG_BUSINESS_TYPE: "TAG_BUSINESS_TYPE", // 标签业务类型 (通用业务标签分类)
+
 	// 财务与结算
 	SETTLEMENT_TYPE: "SETTLEMENT_TYPE", // 结算方式 (如：现款现结、月结30天、预付款)
 	INVOICE_TYPE: "INVOICE_TYPE", // 发票类型 (如：增值税专用发票、普通发票)
@@ -30,6 +34,8 @@ export const DICT_TYPE_OPTIONS: readonly { readonly value: string; readonly labe
 	{ value: DICT_TYPES.CUSTOMER_LEVEL, label: "客户级别 (CUSTOMER_LEVEL)" },
 	{ value: DICT_TYPES.CUSTOMER_SOURCE, label: "客户来源 (CUSTOMER_SOURCE)" },
 	{ value: DICT_TYPES.INDUSTRY_TYPE, label: "行业分类 (INDUSTRY_TYPE)" },
+	{ value: DICT_TYPES.CUSTOMER_TAG_TYPE, label: "客户标签业务类型 (CUSTOMER_TAG_TYPE)" },
+	{ value: DICT_TYPES.TAG_BUSINESS_TYPE, label: "标签业务类型 (TAG_BUSINESS_TYPE)" },
 	{ value: DICT_TYPES.SETTLEMENT_TYPE, label: "结算方式 (SETTLEMENT_TYPE)" },
 	{ value: DICT_TYPES.INVOICE_TYPE, label: "发票类型 (INVOICE_TYPE)" },
 	{ value: DICT_TYPES.UNIT_MEASURE, label: "计量单位 (UNIT_MEASURE)" },

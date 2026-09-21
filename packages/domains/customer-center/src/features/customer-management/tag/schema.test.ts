@@ -5,10 +5,10 @@ import { parseCreateTagInput, parseUpdateTagInput } from "./schema";
 test("tag.schema: parseCreateTagInput 校验必填项与默认值", () => {
 	const parsed = parseCreateTagInput({
 		name: "VIP专属",
-		tagType: "DELIVERY",
+		tagTypeId: "dict_deliv_1",
 	});
 	assert.equal(parsed.name, "VIP专属");
-	assert.equal(parsed.tagType, "DELIVERY");
+	assert.equal(parsed.tagTypeId, "dict_deliv_1");
 	assert.equal(parsed.description, null);
 
 	assert.throws(() => parseCreateTagInput({ name: "VIP专属" }));
@@ -17,10 +17,10 @@ test("tag.schema: parseCreateTagInput 校验必填项与默认值", () => {
 test("tag.schema: parseUpdateTagInput 校验更新格式与状态", () => {
 	const parsed = parseUpdateTagInput({
 		name: "高价值客户",
-		tagType: "CREDIT",
+		tagTypeId: "dict_credit_2",
 		status: "ACTIVE",
 	});
 	assert.equal(parsed.name, "高价值客户");
-	assert.equal(parsed.tagType, "CREDIT");
+	assert.equal(parsed.tagTypeId, "dict_credit_2");
 	assert.equal(parsed.status, "ACTIVE");
 });

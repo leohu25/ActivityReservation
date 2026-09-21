@@ -8,7 +8,7 @@ import { defineListSearchParams } from "@base/ui";
  * 业务标签 URL 列表参数契约
  */
 export const customerTagSearchParams = defineListSearchParams({
-	tagType: "",
+	tagTypeId: "",
 	status: "",
 });
 export type CustomerTagSearchParams = Awaited<
@@ -28,7 +28,7 @@ export const CustomerTagAction = {
 
 export const CustomerTagField = {
 	NAME: "name",
-	TAG_TYPE: "tagType",
+	TAG_TYPE_ID: "tagTypeId",
 	DESCRIPTION: "description",
 	STATUS: "status",
 } as const;
@@ -36,7 +36,7 @@ export const CustomerTagField = {
 /** 客户标签受控字段元数据定义 */
 export const customerTagConfigurableFields = [
 	{ field: CustomerTagField.NAME, label: "标签名称", sensitive: false },
-	{ field: CustomerTagField.TAG_TYPE, label: "标签业务类型", sensitive: false },
+	{ field: CustomerTagField.TAG_TYPE_ID, label: "标签业务类型ID", sensitive: false },
 	{
 		field: CustomerTagField.DESCRIPTION,
 		label: "业务描述说明",

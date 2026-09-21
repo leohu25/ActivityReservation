@@ -95,6 +95,7 @@ export class TenantDictItemService {
 			where,
 			orderBy: [{ sort: "asc" }, { createdAt: "asc" }],
 			select: {
+				id: true,
 				code: true,
 				name: true,
 				isDefault: true,
@@ -103,8 +104,10 @@ export class TenantDictItemService {
 		});
 
 		return items.map((item) => ({
+			id: item.id,
 			label: item.name,
-			value: item.code,
+			value: item.id,
+			code: item.code,
 			isDefault: item.isDefault,
 			sort: item.sort,
 		}));

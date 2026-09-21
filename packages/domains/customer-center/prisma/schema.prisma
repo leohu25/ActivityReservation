@@ -43,8 +43,8 @@ model CustomerTag {
   id          String   @id @default(cuid()) @db.VarChar(36)
   /// 标签名称（如：早间配送、VIP客户、学校食堂）
   name        String   @map("name") @db.VarChar(50)
-  /// 标签类型：DELIVERY(配送) / SETTLEMENT(结算) / CREDIT(信用) / OTHER(其他)
-  tagType     String   @map("tag_type") @db.VarChar(20)
+  /// 业务标签类型ID：存储基础档案 tenant_dict_item 的主键 id (老表追加字段设为可选，应用层强制必填)
+  tagTypeId   String?  @map("tag_type_id") @db.VarChar(60)
   /// 标签业务说明
   description String?  @db.VarChar(200)
   /// 状态：ACTIVE(启用) / DISABLED(停用)
@@ -57,6 +57,7 @@ model CustomerTag {
   /// 关联的客户标签记录
   assignments CustomerTagAssignment[]
 
+  @@index([tagTypeId])
   @@index([status])
   @@map("customer_tag")
 }
