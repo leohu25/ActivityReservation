@@ -81,13 +81,14 @@ tooling/db-migrate                  12-Factor 迁移引擎
 ```text
 ① contract.ts     权限契约 + defineListSearchParams 扩展字段
 ② schema.ts       共享 Zod
-③ service.ts      领域逻辑（事务 / 发号 / 状态机）
-④ queries.ts      server-only + cache + DTO
-⑤ actions.ts      defineServerAction 直写 → 平铺 export
-⑥ ui/*FormModal   FormModal 声明式弹窗 + schema/fields + subject（或主单据 FormPage）
-⑦ ui/*View        useListSearch + DataTable 纯受控视图（带 subject 自动接管权限）
-⑧ layout.tsx      【专属边界防线】必须挂载切片专属路由与本切片专属 *AbilityBoundary（严禁借道寄生到其他模块 Layout）
-⑨ apps page.tsx   标准 RSC 装配（主列表、new、[id] 路由页直通数据）
+③ assembly/ctx.ts 基座高阶工厂 createTenantSliceContext(catalog) 一行装配
+④ service.ts      领域逻辑（事务 / 发号 / 状态机）
+⑤ queries.ts      server-only + cache + DTO
+⑥ actions.ts      defineServerAction 直写 → 平铺 export
+⑦ ui/*FormModal   FormModal 声明式弹窗 + schema/fields + subject（或主单据 FormPage）
+⑧ ui/*View        useListSearch + DataTable 纯受控视图（带 subject 自动接管权限）
+⑨ layout.tsx      【专属边界防线】必须挂载切片专属路由与本切片专属 *AbilityBoundary（严禁借道寄生到其他模块 Layout）
+⑩ apps page.tsx   标准 RSC 装配（主列表、new、[id] 路由页直通数据）
 → 单测与 check/test 全绿
 ```
 

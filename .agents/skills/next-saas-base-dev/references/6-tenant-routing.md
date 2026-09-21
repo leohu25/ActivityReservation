@@ -154,7 +154,33 @@ export const domainManifest: TenantFeatureManifest = {
 
 ---
 
-## 3. 契约 100% 对齐自动化测试 (`ResourceView.test.tsx`)
+## 3. 切片权限目录 (`src/catalog.ts`) 与 `manifest.permissionModules` 的协同法则
+
+在切片开发中，`manifest.ts` 与 `catalog.ts` 各司其职，构成「声明」到「运行时编译」的标准流水线：
+
+```ts
+// packages/domains/<domain>/src/catalog.ts
+import { derivePermissionCatalog } from "@base/authorization";
+import { domainManifest } from "./manifest";
+
+/** 领域权限目录（契约 → Catalog，供 Ability 与角色树同源） */
+export const domainCatalog = derivePermissionCatalog([domainManifest]);
+
+export type DomainCatalog = typeof domainCatalog;
+```
+
+### 职责边界与区别
+
+| 维度 | `manifest.ts` 的 `permissionModules` | `catalog.ts` 的 `domainCatalog` |
+| :--- | :--- | :--- |
+| **本质形态** | 纯数据结构（Plain JSON / Object 描述符） | `PermissionCatalog` 运行时 Class 实例与强类型 |
+| **主要职责** | **前端 UI 蓝图与平台拓扑** | **CASL 鉴权引擎驱动与类型推导** |
+| **消费场景** | 供前端「角色管理」页面渲染权限配置树（`moduleKey`, `label`, `iconName`, `pages`）；供全局 `sync-features` 提取全局 Subject 元数据 | 灌入 `CaslAbilityFactory`（见 `assembly/context.ts`），驱动服务端的 `ability.can()`、字段级三态脱敏与 Prisma 数据范围下推 |
+| **SSoT 关系** | **输入源**：纯声明引用各 Feature 的 `contract.ts` 契约 | **派生消费**：通过 `derivePermissionCatalog([manifest])` 自动解析，**绝不手写重复规则** |
+
+---
+
+## 4. 契约 100% 对齐自动化测试 (`ResourceView.test.tsx`)
 
 用 **AbilityProvider 包裹**注入权限，禁止给 View 塞 `permissions` prop：
 

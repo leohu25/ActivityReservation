@@ -14,7 +14,7 @@
 | `6-tenant-routing.md`         | `createResourcePage`、manifest、单测             |
 | `7-casl-ability-provider.md`  | AbilityProvider / subject                        |
 | `8-base-infrastructure.md`     | `@base/*` 职责与依赖铁律                         |
-| `9-crud-resource-paradigm.md`  | **标准资源 CRUD 最佳范式 (8 步 SOP)**            |
+| `9-crud-resource-paradigm.md`  | **标准资源 CRUD 最佳范式 (10 步 SOP)**           |
 | `10-storage-and-attachments.md`| **对象存储、图片上传与多态附件标准范式**         |
 
 ## 现行约定速查
@@ -31,4 +31,4 @@
 
 ## 作废 API（禁止新代码）
 
-`useTableUrlState`、`parseTableSearchParams`、`useDataTableState`、`useListUrlNav`、`table.bindProps`、业务层 RHF 手写字段树、ListShell/TableRegion、`initial*` 镜像 props、`count(*)+1` 发号、单开 `@base/crud`。
+`useTableUrlState`、`parseTableSearchParams`、`useDataTableState`、`useListUrlNav`、`table.bindProps`、业务层 RHF 手写字段树、ListShell/TableRegion、`initial*` 镜像 props、`count(*)+1` 发号、单开 `@base/crud`、切片内手工重复编写 `tenant-context.ts`（统一使用 `@base/authorization/server` 的 `createTenantSliceContext` 代替）。

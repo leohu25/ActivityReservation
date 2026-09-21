@@ -2,7 +2,7 @@
 
 > **定位与工程认知**：
 >
-> 1. **通用经验与基准模板**：本 8 步范式是全仓沉淀的**通用最佳基准模板（覆盖大部分标准 CRUD 场景）**，为团队提供统一的心智模型、清晰的阶段流线与开箱即用的代码参考；
+> 1. **通用经验与基准模板**：本 10 步范式是全仓沉淀的**通用最佳基准模板（覆盖大部分标准 CRUD 场景）**，为团队提供统一的心智模型、清晰的阶段流线与开箱即用的代码参考；
 > 2. **包容差异与务实扩展**：不同页面的业务复杂度天然存在差异（如主子表明细、复杂多步骤表单、特殊状态机等）。**本范式仅供通用参考，绝非教条主义枷锁**。在坚守核心底线（安全隔离、契约单一度量源、声明式权限）的前提下，各业务切片完全支持根据实际复杂度进行针对性的流程扩展与架构变体；
 > 3. **核心心智**：契约驱动（SSoT）、声明式权限托管、单向数据流、少即是多；
 > 4. **开发者权限使用极简心智口诀（两句话标准，底层零心智负担）**：
@@ -18,13 +18,14 @@
 | 组件 / 列表 URL  | `@base/ui`           | `DataTable`、`FormModal`、`defineListSearchParams`、`useListSearch` |
 | 业务中台通用资产 | `@biz/shared`        | `formatBusinessDocNo`、`approval`                                   |
 | Action 包装      | `@base/shared`       | `defineServerAction` + `toPlainData`                                |
+| 业务装配与工厂   | `@base/authorization/server` | `createTenantSliceContext` 高阶切片装配工厂                         |
 | 业务             | `packages/domains/*` | contract / schema / service / queries / actions / ui                |
 
 **不单开** `@base/crud`。`createCrudActions` 等仅为 `@deprecated` 别名。
 
 ---
 
-## 2. 标准 8 步
+## 2. 标准 10 步 SOP 流水线
 
 ### ① contract.ts
 
@@ -60,13 +61,39 @@ export const updateXxxSchema = createXxxSchema.partial();
 export const parseCreateXxxInput = (raw: unknown) => createXxxSchema.parse(raw);
 ```
 
-### ③ service.ts
+### ③ assembly/context.ts（切片装配层，一行调用基座工厂）
+
+依托基座高阶工厂 `createTenantSliceContext(catalog)` 自动打通租户 DB 连接池、员工门禁、部门拓扑与 CASL 权限引擎（内置 `React.cache()` 请求级记忆化），**严禁在切片手写重复样板**：
+
+```ts
+import {
+  createTenantSliceContext,
+  type TenantSliceContext,
+} from "@base/authorization/server";
+import { domainCatalog } from "../catalog";
+import type {
+  DomainActionType,
+  DomainSubjectType,
+} from "../shared/contract-types";
+
+export type TenantDomainContext = TenantSliceContext<
+  DomainActionType,
+  DomainSubjectType
+>;
+
+export const {
+  getContext: getTenantDomainContext,
+  assertAbility: assertDomainAbility,
+} = createTenantSliceContext<DomainActionType, DomainSubjectType>(domainCatalog);
+```
+
+### ④ service.ts
 
 - 统一分页清洗与防御：使用 `@base/shared` 的 `resolvePagination(filter, options)`，一行解构出 `{ page, pageSize, skip, take }`，严禁在各 Service 手写 `Math.max` / `Math.min` / `skip` 样板代码；
 - 事务 + 稳定发号（`SEQUENCE` / `pg_advisory_xact_lock`，**禁止** `count(*)+1`）；
 - 软删除、业务约束、审计字段 `createdById`/`updatedById`/`deptId`。
 
-### ④ queries.ts（server-only）
+### ⑤ queries.ts（server-only）
 
 ```ts
 import "server-only";
@@ -80,7 +107,7 @@ export async function listXxxQuery(parsed) {
 }
 ```
 
-### ⑤ actions.ts（"use server" 平铺导出，推荐 defineServerAction 保持直观）
+### ⑥ actions.ts（"use server" 平铺导出，推荐 defineServerAction 保持直观）
 
 ```ts
 "use server";
@@ -138,7 +165,7 @@ export const toggleXxxStatusAction = defineServerAction(async (id: string) => {
 
 直观清晰：`上下文 -> CASL 守卫 -> Zod 验参 -> 调 Service -> revalidatePath`，零多余黑盒。
 
-### ⑥ ui/*FormModal.tsx
+### ⑦ ui/*FormModal.tsx
 
 ```tsx
 import {
@@ -244,7 +271,7 @@ export function XxxFormModal({
 - **Ability 上下文自动感知（严禁测试属性入侵）**：`FormModal` 自动从上下文 `useUiAbility()` 感知权限并驱动字段三态闭环，**严禁**在业务组件 props 中声明 `ability?: ...` 作为测试后门。单测统一在测试层使用 `<UiAbilityProvider ability={...}>` 注入；
 - **禁止**业务手写 Dialog+Input 树或直接 RHF。
 
-### ⑦ ui/*View.tsx
+### ⑧ ui/*View.tsx
 
 ```tsx
 import { useState, useMemo, useCallback } from "react";
@@ -397,7 +424,7 @@ export function XxxView({ data, total }: { data: XxxItem[]; total: number }) {
 - **分页器与多实体布局**：
   - 分页器严禁禁用（严禁 `showPagination={false}`）；多实体聚合页严禁左右并排挤压，必须在顶部使用横向 Tab 导航。
 
-### ⑧ layout.tsx（切片专属 CASL Ability 边界注入 — 绝对必选关键步）
+### ⑨ layout.tsx（切片专属 CASL Ability 边界注入 — 绝对必选关键步）
 
 > **⚠️ 核心架构宪法与高频避坑（严禁借道寄生）**：
 > 1. **业务切片必须挂载在应用层专属的路由组下**（如 `(dashboard)/archives/`），严禁借道塞入不相关的模块（如 `settings`）；
@@ -435,7 +462,7 @@ export default async function AreaLayout({
 }
 ```
 
-### ⑨ apps page.tsx
+### ⑩ apps page.tsx
 
 **正统 Next.js App Router 范式**：直接编写标准异步 Server Component，杜绝黑盒过度封装。
 

@@ -7,6 +7,7 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./server": "./src/adapters/tenant-slice-context.ts",
     "./react": "./src/react.tsx"
   },
   "scripts": {
@@ -21,14 +22,18 @@
     "@casl/react": "7.0.1",
     "@base/auth": "workspace:*",
     "@base/db-control": "workspace:*",
-    "@base/shared": "workspace:*"
+    "@base/db-tenant": "workspace:*",
+    "@base/shared": "workspace:*",
+    "server-only": "0.0.1"
   },
   "peerDependencies": {
+    "next": "^15.0.0 || ^16.0.0",
     "react": "^19.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.3",
+    "next": "16.3.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "tsx": "^4.20.6",

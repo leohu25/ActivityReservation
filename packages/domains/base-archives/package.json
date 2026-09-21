@@ -8,7 +8,8 @@
 		"./manifest": "./src/manifest.ts",
 		"./dict": "./src/features/dict/public.ts",
 		"./dict/server": "./src/features/dict/public.server.ts",
-		"./shared": "./src/shared/public.ts"
+		"./shared": "./src/shared/public.ts",
+		"./shared/server": "./src/shared/server/context.ts"
 	},
 	"scripts": {
 		"check": "tsc --noEmit",

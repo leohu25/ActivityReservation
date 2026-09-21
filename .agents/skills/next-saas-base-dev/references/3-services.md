@@ -22,71 +22,40 @@ packages/domains/<business-area>/src/
 
 ---
 
-## 1. 租户上下文解析 (`shared/server/tenant-context.ts`)
+## 1. 租户上下文解析与装配 (`src/assembly/context.ts`)
 
-业务包基础共享层直接通过 `@base/auth` 与 `@base/db-tenant` 获取安全路由后的 `TenantPrismaClient` 与员工档案快照，严格遵守单向依赖：
+业务切片装配层直接使用基座提供的高阶工厂 **`createTenantSliceContext(catalog)`**（Next.js App Router 官方推荐范式），**一行代码完成租户 DB、员工门禁、部门拓扑与 CASL 权限的强类型装配**，严禁在业务切片内手写重复样板代码：
 
 ```ts
-import { headers } from "next/headers";
+// src/assembly/context.ts
 import {
-  getCurrentTenantContext,
-  getServerAuthRuntime,
-  assertTenantAccessGate,
-  type TenantContext,
-} from "@base/auth";
-import { getTenantDbManager, type TenantPrismaClient } from "@base/db-tenant";
+  createTenantSliceContext,
+  type TenantSliceContext,
+} from "@base/authorization/server";
+import { xxxCatalog } from "../catalog";
+import type {
+  XxxActionType,
+  XxxSubjectType,
+} from "../shared/contract-types";
 
-export interface TenantDbContext {
-  readonly organizationId: string;
-  readonly userId: string;
-  readonly memberId: string;
-  readonly role: string;
-  readonly client: TenantPrismaClient;
-  readonly tenantCtx: TenantContext;
-  readonly employeeProfile: {
-    id: string;
-    memberId: string | null;
-    departmentId: string | null;
-    employeeNo: string | null;
-    jobTitle: string | null;
-    status: string;
-  } | null;
-}
+export type TenantXxxContext = TenantSliceContext<
+  XxxActionType,
+  XxxSubjectType
+>;
 
-export async function getTenantDbContext(): Promise<TenantDbContext> {
-  const reqHeaders = await headers();
-  const tenantCtx = await getCurrentTenantContext(reqHeaders);
-  const runtime = getServerAuthRuntime();
-  const manager = getTenantDbManager({
-    repository: runtime.tenantContextRepository,
-  });
-
-  const client = await manager.getClient(tenantCtx.organizationId);
-  // 员工在职状态与租户门禁强校验 (Fail-Closed)
-  const employeeProfile = await client.employeeProfile.findUnique({
-    where: { memberId: tenantCtx.member.id },
-    select: {
-      id: true,
-      memberId: true,
-      departmentId: true,
-      employeeNo: true,
-      jobTitle: true,
-      status: true,
-    },
-  });
-  assertTenantAccessGate(employeeProfile);
-
-  return {
-    organizationId: tenantCtx.organizationId,
-    userId: tenantCtx.user.id,
-    memberId: tenantCtx.member.id,
-    role: tenantCtx.member.role,
-    client,
-    tenantCtx,
-    employeeProfile,
-  };
-}
+/**
+ * 业务切片装配层：自动集成 React.cache() 请求级去重、TenantDb 连接池与部门拓扑解析
+ */
+export const {
+  getContext: getTenantXxxContext,
+  assertAbility: assertXxxAbility,
+} = createTenantSliceContext<XxxActionType, XxxSubjectType>(xxxCatalog);
 ```
+
+> **架构收益**：
+> 1. **零重复代码**：消除各切片手写 `headers()`、`getCurrentTenantContext`、`TenantDbManager`、`findEmployeeProfile` 与 `findAllDepartments` 的 80 行模板代码；
+> 2. **请求级去重**：依托 `React.cache()`，单次请求内 Service、Query 或 Action 调用多次只执行一次数据库连接与 Ability 编译；
+> 3. **强类型闭环**：通过泛型直接绑定当前切片的 `Action` 与 `Subject`，阻断权限误用。
 
 ---
 

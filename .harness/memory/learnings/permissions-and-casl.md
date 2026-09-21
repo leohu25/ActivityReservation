@@ -124,3 +124,37 @@
   3. **自动化门禁双重拦截 (`scripts/check/check-permission-contracts.mjs`)**：
      - 门禁脚本扫描 `apps/tenant/src/**` 全量源码，一旦发现 `getTenantSubjectPermissions("...")` 或 `getTenantMultiSubjectPermissions(["..."])` 中存在裸字符串字面量，**提交门禁直接报错硬阻断**，强制提示开发者 `import { XxxSubject }` 替换！
 
+---
+
+## 9. 权限元数据声明 (`manifest.permissionModules`) 与运行时目录 (`catalog.ts`) 的职责与派生关系
+
+- **痛点 / 困惑**：
+  - 开发者在切片根目录下看到 `manifest.ts` 里定义了 `permissionModules: [...]`，而旁边又有一个 `catalog.ts` 执行 `derivePermissionCatalog([manifest])`，容易产生困惑：“这两者不都是权限吗？是否存在重复定义或职责混淆？”
+- **两者的本质区别与 SSoT 派生关系**：
+  1. **`manifest.ts` 中的 `permissionModules`（静态元数据 / UI 蓝图）**：
+     - **角色**：纯粹的声明式纯数据结构（Plain Data / Object）；
+     - **消费场景**：主要服务于**前端管理端 UI 渲染与平台编排**。例如：系统管理里的「角色权限分配树（Role Permission Tree）」需要按模块分组展示（`moduleKey`、`label`、`iconName`、`order`、`pages`）；应用初始化时平台扫描 Manifests 聚合全系统权限拓扑；
+     - **内容**：直接引用各 Feature 的 `contract.ts` 导出的 `*PagePermissionDescriptor`，严禁在 `permissionModules` 中手写字面量。
+  2. **`catalog.ts` 中的 `derivePermissionCatalog`（运行时权限目录 / CASL 引擎输入）**：
+     - **角色**：可执行的 `PermissionCatalog` 实例与 TypeScript 强类型源；
+     - **消费场景**：服务于**服务端 CASL 鉴权与类型推导**。在 `assembly/context.ts` 中传入 `new CaslAbilityFactory(repository, catalog)`，负责把数据库中配置的角色规则实例化为能够执行 `ability.can()`、`accessibleFieldsBy()` 以及数据过滤下推的运行时 Ability 实例；同时导出 `type XxxCatalog = typeof xxxCatalog` 提供类型提示；
+     - **派生机制**：通过纯函数 `derivePermissionCatalog([manifest])` 从 Manifest 的 `permissionModules` 遍历各页面的 `actions`、`configurableFields`、`supportedScopes` 自动解析编译而来，**保证全局只有一份源头契约（SSoT），不存在重复定义**。
+
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│ 1. 静态声明层 (manifest.ts)                                             │
+│    permissionModules: [{ moduleKey, label, icon, pages: [PageContract] }] │
+│    └─► 作用：供角色管理树等 UI 消费展示模块/页面/操作                        │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ 
+                                    ▼ derivePermissionCatalog([manifest])
+┌────────────────────────────────────────────────────────────────────────┐
+│ 2. 运行时与类型层 (catalog.ts)                                           │
+│    export const xxxCatalog = derivePermissionCatalog([xxxManifest]);   │
+│    export type XxxCatalog = typeof xxxCatalog;                         │
+│    └─► 作用：编译为 CASL 引擎所需的 PermissionCatalog 实例，注入        │
+│        CaslAbilityFactory 生成能运行 can/cannot 判定并下推过滤的 Ability │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+

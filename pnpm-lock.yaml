@@ -218,6 +218,9 @@ importers:
       '@base/db-control':
         specifier: workspace:*
         version: link:../db-control
+      '@base/db-tenant':
+        specifier: workspace:*
+        version: link:../db-tenant
       '@base/shared':
         specifier: workspace:*
         version: link:../shared
@@ -230,6 +233,9 @@ importers:
       '@casl/react':
         specifier: 7.0.1
         version: 7.0.1(@casl/ability@7.0.1)(react@19.2.8)
+      server-only:
+        specifier: 0.0.1
+        version: 0.0.1
     devDependencies:
       '@types/react':
         specifier: ^19.2.18
@@ -237,6 +243,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.7(@types/react@19.2.18)
+      next:
+        specifier: 16.3.4
+        version: 16.3.4(@babel/core@7.29.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react:
         specifier: 19.2.8
         version: 19.2.8
@@ -7207,7 +7216,6 @@ snapshots:
       - '@babel/core'
       - '@types/node'
       - babel-plugin-macros
-    optional: true
 
   node-exports-info@1.6.2:
     dependencies:

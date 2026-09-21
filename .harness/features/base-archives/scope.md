@@ -6,6 +6,9 @@
 - `.harness/features/base-archives/**`
 - `packages/domains/base-archives/**`
 - `packages/base/db-tenant/**`
+- `packages/base/authorization/**`
+- `packages/domains/customer-center/**`
+- `packages/platform/tenant-admin/**`
 - `scripts/check/check-entity-baseline.mjs`
 - `apps/tenant/src/kernel/registry.generated.ts`
 - `apps/tenant/src/app/(dashboard)/settings/dict/**`

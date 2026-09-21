@@ -1,70 +1,12 @@
-import { headers } from "next/headers";
-import { getCurrentTenantContext, type TenantContext } from "@base/auth";
-import { getTenantDbManager, type TenantPrismaClient } from "@base/db-tenant";
+import {
+  getSharedTenantDbContext,
+  type SharedTenantDbContext,
+} from "@base/authorization/server";
 import type { ControlPrismaClient } from "@base/db-control";
-import { ForbiddenError } from "@casl/ability";
-import type { AppAbility } from "@base/authorization";
 
-export interface TenantDbContext {
-  readonly organizationId: string;
-  readonly userId: string;
-  readonly memberId: string;
-  readonly role: string;
-  readonly client: TenantPrismaClient;
-  readonly tenantCtx: TenantContext;
-  readonly employeeProfile: {
-    readonly id: string;
-    readonly memberId: string | null;
-    readonly departmentId: string | null;
-    readonly employeeNo: string | null;
-    readonly jobTitle: string | null;
-    readonly status: string;
-  } | null;
-}
+export type TenantDbContext = SharedTenantDbContext;
 
-/**
- * 纯技术底层：解析并获取当前租户物理数据库客户端与员工门禁校验。
- * 仅依赖横向平台包（@base/auth、@base/db-tenant），绝不依赖业务 Feature 契约或目录。
- */
-export async function getTenantDbContext(): Promise<TenantDbContext> {
-  const reqHeaders = await headers();
-  const tenantCtx = await getCurrentTenantContext(reqHeaders);
-
-  const { getServerAuthRuntime, assertTenantAccessGate } = await import(
-    "@base/auth"
-  );
-  const runtime = getServerAuthRuntime();
-
-  const manager = getTenantDbManager({
-    repository: runtime.tenantContextRepository,
-  });
-
-  const tenantPrisma = await manager.getClient(tenantCtx.organizationId);
-  const employeeProfile = await tenantPrisma.employeeProfile.findUnique({
-    where: { memberId: tenantCtx.member.id },
-    select: {
-      id: true,
-      memberId: true,
-      departmentId: true,
-      employeeNo: true,
-      jobTitle: true,
-      status: true,
-    },
-  });
-  if (employeeProfile) {
-    assertTenantAccessGate(employeeProfile);
-  }
-
-  return {
-    organizationId: tenantCtx.organizationId,
-    userId: tenantCtx.user.id,
-    memberId: tenantCtx.member.id,
-    role: tenantCtx.member.role,
-    client: tenantPrisma,
-    tenantCtx,
-    employeeProfile,
-  };
-}
+export const getTenantDbContext = getSharedTenantDbContext;
 
 /**
  * 获取 Control DB 客户端
@@ -75,20 +17,7 @@ export async function getControlDbClient(): Promise<ControlPrismaClient> {
   return runtime.prisma;
 }
 
-import type {
-  TenantAdminSubjectType,
-  TenantAdminActionType,
-} from "../contract-types";
-
-/**
- * 写路径强制 CASL：与页面按钮同一 (action, subject) 判定。
- * 严格使用契约推导的强类型联合，杜绝宽泛的 string 逃逸。
- * 无权限时抛 ForbiddenError，由 defineServerAction 统一包装为失败结果。
- */
-export function assertTenantAdminAbility(
-  ability: AppAbility<string, string>,
-  action: TenantAdminActionType,
-  subject: TenantAdminSubjectType,
-): void {
-  ForbiddenError.from(ability).throwUnlessCan(action, subject);
-}
+export {
+  assertTenantAdminAbility,
+  type TenantAdminContext,
+} from "../../assembly/context";
