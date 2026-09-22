@@ -32,6 +32,8 @@ docs/
 │   ├── agent-development-workflow.md                          # 智能体全生命周期开发工作流指南 (SOP)
 │   ├── harness-collaboration-guide.md                         # Harness 协同指南
 │   └── scripts-reference.md                                   # 根 package.json 全量命令参考手册 (SSoT)
+├── phases/                          # 【阶段交付方案】各里程碑业务闭环、建表设计与研发拆解
+│   └── phase-1/                     # 中央厨房 ERP 第一版（Phase 1 / MVP）交付方案
 └── archive/                         # 【历史归档】已完成阶段性使命的初期 PRD 与闭环设计底座
     ├── README.md                    # 归档背景与现行架构映射说明
     ├── SaaS Foundation 权限基础设施工程实施规格.md

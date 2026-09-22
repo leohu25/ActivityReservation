@@ -1,9 +1,21 @@
 import { z } from "@base/ui";
 
 /**
- * 租户企业信息更新校验 Schema
+ * 租户基础设施与企业信息更新校验 Schema
  */
 export const updateCompanyProfileSchema = z.object({
+  systemName: z
+    .string()
+    .trim()
+    .min(1, "系统显示名称为必填项")
+    .max(64, "系统显示名称不能超过 64 个字符")
+    .default("企业数字化协同平台"),
+  logoUrl: z
+    .string()
+    .trim()
+    .max(1000, "Logo 链接不能超过 1000 个字符")
+    .nullable()
+    .optional(),
   companyName: z
     .string()
     .trim()
@@ -46,8 +58,8 @@ export const updateCompanyProfileSchema = z.object({
     .max(256, "经营注册地址不能超过 256 个字符")
     .nullable()
     .optional(),
-  timezone: z.string().trim().min(1, "时区设置不能为空").default("Asia/Shanghai"),
-  currency: z.string().trim().min(1, "币种设置不能为空").default("CNY"),
+  timezone: z.string().trim().min(1, "时区设置不能为空").default("Asia/Shanghai").optional(),
+  currency: z.string().trim().min(1, "币种设置不能为空").default("CNY").optional(),
 });
 
 export type UpdateCompanyProfileSchemaInput = z.infer<

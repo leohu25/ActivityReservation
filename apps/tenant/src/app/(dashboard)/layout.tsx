@@ -1,6 +1,7 @@
 import React from "react";
 import { headers } from "next/headers";
 import { getServerAuthRuntime } from "@base/auth";
+import { getTenantDbManager } from "@base/db-tenant";
 import { TopHeader, Sidebar, DashboardShell } from "@base/ui";
 import { redirect } from "next/navigation";
 import { Building2 } from "lucide-react";
@@ -32,14 +33,20 @@ export default async function DashboardLayout({
   const activeOrgId = session.session.activeOrganizationId;
 
   // 查询当前企业组织信息与当前用户的成员角色
-  let activeOrg: { name: string; slug: string } | null = null;
+  let activeOrg: {
+    name: string;
+    slug: string;
+    logo?: string | null;
+    metadata?: string | null;
+  } | null = null;
   let memberRoleLabel = "企业成员";
+  let userAvatarUrl: string | null = session.user.image ?? null;
 
   if (activeOrgId) {
     const [org, member] = await Promise.all([
       runtime.prisma.organization.findUnique({
         where: { id: activeOrgId },
-        select: { name: true, slug: true },
+        select: { name: true, slug: true, logo: true, metadata: true },
       }),
       runtime.prisma.member.findUnique({
         where: {
@@ -48,7 +55,7 @@ export default async function DashboardLayout({
             userId: session.user.id,
           },
         },
-        select: { role: true },
+        select: { id: true, role: true },
       }),
     ]);
     activeOrg = org;
@@ -61,11 +68,46 @@ export default async function DashboardLayout({
     } else if (member?.role) {
       memberRoleLabel = member.role;
     }
+
+    // 优先读取租户独立库中的员工档案头像 (employee_profile.avatar_url)
+    if (member?.id) {
+      try {
+        const manager = getTenantDbManager({
+          repository: runtime.tenantContextRepository,
+        });
+        const tenantPrisma = await manager.getClient(activeOrgId);
+        const employee = await tenantPrisma.employeeProfile.findUnique({
+          where: { memberId: member.id },
+          select: { avatarUrl: true },
+        });
+        if (employee?.avatarUrl) {
+          userAvatarUrl = employee.avatarUrl;
+        }
+      } catch {
+        // 容灾忽略
+      }
+    }
+  }
+
+  // 解析组织元数据中的系统名称定制
+  let systemTitle = "企业数字化协同平台";
+  if (activeOrg?.metadata) {
+    try {
+      const parsedMeta = JSON.parse(activeOrg.metadata);
+      if (parsedMeta?.generalSettings?.systemName?.trim()) {
+        systemTitle = parsedMeta.generalSettings.systemName.trim();
+      }
+    } catch {
+      // 忽略非法 json
+    }
+  } else if (activeOrg?.name) {
+    systemTitle = activeOrg.name;
   }
 
   const user = {
     name: session.user.name,
     email: session.user.email,
+    image: userAvatarUrl,
     role: memberRoleLabel,
   };
 
@@ -103,7 +145,14 @@ export default async function DashboardLayout({
 
   return (
     <DashboardShell
-      header={<TopHeader user={user} orgSwitcherSlot={orgBadgeSlot} />}
+      header={
+        <TopHeader
+          user={user}
+          orgSwitcherSlot={orgBadgeSlot}
+          title={systemTitle}
+          logoUrl={activeOrg?.logo}
+        />
+      }
       sidebar={<Sidebar sections={navSections} />}
       navSections={navSections}
       homeTab={homeTab}

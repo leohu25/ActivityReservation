@@ -11,6 +11,8 @@ export type CompanyProfileResource = typeof CompanyProfileResource;
 
 /** 企业信息受控字段字典 */
 export const CompanyProfileField = {
+  SYSTEM_NAME: "systemName",
+  LOGO_URL: "logoUrl",
   COMPANY_NAME: "companyName",
   SHORT_NAME: "shortName",
   CREDIT_CODE: "creditCode",
@@ -18,8 +20,6 @@ export const CompanyProfileField = {
   CONTACT_PHONE: "contactPhone",
   CONTACT_EMAIL: "contactEmail",
   ADDRESS: "address",
-  TIMEZONE: "timezone",
-  CURRENCY: "currency",
 } as const;
 
 export type CompanyProfileField =
@@ -27,6 +27,16 @@ export type CompanyProfileField =
 
 /** 企业信息受控字段元数据定义 */
 export const companyProfileConfigurableFields = [
+  {
+    field: CompanyProfileField.SYSTEM_NAME,
+    label: "系统显示名称",
+    isSensitive: false,
+  },
+  {
+    field: CompanyProfileField.LOGO_URL,
+    label: "系统徽标 Logo",
+    isSensitive: false,
+  },
   {
     field: CompanyProfileField.COMPANY_NAME,
     label: "企业全称",
@@ -58,12 +68,6 @@ export const companyProfileConfigurableFields = [
     isSensitive: false,
   },
   { field: CompanyProfileField.ADDRESS, label: "通讯地址", isSensitive: false },
-  { field: CompanyProfileField.TIMEZONE, label: "时区", isSensitive: false },
-  {
-    field: CompanyProfileField.CURRENCY,
-    label: "默认币种",
-    isSensitive: false,
-  },
 ] as const;
 
 /**
@@ -72,7 +76,7 @@ export const companyProfileConfigurableFields = [
 export const companyProfilePageContract: FeaturePagePermissionDescriptor = {
   resource: CompanyProfileResource,
   subject: CompanyProfileSubject,
-  label: "企业信息",
+  label: "基础设施",
   path: "/settings/company",
   actions: [
     { action: StandardAction.READ, label: "查看信息" },

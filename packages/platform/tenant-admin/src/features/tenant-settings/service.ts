@@ -54,9 +54,19 @@ export class TenantSettingsService {
   ) {}
 
   /**
-   * 读取租户企业扩展资料
+   * 读取租户企业扩展资料与基础设施配置
    */
   async getCompanyProfile(organizationId: string): Promise<CompanyProfileData> {
+    const org = await this.controlPrisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true, logo: true, metadata: true },
+    });
+
+    const metadata = this.parseMetadata(org?.metadata);
+    const systemName =
+      metadata.generalSettings?.systemName || org?.name || "企业数字化协同平台";
+    const logoUrl = org?.logo || null;
+
     const tenantPrisma = await this.tenantDbResolver(organizationId);
     const profile = await tenantPrisma.companyProfile.findFirst({
       orderBy: { createdAt: "desc" },
@@ -65,6 +75,8 @@ export class TenantSettingsService {
     if (profile) {
       return {
         id: profile.id,
+        systemName,
+        logoUrl,
         companyName: profile.companyName,
         shortName: profile.shortName,
         creditCode: profile.creditCode,
@@ -78,13 +90,9 @@ export class TenantSettingsService {
       };
     }
 
-    // 默认回退：读取 Control DB 中的 Organization 注册名称
-    const org = await this.controlPrisma.organization.findUnique({
-      where: { id: organizationId },
-      select: { name: true },
-    });
-
     return {
+      systemName,
+      logoUrl,
       companyName: org?.name ?? "企业工作空间",
       shortName: null,
       creditCode: null,
@@ -99,7 +107,7 @@ export class TenantSettingsService {
   }
 
   /**
-   * 更新或新建租户企业扩展资料
+   * 更新或新建租户企业扩展资料与基础设施配置
    */
   async updateCompanyProfile(
     organizationId: string,
@@ -156,14 +164,38 @@ export class TenantSettingsService {
       });
     }
 
-    // 同步更新 Control DB 中 Organization 的展示名称
+    // 同步更新 Control DB 中 Organization 的展示名称、Logo 与 metadata.generalSettings.systemName
+    const org = await this.controlPrisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { metadata: true },
+    });
+    const metadata = this.parseMetadata(org?.metadata);
+    const targetSystemName =
+      input.systemName?.trim() ||
+      metadata.generalSettings?.systemName ||
+      cleanCompanyName;
+    metadata.generalSettings = {
+      ...DEFAULT_GENERAL_SETTINGS,
+      ...metadata.generalSettings,
+      systemName: targetSystemName,
+    };
+
+    const targetLogo =
+      input.logoUrl !== undefined ? input.logoUrl?.trim() || null : undefined;
+
     await this.controlPrisma.organization.update({
       where: { id: organizationId },
-      data: { name: cleanCompanyName },
+      data: {
+        name: cleanCompanyName,
+        ...(targetLogo !== undefined ? { logo: targetLogo } : {}),
+        metadata: JSON.stringify(metadata),
+      },
     });
 
     return {
       id: savedProfile.id,
+      systemName: targetSystemName,
+      logoUrl: targetLogo !== undefined ? targetLogo : null,
       companyName: savedProfile.companyName,
       shortName: savedProfile.shortName,
       creditCode: savedProfile.creditCode,

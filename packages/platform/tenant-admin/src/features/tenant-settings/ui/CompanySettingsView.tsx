@@ -12,44 +12,30 @@ import {
   Button,
   Badge,
   AuthorizedField,
-  Combobox,
   toast,
 } from "@base/ui";
-import { Building2, Save, CheckCircle2, AlertCircle } from "lucide-react";
+import { Settings, Save, CheckCircle2, AlertCircle, Image as ImageIcon } from "lucide-react";
 import type { CompanyProfileData } from "../types";
 import type { UpdateCompanyProfileSchemaInput } from "../schema";
 import { updateCompanyProfileAction } from "../actions";
+import { getUploadPresignedUrlAction } from "../../attachment/actions";
+import { ImageUpload } from "@base/ui";
 
 export interface CompanySettingsViewProps {
   readonly data: CompanyProfileData;
   readonly isReadOnly?: boolean;
 }
 
-const TIMEZONE_OPTIONS = [
-  { value: "Asia/Shanghai", label: "Asia/Shanghai (中国标准时间 UTC+8)" },
-  { value: "Asia/Hong_Kong", label: "Asia/Hong_Kong (香港时间 UTC+8)" },
-  { value: "Asia/Tokyo", label: "Asia/Tokyo (东京时间 UTC+9)" },
-  { value: "Asia/Singapore", label: "Asia/Singapore (新加坡时间 UTC+8)" },
-  { value: "Europe/London", label: "Europe/London (格林威治标准时间 UTC+0)" },
-  { value: "America/New_York", label: "America/New_York (美东时间 UTC-5)" },
-];
-
-const CURRENCY_OPTIONS = [
-  { value: "CNY", label: "CNY - 人民币 (¥)" },
-  { value: "USD", label: "USD - 美元 ($)" },
-  { value: "EUR", label: "EUR - 欧元 (€)" },
-  { value: "HKD", label: "HKD - 港币 (HK$)" },
-  { value: "JPY", label: "JPY - 日元 (¥)" },
-];
-
 /**
- * 企业资料设置面板：纯受控 data 契约，Combobox 升级，AuthorizedField 三态。
+ * 基础设施与企业设置面板：系统名称、Logo 更换、企业核心资料统一维护。
  */
 export function CompanySettingsView({
   data,
   isReadOnly = false,
 }: CompanySettingsViewProps) {
   const [formData, setFormData] = useState<UpdateCompanyProfileSchemaInput>({
+    systemName: data.systemName || "企业数字化协同平台",
+    logoUrl: data.logoUrl || "",
     companyName: data.companyName || "",
     shortName: data.shortName || "",
     creditCode: data.creditCode || "",
@@ -57,8 +43,6 @@ export function CompanySettingsView({
     contactPhone: data.contactPhone || "",
     contactEmail: data.contactEmail || "",
     address: data.address || "",
-    timezone: data.timezone || "Asia/Shanghai",
-    currency: data.currency || "CNY",
   });
 
   const [feedback, setFeedback] = useState<{
@@ -70,7 +54,7 @@ export function CompanySettingsView({
 
   const handleChange = (
     field: keyof UpdateCompanyProfileSchemaInput,
-    value: string,
+    value: string | null,
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (feedback) setFeedback(null);
@@ -79,15 +63,19 @@ export function CompanySettingsView({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.companyName.trim()) {
-      setFeedback({ type: "error", message: "企业名称为必填项" });
+      setFeedback({ type: "error", message: "企业全称为必填项" });
+      return;
+    }
+    if (!formData.systemName?.trim()) {
+      setFeedback({ type: "error", message: "系统显示名称为必填项" });
       return;
     }
 
     startTransition(async () => {
       const res = await updateCompanyProfileAction(formData);
       if (res.success) {
-        toast.success("企业资料已成功保存并同步");
-        setFeedback({ type: "success", message: "企业资料已成功保存并同步" });
+        toast.success("基础设施与企业配置已保存并生效");
+        setFeedback({ type: "success", message: "基础设施与企业配置已保存并生效" });
       } else {
         toast.error(res.error || "保存失败，请稍后重试");
         setFeedback({
@@ -104,11 +92,11 @@ export function CompanySettingsView({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <Building2 className="size-5 text-blue-600 dark:text-blue-400" />
-            <span>企业信息管理</span>
+            <Settings className="size-5 text-blue-600 dark:text-blue-400" />
+            <span>基础设施配置</span>
           </h1>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            维护当前独立租户物理库中的企业主体法人、统一社会信用代码与经营联系资料
+            维护系统左上角品牌标识 (名称与 Logo) 及当前租户的核心企业主体信息
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -139,14 +127,73 @@ export function CompanySettingsView({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* 系统品牌与标识区块 */}
+        <Card className="rounded-2xl border-slate-200/80 shadow-xs dark:border-slate-800">
+          <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
+            <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+              <ImageIcon className="size-4 text-blue-600 dark:text-blue-400" />
+              <span>系统外观与品牌标识</span>
+            </CardTitle>
+            <CardDescription className="text-xs text-slate-400">
+              设置系统左上角顶栏展示的系统名称与品牌 Logo
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            <div className="space-y-4">
+              <AuthorizedField
+                subject="CompanyProfile"
+                field="systemName"
+                action={StandardAction.UPDATE}
+                mode={isReadOnly ? FieldPolicy.READONLY : undefined}
+                label="左上角系统显示名称 *"
+              >
+                <Input
+                  value={formData.systemName || ""}
+                  onChange={(e) => handleChange("systemName", e.target.value)}
+                  placeholder="例如：示范数字化协同管理系统"
+                  disabled={isPending}
+                  required
+                />
+              </AuthorizedField>
+              <p className="text-[11px] text-muted-foreground">
+                保存后将立即更新全系统顶部栏的系统名称展示。
+              </p>
+            </div>
+
+            <div>
+              <AuthorizedField
+                subject="CompanyProfile"
+                field="logoUrl"
+                action={StandardAction.UPDATE}
+                mode={isReadOnly ? FieldPolicy.READONLY : undefined}
+                label="系统 Logo 图标"
+              >
+                <div className="pt-1">
+                  <ImageUpload
+                    value={formData.logoUrl}
+                    onChange={(url) => handleChange("logoUrl", url)}
+                    disabled={isReadOnly || isPending}
+                    module="company-logo"
+                    onUploadAction={getUploadPresignedUrlAction}
+                    maxSizeMB={5}
+                  />
+                  <div className="mt-2 text-[11px] text-muted-foreground">
+                    推荐尺寸 128x128 像素或矢量透明背景图，将展示在顶部栏左上角。
+                  </div>
+                </div>
+              </AuthorizedField>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* 基础身份区块 */}
         <Card className="rounded-2xl border-slate-200/80 shadow-xs dark:border-slate-800">
           <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
             <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200">
-              主体基础资料
+              企业主体资料
             </CardTitle>
             <CardDescription className="text-xs text-slate-400">
-              用于开具单据抬头、合同印鉴与系统平台展示
+              维护企业法定主体信息与社会信用凭证
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -274,54 +321,15 @@ export function CompanySettingsView({
           </CardContent>
         </Card>
 
-        {/* 国际化与财务基准区块 */}
-        <Card className="rounded-2xl border-slate-200/80 shadow-xs dark:border-slate-800">
-          <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
-            <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-200">
-              时区与本位币种
-            </CardTitle>
-            <CardDescription className="text-xs text-slate-400">
-              决定系统业务单据时间戳显示规则与财务核算币种
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
-                企业业务时区
-              </span>
-              <Combobox
-                value={formData.timezone || "Asia/Shanghai"}
-                options={TIMEZONE_OPTIONS}
-                onChange={(val) => handleChange("timezone", val || "Asia/Shanghai")}
-                placeholder="选择业务时区"
-                disabled={isReadOnly || isPending}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
-                财务本位币种
-              </span>
-              <Combobox
-                value={formData.currency || "CNY"}
-                options={CURRENCY_OPTIONS}
-                onChange={(val) => handleChange("currency", val || "CNY")}
-                placeholder="选择财务本位币"
-                disabled={isReadOnly || isPending}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
         {!isReadOnly && (
           <div className="flex justify-end pt-2">
             <Button
               type="submit"
               disabled={isPending}
-              className="flex items-center gap-2 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs"
+              className="flex items-center gap-2 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs cursor-pointer"
             >
               <Save className="size-4" />
-              <span>{isPending ? "正在保存..." : "保存企业信息"}</span>
+              <span>{isPending ? "正在保存..." : "保存配置"}</span>
             </Button>
           </div>
         )}

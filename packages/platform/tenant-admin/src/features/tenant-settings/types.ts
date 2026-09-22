@@ -1,6 +1,8 @@
-/** 租户企业信息展示模型 */
+/** 租户基础设施与企业信息展示模型 */
 export interface CompanyProfileData {
   readonly id?: string;
+  readonly systemName: string;
+  readonly logoUrl?: string | null;
   readonly companyName: string;
   readonly shortName?: string | null;
   readonly creditCode?: string | null;
@@ -8,13 +10,15 @@ export interface CompanyProfileData {
   readonly contactPhone?: string | null;
   readonly contactEmail?: string | null;
   readonly address?: string | null;
-  readonly timezone: string;
-  readonly currency: string;
+  readonly timezone?: string;
+  readonly currency?: string;
   readonly updatedAt?: Date | null;
 }
 
-/** 更新企业信息输入模型 */
+/** 更新基础设施与企业信息输入模型 */
 export interface UpdateCompanyProfileInput {
+  readonly systemName?: string;
+  readonly logoUrl?: string | null;
   readonly companyName: string;
   readonly shortName?: string | null;
   readonly creditCode?: string | null;

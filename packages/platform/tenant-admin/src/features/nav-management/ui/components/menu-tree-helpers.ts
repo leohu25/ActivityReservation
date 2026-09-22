@@ -13,7 +13,7 @@ export function createTempId(prefix = "m"): string {
  * 将页面功能池聚合成出厂推荐的标准菜单结构 (SSoT 单一事实来源)
  * 1. 工作台独立置顶 (顶级独立单页)；
  * 2. 业务页面自动归入对应业务 SECTION 分区标头（如【客户中心】）；
- * 3. 系统管理页面归入【系统管理】SECTION 分区标头，下设组织架构、权限管理、企业设置、审计追踪 4 大目录；
+ * 3. 系统管理页面归入【系统管理】SECTION 分区标头，下设组织架构、权限管理、基础设施、审计追踪 4 大目录；
  * 严格对齐左侧边栏视觉标头（SidebarGroupLabel）。
  */
 export function buildRecommendedBusinessTree(

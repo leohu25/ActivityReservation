@@ -3,14 +3,14 @@
 import { useState, type ReactNode } from "react";
 import { Loader2, LogOut } from "lucide-react";
 import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
-import { Avatar, AvatarFallback } from "../ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { SidebarTrigger } from "../ui/sidebar";
 
 export interface TopHeaderProps {
 	readonly user?: {
 		name?: string | null;
 		email: string;
+		image?: string | null;
 		/** 用户角色标识（如 "超级管理员"、"拥有者 / Owner"、"企业管理员"、"采购员" 等） */
 		role?: string | null;
 	} | null;
@@ -25,6 +25,8 @@ export interface TopHeaderProps {
 	readonly title?: string;
 	/** 系统标志短标，默认为 'SaaS' */
 	readonly logoText?: string;
+	/** 系统 Logo 图片地址 (若提供则优先于 logoText 渲染图片) */
+	readonly logoUrl?: string | null;
 }
 
 /**
@@ -40,6 +42,7 @@ export function TopHeader({
 	showSidebarTrigger = true,
 	title,
 	logoText,
+	logoUrl,
 }: TopHeaderProps) {
 	const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -87,23 +90,25 @@ export function TopHeader({
 					className="flex items-center gap-2.5 cursor-default select-none"
 					title={title ?? "企业数字化协同管理平台"}
 				>
-					<div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-xs font-black text-sidebar-primary-foreground shadow-xs">
-						{logoText ?? "SaaS"}
-					</div>
+					{logoUrl ? (
+						<div className="relative flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-sidebar-border bg-background shadow-xs">
+							{/* eslint-disable-next-line @next/next/no-img-element */}
+							<img
+								src={logoUrl}
+								alt={title ?? "系统 Logo"}
+								className="size-full object-cover"
+							/>
+						</div>
+					) : (
+						<div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-xs font-black text-sidebar-primary-foreground shadow-xs">
+							{logoText ?? "SaaS"}
+						</div>
+					)}
 					<div className="flex items-center gap-2 min-w-0">
 						<span className="truncate text-sm font-bold tracking-tight text-sidebar-foreground">
 							{title ?? "企业数字化协同平台"}
 						</span>
-						{platformBadge ? (
-							platformBadge
-						) : (
-							<Badge
-								variant="secondary"
-								className="h-4.5 px-1.5 text-[9px] font-bold uppercase tracking-wider text-muted-foreground"
-							>
-								SaaS Pro
-							</Badge>
-						)}
+						{platformBadge ?? null}
 					</div>
 				</div>
 
@@ -123,6 +128,9 @@ export function TopHeader({
 							title={user.email}
 						>
 							<Avatar className="size-6">
+								{user.image ? (
+									<AvatarImage src={user.image} alt={displayName} />
+								) : null}
 								<AvatarFallback className="bg-sidebar-primary text-[10px] font-bold text-sidebar-primary-foreground">
 									{initial}
 								</AvatarFallback>

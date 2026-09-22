@@ -17,6 +17,8 @@ const mockAbility = {
 
 const mockCompanyData: CompanyProfileData = {
   id: "comp_123",
+  systemName: "企业数字化协同平台",
+  logoUrl: null,
   companyName: "杭州示范制造科技有限公司",
   shortName: "示范制造",
   creditCode: "91330100MA2XXXXX",
@@ -50,7 +52,8 @@ describe("tenant-settings UI views", () => {
         <CompanySettingsView data={mockCompanyData} />
       </UiAbilityProvider>,
     );
-    assert.match(html, /企业信息管理/);
+    assert.match(html, /基础设施配置/);
+    assert.match(html, /系统外观与品牌标识/);
     assert.match(html, /杭州示范制造科技有限公司/);
     assert.match(html, /ID: comp_123/);
   });
