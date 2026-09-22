@@ -14,11 +14,19 @@ import {
 import { tenantAdminManifest } from "@platform/tenant-admin/manifest";
 import { baseArchivesManifest } from "@domain/base-archives/manifest";
 import { customerManifest } from "@domain/customer-center/manifest";
+import { productCenterManifest } from "@domain/product-center/manifest";
+import { productionCenterManifest } from "@domain/production-center/manifest";
+import { supplierCenterManifest } from "@domain/supplier-center/manifest";
+import { warehouseCenterManifest } from "@domain/warehouse-center/manifest";
 
 export const ALL_TENANT_MANIFESTS = [
   tenantAdminManifest,
   baseArchivesManifest,
   customerManifest,
+  productCenterManifest,
+  productionCenterManifest,
+  supplierCenterManifest,
+  warehouseCenterManifest,
 ] as const;
 
 /**
@@ -33,6 +41,10 @@ export type GlobalTenantSubject = NonNullable<
 export const BUSINESS_TENANT_MANIFESTS: readonly TenantFeatureManifest[] = [
   baseArchivesManifest,
   customerManifest,
+  productCenterManifest,
+  productionCenterManifest,
+  supplierCenterManifest,
+  warehouseCenterManifest,
 ] as const;
 
 /** 全局租户权限清单定义数组 (无伪模块，纯业务实体) */

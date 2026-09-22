@@ -171,6 +171,11 @@ const checks = [
 		],
 	},
 	{
+		label: "别名合规",
+		cmd: nodePath,
+		args: [path.join(WORKSPACE_ROOT, "scripts/check/check-tsconfig-paths.mjs")],
+	},
+	{
 		label: "门禁单测",
 		cmd: nodePath,
 		args: [
@@ -186,6 +191,10 @@ const checks = [
 			path.join(
 				WORKSPACE_ROOT,
 				"scripts/check/check-migration-immutability.test.mjs",
+			),
+			path.join(
+				WORKSPACE_ROOT,
+				"scripts/check/check-tsconfig-paths.test.mjs",
 			),
 			path.join(
 				WORKSPACE_ROOT,

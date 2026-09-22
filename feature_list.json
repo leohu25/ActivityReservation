@@ -412,6 +412,60 @@
       "status": "completed",
       "owner": "coordinator",
       "evidence": "1. Control DB 引入 TenantAccount 实体模型，基于 @@unique([organizationId, account]) 建立租户独立凭证，更新平台基线至 20260921150838；2. 在 @base/auth 落地 tenantCredentialsPlugin 三要素认证插件与 Scrypt 密码校验；3. 租户端落地 /api/auth/sign-in/tenant 与三要素登录表单 (企业编码+登录账号+密码)，直通工作台；4. 平台开通租户与租户员工管理全面接入 TenantAccount 独立入库；5. 【显式登录账号收敛】员工维护新增一等字段 loginAccount（必填、租户内唯一），邮箱改可选联系方式并补 phone 字段，彻底移除工号||邮箱||姓名后端降级；UI 仅在账号为空时按工号→手机号预填建议；User 会话载体改用 `${account}@${slug}.local` 虚拟邮箱防串号；租户端默认关闭 emailAndPassword，仅保留插件单分支（平台管控端可显式开启）；6. 生成租户迁移 20260922015710_add_employee_phone（字段名 phone，对齐主流）；tenant-admin 92/92、auth 16/16 单测全绿。"
+    },
+    {
+      "id": "central-kitchen-phase1-entities-and-domains",
+      "name": "【中央厨房P1基础基建】业务域划分与23张核心实体建模 (Central Kitchen Phase 1 Entities & Domain Foundation)",
+      "description": "第一版中央厨房基础基建与实体关系落地：1. 按照 DDD 业务切片划分 5 个业务域 Package (@domain/base-archives, @domain/product-center, @domain/supplier-center, @domain/warehouse-center, @domain/production-center)；2. 审查对齐现存数据字典，实现 23 张业务实体表完整 Prisma 建模（强制 ADR-009 审计基线、UUIDv7、Decimal 精度与业务索引）；3. 聚合租户数据库 Schema 并生成租户物理迁移；4. 跑通全仓门禁验证。",
+      "dependencies": ["feat-tenant-scoped-auth-and-enterprise-login"],
+      "status": "completed",
+      "owner": "coordinator",
+      "evidence": "1. 划分并新建 4 个独立业务域 Package (@domain/product-center, @domain/supplier-center, @domain/warehouse-center, @domain/production-center)；2. 审查对齐 base-archives 数据字典表 TenantDictItem (追加 ADR-009 8大审计字段与中央厨房 7 大一等字典类型)；3. 在各业务域落地 23 张租户核心业务表 Prisma Schema (严格强制 UUIDv7、Decimal 精度、relationMode=prisma 逻辑关联、ADR-009 审计字段与业务复合索引)；4. 搭建各业务域 CASL 契约、manifest、catalog、context 与 AbilityBoundary，并在 apps/tenant 父级 Layout 规范挂载；5. 聚合生成租户数据库迁移 20260922130156_add_central_kitchen_phase1_entities 并通过一致性校验；6. 全仓 pnpm check (25/25)、pnpm test (21/21 套件 390+ 单测) 与 node scripts/verify.mjs 15 项门禁全部 100% 绿灯通过。"
+    },
+    {
+      "id": "feat-central-kitchen-product-center",
+      "name": "【中央厨房P1业务域】商品中心主数据与单位换算 (Product Center Master Data)",
+      "description": "商品中心垂直切片开发：1. 计量单位(UnitOfMeasure)与单位换算(ProductUnitConversion)；2. 商品品类(ProductCategory)树形管理；3. 统一物料主档(Product)涵盖原料/半成品/成品/包材四类；4. 商品质量等级与标签分配契约与 CRUD 页面。",
+      "dependencies": ["central-kitchen-phase1-entities-and-domains"],
+      "status": "pending",
+      "owner": "implementer",
+      "evidence": ""
+    },
+    {
+      "id": "feat-central-kitchen-supplier-center",
+      "name": "【中央厨房P1业务域】供应商资料与可供商品关系 (Supplier Center & Product Supply)",
+      "description": "供应商中心垂直切片开发：1. 供应商主档(Supplier)信息维护；2. 供应商可供商品(SupplierProduct)及采购单位、最小起订量与提前期关系维护；3. 标杆 CRUD 页面与权限契约。",
+      "dependencies": ["central-kitchen-phase1-entities-and-domains"],
+      "status": "pending",
+      "owner": "implementer",
+      "evidence": ""
+    },
+    {
+      "id": "feat-central-kitchen-warehouse-center",
+      "name": "【中央厨房P1业务域】仓储设施与库位管理 (Warehouse & Location Management)",
+      "description": "仓储中心垂直切片开发：1. 仓库主档(Warehouse)维护（含温层与仓库类型）；2. 库位(WarehouseLocation)按区/架/层/位精细化管理；3. 标杆 CRUD 页面与权限契约。",
+      "dependencies": ["central-kitchen-phase1-entities-and-domains"],
+      "status": "pending",
+      "owner": "implementer",
+      "evidence": ""
+    },
+    {
+      "id": "feat-central-kitchen-production-resources",
+      "name": "【中央厨房P1业务域】生产资源与工艺主数据 (Production Resources & Process Master Data)",
+      "description": "生产与工艺资源切片开发：1. 车间(Workshop)、生产产线(ProductionLine)及产线仓库分配(ProductionLineWarehouse)；2. 工序主档(Operation)、加工规格(ProcessingSpecification)及产线工序能力(ProductionLineOperation)；3. 标杆 CRUD 页面与权限契约。",
+      "dependencies": ["central-kitchen-phase1-entities-and-domains"],
+      "status": "pending",
+      "owner": "implementer",
+      "evidence": ""
+    },
+    {
+      "id": "feat-central-kitchen-production-bom",
+      "name": "【中央厨房P1业务域】生产 BOM 中心与版本生命周期管理 (Production BOM Center & Version Lifecycle)",
+      "description": "BOM 中心核心切片开发与观麦高保真还原：1. BOM 版本族(Bom)与不可变完整版本(BomVersion)；2. 扁平化三大清单（投入 bom_version_input、产出 bom_version_output、工艺 bom_version_operation）；3. 商品默认方案(ProductDefaultBom)设置；4. 单品加工/组合配方/包装装配三种 BOM 支持；5. 参考观麦原型实现 BOM 列表管理、新增/编辑、版本图谱与详情；6. 固定/比例试算与多级展开。",
+      "dependencies": ["central-kitchen-phase1-entities-and-domains"],
+      "status": "pending",
+      "owner": "implementer",
+      "evidence": ""
     }
   ]
 }

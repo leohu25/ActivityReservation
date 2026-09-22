@@ -1,0 +1,309 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/client-product-center"
+}
+
+datasource db {
+  provider     = "postgresql"
+  relationMode = "prisma"
+}
+
+/// 计量单位表
+model UnitOfMeasure {
+  /// 主键ID (UUIDv7)
+  id                  String    @id @default(uuid(7)) @db.Uuid
+  /// 单位编码 (如 KG, G, PCS 等，唯一)
+  code                String    @unique @map("code") @db.VarChar(32)
+  /// 单位显示名称 (如 千克, 克, 个 等)
+  name                String    @map("name") @db.VarChar(64)
+  /// 维度字典项ID (关联 tenant_dict_item.id，类型必须为 UNIT_DIMENSION)
+  dimensionDictItemId String    @map("dimension_dict_item_id") @db.Uuid
+  /// 转换到本维度基准单位的倍率 (基准单位为 1.0)
+  baseFactor          Decimal?  @map("base_factor") @db.Decimal(20, 10)
+  /// 默认数量小数精度 (0～6)
+  decimalPlaces       Int       @default(2) @map("decimal_places") @db.SmallInt
+  /// 是否系统内置单位
+  isSystem            Boolean   @default(false) @map("is_system")
+  /// 状态: ACTIVE / DISABLED
+  status              String    @default("ACTIVE") @map("status") @db.VarChar(16)
+
+  // ===== 框架强制基础审计与数据范围基线字段 (ADR-009) =====
+  /// 创建人用户ID (UUIDv7)
+  createdById         String    @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
+  /// 归属部门ID (UUIDv7)
+  deptId              String?   @map("dept_id") @db.Uuid
+  /// 最后更新人用户ID (UUIDv7)
+  updatedById         String?   @map("updated_by_id") @db.Uuid
+  /// 软删除标记 (默认 false)
+  isDeleted           Boolean   @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt           DateTime? @map("deleted_at")
+  /// 软删除操作人用户ID (UUIDv7)
+  deletedById         String?   @map("deleted_by_id") @db.Uuid
+  /// 创建时间
+  createdAt           DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  // 反向逻辑关系
+  productsInventory   Product[] @relation("ProductInventoryUnit")
+  productsPurchase    Product[] @relation("ProductPurchaseUnit")
+  productsProduction  Product[] @relation("ProductProductionUnit")
+  productsSales       Product[] @relation("ProductSalesUnit")
+  conversionsFrom     ProductUnitConversion[] @relation("ConversionFromUnit")
+  conversionsTo       ProductUnitConversion[] @relation("ConversionToUnit")
+
+  @@index([dimensionDictItemId, status])
+  @@index([status])
+  @@map("unit_of_measure")
+}
+
+/// 商品品类表 (树状层级结构)
+model ProductCategory {
+  /// 主键ID (UUIDv7)
+  id                      String            @id @default(uuid(7)) @db.Uuid
+  /// 父级品类主键ID (根级为空)
+  parentProductCategoryId String?           @map("parent_product_category_id") @db.Uuid
+  /// 品类编码 (全表唯一)
+  code                    String            @unique @map("code") @db.VarChar(64)
+  /// 品类名称
+  name                    String            @map("name") @db.VarChar(128)
+  /// 图标附件ID (平台附件)
+  iconFileAssetId         String?           @map("icon_file_asset_id") @db.Uuid
+  /// 排序权重
+  sortOrder               Int               @default(0) @map("sort_order")
+  /// 状态: ACTIVE / DISABLED
+  status                  String            @default("ACTIVE") @map("status") @db.VarChar(16)
+
+  // ===== 框架强制基础审计与数据范围基线字段 (ADR-009) =====
+  /// 创建人用户ID (UUIDv7)
+  createdById             String            @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
+  /// 归属部门ID (UUIDv7)
+  deptId                  String?           @map("dept_id") @db.Uuid
+  /// 最后更新人用户ID (UUIDv7)
+  updatedById             String?           @map("updated_by_id") @db.Uuid
+  /// 软删除标记 (默认 false)
+  isDeleted               Boolean           @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt               DateTime?         @map("deleted_at")
+  /// 软删除操作人用户ID (UUIDv7)
+  deletedById             String?           @map("deleted_by_id") @db.Uuid
+  /// 创建时间
+  createdAt               DateTime          @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt               DateTime          @updatedAt @map("updated_at")
+
+  // 自引用层级
+  parent                  ProductCategory?  @relation("ProductCategoryHierarchy", fields: [parentProductCategoryId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  children                ProductCategory[] @relation("ProductCategoryHierarchy")
+  products                Product[]
+
+  @@index([parentProductCategoryId])
+  @@index([status])
+  @@map("product_category")
+}
+
+/// 统一商品物料主档表 (原料、半成品、成品、包材共用)
+model Product {
+  /// 主键ID (UUIDv7)
+  id                        String            @id @default(uuid(7)) @db.Uuid
+  /// 商品编码 (全表唯一)
+  code                      String            @unique @map("code") @db.VarChar(64)
+  /// 商品名称
+  name                      String            @map("name") @db.VarChar(128)
+  /// 搜索别名/助记码
+  alias                     String?           @map("alias") @db.VarChar(256)
+  /// 所属商品品类ID
+  productCategoryId         String            @map("product_category_id") @db.Uuid
+  /// 库存核算基本单位ID
+  inventoryUnitId           String            @map("inventory_unit_id") @db.Uuid
+  /// 默认采购单位ID
+  defaultPurchaseUnitId     String?           @map("default_purchase_unit_id") @db.Uuid
+  /// 默认生产单位ID
+  defaultProductionUnitId   String?           @map("default_production_unit_id") @db.Uuid
+  /// 默认销售单位ID
+  defaultSalesUnitId        String?           @map("default_sales_unit_id") @db.Uuid
+  /// 温层分类字典项ID (TEMPERATURE_ZONE)
+  temperatureZoneDictItemId String?           @map("temperature_zone_dict_item_id") @db.Uuid
+  /// 加工形态字典项ID (PRODUCT_PROCESSING_FORM)
+  processingFormDictItemId  String?           @map("processing_form_dict_item_id") @db.Uuid
+  /// 供货模式: PURCHASE(外购) / MAKE(自制) / HYBRID(混合)
+  supplyMode                String            @default("PURCHASE") @map("supply_mode") @db.VarChar(24)
+  /// 物料类别: MATERIAL(原料) / SEMI_FINISHED(半成品) / FINISHED(成品) / PACKAGING(包材)
+  productKind               String            @default("MATERIAL") @map("product_kind") @db.VarChar(24)
+  /// 保质期天数
+  shelfLifeDays             Int?              @map("shelf_life_days")
+  /// 是否启用批次管理
+  batchManaged              Boolean           @default(false) @map("batch_managed")
+  /// 数量显示小数位数
+  quantityPrecision         Int               @default(2) @map("quantity_precision") @db.SmallInt
+  /// 最小采购量 (按默认采购单位)
+  minimumPurchaseQuantity   Decimal?          @map("minimum_purchase_quantity") @db.Decimal(20, 6)
+  /// 最小销售量 (按默认销售单位)
+  minimumSalesQuantity      Decimal?          @map("minimum_sales_quantity") @db.Decimal(20, 6)
+  /// 最大销售量 (按默认销售单位)
+  maximumSalesQuantity      Decimal?          @map("maximum_sales_quantity") @db.Decimal(20, 6)
+  /// 最小生产批量 (按默认生产单位)
+  minimumProductionQuantity Decimal?          @map("minimum_production_quantity") @db.Decimal(20, 6)
+  /// 验收标准说明
+  acceptanceStandard        String?           @map("acceptance_standard") @db.Text
+  /// 商品图片附件ID
+  imageFileAssetId          String?           @map("image_file_asset_id") @db.Uuid
+  /// 参考价格 (不作为成本唯一来源)
+  referencePrice            Decimal?          @map("reference_price") @db.Decimal(20, 6)
+  /// 数据来源: MANUAL / SYSTEM / IMPORT
+  source                    String            @default("MANUAL") @map("source") @db.VarChar(16)
+  /// 状态: ACTIVE(正常) / STOPPED(停售/停用) / ARCHIVED(归档)
+  status                    String            @default("ACTIVE") @map("status") @db.VarChar(16)
+
+  // ===== 框架强制基础审计与数据范围基线字段 (ADR-009) =====
+  /// 创建人用户ID (UUIDv7)
+  createdById               String            @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
+  /// 归属部门ID (UUIDv7)
+  deptId                    String?           @map("dept_id") @db.Uuid
+  /// 最后更新人用户ID (UUIDv7)
+  updatedById               String?           @map("updated_by_id") @db.Uuid
+  /// 软删除标记 (默认 false)
+  isDeleted                 Boolean           @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt                 DateTime?         @map("deleted_at")
+  /// 软删除操作人用户ID (UUIDv7)
+  deletedById               String?           @map("deleted_by_id") @db.Uuid
+  /// 创建时间
+  createdAt                 DateTime          @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt                 DateTime          @updatedAt @map("updated_at")
+
+  // 内部关系
+  category                  ProductCategory   @relation(fields: [productCategoryId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  inventoryUnit             UnitOfMeasure     @relation("ProductInventoryUnit", fields: [inventoryUnitId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  defaultPurchaseUnit       UnitOfMeasure?    @relation("ProductPurchaseUnit", fields: [defaultPurchaseUnitId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  defaultProductionUnit     UnitOfMeasure?    @relation("ProductProductionUnit", fields: [defaultProductionUnitId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  defaultSalesUnit          UnitOfMeasure?    @relation("ProductSalesUnit", fields: [defaultSalesUnitId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  unitConversions           ProductUnitConversion[]
+  qualityGrades             ProductQualityGrade[]
+  tags                      ProductTag[]
+
+  @@index([productCategoryId, isDeleted, status])
+  @@index([productKind, isDeleted, status])
+  @@index([inventoryUnitId])
+  @@index([status])
+  @@map("product")
+}
+
+/// 商品单位换算关系表
+model ProductUnitConversion {
+  /// 主键ID (UUIDv7)
+  id               String        @id @default(uuid(7)) @db.Uuid
+  /// 目标商品ID
+  productId        String        @map("product_id") @db.Uuid
+  /// 源单位ID
+  fromUnitId       String        @map("from_unit_id") @db.Uuid
+  /// 目标单位ID
+  toUnitId         String        @map("to_unit_id") @db.Uuid
+  /// 换算倍率 (1 源单位 = conversionFactor 目标单位)
+  conversionFactor Decimal       @map("conversion_factor") @db.Decimal(20, 10)
+  /// 生效时间
+  effectiveFrom    DateTime      @default(now()) @map("effective_from")
+  /// 失效时间
+  effectiveTo      DateTime?     @map("effective_to")
+  /// 状态: ACTIVE / DISABLED
+  status           String        @default("ACTIVE") @map("status") @db.VarChar(16)
+
+  // ===== 框架强制基础审计与数据范围基线字段 (ADR-009) =====
+  /// 创建人用户ID (UUIDv7)
+  createdById      String        @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
+  /// 归属部门ID (UUIDv7)
+  deptId           String?       @map("dept_id") @db.Uuid
+  /// 最后更新人用户ID (UUIDv7)
+  updatedById      String?       @map("updated_by_id") @db.Uuid
+  /// 软删除标记 (默认 false)
+  isDeleted        Boolean       @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt        DateTime?     @map("deleted_at")
+  /// 软删除操作人用户ID (UUIDv7)
+  deletedById      String?       @map("deleted_by_id") @db.Uuid
+  /// 创建时间
+  createdAt        DateTime      @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  product          Product       @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  fromUnit         UnitOfMeasure @relation("ConversionFromUnit", fields: [fromUnitId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  toUnit           UnitOfMeasure @relation("ConversionToUnit", fields: [toUnitId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([productId, fromUnitId, toUnitId])
+  @@index([status])
+  @@map("product_unit_conversion")
+}
+
+/// 商品质量等级分配表
+model ProductQualityGrade {
+  /// 主键ID (UUIDv7)
+  id                     String    @id @default(uuid(7)) @db.Uuid
+  /// 关联商品ID
+  productId              String    @map("product_id") @db.Uuid
+  /// 等级字典项ID (PRODUCT_QUALITY_GRADE)
+  qualityGradeDictItemId String    @map("quality_grade_dict_item_id") @db.Uuid
+  /// 是否商品默认等级
+  isDefault              Boolean   @default(false) @map("is_default")
+
+  // ===== 框架强制基础审计与数据范围基线字段 (ADR-009) =====
+  /// 创建人用户ID (UUIDv7)
+  createdById            String    @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
+  /// 归属部门ID (UUIDv7)
+  deptId                 String?   @map("dept_id") @db.Uuid
+  /// 最后更新人用户ID (UUIDv7)
+  updatedById            String?   @map("updated_by_id") @db.Uuid
+  /// 软删除标记 (默认 false)
+  isDeleted              Boolean   @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt              DateTime? @map("deleted_at")
+  /// 软删除操作人用户ID (UUIDv7)
+  deletedById            String?   @map("deleted_by_id") @db.Uuid
+  /// 创建时间
+  createdAt              DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  product                Product   @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([productId, qualityGradeDictItemId])
+  @@index([qualityGradeDictItemId])
+  @@map("product_quality_grade")
+}
+
+/// 商品业务标签分配表
+model ProductTag {
+  /// 主键ID (UUIDv7)
+  id            String    @id @default(uuid(7)) @db.Uuid
+  /// 关联商品ID
+  productId     String    @map("product_id") @db.Uuid
+  /// 标签字典项ID (PRODUCT_TAG)
+  tagDictItemId String    @map("tag_dict_item_id") @db.Uuid
+
+  // ===== 框架强制基础审计与数据范围基线字段 (ADR-009) =====
+  /// 创建人用户ID (UUIDv7)
+  createdById   String    @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
+  /// 归属部门ID (UUIDv7)
+  deptId        String?   @map("dept_id") @db.Uuid
+  /// 最后更新人用户ID (UUIDv7)
+  updatedById   String?   @map("updated_by_id") @db.Uuid
+  /// 软删除标记 (默认 false)
+  isDeleted     Boolean   @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt     DateTime? @map("deleted_at")
+  /// 软删除操作人用户ID (UUIDv7)
+  deletedById   String?   @map("deleted_by_id") @db.Uuid
+  /// 创建时间
+  createdAt     DateTime  @default(now()) @map("created_at")
+  /// 更新时间
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([productId, tagDictItemId])
+  @@index([tagDictItemId])
+  @@map("product_tag")
+}

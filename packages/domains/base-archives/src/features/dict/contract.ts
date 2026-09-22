@@ -25,6 +25,15 @@ export const DICT_TYPES = {
 	// 物料与生产
 	UNIT_MEASURE: "UNIT_MEASURE", // 计量单位 (如：件、公斤、米、箱)
 	ORDER_PRIORITY: "ORDER_PRIORITY", // 订单优先级 (如：普通、急单、特急)
+
+	// 中央厨房第一版核心业务字典 (SSoT)
+	UNIT_DIMENSION: "UNIT_DIMENSION", // 计量单位维度 (如：重量、体积、计件、包装)
+	PRODUCT_QUALITY_GRADE: "PRODUCT_QUALITY_GRADE", // 商品等级 (如：特级、一级、合格)
+	PRODUCT_TAG: "PRODUCT_TAG", // 商品业务标签 (如：净菜标、清真、自制)
+	PRODUCT_PROCESSING_FORM: "PRODUCT_PROCESSING_FORM", // 加工形态 (如：毛菜、净菜、半成品)
+	TEMPERATURE_ZONE: "TEMPERATURE_ZONE", // 温层分类 (如：常温、冷藏、冷冻)
+	WAREHOUSE_TYPE: "WAREHOUSE_TYPE", // 仓库类型 (如：原料仓、半成品仓、成品仓、包材仓)
+	OPERATION_CATEGORY: "OPERATION_CATEGORY", // 工序分类 (如：清洗、切割、腌制、烹饪、分装)
 } as const;
 
 export type DictType = (typeof DICT_TYPES)[keyof typeof DICT_TYPES] | (string & {});
@@ -40,6 +49,14 @@ export const DICT_TYPE_OPTIONS: readonly { readonly value: string; readonly labe
 	{ value: DICT_TYPES.INVOICE_TYPE, label: "发票类型 (INVOICE_TYPE)" },
 	{ value: DICT_TYPES.UNIT_MEASURE, label: "计量单位 (UNIT_MEASURE)" },
 	{ value: DICT_TYPES.ORDER_PRIORITY, label: "订单优先级 (ORDER_PRIORITY)" },
+	// 中央厨房第一版
+	{ value: DICT_TYPES.UNIT_DIMENSION, label: "单位维度 (UNIT_DIMENSION)" },
+	{ value: DICT_TYPES.PRODUCT_QUALITY_GRADE, label: "商品等级 (PRODUCT_QUALITY_GRADE)" },
+	{ value: DICT_TYPES.PRODUCT_TAG, label: "商品标签 (PRODUCT_TAG)" },
+	{ value: DICT_TYPES.PRODUCT_PROCESSING_FORM, label: "加工形态 (PRODUCT_PROCESSING_FORM)" },
+	{ value: DICT_TYPES.TEMPERATURE_ZONE, label: "温层分类 (TEMPERATURE_ZONE)" },
+	{ value: DICT_TYPES.WAREHOUSE_TYPE, label: "仓库类型 (WAREHOUSE_TYPE)" },
+	{ value: DICT_TYPES.OPERATION_CATEGORY, label: "工序分类 (OPERATION_CATEGORY)" },
 ];
 
 /**

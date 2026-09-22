@@ -18,6 +18,10 @@
     "@base/ui": "workspace:*",
     "@domain/base-archives": "workspace:*",
     "@domain/customer-center": "workspace:*",
+    "@domain/product-center": "workspace:*",
+    "@domain/production-center": "workspace:*",
+    "@domain/supplier-center": "workspace:*",
+    "@domain/warehouse-center": "workspace:*",
     "@platform/tenant-admin": "workspace:*"
   },
   "devDependencies": {

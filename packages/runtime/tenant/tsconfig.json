@@ -5,12 +5,7 @@
     "moduleResolution": "bundler",
     "target": "ES2022",
     "types": ["node"],
-    "baseUrl": ".",
-    "paths": {
-      "@domain/base-archives/manifest": ["../../domains/base-archives/src/manifest.ts"],
-      "@domain/customer-center/manifest": ["../../domains/customer-center/src/manifest.ts"],
-      "@platform/tenant-admin/manifest": ["../../platform/tenant-admin/src/manifest.ts"]
-    }
+    "baseUrl": "."
   },
   "include": ["src/**/*"]
 }

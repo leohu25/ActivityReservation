@@ -126,6 +126,18 @@ importers:
       '@domain/customer-center':
         specifier: workspace:*
         version: link:../../packages/domains/customer-center
+      '@domain/product-center':
+        specifier: workspace:*
+        version: link:../../packages/domains/product-center
+      '@domain/production-center':
+        specifier: workspace:*
+        version: link:../../packages/domains/production-center
+      '@domain/supplier-center':
+        specifier: workspace:*
+        version: link:../../packages/domains/supplier-center
+      '@domain/warehouse-center':
+        specifier: workspace:*
+        version: link:../../packages/domains/warehouse-center
       '@platform/tenant-admin':
         specifier: workspace:*
         version: link:../../packages/platform/tenant-admin
@@ -642,6 +654,283 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
 
+  packages/domains/product-center:
+    dependencies:
+      '@base/auth':
+        specifier: workspace:*
+        version: link:../../base/auth
+      '@base/authorization':
+        specifier: workspace:*
+        version: link:../../base/authorization
+      '@base/db-tenant':
+        specifier: workspace:*
+        version: link:../../base/db-tenant
+      '@base/shared':
+        specifier: workspace:*
+        version: link:../../base/shared
+      '@base/ui':
+        specifier: workspace:*
+        version: link:../../base/ui
+      '@biz/shared':
+        specifier: workspace:*
+        version: link:../../biz-shared
+      '@casl/ability':
+        specifier: 7.0.1
+        version: 7.0.1
+      '@casl/prisma':
+        specifier: ^2.0.2
+        version: 2.0.2(@casl/ability@7.0.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3))(typescript@5.9.3))
+      '@domain/base-archives':
+        specifier: workspace:*
+        version: link:../base-archives
+      lucide-react:
+        specifier: ^1.41.0
+        version: 1.41.0(react@19.2.8)
+      next:
+        specifier: 16.3.4
+        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      nuqs:
+        specifier: ^2.10.1
+        version: 2.10.1(next@16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
+      server-only:
+        specifier: 0.0.1
+        version: 0.0.1
+    devDependencies:
+      '@types/node':
+        specifier: ^20.17.24
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19.2.18
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.7
+        version: 19.2.7(@types/react@19.2.18)
+      prisma:
+        specifier: 7.10.0
+        version: 7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: 19.2.8
+        version: 19.2.8(react@19.2.8)
+      tsx:
+        specifier: ^4.20.6
+        version: 4.23.13
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/domains/production-center:
+    dependencies:
+      '@base/auth':
+        specifier: workspace:*
+        version: link:../../base/auth
+      '@base/authorization':
+        specifier: workspace:*
+        version: link:../../base/authorization
+      '@base/db-tenant':
+        specifier: workspace:*
+        version: link:../../base/db-tenant
+      '@base/shared':
+        specifier: workspace:*
+        version: link:../../base/shared
+      '@base/ui':
+        specifier: workspace:*
+        version: link:../../base/ui
+      '@biz/shared':
+        specifier: workspace:*
+        version: link:../../biz-shared
+      '@casl/ability':
+        specifier: 7.0.1
+        version: 7.0.1
+      '@casl/prisma':
+        specifier: ^2.0.2
+        version: 2.0.2(@casl/ability@7.0.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3))(typescript@5.9.3))
+      '@domain/base-archives':
+        specifier: workspace:*
+        version: link:../base-archives
+      '@domain/product-center':
+        specifier: workspace:*
+        version: link:../product-center
+      '@domain/warehouse-center':
+        specifier: workspace:*
+        version: link:../warehouse-center
+      lucide-react:
+        specifier: ^1.41.0
+        version: 1.41.0(react@19.2.8)
+      next:
+        specifier: 16.3.4
+        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      nuqs:
+        specifier: ^2.10.1
+        version: 2.10.1(next@16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
+      server-only:
+        specifier: 0.0.1
+        version: 0.0.1
+    devDependencies:
+      '@types/node':
+        specifier: ^20.17.24
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19.2.18
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.7
+        version: 19.2.7(@types/react@19.2.18)
+      prisma:
+        specifier: 7.10.0
+        version: 7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: 19.2.8
+        version: 19.2.8(react@19.2.8)
+      tsx:
+        specifier: ^4.20.6
+        version: 4.23.13
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/domains/supplier-center:
+    dependencies:
+      '@base/auth':
+        specifier: workspace:*
+        version: link:../../base/auth
+      '@base/authorization':
+        specifier: workspace:*
+        version: link:../../base/authorization
+      '@base/db-tenant':
+        specifier: workspace:*
+        version: link:../../base/db-tenant
+      '@base/shared':
+        specifier: workspace:*
+        version: link:../../base/shared
+      '@base/ui':
+        specifier: workspace:*
+        version: link:../../base/ui
+      '@biz/shared':
+        specifier: workspace:*
+        version: link:../../biz-shared
+      '@casl/ability':
+        specifier: 7.0.1
+        version: 7.0.1
+      '@casl/prisma':
+        specifier: ^2.0.2
+        version: 2.0.2(@casl/ability@7.0.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3))(typescript@5.9.3))
+      '@domain/base-archives':
+        specifier: workspace:*
+        version: link:../base-archives
+      '@domain/product-center':
+        specifier: workspace:*
+        version: link:../product-center
+      lucide-react:
+        specifier: ^1.41.0
+        version: 1.41.0(react@19.2.8)
+      next:
+        specifier: 16.3.4
+        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      nuqs:
+        specifier: ^2.10.1
+        version: 2.10.1(next@16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
+      server-only:
+        specifier: 0.0.1
+        version: 0.0.1
+    devDependencies:
+      '@types/node':
+        specifier: ^20.17.24
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19.2.18
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.7
+        version: 19.2.7(@types/react@19.2.18)
+      prisma:
+        specifier: 7.10.0
+        version: 7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: 19.2.8
+        version: 19.2.8(react@19.2.8)
+      tsx:
+        specifier: ^4.20.6
+        version: 4.23.13
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/domains/warehouse-center:
+    dependencies:
+      '@base/auth':
+        specifier: workspace:*
+        version: link:../../base/auth
+      '@base/authorization':
+        specifier: workspace:*
+        version: link:../../base/authorization
+      '@base/db-tenant':
+        specifier: workspace:*
+        version: link:../../base/db-tenant
+      '@base/shared':
+        specifier: workspace:*
+        version: link:../../base/shared
+      '@base/ui':
+        specifier: workspace:*
+        version: link:../../base/ui
+      '@biz/shared':
+        specifier: workspace:*
+        version: link:../../biz-shared
+      '@casl/ability':
+        specifier: 7.0.1
+        version: 7.0.1
+      '@casl/prisma':
+        specifier: ^2.0.2
+        version: 2.0.2(@casl/ability@7.0.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3))(typescript@5.9.3))
+      '@domain/base-archives':
+        specifier: workspace:*
+        version: link:../base-archives
+      lucide-react:
+        specifier: ^1.41.0
+        version: 1.41.0(react@19.2.8)
+      next:
+        specifier: 16.3.4
+        version: 16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      nuqs:
+        specifier: ^2.10.1
+        version: 2.10.1(next@16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
+      server-only:
+        specifier: 0.0.1
+        version: 0.0.1
+    devDependencies:
+      '@types/node':
+        specifier: ^20.17.24
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19.2.18
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.7
+        version: 19.2.7(@types/react@19.2.18)
+      prisma:
+        specifier: 7.10.0
+        version: 7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: 19.2.8
+        version: 19.2.8(react@19.2.8)
+      tsx:
+        specifier: ^4.20.6
+        version: 4.23.13
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/platform/control-admin:
     dependencies:
       '@base/auth':
@@ -794,6 +1083,18 @@ importers:
       '@domain/customer-center':
         specifier: workspace:*
         version: link:../../domains/customer-center
+      '@domain/product-center':
+        specifier: workspace:*
+        version: link:../../domains/product-center
+      '@domain/production-center':
+        specifier: workspace:*
+        version: link:../../domains/production-center
+      '@domain/supplier-center':
+        specifier: workspace:*
+        version: link:../../domains/supplier-center
+      '@domain/warehouse-center':
+        specifier: workspace:*
+        version: link:../../domains/warehouse-center
       '@platform/tenant-admin':
         specifier: workspace:*
         version: link:../../platform/tenant-admin
@@ -6376,7 +6677,7 @@ snapshots:
       '@next/eslint-plugin-next': 16.3.4(eslint@9.39.5(jiti@2.7.0))
       eslint: 9.39.5(jiti@2.7.0)
       eslint-import-resolver-node: 0.3.10
-      eslint-import-resolver-typescript: 3.5.2(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.69.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.8.2))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))
+      eslint-import-resolver-typescript: 3.5.2(eslint-plugin-import@2.32.0)(eslint@9.39.5(jiti@2.7.0))
       eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.69.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.8.2))(eslint-import-resolver-typescript@3.5.2)(eslint@9.39.5(jiti@2.7.0))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@9.39.5(jiti@2.7.0))
       eslint-plugin-react: 7.37.5(eslint@9.39.5(jiti@2.7.0))
@@ -6406,7 +6707,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-import-resolver-typescript@3.5.2(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.69.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.8.2))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0)):
+  eslint-import-resolver-typescript@3.5.2(eslint-plugin-import@2.32.0)(eslint@9.39.5(jiti@2.7.0)):
     dependencies:
       debug: 4.4.3
       enhanced-resolve: 5.24.5
@@ -6430,14 +6731,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.14.0(@typescript-eslint/parser@8.69.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.8.2))(eslint-import-resolver-node@0.3.10)(eslint-import-resolver-typescript@3.5.2(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.69.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.8.2))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0)):
+  eslint-module-utils@2.14.0(@typescript-eslint/parser@8.69.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.8.2))(eslint-import-resolver-node@0.3.10)(eslint-import-resolver-typescript@3.5.2)(eslint@9.39.5(jiti@2.7.0)):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
       '@typescript-eslint/parser': 8.69.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.8.2)
       eslint: 9.39.5(jiti@2.7.0)
       eslint-import-resolver-node: 0.3.10
-      eslint-import-resolver-typescript: 3.5.2(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.69.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.8.2))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))
+      eslint-import-resolver-typescript: 3.5.2(eslint-plugin-import@2.32.0)(eslint@9.39.5(jiti@2.7.0))
     transitivePeerDependencies:
       - supports-color
 
@@ -6466,7 +6767,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 9.39.5(jiti@2.7.0)
       eslint-import-resolver-node: 0.3.10
-      eslint-module-utils: 2.14.0(@typescript-eslint/parser@8.69.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.8.2))(eslint-import-resolver-node@0.3.10)(eslint-import-resolver-typescript@3.5.2(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.69.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.8.2))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))
+      eslint-module-utils: 2.14.0(@typescript-eslint/parser@8.69.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.8.2))(eslint-import-resolver-node@0.3.10)(eslint-import-resolver-typescript@3.5.2)(eslint@9.39.5(jiti@2.7.0))
       hasown: 2.0.4
       is-core-module: 2.16.2
       is-glob: 4.0.3

@@ -1,0 +1,103 @@
+{
+  "formatVersion": 1,
+  "scope": "tenant",
+  "version": "20260922130156",
+  "name": "add_central_kitchen_phase1_entities",
+  "previousVersion": "20260922105236",
+  "checksum": "d04385d4ac230c90dd4fdd32055177f64a14b3f85060a18d1f12ebca2f45cf37",
+  "schemaChecksum": "1a9315ae290553f82c40f7204b3c18c5652c91c06b1d3b17ff0b5088e78c571e",
+  "createdAt": "2026-09-22T13:01:56.904Z",
+  "risks": [
+    {
+      "code": "ADD_UNIQUE_CONSTRAINT",
+      "message": "唯一约束可能与现有重复数据冲突",
+      "statement": "-- CreateIndex\nCREATE UNIQUE INDEX \"bom_current_published_version_id_key\" ON \"bom\"(\"current_published_version_id\");"
+    },
+    {
+      "code": "ADD_UNIQUE_CONSTRAINT",
+      "message": "唯一约束可能与现有重复数据冲突",
+      "statement": "-- CreateIndex\nCREATE UNIQUE INDEX \"bom_version_bom_id_version_number_key\" ON \"bom_version\"(\"bom_id\", \"version_number\");"
+    },
+    {
+      "code": "ADD_UNIQUE_CONSTRAINT",
+      "message": "唯一约束可能与现有重复数据冲突",
+      "statement": "-- CreateIndex\nCREATE UNIQUE INDEX \"operation_code_key\" ON \"operation\"(\"code\");"
+    },
+    {
+      "code": "ADD_UNIQUE_CONSTRAINT",
+      "message": "唯一约束可能与现有重复数据冲突",
+      "statement": "-- CreateIndex\nCREATE UNIQUE INDEX \"processing_specification_operation_id_code_key\" ON \"processing_specification\"(\"operation_id\", \"code\");"
+    },
+    {
+      "code": "ADD_UNIQUE_CONSTRAINT",
+      "message": "唯一约束可能与现有重复数据冲突",
+      "statement": "-- CreateIndex\nCREATE UNIQUE INDEX \"product_code_key\" ON \"product\"(\"code\");"
+    },
+    {
+      "code": "ADD_UNIQUE_CONSTRAINT",
+      "message": "唯一约束可能与现有重复数据冲突",
+      "statement": "-- CreateIndex\nCREATE UNIQUE INDEX \"product_category_code_key\" ON \"product_category\"(\"code\");"
+    },
+    {
+      "code": "ADD_UNIQUE_CONSTRAINT",
+      "message": "唯一约束可能与现有重复数据冲突",
+      "statement": "-- CreateIndex\nCREATE UNIQUE INDEX \"production_line_code_key\" ON \"production_line\"(\"code\");"
+    },
+    {
+      "code": "ADD_UNIQUE_CONSTRAINT",
+      "message": "唯一约束可能与现有重复数据冲突",
+      "statement": "-- CreateIndex\nCREATE UNIQUE INDEX \"production_line_operation_production_line_id_operation_id_key\" ON \"production_line_operation\"(\"production_line_id\", \"operation_id\");"
+    },
+    {
+      "code": "ADD_UNIQUE_CONSTRAINT",
+      "message": "唯一约束可能与现有重复数据冲突",
+      "statement": "-- CreateIndex\nCREATE UNIQUE INDEX \"production_line_warehouse_production_line_id_warehouse_id_w_key\" ON \"production_line_warehouse\"(\"production_line_id\", \"warehouse_id\", \"warehouse_role\");"
+    },
+    {
+      "code": "ADD_UNIQUE_CONSTRAINT",
+      "message": "唯一约束可能与现有重复数据冲突",
+      "statement": "-- CreateIndex\nCREATE UNIQUE INDEX \"product_quality_grade_product_id_quality_grade_dict_item_id_key\" ON \"product_quality_grade\"(\"product_id\", \"quality_grade_dict_item_id\");"
+    },
+    {
+      "code": "ADD_UNIQUE_CONSTRAINT",
+      "message": "唯一约束可能与现有重复数据冲突",
+      "statement": "-- CreateIndex\nCREATE UNIQUE INDEX \"product_tag_product_id_tag_dict_item_id_key\" ON \"product_tag\"(\"product_id\", \"tag_dict_item_id\");"
+    },
+    {
+      "code": "ADD_UNIQUE_CONSTRAINT",
+      "message": "唯一约束可能与现有重复数据冲突",
+      "statement": "-- CreateIndex\nCREATE UNIQUE INDEX \"supplier_code_key\" ON \"supplier\"(\"code\");"
+    },
+    {
+      "code": "ADD_UNIQUE_CONSTRAINT",
+      "message": "唯一约束可能与现有重复数据冲突",
+      "statement": "-- CreateIndex\nCREATE UNIQUE INDEX \"supplier_product_supplier_id_product_id_key\" ON \"supplier_product\"(\"supplier_id\", \"product_id\");"
+    },
+    {
+      "code": "ADD_UNIQUE_CONSTRAINT",
+      "message": "唯一约束可能与现有重复数据冲突",
+      "statement": "-- CreateIndex\nCREATE UNIQUE INDEX \"unit_of_measure_code_key\" ON \"unit_of_measure\"(\"code\");"
+    },
+    {
+      "code": "ADD_UNIQUE_CONSTRAINT",
+      "message": "唯一约束可能与现有重复数据冲突",
+      "statement": "-- CreateIndex\nCREATE UNIQUE INDEX \"warehouse_code_key\" ON \"warehouse\"(\"code\");"
+    },
+    {
+      "code": "ADD_UNIQUE_CONSTRAINT",
+      "message": "唯一约束可能与现有重复数据冲突",
+      "statement": "-- CreateIndex\nCREATE UNIQUE INDEX \"warehouse_location_warehouse_id_code_key\" ON \"warehouse_location\"(\"warehouse_id\", \"code\");"
+    },
+    {
+      "code": "ADD_UNIQUE_CONSTRAINT",
+      "message": "唯一约束可能与现有重复数据冲突",
+      "statement": "-- CreateIndex\nCREATE UNIQUE INDEX \"workshop_code_key\" ON \"workshop\"(\"code\");"
+    }
+  ],
+  "approval": {
+    "reason": "初始化中央厨房第一版23张核心业务实体表与唯一约束",
+    "dataPlan": "全新创建业务表与扩展数据字典基线字段，存量字典数据平滑兼容",
+    "rollbackPlan": "执行反向DROP TABLE与清理新字段"
+  },
+  "rollbackSupported": true
+}
