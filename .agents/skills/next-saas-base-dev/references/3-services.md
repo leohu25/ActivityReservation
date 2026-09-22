@@ -65,6 +65,28 @@ export const {
 2. **级联状态机联动**：如“停用客户时强制同步停用其名下所有关联门店”；
 3. **软删除安全落地 (ADR-009)**：
    - 业务数据禁止物理 `delete`，统一执行软删除更新：`isDeleted: true`、`deletedAt: new Date()`、`deletedById: auditCtx.userId`；
+
+### 多表写操作事务标准（Prisma 7 Interactive Transaction）
+
+写操作涉及 **≥2 张表 / ≥2 次写**（主子表、组织+成员+角色、单据+明细等）时，必须使用 Prisma 官方 Interactive Transaction，保证原子性：
+
+```ts
+const result = await prisma.$transaction(async (tx) => {
+  const order = await tx.salesOrder.create({ data: { ... } });
+  await tx.salesOrderItem.createMany({ data: items });
+  return order; // 返回值在 commit 后可用
+});
+// 副作用（发邮件/队列/外部 API）放在事务提交之后
+```
+
+铁律：
+1. 事务内只通过 `tx.*` 写库；写 `prisma.*` 会跑到事务外，不会随回调回滚；
+2. helper 需要写库时**传入 `tx`**，禁止在 helper 内再开嵌套事务；
+3. 回调 `throw` 整体回滚，`return` 即提交；
+4. 发邮件、发消息、调外部 API **禁止**放在事务回调内；
+5. 跨物理库（Control DB + 租户库）无法用单个事务覆盖：主库事务成功后外库失败须补偿回滚。
+
+写 Prisma 具体 API 时，**必须优先查阅官方 skill `prisma-client-api`**（`references/transactions.md` 等），禁止凭记忆臆造参数。
    - 存在活跃下级或关联单据时，拦截删除操作，引导用户进行“停用”；
 4. **数据范围与软删除物理下推**：`listXxx` 查询必须在 SQL 条件中组合 `{ isDeleted: false }` 与 `accessibleWhere`，杜绝已删除或越权数据泄漏；
 5. **统一分页清洗与防御 (`resolvePagination`)**：严禁在各 Service 中机械手写 `Math.max(1, ...)` / `Math.min(100, ...)` / `skip = (page - 1) * pageSize` 样板代码。统一从 `@base/shared` 引入中立工具 `resolvePagination(filter, options)`，一行解构出 `{ page, pageSize, skip, take }`，自动完成非负清洗、最大页长边界防御（防 OOM 内存攻击）与 Prisma 查询参数直连；
@@ -268,7 +290,7 @@ await client.employeeProfile.update({
 await client.employeeProfile.update({
   where: { id: employeeId },
   data: {
-    nameSnapshot: cleanName,
+    name: cleanName,
     // 存在 targetDeptId 则 connect 关联；为空或 null 则 disconnect 解除
     department: targetDeptId
       ? { connect: { id: targetDeptId } }

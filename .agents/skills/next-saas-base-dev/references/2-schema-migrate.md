@@ -43,18 +43,18 @@ model ResourceItem {
   status      String    @default("ACTIVE") @db.VarChar(10)
 
   // ===== 框架强制基础审计与数据范围基线字段 (ADR-009) =====
-  /// 创建人用户ID (数据范围 SELF 核心依据)
-  createdById String    @map("created_by_id") @db.VarChar(50)
-  /// 归属部门ID (数据范围 DEPT / DEPT_TREE 核心依据)
-  deptId      String?   @map("dept_id") @db.VarChar(50)
-  /// 最后更新人用户ID
-  updatedById String?   @map("updated_by_id") @db.VarChar(50)
+  /// 创建人用户ID (数据范围 SELF 核心依据，UUIDv7；系统写入为 SYSTEM_ACTOR_ID)
+  createdById String    @map("created_by_id") @db.Uuid
+  /// 归属部门ID (数据范围 DEPT / DEPT_TREE 核心依据，UUIDv7 创建时快照)
+  deptId      String?   @map("dept_id") @db.Uuid
+  /// 最后更新人用户ID (UUIDv7)
+  updatedById String?   @map("updated_by_id") @db.Uuid
   /// 软删除标记 (默认 false)
   isDeleted   Boolean   @default(false) @map("is_deleted")
   /// 软删除时间
   deletedAt   DateTime? @map("deleted_at")
-  /// 软删除操作人用户ID
-  deletedById String?   @map("deleted_by_id") @db.VarChar(50)
+  /// 软删除操作人用户ID (UUIDv7)
+  deletedById String?   @map("deleted_by_id") @db.Uuid
   /// 创建时间
   createdAt   DateTime  @default(now()) @map("created_at")
   /// 更新时间
@@ -71,12 +71,12 @@ model ResourceItem {
 > ⚠️ **红线门禁提示**：
 > 凡是业务实体（主数据、单据等），必须强制包含以下 8 个字段，门禁脚本 `scripts/check/check-entity-baseline.mjs` 在 `pnpm verify` 与 `git commit` 时进行机械化拦截：
 >
-> 1. `createdById: String`: 创建人用户 ID（数据范围 `SELF` 过滤下推物理列）
-> 2. `deptId: String?`: 归属部门 ID（数据范围 `DEPT` / `DEPT_TREE` 过滤下推物理列）
-> 3. `updatedById: String?`: 最后修改人用户 ID
+> 1. `createdById: String @db.Uuid`: 创建人用户 ID（UUIDv7，数据范围 `SELF` 过滤下推物理列）
+> 2. `deptId: String? @db.Uuid`: 归属部门 ID（UUIDv7，数据范围 `DEPT` / `DEPT_TREE` 过滤下推物理列）
+> 3. `updatedById: String? @db.Uuid`: 最后修改人用户 ID
 > 4. `isDeleted: Boolean`: 软删除标记，默认 `false`
 > 5. `deletedAt: DateTime?`: 软删除执行时间
-> 6. `deletedById: String?`: 软删除操作人用户 ID
+> 6. `deletedById: String? @db.Uuid`: 软删除操作人用户 ID
 > 7. `createdAt: DateTime`: 创建时间戳
 > 8. `updatedAt: DateTime`: 最后更新时间戳
 >

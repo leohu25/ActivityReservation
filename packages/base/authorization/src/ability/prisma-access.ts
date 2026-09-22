@@ -1,4 +1,5 @@
 import { accessibleBy, type PrismaAbility } from "@casl/prisma";
+import { FAIL_CLOSED_ID } from "@base/shared";
 import type { PrismaQueryCondition } from "../scopes/data-scope";
 
 interface CanCheckable {
@@ -24,7 +25,7 @@ function isEmptyOrCondition(condition: PrismaQueryCondition): boolean {
 /**
  * 从 CASL PrismaAbility 中通过 @casl/prisma 的 accessibleBy 提取指定 Subject 的 Prisma where 查询条件。
  * 当 Ability 规则中包含数据范围条件时，直接下推为 Prisma 条件对象。
- * 若无权限或匹配失败，一律 Fail-Closed 返回拒绝条件 ({ AND: [{ id: "__NO_PERMISSION_FAIL_CLOSED__" }] })。
+ * 若无权限或匹配失败，一律 Fail-Closed 返回拒绝条件 ({ AND: [{ id: FAIL_CLOSED_ID }] })。
  */
 export function getAccessibleWhere<
   TAbility extends PrismaAbility<[string, string]>,
@@ -52,7 +53,7 @@ export function getAccessibleWhere<
     // @casl/prisma 在无权限或完全被拒绝时返回 { OR: [] }，需要对其统一归一化为标准的 Fail-Closed 过滤条件
     if (where) {
       if (isEmptyOrCondition(where)) {
-        return { AND: [{ id: "__NO_PERMISSION_FAIL_CLOSED__" }] };
+        return { AND: [{ id: FAIL_CLOSED_ID }] };
       }
       return where;
     }
@@ -64,8 +65,8 @@ export function getAccessibleWhere<
     }
 
     // 默认关闭 (Fail-Closed)
-    return { AND: [{ id: "__NO_PERMISSION_FAIL_CLOSED__" }] };
+    return { AND: [{ id: FAIL_CLOSED_ID }] };
   } catch {
-    return { AND: [{ id: "__NO_PERMISSION_FAIL_CLOSED__" }] };
+    return { AND: [{ id: FAIL_CLOSED_ID }] };
   }
 }

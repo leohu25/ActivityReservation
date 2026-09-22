@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createPrismaAbility, type PrismaAbility } from "@casl/prisma";
+import { FAIL_CLOSED_ID } from "@base/shared";
 import { getAccessibleWhere } from "./prisma-access";
 
 interface TestRawRule {
@@ -62,6 +63,6 @@ test("getAccessibleWhere 在未授权或动作被拒绝时严格执行 Fail-Clos
 
   const where = getAccessibleWhere(ability, "PurchaseOrder", "read");
   assert.deepEqual(where, {
-    AND: [{ id: "__NO_PERMISSION_FAIL_CLOSED__" }],
+    AND: [{ id: FAIL_CLOSED_ID }],
   });
 });

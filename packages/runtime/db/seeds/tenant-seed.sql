@@ -32,7 +32,7 @@ ins_positions AS (
 )
 INSERT INTO "employee_profile" (
   "id", "user_id", "member_id", "employee_no", "department_id",
-  "position_id", "name_snapshot", "email_snapshot", "job_title",
+  "position_id", "name", "email", "job_title",
   "status", "joined_at", "created_at", "updated_at"
 ) VALUES (
   $7, $8, $3, 'E0001',

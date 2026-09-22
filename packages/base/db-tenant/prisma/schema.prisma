@@ -168,12 +168,12 @@ model TenantMenuItem {
   /// 是否可见
   isVisible    Boolean   @default(true) @map("is_visible")
 
-  /// 创建人 ID
-  createdById  String    @default("system") @map("created_by_id")
-  /// 归属部门 ID
-  deptId       String?   @map("dept_id")
-  /// 更新人 ID
-  updatedById  String?   @map("updated_by_id")
+  /// 创建人 ID (UUIDv7，系统写入为 SYSTEM_ACTOR_ID)
+  createdById  String    @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
+  /// 归属部门 ID (UUIDv7)
+  deptId       String?   @map("dept_id") @db.Uuid
+  /// 更新人 ID (UUIDv7)
+  updatedById  String?   @map("updated_by_id") @db.Uuid
   /// 创建时间
   createdAt    DateTime  @default(now()) @map("created_at")
   /// 更新时间
@@ -182,8 +182,8 @@ model TenantMenuItem {
   isDeleted    Boolean   @default(false) @map("is_deleted")
   /// 软删除时间
   deletedAt    DateTime? @map("deleted_at")
-  /// 软删除人 ID
-  deletedById  String?   @map("deleted_by_id")
+  /// 软删除人 ID (UUIDv7)
+  deletedById  String?   @map("deleted_by_id") @db.Uuid
 
   @@index([parentId, sortOrder])
   @@index([isDeleted])
@@ -211,12 +211,12 @@ model Attachment {
   /// MIME 类型
   mimeType    String    @map("mime_type") @db.VarChar(100)
 
-  /// 创建人 ID (必填，审计基线)
-  createdById String    @default("system") @map("created_by_id") @db.VarChar(64)
-  /// 归属部门 ID (选填，支持部门数据范围权限过滤)
-  deptId      String?   @map("dept_id") @db.VarChar(64)
-  /// 更新人 ID (选填)
-  updatedById String?   @map("updated_by_id") @db.VarChar(64)
+  /// 创建人 ID (必填，审计基线，UUIDv7)
+  createdById String    @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
+  /// 归属部门 ID (选填，支持部门数据范围权限过滤，UUIDv7)
+  deptId      String?   @map("dept_id") @db.Uuid
+  /// 更新人 ID (选填，UUIDv7)
+  updatedById String?   @map("updated_by_id") @db.Uuid
   /// 创建时间 (必填)
   createdAt   DateTime  @default(now()) @map("created_at")
   /// 更新时间 (必填)
@@ -225,8 +225,8 @@ model Attachment {
   isDeleted   Boolean   @default(false) @map("is_deleted")
   /// 软删除时间 (选填)
   deletedAt   DateTime? @map("deleted_at")
-  /// 软删除人 ID (选填)
-  deletedById String?   @map("deleted_by_id") @db.VarChar(64)
+  /// 软删除人 ID (选填，UUIDv7)
+  deletedById String?   @map("deleted_by_id") @db.Uuid
 
   @@index([targetId, module])
   @@index([createdById])

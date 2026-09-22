@@ -20,25 +20,25 @@ function findWorkspaceRoot(startDir = process.cwd()) {
 const workspaceRoot = findWorkspaceRoot();
 
 /**
- * 业务实体基础字段要求（标准 ERP 基线规范）：
- * 1. createdById: String (必填，创建人 ID)
- * 2. deptId: String? (选填/可空，归属部门 ID，支撑数据范围 SELF / DEPT / DEPT_TREE)
- * 3. updatedById: String? (选填/可空，更新人 ID)
+ * 业务实体基础字段要求（标准 ERP 基线规范，ADR-009）：
+ * 1. createdById: String @db.Uuid (必填，创建人 ID，UUIDv7)
+ * 2. deptId: String? @db.Uuid (选填/可空，归属部门 ID，支撑数据范围 SELF / DEPT / DEPT_TREE)
+ * 3. updatedById: String? @db.Uuid (选填/可空，更新人 ID)
  * 4. createdAt: DateTime (必填，创建时间)
  * 5. updatedAt: DateTime (必填，更新时间)
  * 6. isDeleted: Boolean (必填，软删除标记)
  * 7. deletedAt: DateTime? (选填/可空，软删除时间)
- * 8. deletedById: String? (选填/可空，软删除人 ID)
+ * 8. deletedById: String? @db.Uuid (选填/可空，软删除人 ID)
  */
 export const REQUIRED_AUDIT_FIELDS = [
-  { name: "createdById", type: "String" },
-  { name: "deptId", type: "String?" },
-  { name: "updatedById", type: "String?" },
+  { name: "createdById", type: "String", nativeType: "Uuid" },
+  { name: "deptId", type: "String?", nativeType: "Uuid" },
+  { name: "updatedById", type: "String?", nativeType: "Uuid" },
   { name: "createdAt", type: "DateTime" },
   { name: "updatedAt", type: "DateTime" },
   { name: "isDeleted", type: "Boolean" },
   { name: "deletedAt", type: "DateTime?" },
-  { name: "deletedById", type: "String?" },
+  { name: "deletedById", type: "String?", nativeType: "Uuid" },
 ];
 
 /**
@@ -157,6 +157,13 @@ export function validateModelBaseline(modelName, fields) {
     } else if (isOptionalExpected !== isOptionalActual) {
       errors.push(
         `字段 ${required.name} 可空属性不匹配: 期望 ${required.type}，实际为 ${field.type}`,
+      );
+    }
+
+    // 审计/数据范围外键必须声明 @db.Uuid (UUIDv7)，与 User.id / Department.id 对齐
+    if (required.nativeType === "Uuid" && !field.raw.includes("@db.Uuid")) {
+      errors.push(
+        `字段 ${required.name} 必须声明 @db.Uuid (UUIDv7 外键契约)，实际为: ${field.raw.trim()}`,
       );
     }
   }

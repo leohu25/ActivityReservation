@@ -77,14 +77,14 @@ model Attachment {
   mimeType    String    @map("mime_type") @db.VarChar(100)
 
   // --- 8大基础审计与软删除字段 (ADR-009 基线) ---
-  createdById String    @default("system") @map("created_by_id") @db.VarChar(64)
-  deptId      String?   @map("dept_id") @db.VarChar(64)
-  updatedById String?   @map("updated_by_id") @db.VarChar(64)
+  createdById String    @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
+  deptId      String?   @map("dept_id") @db.Uuid
+  updatedById String?   @map("updated_by_id") @db.Uuid
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   isDeleted   Boolean   @default(false) @map("is_deleted")
   deletedAt   DateTime? @map("deleted_at")
-  deletedById String?   @map("deleted_by_id") @db.VarChar(64)
+  deletedById String?   @map("deleted_by_id") @db.Uuid
 
   @@index([targetId, module])
   @@index([createdById])

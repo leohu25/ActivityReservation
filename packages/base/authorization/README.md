@@ -88,7 +88,7 @@ export function OrderActionBar({ order }: { order: ProcurementOrder }) {
 
 ## 4. 安全红线与架构原则
 
-1. **绝对 Fail-Closed（安全关闭）原则**：若缺少租户上下文、部门未分配或角色未定义，所有权限判定一律默认拒绝，SQL 下推强制返回不可命中条件（`{ id: "__NO_PERMISSION_FAIL_CLOSED__" }`），绝不放行。
+1. **绝对 Fail-Closed（安全关闭）原则**：若缺少租户上下文、部门未分配或角色未定义，所有权限判定一律默认拒绝，SQL 下推强制返回不可命中条件（`{ id: FAIL_CLOSED_ID }`），绝不放行。
 2. **切片去中心化与开闭原则 (ADR-005)**：核心包不硬编码任何具体业务模型（如 `ProcurementOrder`），业务切片通过 `manifest.ts` 自定义模型并向权限中枢注册。
 3. **字段权限物理剥离**：`HIDDEN` 字段必须在服务端直接从返回 DTO 中剔除，不得依赖前端 CSS `display: none` 隐藏。
 

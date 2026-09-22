@@ -562,13 +562,13 @@ export function resolveDataScopeConditions(
     case DataScope.DEPT:
       // Fail-Closed 保护：员工无部门时绝不放行全表
       if (!topology.departmentId) {
-        return { [deptField]: "__NO_DEPARTMENT_FAIL_CLOSED__" };
+        return { [deptField]: FAIL_CLOSED_ID };
       }
       return { [deptField]: topology.departmentId };
     case DataScope.DEPT_TREE:
       const treeIds = topology.departmentTreeIds ?? [];
       if (treeIds.length === 0) {
-        return { [deptField]: "__NO_DEPARTMENT_FAIL_CLOSED__" };
+        return { [deptField]: FAIL_CLOSED_ID };
       }
       return { [deptField]: { in: treeIds } };
     case DataScope.CUSTOM:
@@ -854,7 +854,7 @@ sequenceDiagram
 | :------------------- | :------------------------------------------------------------------------ | :----------------------------------------------- | :------------------------------------------------------------------------------- |
 | **第4层租户门禁**    | `packages/base/auth/src/context/tenant-context.ts`                        | `assertTenantAccessGate`                         | 校验租户库中员工档案在职状态，离职/停职直接阻断                                  |
 | **规则编译中枢**     | `packages/base/authorization/src/ability/ability-factory.ts`              | `CaslAbilityFactory`                             | 将 DB 中持久化的 statement, scopes, fields 编译为 CASL `AppPrismaAbility`        |
-| **数据范围编译**     | `packages/base/authorization/src/scopes/data-scope.ts`                    | `resolveDataScopeConditions`                     | 解析 5 类数据范围并注入防穿透 `__NO_DEPARTMENT_FAIL_CLOSED__`                    |
+| **数据范围编译**     | `packages/base/authorization/src/scopes/data-scope.ts`                    | `resolveDataScopeConditions`                     | 解析 5 类数据范围并注入防穿透 `FAIL_CLOSED_ID`                    |
 | **SQL 自动下推**     | `packages/base/authorization/src/ability/prisma-access.ts`                | `getAccessibleWhere`                             | 桥接 `@casl/prisma`，将 Ability 规则自动转换为 Prisma Where 语法树               |
 | **字段三态控制**     | `packages/base/authorization/src/fields/field-policy.ts`                  | `pickReadableFields`<br>`assertEditableFields`   | 服务端安全网：读取时物理剥离未授权字段，写入时拦截只读字段篡改                   |
 | **导航菜单裁剪**     | `packages/base/authorization/src/core/manifest.ts`                        | `pruneDynamicMenuTree`                           | 深度优先递归剪枝，支持多 Subject OR 准入，自动物理隐藏空抽屉目录                 |

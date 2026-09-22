@@ -40,6 +40,10 @@ test("TenantManagementService 租户开通逻辑、初始凭证、预置角色�
   const dbMap = new Map<string, TenantDatabaseRecord>();
 
   const fakePrisma = {
+    async $transaction<T>(fn: (tx: typeof fakePrisma) => Promise<T>): Promise<T> {
+      // 模拟 Prisma Interactive Transaction：回调内共享同一客户端
+      return await fn(fakePrisma);
+    },
     organization: {
       async findMany() {
         return Array.from(orgMap.values()).map((org) => ({

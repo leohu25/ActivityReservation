@@ -54,7 +54,7 @@
   - **凡是在 Schema 中声明了 `@relation` 的关联字段，服务层更新时一律采用 Prisma 官方嵌套关系语法**：
     ```ts
     data: {
-      nameSnapshot: cleanName,
+      name: cleanName,
       department: targetDeptId
         ? { connect: { id: targetDeptId } }
         : { disconnect: true },

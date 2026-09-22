@@ -406,35 +406,8 @@ export class TenantManagementService {
 
     const orgId = generateUuidV7();
     const ownerMemberId = generateUuidV7();
-    const organization = await this.prisma.organization.create({
-      data: {
-        id: orgId,
-        name: cleanName,
-        slug: cleanSlug,
-        members: {
-          create: {
-            id: ownerMemberId,
-            userId: adminUser.id,
-            role: "owner",
-          },
-        },
-      },
-    });
-
-    // 独立租户凭证入库：无论平台 User 是否已存在，在当前租户下建立独立的 TenantAccount
-    // 账号完全忠实于用户输入（支持自定义账号、手机号、邮箱、工号），严禁擅自截断或篡改！
-    await this.prisma.tenantAccount.create({
-      data: {
-        id: generateUuidV7(),
-        organizationId: organization.id,
-        account: cleanEmail,
-        password: hashedPassword,
-        name: adminUser.name,
-        memberId: ownerMemberId,
-        status: "ACTIVE",
-      },
-    });
-
+    const ownerUserId = adminUser.id;
+    const ownerName = adminUser.name;
     const defaultRoles: Array<{
       role: string;
       payload: RolePermissionPayload;
@@ -451,12 +424,7 @@ export class TenantManagementService {
               StandardAction.EXPORT,
             ],
           },
-          dataScopes: [
-            {
-              resource: "procurement.order",
-              scopeType: "ALL",
-            },
-          ],
+          dataScopes: [{ resource: "procurement.order", scopeType: "ALL" }],
           fieldPolicies: [],
         },
       },
@@ -473,10 +441,7 @@ export class TenantManagementService {
             ],
           },
           dataScopes: [
-            {
-              resource: "procurement.order",
-              scopeType: "DEPT_TREE",
-            },
+            { resource: "procurement.order", scopeType: "DEPT_TREE" },
           ],
           fieldPolicies: [],
         },
@@ -485,10 +450,7 @@ export class TenantManagementService {
         role: "buyer",
         payload: {
           statement: {
-            "procurement.order": [
-              StandardAction.READ,
-              StandardAction.CREATE,
-            ],
+            "procurement.order": [StandardAction.READ, StandardAction.CREATE],
           },
           dataScopes: [
             {
@@ -508,25 +470,59 @@ export class TenantManagementService {
       },
     ];
 
-    for (const r of defaultRoles) {
-      await this.prisma.organizationRole.upsert({
-        where: {
-          organizationId_role: {
-            organizationId: organization.id,
-            role: r.role,
+    // Prisma / Next.js 推荐的 Interactive Transaction：开启事务后在回调内完成全部 Control 侧写入
+    const organization = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.organization.create({
+        data: {
+          id: orgId,
+          name: cleanName,
+          slug: cleanSlug,
+          members: {
+            create: {
+              id: ownerMemberId,
+              userId: ownerUserId,
+              role: "owner",
+            },
           },
         },
-        create: {
+      });
+
+      // 独立租户凭证入库：无论平台 User 是否已存在，在当前租户下建立独立的 TenantAccount
+      // 账号完全忠实于用户输入（支持自定义账号、手机号、邮箱、工号），严禁擅自截断或篡改！
+      await tx.tenantAccount.create({
+        data: {
           id: generateUuidV7(),
-          organizationId: organization.id,
-          role: r.role,
-          permission: serializeRolePermissions(r.payload),
-        },
-        update: {
-          permission: serializeRolePermissions(r.payload),
+          organizationId: created.id,
+          account: cleanEmail,
+          password: hashedPassword,
+          name: ownerName,
+          memberId: ownerMemberId,
+          status: "ACTIVE",
         },
       });
-    }
+
+      for (const r of defaultRoles) {
+        await tx.organizationRole.upsert({
+          where: {
+            organizationId_role: {
+              organizationId: created.id,
+              role: r.role,
+            },
+          },
+          create: {
+            id: generateUuidV7(),
+            organizationId: created.id,
+            role: r.role,
+            permission: serializeRolePermissions(r.payload),
+          },
+          update: {
+            permission: serializeRolePermissions(r.payload),
+          },
+        });
+      }
+
+      return created;
+    });
 
     const clusterCode = input.clusterCode ?? "primary";
     const databaseName = `tenant_${cleanSlug.replace(/-/g, "_")}`;
@@ -537,30 +533,40 @@ export class TenantManagementService {
     const seedInput = {
       organizationId: organization.id,
       organizationName: cleanName,
-      ownerUserId: adminUser.id,
+      ownerUserId,
       ownerMemberId,
-      ownerName: adminUser.name,
+      ownerName,
       ownerEmail: cleanEmail,
     };
 
     if (this.provisioner) {
-      const provisionResult: ProvisionTenantDatabaseResult =
-        await this.provisioner.provision({
-          organizationId: organization.id,
-          clusterCode,
-          databaseName,
-          adminDatabaseUrl: adminDbUrl,
-          secretRef: databaseName,
-          seedInput,
-        });
+      try {
+        const provisionResult: ProvisionTenantDatabaseResult =
+          await this.provisioner.provision({
+            organizationId: organization.id,
+            clusterCode,
+            databaseName,
+            adminDatabaseUrl: adminDbUrl,
+            secretRef: databaseName,
+            seedInput,
+          });
 
-      return {
-        organizationId: organization.id,
-        slug: cleanSlug,
-        databaseName: provisionResult.databaseName,
-        status: provisionResult.status,
-        initialPassword,
-      };
+        return {
+          organizationId: organization.id,
+          slug: cleanSlug,
+          databaseName: provisionResult.databaseName,
+          status: provisionResult.status,
+          initialPassword,
+        };
+      } catch (error) {
+        // 物理库开通/种子失败时补偿删除 Control 元数据，避免租户列表残留脏记录
+        await this.prisma.organization
+          .delete({ where: { id: organization.id } })
+          .catch(() => undefined);
+        throw error instanceof Error
+          ? error
+          : new Error(`租户物理库开通失败: ${String(error)}`);
+      }
     }
 
     const dbRecord = await this.prisma.tenantDatabase.create({

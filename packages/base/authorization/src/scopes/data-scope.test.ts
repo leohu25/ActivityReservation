@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { FAIL_CLOSED_ID } from "@base/shared";
 import {
   resolveDataScopeConditions,
   type RoleDataScopeConfig,
@@ -39,7 +40,7 @@ test("resolveDataScopeConditions 在 SELF 模式下若 userId 为空时严格执
 
   const condition = resolveDataScopeConditions(scopes, topology);
   assert.deepEqual(condition, {
-    createdById: "__NO_USER_FAIL_CLOSED__",
+    createdById: FAIL_CLOSED_ID,
   });
 });
 
@@ -77,7 +78,7 @@ test("resolveDataScopeConditions 在 DEPT 模式下若缺少 departmentId 则 Fa
 
   const condition = resolveDataScopeConditions(scopes, topology);
   assert.deepEqual(condition, {
-    deptId: "__NO_DEPARTMENT_FAIL_CLOSED__",
+    deptId: FAIL_CLOSED_ID,
   });
 });
 
@@ -117,7 +118,7 @@ test("resolveDataScopeConditions 在 DEPT_TREE 模式下若部门树为空则 Fa
 
   const condition = resolveDataScopeConditions(scopes, topology);
   assert.deepEqual(condition, {
-    deptId: { in: ["__NO_DEPARTMENT_FAIL_CLOSED__"] },
+    deptId: { in: [FAIL_CLOSED_ID] },
   });
 });
 
@@ -157,7 +158,7 @@ test("resolveDataScopeConditions 在 CUSTOM 模式下若枚举列表为空则 Fa
 
   const condition = resolveDataScopeConditions(scopes, topology);
   assert.deepEqual(condition, {
-    deptId: { in: ["__NO_CUSTOM_DEPARTMENT_FAIL_CLOSED__"] },
+    deptId: { in: [FAIL_CLOSED_ID] },
   });
 });
 

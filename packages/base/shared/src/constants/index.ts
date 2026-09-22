@@ -3,6 +3,18 @@
  */
 
 /**
+ * ADR-009 审计外键统一使用 UUIDv7 (@db.Uuid)。
+ * 系统级写入（无登录用户/脚本）保留的固定操作者 UUID，替代历史字符串哨兵 "system"。
+ */
+export const SYSTEM_ACTOR_ID = "00000000-0000-7000-8000-000000000000";
+
+/**
+ * Fail-Closed 不可命中 UUID：UUID 列上替代 `"__NO_*_FAIL_CLOSED__"` 非法字符串哨兵。
+ * 业务主键为 uuid(7)，该 nil UUID 永不落库，因此条件恒不命中。
+ */
+export const FAIL_CLOSED_ID = "00000000-0000-0000-0000-000000000000";
+
+/**
  * 字段访问控制策略三态 (Field Policy)
  * 决定字段在前后端的展示与修改权限
  */

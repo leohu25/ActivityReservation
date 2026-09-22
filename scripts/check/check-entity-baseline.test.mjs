@@ -34,15 +34,15 @@ describe("check-entity-baseline", () => {
   test("业务实体具有完整合规字段时校验通过", () => {
     const rawSchema = `
       model CompliantModel {
-        id          String    @id
-        createdById String    @map("created_by_id")
-        deptId      String?   @map("dept_id")
-        updatedById String?   @map("updated_by_id")
+        id          String    @id @default(uuid(7)) @db.Uuid
+        createdById String    @map("created_by_id") @db.Uuid
+        deptId      String?   @map("dept_id") @db.Uuid
+        updatedById String?   @map("updated_by_id") @db.Uuid
         createdAt   DateTime  @default(now()) @map("created_at")
         updatedAt   DateTime  @updatedAt @map("updated_at")
         isDeleted   Boolean   @default(false) @map("is_deleted")
         deletedAt   DateTime? @map("deleted_at")
-        deletedById String?   @map("deleted_by_id")
+        deletedById String?   @map("deleted_by_id") @db.Uuid
       }
     `;
     const models = parsePrismaModels(rawSchema);
@@ -52,5 +52,30 @@ describe("check-entity-baseline", () => {
     const res = validateModelBaseline("CompliantModel", compliant);
     assert.equal(res.ok, true);
     assert.equal(res.errors.length, 0);
+  });
+
+  test("审计外键缺少 @db.Uuid 时报错", () => {
+    const rawSchema = `
+      model LegacyUuidModel {
+        id          String    @id
+        createdById String    @map("created_by_id") @db.VarChar(50)
+        deptId      String?   @map("dept_id") @db.Uuid
+        updatedById String?   @map("updated_by_id") @db.Uuid
+        createdAt   DateTime  @default(now()) @map("created_at")
+        updatedAt   DateTime  @updatedAt @map("updated_at")
+        isDeleted   Boolean   @default(false) @map("is_deleted")
+        deletedAt   DateTime? @map("deleted_at")
+        deletedById String?   @map("deleted_by_id") @db.Uuid
+      }
+    `;
+    const models = parsePrismaModels(rawSchema);
+    const legacy = models.get("LegacyUuidModel");
+    assert.ok(legacy);
+
+    const res = validateModelBaseline("LegacyUuidModel", legacy);
+    assert.equal(res.ok, false);
+    assert.ok(
+      res.errors.some((e) => e.includes("createdById") && e.includes("@db.Uuid")),
+    );
   });
 });

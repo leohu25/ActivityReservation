@@ -1,4 +1,5 @@
 import type { TenantPrismaClient } from "@base/db-tenant";
+import { SYSTEM_ACTOR_ID } from "@base/shared";
 import { generatePresignedUploadUrl } from "@base/storage";
 import type { PresignedUploadSchema, SaveAttachmentSchema } from "./schema";
 
@@ -37,7 +38,7 @@ export class AttachmentService {
         fileUrl: input.fileUrl,
         fileSize: BigInt(input.fileSize),
         mimeType: input.mimeType,
-        createdById: auditCtx?.userId || "system",
+        createdById: auditCtx?.userId || SYSTEM_ACTOR_ID,
         deptId: auditCtx?.deptId,
       },
     });

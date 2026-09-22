@@ -29,7 +29,6 @@ export function findSchemaFiles(
 	const scanDirs = [
 		path.join(workspaceRoot, "packages/domains"),
 		path.join(workspaceRoot, "packages/platform"),
-		path.join(workspaceRoot, ".archive/domains"),
 	];
 	for (const dir of scanDirs) {
 		if (fs.existsSync(dir)) {

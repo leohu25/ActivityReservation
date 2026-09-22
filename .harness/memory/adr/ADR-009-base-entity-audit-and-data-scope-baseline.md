@@ -20,23 +20,25 @@
 所有属于业务实体的 Prisma 模型，除白名单豁免模型外，**强制**必须包含以下 8 个基础字段：
 
 ```prisma
-/// 创建人用户ID (数据权限 SELF 核心依据)
-createdById   String    @map("created_by_id") @db.VarChar(50)
-/// 归属部门ID (数据权限 DEPT / DEPT_TREE 核心依据)
-deptId        String?   @map("dept_id") @db.VarChar(50)
-/// 最后更新人用户ID
-updatedById   String?   @map("updated_by_id") @db.VarChar(50)
+/// 创建人用户ID (数据权限 SELF 核心依据，UUIDv7；系统写入为 SYSTEM_ACTOR_ID)
+createdById   String    @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
+/// 归属部门ID (数据权限 DEPT / DEPT_TREE 核心依据，UUIDv7 创建时快照)
+deptId        String?   @map("dept_id") @db.Uuid
+/// 最后更新人用户ID (UUIDv7)
+updatedById   String?   @map("updated_by_id") @db.Uuid
 /// 软删除标记 (默认 false)
 isDeleted     Boolean   @default(false) @map("is_deleted")
 /// 软删除时间
 deletedAt     DateTime? @map("deleted_at")
-/// 软删除操作人用户ID
-deletedById   String?   @map("deleted_by_id") @db.VarChar(50)
+/// 软删除操作人用户ID (UUIDv7)
+deletedById   String?   @map("deleted_by_id") @db.Uuid
 /// 创建时间
 createdAt     DateTime  @default(now()) @map("created_at")
 /// 更新时间
 updatedAt     DateTime  @updatedAt @map("updated_at")
 ```
+
+> **ID 类型契约 (ADR-009 补充)**：`createdById` / `deptId` / `updatedById` / `deletedById` 等审计与数据范围外键统一为 `@db.Uuid`（UUIDv7），与 `User.id`、`Department.id` 主键类型对齐。系统级写入使用保留 UUID `SYSTEM_ACTOR_ID = 00000000-0000-7000-8000-000000000000`（定义于 `@base/shared`）；权限 Fail-Closed 过滤使用永不落库的 `FAIL_CLOSED_ID = 00000000-0000-0000-0000-000000000000`。
 
 ### 2. 豁免清单规则 (Exemption Policy)
 

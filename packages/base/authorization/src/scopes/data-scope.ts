@@ -1,3 +1,5 @@
+import { FAIL_CLOSED_ID } from "@base/shared";
+
 /**
  * ERP 四层权限架构中支持的数据权限范围类型：
  * - SELF: 仅本人创建或归属于本人的业务数据。
@@ -94,13 +96,13 @@ function resolveScopeCondition(
       // 当 userId 为空时严格执行 Fail-Closed，防止 undefined 导致 Prisma where 忽略过滤条件造成全表泄露
       return topology.userId
         ? { [userIdField]: topology.userId }
-        : { [userIdField]: "__NO_USER_FAIL_CLOSED__" };
+        : { [userIdField]: FAIL_CLOSED_ID };
 
     case DataScope.DEPT:
       // 当用户未归属于任何部门时严格执行 Fail-Closed
       return topology.departmentId
         ? { [departmentIdField]: topology.departmentId }
-        : { [departmentIdField]: "__NO_DEPARTMENT_FAIL_CLOSED__" };
+        : { [departmentIdField]: FAIL_CLOSED_ID };
 
     case DataScope.DEPT_TREE: {
       const treeIds =
@@ -109,7 +111,7 @@ function resolveScopeCondition(
       // 部门树为空时严格执行 Fail-Closed
       if (treeIds.length === 0) {
         return {
-          [departmentIdField]: { in: ["__NO_DEPARTMENT_FAIL_CLOSED__"] },
+          [departmentIdField]: { in: [FAIL_CLOSED_ID] },
         };
       }
       return treeIds.length === 1
@@ -122,7 +124,7 @@ function resolveScopeCondition(
       // 自定义部门列表为空时严格执行 Fail-Closed
       if (customIds.length === 0) {
         return {
-          [departmentIdField]: { in: ["__NO_CUSTOM_DEPARTMENT_FAIL_CLOSED__"] },
+          [departmentIdField]: { in: [FAIL_CLOSED_ID] },
         };
       }
       return customIds.length === 1
