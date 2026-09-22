@@ -8,16 +8,16 @@ import {
 describe("tenant-management.schema", () => {
   it("合法开通参数能够正常通过校验", () => {
     const input = {
-      name: "辰润测试租户",
-      slug: "chenrun-test",
-      adminEmail: "admin@chenrun.com",
+      name: "演示测试租户",
+      slug: "demo-test",
+      adminEmail: "admin@example.com",
       adminName: "超管",
       clusterCode: "primary",
     };
     const parsed = parseProvisionTenantInput(input);
-    assert.equal(parsed.name, "辰润测试租户");
-    assert.equal(parsed.slug, "chenrun-test");
-    assert.equal(parsed.adminEmail, "admin@chenrun.com");
+    assert.equal(parsed.name, "演示测试租户");
+    assert.equal(parsed.slug, "demo-test");
+    assert.equal(parsed.adminEmail, "admin@example.com");
   });
 
   it("缺省非必填项赋予默认值", () => {
@@ -38,8 +38,8 @@ describe("tenant-management.schema", () => {
     assert.throws(() => {
       parseProvisionTenantInput({
         name: "测试租户",
-        slug: "Chenrun_Test!",
-        adminEmail: "admin@chenrun.com",
+        slug: "Invalid_Slug!",
+        adminEmail: "admin@example.com",
       });
     });
   });
@@ -48,7 +48,7 @@ describe("tenant-management.schema", () => {
     assert.throws(() => {
       parseProvisionTenantInput({
         name: "测试租户",
-        slug: "chenrun-test",
+        slug: "demo-test",
         adminEmail: "not-an-email",
       });
     });

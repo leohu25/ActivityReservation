@@ -1,6 +1,6 @@
 # 模块 5：UI 交互、布局原语与组件沉淀规范
 
-本系统基于技术中立的 `@base/ui`（shadcn/ui 官方原语体系）构建，具体视觉设计风格（如 Chenrun Digital ERP 风格）作为外部 Theme 资产在 `design-system/chenrun-digital-erp/MASTER.md` 与 CSS 语义变量中配置注入。
+本系统基于技术中立的 `@base/ui`（shadcn/ui 官方原语体系）构建，具体视觉设计风格作为外部 Theme 资产在 `design-system/` 与 CSS 语义变量中配置注入。
 
 ## 0. 设计系统资产模型与官方范式 (Monorepo Design System)
 
@@ -74,7 +74,7 @@ toast.warning("检测到存在关联受限项目");
 
 ---
 
-## 2. 现代化工业风 DataTable 通用积木与权限开发手册
+## 2. 现代化通用 DataTable 积木与权限开发手册
 
 > **权限来源（官方 CASL）**：切片 layout 已挂 `TenantAbilityProvider`；`DataTable` **只传 `subject`**，禁止传 `permissions`/`ability`。完整范式见 `7-casl-ability-provider.md`。
 
@@ -244,7 +244,7 @@ const list = useListSearch(resourceSearchParams);
 
 ### 2.4 行级操作：平铺链接 + 折叠菜单
 
-对齐工业风参考：高频操作直接平铺文字链接（详情/编辑），次要与危险操作折叠进 `...`：
+对齐设计系统规范：高频操作直接平铺文字链接（详情/编辑），次要与危险操作折叠进 `...`：
 
 **默认全量展示**内置「详情 / 编辑 / 删除」；页面不需要时用 `hideView` / `hideEdit` / `hideDelete` 显式关闭，并同步从契约移除对应 action。
 

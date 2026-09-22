@@ -24,7 +24,7 @@ graph TD
         AuthzCore["@base/authorization<br>(CASL 四层权限闭环引擎与 Provider)"]
         DBControl["@base/db-control<br>(总控集中库 Prisma Client)"]
         DBTenant["@base/db-tenant<br>(多租户物理分库动态连接池 TenantDbManager)"]
-        UI["@base/ui<br>(工业风高密度 UI、DataTable、FormModal)"]
+        UI["@base/ui<br>(通用中立 UI 基座、DataTable、FormModal)"]
         Shared["@base/shared<br>(Result 模式、toPlainData 序列化防错、通用工具)"]
     end
 
@@ -101,7 +101,7 @@ graph TD
   - **Day 0 状态机自愈**：严格探查 `EMPTY`（自动初装基线）、`READY`（健康运行）、`PARTIAL`（脏库 Fail-Closed 阻断）、`CHECKSUM_MISMATCH`（代码篡改硬拦截）；
   - **分布式咨询锁**：执行迁移时强制获取 PostgreSQL 事务级咨询锁 `pg_advisory_xact_lock`，事务提交自动释放，完美适配 PgBouncer。
 
-### 5. `@base/ui` — 现代工业风高密度 UI 体系
+### 5. `@base/ui` — 风格中立的通用 UI 组件体系
 
 - **职责**：为整个多租户 SaaS 系统提供设计系统代币、通用组件积木、页面布局框架与**列表 URL 约定**。
 - **架构范式**：对齐 **shadcn UI 官方最佳实践（Monorepo Design System）**，开发时参考并执行 `.agents/skills/shadcn/` Skill：

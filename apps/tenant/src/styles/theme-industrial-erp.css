@@ -1,7 +1,7 @@
 /**
- * 工业ERP风 (Industrial ERP Theme Preset)
- * 对应设计系统事实源: design-system/chenrun-digital-erp/MASTER.md 与 .harness/context/design-system.md
- * 特征: 信任蓝 + 极轻柔交互高亮, 高密度(8/10), 冷灰底色(#F8FAFC), 细腻边框(#E2E8F0)
+ * 租户业务主题预设 (Tenant Theme Preset)
+ * 对应设计系统事实源: design-system/ 与 .harness/context/design-system.md
+ * 特征: 经典蓝调 + 轻柔交互高亮, 高密度规范, 浅冷灰底色(#F8FAFC), 细致边框(#E2E8F0)
  */
 
 :root {

@@ -123,7 +123,7 @@ export function EmployeeFormModal({
         label: "员工工号",
         type: "text",
         disabled: isView,
-        placeholder: "例如: CR-0089",
+        placeholder: "例如: EMP-0089",
         hint: "人事档案字段，不直接作为登录标识",
       },
       {

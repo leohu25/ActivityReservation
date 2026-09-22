@@ -3,7 +3,7 @@
 本项目为 **现代化多租户 SaaS 基础设施与通用业务底座 (Modular Monorepo + Vertical Slice Architecture)**。
 
 - **双端应用**：`apps/control`（平台管控平面）与 `apps/tenant`（租户数据平面）；
-- **横向平台基建**：`packages/base/*`（`@base/auth` 认证、`@base/authorization` CASL 四层权限、`@base/db-tenant` 多租户动态连接池、`@base/ui` 工业风组件与 DataTable、`@base/shared` 序列化工具）；
+- **横向平台基建**：`packages/base/*`（`@base/auth` 认证、`@base/authorization` CASL 四层权限、`@base/db-tenant` 多租户动态连接池、`@base/ui` 通用组件与 DataTable、`@base/shared` 序列化工具）；
 - **跨业务中台资产**：`packages/biz-shared`（`@biz/shared` 审批流状态机、单据发号器契约）；
 - **平台系统套件**：`packages/platform/*`（`@platform/control-admin` 平台管控中心、`@platform/tenant-admin` 租户系统设置）；
 - **垂直业务切片**：`packages/domains/*`（各业务切片物理内聚、无横向耦合，例如 `@domain/customer-center` 客户中心等领域）；
@@ -48,7 +48,8 @@
 8. **严禁绕过租户物理隔离**：PostgreSQL Database-per-tenant 隔离，业务数据必须由 `TenantDbManager` 动态路由，严禁拼接直连连接串或跨租户穿透；
 9. **业务实体必带审计基线**：除明确白名单豁免外，所有业务数据实体模型必须强制包含 8 大基础审计与软删除字段（ADR-009，门禁静态硬拦截）；
 10. **交互单次确认与零全页强刷**：破坏性操作统一由 `ConfirmDialog` 提示一次，严禁浏览器原生 `confirm(...)` 与 `window.location.reload()`；
-11. **跨平台统一 Node.js 脚本规范**：全仓所有构建、门禁、初始化与治理脚本必须 100% 使用 Node.js (`*.mjs`) 实现，**严禁引入平台相关的 Shell 脚本 (`*.sh` / `*.bash`)**，抹平 Windows/Mac/Linux 开发环境差异。门禁与 `init.mjs` 强制静态与运行时双重拦截。
+11. **跨平台统一 Node.js 脚本规范**：全仓所有构建、门禁、初始化与治理脚本必须 100% 使用 Node.js (`*.mjs`) 实现，**严禁引入平台相关的 Shell 脚本 (`*.sh` / `*.bash`)**，抹平 Windows/Mac/Linux 开发环境差异。门禁与 `init.mjs` 强制静态与运行时双重拦截；
+12. **严禁底座与基建代码绑定主观 UI 风格（保持绝对风格中立）**：项目底座、组件基建、代码库与规范自身必须保持绝对风格中立，严禁在代码或底座中强行绑定具体 UI 风格（如“工业风”、“极简风”、“数智风”等）；视觉设计语言（色盘、字体、阴影、圆角、密度）必须 100% 隔离在项目根目录的 Design System（如 `design-system/`）与 CSS 语义变量中，通过主题正交注入，确保底座在剥离业务后可无损复用于任何全新项目。
 
 ---
 
@@ -107,7 +108,7 @@ node .harness/lifecycle/session-end.mjs
 
 | 维度                                 | 路径                                                                       | 核心内容与适用场景                                                                                 |
 | :----------------------------------- | :------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------- |
-| **全栈开发规范事实源**               | `.agents/skills/next-saas-base-dev/`                                       | 涵盖切片 8 阶段流水线、纯数据契约、工业风 UI、CASL Provider、基座基础设施演进                      |
+| **全栈开发规范事实源**               | `.agents/skills/next-saas-base-dev/`                                       | 涵盖切片 8 阶段流水线、纯数据契约、设计系统正交驱动 UI、CASL Provider、基座基础设施演进                      |
 | **智能体开发工作流**                 | `docs/collaboration/agent-development-workflow.md`                         | 智能体端到端 5 步闭环作业指导书 (SOP)、双轨模式与门禁规范                                          |
 | **系统架构白皮书**                   | `docs/ARCHITECTURE.md`                                                     | 双平面运行模型、四大架构支柱、技术栈选型与全景索引                                                 |
 | **多租户分库深度解析**               | `docs/architecture/saas-multitenant-architecture.md`                       | 物理分库连接池治理、并发防击穿、TenantDbManager 与全生命周期                                       |

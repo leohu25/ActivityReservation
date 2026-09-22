@@ -166,7 +166,7 @@ export function GeneralSettingsView({
                     orderPrefix: e.target.value,
                   }))
                 }
-                placeholder="例如: DOC- 或 CR-"
+                placeholder="例如: DOC- 或 ORD-"
                 disabled={isReadOnly || isPending}
               />
             </div>

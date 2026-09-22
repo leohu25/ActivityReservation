@@ -34,7 +34,7 @@ const mockEmployee: EmployeeItem = {
   id: "emp-1",
   memberId: "mem-1",
   userId: "usr-1",
-  employeeNo: "CR-0089",
+  employeeNo: "EMP-0089",
   name: "王小明",
   loginAccount: "E0001",
   email: "wang@company.com",
@@ -96,7 +96,7 @@ test("EmployeeFormModal [编辑模式]: 回填登录账号与联系方式", () =
   assert.match(html, /E0001/);
   assert.match(html, /13800001111/);
   assert.match(html, /wang@company.com/);
-  assert.match(html, /CR-0089/);
+  assert.match(html, /EMP-0089/);
   assert.match(html, /归属部门/);
   assert.match(html, /员工证件头像/);
   assert.match(html, /保存修改/);

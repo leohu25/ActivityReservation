@@ -1,5 +1,5 @@
 @import "tailwindcss" source("../../../../");
-/* 引入预设主题：总控平台炫酷科技风 (Cyber-Tech Console) */
+/* 引入控制平面语义主题预设 */
 @import "../styles/theme-cyber-tech.css";
 
 @custom-variant dark (&:is(.dark *));

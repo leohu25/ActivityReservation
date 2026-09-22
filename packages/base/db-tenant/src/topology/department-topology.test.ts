@@ -58,7 +58,7 @@ test("resolveEmployeeTopology 在档案完备时正确聚合用户与部门树�
           id: "emp_001",
           memberId: "member_001",
           departmentId: "dept_sales_east",
-          employeeNo: "CR-001",
+          employeeNo: "EMP-001",
           jobTitle: "华东销售经理",
           status: "ACTIVE",
         };
@@ -81,7 +81,7 @@ test("resolveEmployeeTopology 在档案完备时正确聚合用户与部门树�
 
   assert.equal(topology.userId, "user_001");
   assert.equal(topology.departmentId, "dept_sales_east");
-  assert.equal(topology.employeeNo, "CR-001");
+  assert.equal(topology.employeeNo, "EMP-001");
   assert.equal(topology.jobTitle, "华东销售经理");
   assert.deepEqual(
     [...topology.departmentTreeIds].sort(),
@@ -97,7 +97,7 @@ test("resolveEmployeeTopology 在员工不存在、离职或未分配部门时�
           id: "emp_002",
           memberId: "member_inactive",
           departmentId: "dept_sales",
-          employeeNo: "CR-002",
+          employeeNo: "EMP-002",
           jobTitle: "前销售",
           status: "TERMINATED",
         };
@@ -107,7 +107,7 @@ test("resolveEmployeeTopology 在员工不存在、离职或未分配部门时�
           id: "emp_suspended",
           memberId: "member_suspended",
           departmentId: "dept_sales",
-          employeeNo: "CR-SUSPENDED",
+          employeeNo: "EMP-SUSPENDED",
           jobTitle: "暂停员工",
           status: "SUSPENDED",
         };
@@ -117,7 +117,7 @@ test("resolveEmployeeTopology 在员工不存在、离职或未分配部门时�
           id: "emp_003",
           memberId: "member_no_dept",
           departmentId: null,
-          employeeNo: "CR-003",
+          employeeNo: "EMP-003",
           jobTitle: "待定",
           status: "ACTIVE",
         };

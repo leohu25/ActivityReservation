@@ -12,12 +12,12 @@ import type { ControlTenantItem } from "../types";
 const mockTenants: ControlTenantItem[] = [
   {
     id: "org-1",
-    name: "辰润科技示范租户",
-    slug: "chenrun-demo",
+    name: "示例示范租户",
+    slug: "demo-tenant",
     createdAt: new Date("2026-01-01"),
     memberCount: 12,
     database: {
-      databaseName: "tenant_chenrun_demo",
+      databaseName: "tenant_demo_corp",
       clusterCode: "primary",
       schemaVersion: "3",
       status: "ACTIVE",
@@ -71,9 +71,9 @@ describe("TenantsView", () => {
     );
 
     assert.ok(html.includes("租户与独立物理数据库管控清单"), "应渲染页面标题");
-    assert.ok(html.includes("辰润科技示范租户"), "应渲染租户全称");
-    assert.ok(html.includes("chenrun-demo"), "应渲染租户Slug");
-    assert.ok(html.includes("tenant_chenrun_demo"), "应渲染物理数据库名");
+    assert.ok(html.includes("示例示范租户"), "应渲染租户全称");
+    assert.ok(html.includes("demo-tenant"), "应渲染租户Slug");
+    assert.ok(html.includes("tenant_demo_corp"), "应渲染物理数据库名");
     assert.ok(html.includes("12"), "应渲染成员人数");
     assert.ok(html.includes("正常运行 (ACTIVE)"), "应渲染物理库正常运行徽标");
   });

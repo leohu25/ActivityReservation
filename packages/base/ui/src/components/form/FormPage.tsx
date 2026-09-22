@@ -151,11 +151,11 @@ function safeSerialize(val: unknown): string {
 }
 
 /**
- * 现代工业级全屏单据表单工作台 (FormPage)
- * - 针对复杂 ERP 主从表单据全屏多页签（Tab）定制；
+ * 通用标准全屏单据表单工作台 (FormPage)
+ * - 针对复杂主从表单据全屏多页签（Tab）定制；
  * - 核心参数 (sections, fields, schema, detailConfig) 与 FormModal 100% 兼容；
  * - 原生支持 CASL 字段权限三态闭环（HIDDEN / READONLY / EDITABLE）；
- * - 集成顶部紧凑工业风操作栏、多区块卡片分区、宽幅明细表格 (DetailTable) 与自动页签标题联动。
+ * - 集成顶部紧凑操作栏、多区块卡片分区、宽幅明细表格 (DetailTable) 与自动页签标题联动。
  */
 export function FormPage<
 	TValues extends Record<string, unknown> = Record<string, unknown>,
@@ -439,7 +439,7 @@ export function FormPage<
 				className,
 			)}
 		>
-			{/* 1. 单据顶部工具栏 (Header - 紧凑工业风) */}
+			{/* 1. 单据顶部工具栏 (Header - 紧凑结构) */}
 			<div
 				className={cn(
 					"border-b border-border/70 bg-background/95 backdrop-blur-xs px-5 py-2 z-10 transition-all",

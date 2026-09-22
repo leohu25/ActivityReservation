@@ -10,11 +10,12 @@ import {
   CardDescription,
   Input,
   Button,
+  ThemeToggle,
 } from "@base/ui";
 import { Loader2, Building2, KeyRound, User } from "lucide-react";
 
 /**
- * 租户专属工业级三要素登录界面 (企业编码 + 账号/手机号 + 密码)
+ * 租户端专属三要素登录界面 (企业编码 + 账号/手机号 + 密码)
  * 彻底消除跨租户重名串号与多租户二选一死锁
  */
 export default function LoginPage() {
@@ -61,23 +62,36 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F4F7FB] p-6 dark:bg-slate-950 font-sans">
-      <Card className="w-full max-w-md border-slate-200/80 bg-white py-6 shadow-lg shadow-slate-200/50 dark:border-slate-800 dark:bg-slate-900 dark:shadow-none animate-in fade-in zoom-in-95 duration-200">
+    <div className="relative flex min-h-screen items-center justify-center bg-background p-4 sm:p-6 font-sans text-foreground overflow-hidden selection:bg-primary/20 selection:text-primary">
+      {/* 顶部右侧主题模式切换挂载区 */}
+      <header className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 flex items-center gap-2">
+        <ThemeToggle />
+      </header>
+
+      {/* 柔和光晕背景 */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 flex items-center justify-center overflow-hidden"
+        aria-hidden="true"
+      >
+        <div className="h-[480px] w-[480px] rounded-full bg-primary/10 blur-[120px] dark:bg-primary/15" />
+      </div>
+
+      <Card className="w-full max-w-md border-border/80 bg-card/95 py-6 shadow-xl shadow-black/5 dark:shadow-2xl dark:shadow-black/50 text-card-foreground animate-in fade-in zoom-in-95 duration-200">
         <CardHeader className="text-center pb-4">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 text-white font-black text-lg shadow-md shadow-blue-500/25 ring-1 ring-blue-500/20">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 text-white font-black text-lg shadow-md shadow-blue-500/25 ring-1 ring-white/20 dark:ring-white/10">
             SaaS
           </div>
-          <CardTitle className="mt-3 text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+          <CardTitle className="mt-3 text-xl font-black tracking-tight text-foreground">
             企业数智平台登录
           </CardTitle>
-          <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
+          <CardDescription className="text-xs text-muted-foreground">
             企业作用域专属独立入口 · 物理隔离与数据安全保障
           </CardDescription>
         </CardHeader>
 
         <CardContent>
           {error && (
-            <div className="mb-4 rounded-xl bg-rose-50 p-3 text-xs font-semibold text-rose-600 border border-rose-200/80 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/60">
+            <div className="mb-4 rounded-xl bg-destructive/10 p-3 text-xs font-semibold text-destructive border border-destructive/30 dark:border-destructive/40 dark:bg-destructive/15">
               {error}
             </div>
           )}
@@ -86,9 +100,9 @@ export default function LoginPage() {
             <div className="space-y-1.5">
               <label
                 htmlFor="orgSlug"
-                className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300"
+                className="flex items-center gap-1.5 text-xs font-bold text-foreground"
               >
-                <Building2 className="size-3.5 text-slate-400" />
+                <Building2 className="size-3.5 text-muted-foreground" />
                 企业编码 (租户标识)
               </label>
               <Input
@@ -98,16 +112,16 @@ export default function LoginPage() {
                 value={orgSlug}
                 onChange={(e) => setOrgSlug(e.target.value)}
                 required
-                className="h-10 text-sm rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white dark:border-slate-800 dark:bg-slate-950/50"
+                className="h-10 text-xs rounded-xl bg-background/50 border-input placeholder:text-muted-foreground focus-visible:ring-primary/30"
               />
             </div>
 
             <div className="space-y-1.5">
               <label
                 htmlFor="account"
-                className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300"
+                className="flex items-center gap-1.5 text-xs font-bold text-foreground"
               >
-                <User className="size-3.5 text-slate-400" />
+                <User className="size-3.5 text-muted-foreground" />
                 登录账号
               </label>
               <Input
@@ -117,16 +131,16 @@ export default function LoginPage() {
                 value={account}
                 onChange={(e) => setAccount(e.target.value)}
                 required
-                className="h-10 text-sm rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white dark:border-slate-800 dark:bg-slate-950/50"
+                className="h-10 text-xs rounded-xl bg-background/50 border-input placeholder:text-muted-foreground focus-visible:ring-primary/30"
               />
             </div>
 
             <div className="space-y-1.5">
               <label
                 htmlFor="password"
-                className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300"
+                className="flex items-center gap-1.5 text-xs font-bold text-foreground"
               >
-                <KeyRound className="size-3.5 text-slate-400" />
+                <KeyRound className="size-3.5 text-muted-foreground" />
                 登录密码
               </label>
               <Input
@@ -136,14 +150,14 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="h-10 text-sm rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white dark:border-slate-800 dark:bg-slate-950/50"
+                className="h-10 text-xs rounded-xl bg-background/50 border-input placeholder:text-muted-foreground focus-visible:ring-primary/30"
               />
             </div>
 
             <Button
               type="submit"
               disabled={loading}
-              className="w-full h-10 mt-2 font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 cursor-pointer disabled:opacity-60 transition-all"
+              className="w-full h-10 mt-2 font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 cursor-pointer disabled:opacity-60 transition-all"
             >
               {loading ? (
                 <>

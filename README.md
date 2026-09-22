@@ -153,7 +153,7 @@ next-saas-base/
 │   ├── db-control/               # 平台总控库 (Control DB) Prisma 驱动与 CLI (@base/db-control)
 │   ├── db-tenant/                # 租户物理库 (Tenant DB) 动态路由连接池与迁移运行器 (@base/db-tenant)
 │   ├── shared/                   # 全局共享纯函数工具库 (@base/shared)
-│   ├── ui/                       # 基于 shadcn/ui + Tailwind v4 的工业级数智风组件库 (@base/ui)
+│   ├── ui/                       # 基于 shadcn/ui + Tailwind v4 的风格中立通用组件库 (@base/ui)
 │   └── features/                 # Feature-based Vertical Slice 业务模块集合
 │       ├── control-admin/        # 总控台运维与租户生命周期业务区域
 │       ├── tenant-admin/         # 租户组织架构、岗位与角色权限业务区域

@@ -2,8 +2,19 @@
 
 import React, { useState } from "react";
 import { signIn, signUp } from "@base/auth/client";
-import { useRouter } from "next/navigation";
-import { toast } from "@base/ui";
+import {
+  toast,
+  useSafeRouter,
+  Input,
+  Button,
+  Label,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  ThemeToggle,
+} from "@base/ui";
 import {
   ShieldCheck,
   Mail,
@@ -11,11 +22,12 @@ import {
   User,
   Loader2,
   AlertCircle,
+  Layers,
 } from "lucide-react";
 
 /**
  * 平台控制平面超级管理员登录/注册页面组件 (FDD 自包含切片)
- * 遵循现代轻量工业数智风：极浅冷灰蓝底色、纯白浮动卡片、科技皇家蓝品牌色、全 Lucide 矢量图标
+ * 遵循技术中立与主题语义变量驱动架构，全面支持明暗主题（Light/Dark）自适应与一键切换
  */
 function parseFriendlyErrorMessage(err: unknown): string {
   const message =
@@ -43,7 +55,7 @@ function parseFriendlyErrorMessage(err: unknown): string {
 }
 
 export function ControlLogin(): React.JSX.Element {
-  const router = useRouter();
+  const router = useSafeRouter();
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -77,8 +89,8 @@ export function ControlLogin(): React.JSX.Element {
           showError(msg);
         } else {
           toast.success("注册成功，正在进入控制平面...");
-          router.push("/workbench");
-          router.refresh();
+          router?.push("/workbench");
+          router?.refresh();
         }
       } else {
         const res = await signIn.email({
@@ -94,8 +106,8 @@ export function ControlLogin(): React.JSX.Element {
           showError(msg);
         } else {
           toast.success("登录成功，欢迎回到控制平面");
-          router.push("/workbench");
-          router.refresh();
+          router?.push("/workbench");
+          router?.refresh();
         }
       }
     } catch (err: unknown) {
@@ -107,119 +119,157 @@ export function ControlLogin(): React.JSX.Element {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F4F7FB] p-6 font-sans antialiased text-slate-900">
-      <div className="w-full max-w-md rounded-3xl border border-slate-200/80 bg-white p-8 sm:p-10 shadow-xl">
-        {/* 头部品牌与 Logo */}
-        <div className="text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 text-white font-black text-2xl shadow-md shadow-blue-500/25 ring-2 ring-blue-500/20">
-            CR
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-4 sm:p-6 font-sans antialiased text-foreground overflow-hidden selection:bg-primary/20 selection:text-primary">
+      {/* 顶部右侧主题模式切换挂载区 */}
+      <header className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 flex items-center gap-2">
+        <ThemeToggle />
+      </header>
+
+      {/* 科技感自适应光晕背景 */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 flex items-center justify-center overflow-hidden"
+        aria-hidden="true"
+      >
+        <div className="h-[520px] w-[520px] rounded-full bg-primary/10 blur-[130px] dark:bg-primary/15" />
+        <div className="absolute top-1/4 -left-20 h-[320px] w-[320px] rounded-full bg-sky-500/10 blur-[100px] dark:bg-sky-500/15" />
+        <div className="absolute bottom-1/4 -right-20 h-[320px] w-[320px] rounded-full bg-indigo-500/10 blur-[100px] dark:bg-indigo-500/15" />
+      </div>
+
+      {/* 核心登录/注册卡片 */}
+      <Card className="w-full max-w-md border-border/80 bg-card/95 backdrop-blur-md p-6 sm:p-8 shadow-xl shadow-black/5 dark:shadow-2xl dark:shadow-black/50 text-card-foreground transition-colors duration-200">
+        {/* 头部品牌与中立平台 Logo */}
+        <CardHeader className="text-center p-0 pb-6">
+          <div
+            className="mx-auto flex h-13 w-13 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-sky-600 text-white shadow-lg shadow-blue-500/25 ring-1 ring-white/20 dark:ring-white/10"
+            aria-label="控制平面平台中枢标识"
+          >
+            <Layers className="size-6 text-white" />
           </div>
-          <h2 className="mt-4 text-2xl font-black text-slate-900 tracking-tight">
+          <CardTitle className="mt-4 text-xl sm:text-2xl font-black tracking-tight text-foreground">
             {isRegister ? "注册总控超级管理员" : "控制平面超级管理员登录"}
-          </h2>
-          <div className="mt-1.5 flex items-center justify-center gap-1 text-xs text-slate-400">
-            <ShieldCheck className="size-3.5 text-blue-600" />
+          </CardTitle>
+          <CardDescription className="mt-1.5 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+            <ShieldCheck className="size-3.5 text-primary shrink-0" />
             <span>Control Plane Super Admin 认证中心</span>
-          </div>
-        </div>
+          </CardDescription>
+        </CardHeader>
 
-        {/* 错误警告条 */}
-        {error && (
-          <div className="mt-6 flex items-start gap-2.5 rounded-xl border border-rose-200/80 bg-rose-50/80 p-3.5 text-xs text-rose-700">
-            <AlertCircle className="size-4 text-rose-600 shrink-0 mt-0.5" />
-            <span className="leading-relaxed">{error}</span>
-          </div>
-        )}
-
-        {/* 表单主体 */}
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          {isRegister && (
-            <div>
-              <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-1.5">
-                <User className="size-3.5 text-slate-400" />
-                <span>超管姓名 / 备注</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="例如：平台总架构师"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-              />
+        <CardContent className="p-0">
+          {/* 错误警告条 */}
+          {error && (
+            <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive dark:border-destructive/40 dark:bg-destructive/15">
+              <AlertCircle className="size-4 shrink-0 mt-0.5" />
+              <span className="leading-relaxed font-medium">{error}</span>
             </div>
           )}
 
-          <div>
-            <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-1.5">
-              <Mail className="size-3.5 text-slate-400" />
-              <span>超管邮箱地址</span>
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@qq.com"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-            />
-            <p className="mt-1.5 text-[11px] text-slate-400">
-              提示：默认平台超管邮箱为{" "}
-              <code className="font-mono text-blue-600 font-semibold">
-                admin@qq.com
-              </code>
-            </p>
-          </div>
-
-          <div>
-            <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-1.5">
-              <Lock className="size-3.5 text-slate-400" />
-              <span>访问密码</span>
-            </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-3 flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-xs font-bold text-white shadow-xs hover:bg-blue-700 active:scale-[0.99] transition-all disabled:opacity-50 cursor-pointer"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="size-4 animate-spin" />
-                <span>正在验证超级管理员凭证...</span>
-              </>
-            ) : (
-              <span>
-                {isRegister ? "立即注册总控管理员" : "进入控制平面大盘"}
-              </span>
+          {/* 表单主体 */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isRegister && (
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="admin-name"
+                  className="flex items-center gap-1.5 text-xs font-bold text-foreground"
+                >
+                  <User className="size-3.5 text-muted-foreground" />
+                  <span>超管姓名 / 备注</span>
+                </Label>
+                <Input
+                  id="admin-name"
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="例如：平台总架构师"
+                  className="h-10 text-xs rounded-xl bg-background/50 border-input placeholder:text-muted-foreground focus-visible:ring-primary/30"
+                />
+              </div>
             )}
-          </button>
-        </form>
 
-        {/* 注册/登录切换 */}
-        <div className="mt-6 text-center">
-          <button
-            type="button"
-            onClick={() => {
-              setIsRegister(!isRegister);
-              setError(null);
-            }}
-            className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors cursor-pointer"
-          >
-            {isRegister
-              ? "已有平台管理员账号？直接登录"
-              : "首次部署？注册初始超级管理员账号"}
-          </button>
-        </div>
-      </div>
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="admin-email"
+                className="flex items-center gap-1.5 text-xs font-bold text-foreground"
+              >
+                <Mail className="size-3.5 text-muted-foreground" />
+                <span>超管邮箱地址</span>
+              </Label>
+              <Input
+                id="admin-email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@qq.com"
+                className="h-10 text-xs rounded-xl bg-background/50 border-input placeholder:text-muted-foreground focus-visible:ring-primary/30"
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                提示：默认平台超管邮箱为{" "}
+                <code className="font-mono text-primary font-semibold">
+                  admin@qq.com
+                </code>
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="admin-password"
+                className="flex items-center gap-1.5 text-xs font-bold text-foreground"
+              >
+                <Lock className="size-3.5 text-muted-foreground" />
+                <span>访问密码</span>
+              </Label>
+              <Input
+                id="admin-password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="h-10 text-xs rounded-xl bg-background/50 border-input placeholder:text-muted-foreground focus-visible:ring-primary/30"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-10.5 mt-2 flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground font-bold text-xs shadow-md shadow-primary/20 hover:bg-primary/90 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-60"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  <span>正在验证超级管理员凭证...</span>
+                </>
+              ) : (
+                <span>
+                  {isRegister ? "立即注册总控管理员" : "进入控制平面大盘"}
+                </span>
+              )}
+            </Button>
+          </form>
+
+          {/* 注册/登录切换 */}
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setIsRegister(!isRegister);
+                setError(null);
+              }}
+              className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors cursor-pointer"
+            >
+              {isRegister
+                ? "已有平台管理员账号？直接登录"
+                : "首次部署？注册初始超级管理员账号"}
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 底部版权与架构定位标识 */}
+      <footer className="mt-8 text-center text-[11px] text-muted-foreground/80">
+        <span>多租户 SaaS 基础设施 · 控制平面 (Control Plane)</span>
+      </footer>
     </div>
   );
 }

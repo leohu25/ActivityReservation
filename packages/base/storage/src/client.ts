@@ -9,7 +9,7 @@ export function getStorageConfig(): StorageConfig {
   const endpoint =
     process.env.STORAGE_ENDPOINT || "http://127.0.0.1:9000";
   const region = process.env.STORAGE_REGION || "us-east-1";
-  const bucket = process.env.STORAGE_BUCKET || "chenrun-erp-local";
+  const bucket = process.env.STORAGE_BUCKET || "saas-storage-local";
   const accessKeyId = process.env.STORAGE_ACCESS_KEY_ID || "minioadmin";
   const secretAccessKey =
     process.env.STORAGE_SECRET_ACCESS_KEY || "minioadmin";
