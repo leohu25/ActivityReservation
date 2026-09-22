@@ -35,15 +35,15 @@ export interface WorkbenchDataDTO {
   readonly treeCount: number;
   readonly sqlWhere: unknown;
   readonly fieldModes: {
-    readonly supplierName: FieldAccessMode;
-    readonly costPrice: FieldAccessMode;
-    readonly quantity: FieldAccessMode;
+    readonly customerName: FieldAccessMode;
+    readonly settlementType: FieldAccessMode;
+    readonly contactPhone: FieldAccessMode;
   };
   readonly permissions: {
-    readonly canReadOrder: boolean;
-    readonly canCreateOrder: boolean;
-    readonly canAuditOrder: boolean;
-    readonly canExportOrder: boolean;
+    readonly canReadCustomer: boolean;
+    readonly canCreateCustomer: boolean;
+    readonly canUpdateCustomer: boolean;
+    readonly canExportCustomer: boolean;
   };
 }
 

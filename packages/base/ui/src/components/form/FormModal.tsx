@@ -114,7 +114,7 @@ export interface FormModalProps<
 	}[];
 
 	/**
-	 * 业务实体 Subject (如 'Customer', 'PurchaseOrder')。
+	 * 业务实体 Subject (如 'Customer')。
 	 * 声明后 FormModal 将全自动结合 CASL Ability 执行字段三态闭环：
 	 * - HIDDEN (不可读): 自动从 fields / sections 中彻底剥离隐藏；
 	 * - READONLY (可读不可写): 在新增/编辑模式下自动标记 disabled 并展示只读提示；

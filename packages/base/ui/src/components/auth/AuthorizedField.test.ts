@@ -11,7 +11,7 @@ import {
 test("deriveFieldMode 遵循设计方案规则正确推导三态", () => {
   const readOnlyAbility: AbilityLike = {
     can(action: string, subject: string, field?: string) {
-      if (subject === "PurchaseOrder" && field === "costPrice") {
+      if (subject === "Customer" && field === "costPrice") {
         return action === "read";
       }
       return false;
@@ -20,7 +20,7 @@ test("deriveFieldMode 遵循设计方案规则正确推导三态", () => {
 
   const editableAbility: AbilityLike = {
     can(action: string, subject: string, field?: string) {
-      if (subject === "PurchaseOrder" && field === "costPrice") {
+      if (subject === "Customer" && field === "costPrice") {
         return action === "read" || action === "update";
       }
       return false;
@@ -34,27 +34,27 @@ test("deriveFieldMode 遵循设计方案规则正确推导三态", () => {
   };
 
   assert.equal(
-    deriveFieldMode(readOnlyAbility, "PurchaseOrder", "costPrice", "update"),
+    deriveFieldMode(readOnlyAbility, "Customer", "costPrice", "update"),
     "READONLY",
   );
   assert.equal(
-    deriveFieldMode(editableAbility, "PurchaseOrder", "costPrice", "update"),
+    deriveFieldMode(editableAbility, "Customer", "costPrice", "update"),
     "EDITABLE",
   );
   assert.equal(
-    deriveFieldMode(hiddenAbility, "PurchaseOrder", "costPrice", "update"),
+    deriveFieldMode(hiddenAbility, "Customer", "costPrice", "update"),
     "HIDDEN",
   );
   // Fail-Closed: 缺失 ability 时默认隐藏
   assert.equal(
-    deriveFieldMode(undefined, "PurchaseOrder", "costPrice", "update"),
+    deriveFieldMode(undefined, "Customer", "costPrice", "update"),
     "HIDDEN",
   );
   // 显式 mode 覆盖优先
   assert.equal(
     deriveFieldMode(
       undefined,
-      "PurchaseOrder",
+      "Customer",
       "costPrice",
       "update",
       "EDITABLE",
@@ -68,7 +68,7 @@ test("AuthorizedField 在只读权限下自动推导 READONLY 并渲染只读标
     can(action: string, subject: string, field?: string) {
       return (
         action === "read" &&
-        subject === "PurchaseOrder" &&
+        subject === "Customer" &&
         field === "costPrice"
       );
     },
@@ -82,7 +82,7 @@ test("AuthorizedField 在只读权限下自动推导 READONLY 并渲染只读标
   const html = renderToString(
     React.createElement(AuthorizedField, {
       ability: readOnlyAbility,
-      subject: "PurchaseOrder",
+      subject: "Customer",
       field: "costPrice",
       action: "update",
       label: "采购成本价",
@@ -112,7 +112,7 @@ test("AuthorizedField 在无读权限下自动推导 HIDDEN 并彻底不渲染�
   const hiddenHtml = renderToString(
     React.createElement(AuthorizedField, {
       ability: noReadAbility,
-      subject: "PurchaseOrder",
+      subject: "Customer",
       field: "profit",
       label: "利润金额",
       fallback: React.createElement("span", null, "保密字段"),
@@ -140,7 +140,7 @@ test("AuthorizedField 在具有读写权限时自动推导 EDITABLE 正常交互
   const html = renderToString(
     React.createElement(AuthorizedField, {
       ability: fullAbility,
-      subject: "PurchaseOrder",
+      subject: "Customer",
       field: "supplierName",
       action: "update",
       label: "供应商名称",

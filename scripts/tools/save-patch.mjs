@@ -28,7 +28,7 @@ if (args.length < 1) {
     '用法: node scripts/tools/save-patch.mjs "补丁描述说明" [可选文件路径...]',
   );
   console.log(
-    '示例: node scripts/tools/save-patch.mjs "修复采购计算溢出" packages/features/procurement-center/src/calc.ts',
+    '示例: node scripts/tools/save-patch.mjs "修复客户分类溢出" packages/features/customer-center/src/calc.ts',
   );
   process.exit(1);
 }

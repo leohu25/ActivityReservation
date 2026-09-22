@@ -29,10 +29,10 @@ class FakeExecutor implements TenantSqlExecutor {
     if (sql === "TENANT BASELINE") {
       this.baselineRuns += 1;
       for (const table of [
+        "company_profile",
         "department",
         "employee_profile",
         "position",
-        "purchase_order",
       ]) {
         this.tables.add(table);
       }
@@ -125,10 +125,10 @@ test("tenant strict empty ensure applies baseline and seed idempotently", async 
 test("tenant baseline checksum mismatch fails closed", async () => {
   const executor = new FakeExecutor();
   for (const table of [
+    "company_profile",
     "department",
     "employee_profile",
     "position",
-    "purchase_order",
     "tenant_schema_migration",
   ]) {
     executor.tables.add(table);

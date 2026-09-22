@@ -228,7 +228,7 @@ function validatePermission<
   for (const [resource, actions] of Object.entries(statement)) {
     const definition = catalog.resolve(resource);
     // 工业级切片解耦设计：
-    // 若当前业务切片 Catalog 专注于自身领域（如采购订单只注册了 procurement.order），
+    // 若当前业务切片 Catalog 专注于自身领域（如采购订单只注册了 customer.customer），
     // 则遇到其他领域（如 customer、organization 等）的权限语句时安全跳过，只提取与当前 Catalog 契约匹配的规则，
     // 避免因单体 Catalog 无法识别全局所有切片而导致页面级联瘫痪。
     if (!definition) {

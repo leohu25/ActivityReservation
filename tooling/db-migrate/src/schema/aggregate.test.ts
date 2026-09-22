@@ -7,7 +7,7 @@ test("tenant canonical schema merges explicit model extensions", () => {
   const schema = buildCanonicalSchema(findWorkspaceRoot(), "tenant");
   assert.equal(schema.match(/model Department\s*\{/g)?.length, 1);
   assert.match(schema, /employees\s+EmployeeProfile\[\]/);
-  assert.match(schema, /orders\s+PurchaseOrder\[\]/);
+  assert.match(schema, /stores\s+CustomerStore\[\]/);
 });
 
 test("platform canonical schema includes migration ledger", () => {

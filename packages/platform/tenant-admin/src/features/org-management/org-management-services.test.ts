@@ -148,10 +148,6 @@ test("DepartmentService 部门树形层级加载、防环调换与 Fail-Closed �
     },
   ];
 
-  const orders: Array<{ id: string; deptId: string }> = [
-    { id: "po_1", deptId: "dept_sales_east" },
-  ];
-
   const mockTenantPrisma = {
     department: {
       async findMany() {
@@ -246,11 +242,6 @@ test("DepartmentService 部门树形层级加载、防环调换与 Fail-Closed �
         }).length;
       },
     },
-    purchaseOrder: {
-      async count({ where }: { where: { deptId: string } }) {
-        return orders.filter((o) => o.deptId === where.deptId).length;
-      },
-    },
   } as unknown as TenantPrismaClient;
 
   const service = new DepartmentService();
@@ -317,14 +308,11 @@ test("DepartmentService 部门树形层级加载、防环调换与 Fail-Closed �
     /仍有在职员工/,
   );
 
-  // (c) 清理员工后，有关联订单依然禁止删除
+  // (c) 清理在职员工后，空部门可安全删除
   employees.pop(); // 移除 emp_2
-  await assert.rejects(
-    () => service.deleteDepartment(mockTenantPrisma, "dept_sales_east"),
-    /已关联历史业务单据/,
-  );
+  await service.deleteDepartment(mockTenantPrisma, "dept_sales_east");
 
-  // (d) 空部门 (newDept) 成功删除
+  // (d) 新建空部门 (newDept) 成功删除
   await service.deleteDepartment(mockTenantPrisma, newDept.id);
   const found = departments.find((d) => d.id === newDept.id);
   assert.equal(found, undefined);

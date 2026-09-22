@@ -377,7 +377,7 @@ test("organizationRole repository supports listing, upserting and deleting roles
     id: "role-1",
     organizationId: "org-test",
     role: "custom_auditor",
-    permission: JSON.stringify({ statement: { "procurement.order": ["read"] } }),
+    permission: JSON.stringify({ statement: { "customer.customer": ["read"] } }),
     createdAt: now,
     updatedAt: now,
   };

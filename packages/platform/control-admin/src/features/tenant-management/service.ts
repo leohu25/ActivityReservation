@@ -16,7 +16,6 @@ import {
 } from "@tool/db-migrate";
 import { hashPassword } from "better-auth/crypto";
 import {
-  FieldPolicy,
   StandardAction,
   serializeRolePermissions,
   type RolePermissionPayload,
@@ -416,15 +415,29 @@ export class TenantManagementService {
         role: "owner",
         payload: {
           statement: {
-            "procurement.order": [
+            "customer.customer": [
               StandardAction.READ,
               StandardAction.CREATE,
               StandardAction.UPDATE,
-              "audit",
+              StandardAction.DELETE,
+              StandardAction.EXPORT,
+            ],
+            "customer.store": [
+              StandardAction.READ,
+              StandardAction.CREATE,
+              StandardAction.UPDATE,
+              StandardAction.DELETE,
+              StandardAction.EXPORT,
+            ],
+            "customer.quote": [
+              StandardAction.READ,
+              StandardAction.CREATE,
+              StandardAction.UPDATE,
+              StandardAction.DELETE,
               StandardAction.EXPORT,
             ],
           },
-          dataScopes: [{ resource: "procurement.order", scopeType: "ALL" }],
+          dataScopes: [{ resource: "customer.customer", scopeType: "ALL" }],
           fieldPolicies: [],
         },
       },
@@ -432,16 +445,30 @@ export class TenantManagementService {
         role: "admin",
         payload: {
           statement: {
-            "procurement.order": [
+            "customer.customer": [
               StandardAction.READ,
               StandardAction.CREATE,
               StandardAction.UPDATE,
-              "audit",
+              StandardAction.DELETE,
+              StandardAction.EXPORT,
+            ],
+            "customer.store": [
+              StandardAction.READ,
+              StandardAction.CREATE,
+              StandardAction.UPDATE,
+              StandardAction.DELETE,
+              StandardAction.EXPORT,
+            ],
+            "customer.quote": [
+              StandardAction.READ,
+              StandardAction.CREATE,
+              StandardAction.UPDATE,
+              StandardAction.DELETE,
               StandardAction.EXPORT,
             ],
           },
           dataScopes: [
-            { resource: "procurement.order", scopeType: "DEPT_TREE" },
+            { resource: "customer.customer", scopeType: "DEPT_TREE" },
           ],
           fieldPolicies: [],
         },
@@ -450,22 +477,18 @@ export class TenantManagementService {
         role: "buyer",
         payload: {
           statement: {
-            "procurement.order": [StandardAction.READ, StandardAction.CREATE],
+            "customer.customer": [StandardAction.READ, StandardAction.CREATE],
+            "customer.store": [StandardAction.READ],
+            "customer.quote": [StandardAction.READ, StandardAction.CREATE],
           },
           dataScopes: [
             {
-              resource: "procurement.order",
+              resource: "customer.customer",
               action: StandardAction.READ,
               scopeType: "DEPT",
             },
           ],
-          fieldPolicies: [
-            {
-              subject: "PurchaseOrder",
-              field: "costPrice",
-              access: FieldPolicy.READONLY,
-            },
-          ],
+          fieldPolicies: [],
         },
       },
     ];

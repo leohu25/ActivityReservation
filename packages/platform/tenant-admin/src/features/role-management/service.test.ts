@@ -34,19 +34,19 @@ const sampleTestManifests: TenantFeatureManifest[] = [
     ],
   },
   {
-    id: "procurement",
-    name: "采购中心",
+    id: "customer-center",
+    name: "客户中心",
     order: 2,
     permissionModules: [
       {
-        moduleKey: "procurement",
-        label: "采购订单中心",
+        moduleKey: "customer-center",
+        label: "客户中心",
         iconName: "PackageCheck",
         pages: [
           {
-            resource: "procurement.order",
-            subject: "PurchaseOrder",
-            label: "采购订单管理",
+            resource: "customer.customer",
+            subject: "Customer",
+            label: "客户档案管理",
             actions: [
               { action: "read", label: "查看" },
               { action: "audit", label: "审核" },
@@ -151,10 +151,10 @@ test("listTenantRoles 对于未持久化配置的角色严格返回空权限 (Fa
     {
       id: "role_custom_1",
       organizationId: "org_test",
-      role: "procurement_auditor",
+      role: "customer_auditor",
       permission: JSON.stringify({
-        statement: { "procurement.order": ["read", "audit"] },
-        dataScopes: [{ resource: "procurement.order", scopeType: "DEPT" }],
+        statement: { "customer.customer": ["read", "audit"] },
+        dataScopes: [{ resource: "customer.customer", scopeType: "DEPT" }],
         fieldPolicies: [],
       }),
       createdAt: now,
@@ -181,9 +181,9 @@ test("listTenantRoles 对于未持久化配置的角色严格返回空权限 (Fa
   assert.deepEqual(list[1].permissions.fieldPolicies, []);
   assert.equal(list[1].updatedAt, null);
 
-  assert.equal(list[2].role, "procurement_auditor");
+  assert.equal(list[2].role, "customer_auditor");
   assert.equal(list[2].isSystem, false);
-  assert.deepEqual(list[2].permissions.statement["procurement.order"], [
+  assert.deepEqual(list[2].permissions.statement["customer.customer"], [
     "read",
     "audit",
   ]);
@@ -194,15 +194,15 @@ test("deriveBuiltInRoleDefaults 动态自驱推导核心内置角色的推荐权
   const defaults = deriveBuiltInRoleDefaults(sampleTestManifests);
 
   // 1. admin 模板拥有各业务切片的全部权限
-  assert.ok(defaults.admin.statement["procurement.order"]);
+  assert.ok(defaults.admin.statement["customer.customer"]);
   assert.ok(defaults.admin.statement["customer"]);
   assert.ok(defaults.admin.statement["organization.employee"]);
 
   // 2. member 模板默认获得 read 权限及敏感字段保护
-  assert.deepEqual(defaults.member.statement["procurement.order"], ["read"]);
+  assert.deepEqual(defaults.member.statement["customer.customer"], ["read"]);
   assert.deepEqual(defaults.member.statement["customer"], ["read"]);
   const memberCostPricePolicy = defaults.member.fieldPolicies?.find(
-    (fp) => fp.subject === "PurchaseOrder" && fp.field === "costPrice",
+    (fp) => fp.subject === "Customer" && fp.field === "costPrice",
   );
   assert.ok(memberCostPricePolicy);
   assert.equal(memberCostPricePolicy.access, "READONLY");
@@ -217,18 +217,18 @@ test("saveRolePermissions 正确持久化角色四层权限并反序列化回显
     role: "buyer",
     payload: {
       statement: {
-        "procurement.order": ["read", "create"],
+        "customer.customer": ["read", "create"],
       },
       dataScopes: [
         {
-          resource: "procurement.order",
+          resource: "customer.customer",
           action: "read",
           scopeType: "SELF",
         },
       ],
       fieldPolicies: [
         {
-          subject: "PurchaseOrder",
+          subject: "Customer",
           field: "costPrice",
           access: "READONLY",
         },

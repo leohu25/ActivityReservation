@@ -165,7 +165,7 @@ export interface FeatureModulePermissionDescriptor {
  * 每个业务切片包只对自己负责，导出此 Manifest 实现“自包含”
  */
 export interface TenantFeatureManifest {
-  /** 切片唯一标识 (如 'procurement-center', 'customer-center') */
+  /** 切片唯一标识 (如 'customer-center', 'customer-center') */
   readonly id: string;
   /** 切片中文显示名称 (如 '采购中心') */
   readonly name: string;

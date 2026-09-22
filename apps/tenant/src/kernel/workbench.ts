@@ -128,19 +128,19 @@ export async function getTenantWorkbenchData(): Promise<WorkbenchPageData> {
 		treeCount: topology.departmentTreeIds.length,
 		sqlWhere,
 		fieldModes: {
-			supplierName: getFieldMode(
+			customerName: getFieldMode(
 				prismaAbility,
 				CustomerSubject,
 				"customerName",
 			),
-			costPrice: getFieldMode(prismaAbility, CustomerSubject, "settlementType"),
-			quantity: getFieldMode(prismaAbility, CustomerSubject, "contactPhone"),
+			settlementType: getFieldMode(prismaAbility, CustomerSubject, "settlementType"),
+			contactPhone: getFieldMode(prismaAbility, CustomerSubject, "contactPhone"),
 		},
 		permissions: {
-			canReadOrder: prismaAbility.can("read", CustomerSubject),
-			canCreateOrder: prismaAbility.can("create", CustomerSubject),
-			canAuditOrder: prismaAbility.can("update", CustomerSubject),
-			canExportOrder: prismaAbility.can("export", CustomerSubject),
+			canReadCustomer: prismaAbility.can("read", CustomerSubject),
+			canCreateCustomer: prismaAbility.can("create", CustomerSubject),
+			canUpdateCustomer: prismaAbility.can("update", CustomerSubject),
+			canExportCustomer: prismaAbility.can("export", CustomerSubject),
 		},
 	};
 

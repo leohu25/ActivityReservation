@@ -36,7 +36,7 @@ const mockInitialData: NavigationConfigData = {
       defaultIcon: "Scale",
       requiredAction: "read",
       requiredSubject: "MaterialUnit",
-      featureId: "material-center",
+      featureId: "customer-center",
       featureName: "物料管理",
     },
     {

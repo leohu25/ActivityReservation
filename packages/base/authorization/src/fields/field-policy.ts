@@ -186,7 +186,7 @@ export {
  * 快速生成强类型的字段可读性状态映射对象 { [field]: boolean }，供前端页面或视图层直接解构消费。
  *
  * @param ability 具有 can(action, subject, field) 接口的 Ability 实例
- * @param subject 目标实体 Subject 标识 (如 "PurchaseOrder")
+ * @param subject 目标实体 Subject 标识 (如 "Customer")
  * @param fields 目标受控字段名称数组
  * @returns 字段可见性映射对象
  */

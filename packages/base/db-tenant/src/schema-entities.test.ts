@@ -21,13 +21,13 @@ test("Tenant DB Schema 契约支持 Position、CompanyProfile 及增强版 Emplo
   const posInput: TenantPrisma.PositionCreateInput = {
     id: "pos_test_01",
     name: "采购主管",
-    code: "pos_procurement_mgr",
+    code: "pos_customer_mgr",
     description: "负责采购供应链统筹",
     sort: 10,
     status: "ACTIVE",
   };
   assert.equal(posInput.name, "采购主管");
-  assert.equal(posInput.code, "pos_procurement_mgr");
+  assert.equal(posInput.code, "pos_customer_mgr");
   assert.equal(posInput.sort, 10);
 
   // 3. 验证 EmployeeProfileCreateInput 支持 memberId 为 null（先建档未激活态）

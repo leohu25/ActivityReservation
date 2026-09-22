@@ -24,14 +24,14 @@ test("getAccessibleWhere 能正确从规则条件中提取 Prisma where 查询�
   const ability = createTestPrismaAbility([
     {
       action: "read",
-      subject: "PurchaseOrder",
+      subject: "Customer",
       conditions: {
         deptId: { in: ["dept_1", "dept_2"] },
       },
     },
   ]);
 
-  const where = getAccessibleWhere(ability, "PurchaseOrder", "read");
+  const where = getAccessibleWhere(ability, "Customer", "read");
   assert.deepEqual(where, {
     OR: [
       {
@@ -45,11 +45,11 @@ test("getAccessibleWhere 遇到全量无条件权限时返回空对象（即不�
   const ability = createTestPrismaAbility([
     {
       action: "read",
-      subject: "PurchaseOrder",
+      subject: "Customer",
     },
   ]);
 
-  const where = getAccessibleWhere(ability, "PurchaseOrder", "read");
+  const where = getAccessibleWhere(ability, "Customer", "read");
   assert.deepEqual(where, {});
 });
 
@@ -57,11 +57,11 @@ test("getAccessibleWhere 在未授权或动作被拒绝时严格执行 Fail-Clos
   const ability = createTestPrismaAbility([
     {
       action: "create",
-      subject: "PurchaseOrder",
+      subject: "Customer",
     },
   ]);
 
-  const where = getAccessibleWhere(ability, "PurchaseOrder", "read");
+  const where = getAccessibleWhere(ability, "Customer", "read");
   assert.deepEqual(where, {
     AND: [{ id: FAIL_CLOSED_ID }],
   });

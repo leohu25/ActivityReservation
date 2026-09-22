@@ -35,28 +35,28 @@ test("isFieldAllowedForAction 与 CASL 字段规则对齐", () => {
 
 test("getFieldMode 正确推导 HIDDEN、READONLY 与 EDITABLE 三态属性", () => {
   const ability = defineAbility((can) => {
-    can("read", "PurchaseOrder", ["orderNo", "costPrice", "supplierName"]);
-    can("update", "PurchaseOrder", ["supplierName"]);
+    can("read", "Customer", ["orderNo", "costPrice", "supplierName"]);
+    can("update", "Customer", ["supplierName"]);
     // costPrice 仅可读不可改 -> READONLY
     // supplierName 可读且可改 -> EDITABLE
     // remark 未声明任何权限 -> HIDDEN
   });
 
   assert.equal(
-    getFieldMode(ability, "PurchaseOrder", "supplierName"),
+    getFieldMode(ability, "Customer", "supplierName"),
     "EDITABLE",
   );
-  assert.equal(getFieldMode(ability, "PurchaseOrder", "costPrice"), "READONLY");
-  assert.equal(getFieldMode(ability, "PurchaseOrder", "remark"), "HIDDEN");
+  assert.equal(getFieldMode(ability, "Customer", "costPrice"), "READONLY");
+  assert.equal(getFieldMode(ability, "Customer", "remark"), "HIDDEN");
 });
 
 test("getReadableFields 与 getEditableFields 返回被授权的字段子集", () => {
   const ability = defineAbility((can) => {
-    can("read", "PurchaseOrder", ["id", "title", "costPrice"]);
-    can("update", "PurchaseOrder", ["title"]);
+    can("read", "Customer", ["id", "title", "costPrice"]);
+    can("update", "Customer", ["title"]);
   });
 
-  const readable = getReadableFields(ability, "PurchaseOrder", [
+  const readable = getReadableFields(ability, "Customer", [
     "id",
     "title",
     "costPrice",
@@ -64,7 +64,7 @@ test("getReadableFields 与 getEditableFields 返回被授权的字段子集", (
   ]);
   assert.deepEqual(readable.sort(), ["costPrice", "id", "title"]);
 
-  const editable = getEditableFields(ability, "PurchaseOrder", [
+  const editable = getEditableFields(ability, "Customer", [
     "id",
     "title",
     "costPrice",
@@ -74,7 +74,7 @@ test("getReadableFields 与 getEditableFields 返回被授权的字段子集", (
 
 test("pickReadableFields 过滤对象并剥离隐藏敏感字段", () => {
   const ability = defineAbility((can) => {
-    can("read", "PurchaseOrder", ["id", "title"]);
+    can("read", "Customer", ["id", "title"]);
   });
 
   const record = {
@@ -84,7 +84,7 @@ test("pickReadableFields 过滤对象并剥离隐藏敏感字段", () => {
     internalSecret: "商业机密",
   };
 
-  const masked = pickReadableFields(ability, "PurchaseOrder", record);
+  const masked = pickReadableFields(ability, "Customer", record);
   assert.deepEqual(masked, {
     id: "po_1",
     title: "办公用品采购",
@@ -93,13 +93,13 @@ test("pickReadableFields 过滤对象并剥离隐藏敏感字段", () => {
 
 test("assertEditableFields 允许合法可编辑字段并拦截只读或隐藏字段变更", () => {
   const ability = defineAbility((can) => {
-    can("read", "PurchaseOrder", ["title", "costPrice"]);
-    can("update", "PurchaseOrder", ["title"]);
+    can("read", "Customer", ["title", "costPrice"]);
+    can("update", "Customer", ["title"]);
   });
 
   // 合法更新：仅包含可编辑字段
   assert.doesNotThrow(() => {
-    assertEditableFields(ability, "PurchaseOrder", {
+    assertEditableFields(ability, "Customer", {
       title: "更新后的采购订单",
     });
   });
@@ -107,7 +107,7 @@ test("assertEditableFields 允许合法可编辑字段并拦截只读或隐藏�
   // 越权拦截：试图修改 READONLY 字段 costPrice，触发 ForbiddenError 拒绝
   assert.throws(
     () => {
-      assertEditableFields(ability, "PurchaseOrder", {
+      assertEditableFields(ability, "Customer", {
         costPrice: 50.0,
       });
     },
@@ -115,7 +115,7 @@ test("assertEditableFields 允许合法可编辑字段并拦截只读或隐藏�
       assert.ok(err instanceof ForbiddenError);
       assert.match(
         (err as Error).message,
-        /禁止修改 PurchaseOrder 的非编辑或隐藏字段: costPrice/,
+        /禁止修改 Customer 的非编辑或隐藏字段: costPrice/,
       );
       return true;
     },
@@ -124,7 +124,7 @@ test("assertEditableFields 允许合法可编辑字段并拦截只读或隐藏�
   // 越权拦截：试图修改 HIDDEN 字段 secretNote，触发 ForbiddenError 拒绝
   assert.throws(
     () => {
-      assertEditableFields(ability, "PurchaseOrder", {
+      assertEditableFields(ability, "Customer", {
         secretNote: "恶意注入",
       });
     },
@@ -132,7 +132,7 @@ test("assertEditableFields 允许合法可编辑字段并拦截只读或隐藏�
       assert.ok(err instanceof ForbiddenError);
       assert.match(
         (err as Error).message,
-        /禁止修改 PurchaseOrder 的非编辑或隐藏字段: secretNote/,
+        /禁止修改 Customer 的非编辑或隐藏字段: secretNote/,
       );
       return true;
     },

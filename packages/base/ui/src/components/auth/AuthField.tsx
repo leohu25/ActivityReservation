@@ -16,7 +16,7 @@ export interface AuthFieldProps {
 	readonly ability?: AbilityLike | null;
 	/** 实体名称；未传则从 DataTableContext 继承 subject */
 	readonly subject?: string;
-	/** 字段名 (如 'costPrice', 'supplierName') */
+	/** 字段名 (如 'customerName', 'contactPhone') */
 	readonly field: string;
 	/** 校验写入能力的动作，默认为 "update"，新增表单可指定为 "create" */
 	readonly action?: string;

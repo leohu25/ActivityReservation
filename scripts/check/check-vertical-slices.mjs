@@ -40,7 +40,7 @@ const RETIRED_FLAT_ENTRIES = [
   "server",
 ];
 
-const PENDING_MIGRATION_PACKAGES = new Set(["procurement-center"]);
+const PENDING_MIGRATION_PACKAGES = new Set([]);
 
 /**
  * 收集目录下的所有切片路径（包含 Feature 与嵌套的 Sub-Feature）

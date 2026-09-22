@@ -41,14 +41,14 @@ const mockPermissionTree: ModulePermissionDescriptor[] = [
     ],
   },
   {
-    moduleKey: "procurement",
-    label: "采购订单中心",
+    moduleKey: "customer-center",
+    label: "客户中心",
     iconName: "PackageCheck",
     pages: [
       {
-        resource: "procurement.order",
-        subject: "PurchaseOrder",
-        label: "采购订单管理",
+        resource: "customer.customer",
+        subject: "Customer",
+        label: "客户档案管理",
         actions: [
           { action: "read", label: "查看" },
           { action: "update", label: "编辑" },
@@ -109,19 +109,18 @@ test("RolePermissionManager 彻底剔除 Owner 并正确渲染树状表格权限
       isSystem: true,
       permissions: {
         statement: {
-          "customer.customer": ["read", "create", "update"],
+          "customer.customer": ["read", "create", "update", "audit", "export"],
           "customer.store": ["read"],
           "customer.category": ["read"],
           "customer.tag": ["read"],
           "customer.quote": ["read"],
-          "procurement.order": ["read", "create", "update", "audit", "export"],
           "organization.employee": ["read", "create"],
           "organization.department": ["read"],
           "organization.position": ["read"],
         },
         dataScopes: [
           {
-            resource: "procurement.order",
+            resource: "customer.customer",
             action: "read",
             scopeType: "DEPT_TREE",
           },
@@ -138,11 +137,11 @@ test("RolePermissionManager 彻底剔除 Owner 并正确渲染树状表格权限
       isSystem: false,
       permissions: {
         statement: {
-          "procurement.order": ["read", "create"],
+          "customer.customer": ["read", "create"],
         },
         dataScopes: [
           {
-            resource: "procurement.order",
+            resource: "customer.customer",
             action: "read",
             scopeType: "SELF",
           },
@@ -177,7 +176,7 @@ test("RolePermissionManager 彻底剔除 Owner 并正确渲染树状表格权限
 
   // 2. 验证大模块
   assert.match(html, /客户中心/);
-  assert.match(html, /采购订单中心/);
+  assert.match(html, /客户中心/);
   assert.match(html, /组织架构/);
 
   // 3. 验证功能页面全量覆盖
@@ -205,12 +204,12 @@ test("RolePermissionManager 支持展开字段策略并正确显示字段三态"
       isSystem: true,
       permissions: {
         statement: {
-          "procurement.order": ["read", "update"],
+          "customer.customer": ["read", "update"],
         },
         dataScopes: [],
         fieldPolicies: [
           {
-            subject: "PurchaseOrder",
+            subject: "Customer",
             field: "costPrice",
             access: "READONLY",
           },
@@ -229,7 +228,7 @@ test("RolePermissionManager 支持展开字段策略并正确显示字段三态"
   );
 
   // 页面正常渲染且包含字段配置入口
-  assert.match(html, /采购订单管理/);
+  assert.match(html, /客户档案管理/);
   assert.match(html, /字段策略/);
 });
 
@@ -243,7 +242,7 @@ test("RolePermissionManager 在未授权 update 时隐藏新建/保存按钮并�
       isSystem: true,
       permissions: {
         statement: {
-          "procurement.order": ["read"],
+          "customer.customer": ["read"],
         },
         dataScopes: [],
         fieldPolicies: [],

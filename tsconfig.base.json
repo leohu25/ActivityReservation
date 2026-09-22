@@ -86,16 +86,6 @@
       "@domain/customer-center/*": [
         "packages/domains/customer-center/src/*"
       ],
-      "@base/feature-material-center": [
-        "packages/domains/material-center/src/index.ts"
-      ],
-      "@base/feature-material-center/*": [
-        "packages/domains/material-center/src/*"
-      ],
-      "@base/feature-order-center": [
-        "packages/domains/order-center/src/index.ts"
-      ],
-      "@base/feature-order-center/*": ["packages/domains/order-center/src/*"],
       "@tool/db-migrate": ["tooling/db-migrate/src/index.ts"],
       "@tool/db-migrate/*": ["tooling/db-migrate/src/*"],
       "@runtime/db": ["packages/runtime/db/index.ts"],

@@ -11,7 +11,7 @@ test("resolveDataScopeConditions 正确处理 SELF 模式（仅本人）", () =>
   const scopes: RoleDataScopeConfig[] = [
     {
       role: "buyer",
-      resource: "procurement.order",
+      resource: "customer.customer",
       scopeType: "SELF",
     },
   ];
@@ -30,7 +30,7 @@ test("resolveDataScopeConditions 在 SELF 模式下若 userId 为空时严格执
   const scopes: RoleDataScopeConfig[] = [
     {
       role: "buyer",
-      resource: "procurement.order",
+      resource: "customer.customer",
       scopeType: "SELF",
     },
   ];
@@ -48,7 +48,7 @@ test("resolveDataScopeConditions 正确处理 DEPT 模式（本部门）", () =>
   const scopes: RoleDataScopeConfig[] = [
     {
       role: "buyer",
-      resource: "procurement.order",
+      resource: "customer.customer",
       scopeType: "DEPT",
     },
   ];
@@ -67,7 +67,7 @@ test("resolveDataScopeConditions 在 DEPT 模式下若缺少 departmentId 则 Fa
   const scopes: RoleDataScopeConfig[] = [
     {
       role: "buyer",
-      resource: "procurement.order",
+      resource: "customer.customer",
       scopeType: "DEPT",
     },
   ];
@@ -86,7 +86,7 @@ test("resolveDataScopeConditions 正确处理 DEPT_TREE 模式（本部门及下
   const scopes: RoleDataScopeConfig[] = [
     {
       role: "manager",
-      resource: "procurement.order",
+      resource: "customer.customer",
       scopeType: "DEPT_TREE",
     },
   ];
@@ -106,7 +106,7 @@ test("resolveDataScopeConditions 在 DEPT_TREE 模式下若部门树为空则 Fa
   const scopes: RoleDataScopeConfig[] = [
     {
       role: "manager",
-      resource: "procurement.order",
+      resource: "customer.customer",
       scopeType: "DEPT_TREE",
     },
   ];
@@ -126,7 +126,7 @@ test("resolveDataScopeConditions 正确处理 CUSTOM 自定义枚举部门模式
   const scopes: RoleDataScopeConfig[] = [
     {
       role: "auditor",
-      resource: "procurement.order",
+      resource: "customer.customer",
       scopeType: "CUSTOM",
       customDepartmentIds: ["dept_a", "dept_b"],
     },
@@ -146,7 +146,7 @@ test("resolveDataScopeConditions 在 CUSTOM 模式下若枚举列表为空则 Fa
   const scopes: RoleDataScopeConfig[] = [
     {
       role: "auditor",
-      resource: "procurement.order",
+      resource: "customer.customer",
       scopeType: "CUSTOM",
       customDepartmentIds: [],
     },
@@ -166,7 +166,7 @@ test("resolveDataScopeConditions 遇到 ALL 模式时返回 undefined（全量�
   const scopes: RoleDataScopeConfig[] = [
     {
       role: "admin",
-      resource: "procurement.order",
+      resource: "customer.customer",
       scopeType: "ALL",
     },
   ];
@@ -182,12 +182,12 @@ test("resolveDataScopeConditions 将多角色数据范围通过 OR 进行并集�
   const scopes: RoleDataScopeConfig[] = [
     {
       role: "buyer",
-      resource: "procurement.order",
+      resource: "customer.customer",
       scopeType: "SELF",
     },
     {
       role: "special_auditor",
-      resource: "procurement.order",
+      resource: "customer.customer",
       scopeType: "CUSTOM",
       customDepartmentIds: ["dept_vip"],
     },
@@ -207,7 +207,7 @@ test("resolveDataScopeConditions 支持自定义实体字段映射覆盖", () =>
   const scopes: RoleDataScopeConfig[] = [
     {
       role: "buyer",
-      resource: "procurement.order",
+      resource: "customer.customer",
       scopeType: "SELF",
     },
   ];

@@ -54,7 +54,7 @@ export function PositionFormModal({
         type: "text",
         required: true,
         disabled: isEdit,
-        placeholder: "例如: pos_procurement_mgr",
+        placeholder: "例如: pos_customer_mgr",
         hint: isEdit ? "岗位编码创建后不可变更" : undefined,
       },
       {

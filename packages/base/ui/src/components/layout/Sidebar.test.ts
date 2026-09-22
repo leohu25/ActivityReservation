@@ -25,11 +25,11 @@ const mockSections: readonly NavSection[] = [
 		title: "业务中心",
 		items: [
 			{
-				id: "procurement",
+				id: "customer-center",
 				label: "采购订单中心",
-				href: "/procurement/orders",
+				href: "/customer/customers",
 				requiredAction: "read",
-				requiredSubject: "PurchaseOrder",
+				requiredSubject: "Customer",
 			},
 		],
 	},
@@ -114,7 +114,7 @@ test("Sidebar 正确渲染传入的导航区块与各多级菜单分组", () => 
 	// 验证业务中心区块
 	assert.ok(html.includes("业务中心"));
 	assert.ok(html.includes("采购订单中心"));
-	assert.ok(html.includes('href="/procurement/orders"'));
+	assert.ok(html.includes('href="/customer/customers"'));
 
 	// 验证系统管理区块与其多级折叠分组
 	assert.ok(html.includes("系统管理"));
@@ -142,9 +142,9 @@ test("Sidebar 依据当前路由自动展开所属父级分组并高亮对应子
 });
 
 test("Sidebar 支持通过 can 回调执行功能权限过滤", () => {
-	// 拒绝 PurchaseOrder.read 权限
+	// 拒绝 Customer.read 权限
 	const canMock = (action: string, subject: string) => {
-		if (subject === "PurchaseOrder" && action === "read") {
+		if (subject === "Customer" && action === "read") {
 			return false;
 		}
 		return true;
@@ -160,7 +160,7 @@ test("Sidebar 支持通过 can 回调执行功能权限过滤", () => {
 
 	// 采购订单中心被过滤
 	assert.ok(!html.includes("采购订单中心"));
-	assert.ok(!html.includes('href="/procurement/orders"'));
+	assert.ok(!html.includes('href="/customer/customers"'));
 
 	// 工作台与其他公开/有权限项正常保留
 	assert.ok(html.includes("工作台"));

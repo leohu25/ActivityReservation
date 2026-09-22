@@ -14,10 +14,10 @@ import type {
 import { DatabaseInitializationError } from "./platform-runner";
 
 const TENANT_REQUIRED_TABLES = [
+  "company_profile",
   "department",
   "employee_profile",
   "position",
-  "purchase_order",
 ] as const;
 
 export interface ProvisionTenantDatabaseInput {

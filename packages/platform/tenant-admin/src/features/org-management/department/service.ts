@@ -290,22 +290,7 @@ export class DepartmentService {
       throw new Error("该部门下仍有在职员工，请先将员工迁移至其他部门");
     }
 
-    // 3. 检查是否存在关联的历史业务单据 (Fail-Closed 防护)
-    // SAFETY: TenantPrisma 处于租户多模型物理聚合数据库中，动态探测业务切片实体是否存在
-    const clientWithPo = tenantPrisma as unknown as {
-      purchaseOrder?: {
-        count: (args: { where: { deptId: string } }) => Promise<number>;
-      };
-    };
-    if (clientWithPo.purchaseOrder) {
-      const orderCount = await clientWithPo.purchaseOrder.count({
-        where: { deptId: id },
-      });
-      if (orderCount > 0) {
-        throw new Error("该部门已关联历史业务单据，禁止物理删除");
-      }
-    }
-
+    // 3. 关联业务单据防护已随采购/订单 demo 切片下线；恢复业务切片时在此补充引用计数
     await tenantPrisma.department.delete({
       where: { id },
     });

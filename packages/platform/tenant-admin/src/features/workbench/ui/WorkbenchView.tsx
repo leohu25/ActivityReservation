@@ -158,13 +158,13 @@ export function WorkbenchHeaderBanner({
           </div>
         </div>
 
-        <Link href="/procurement/orders">
+        <Link href="/customer/customers">
           <Button
             variant="default"
             size="lg"
             className="group rounded-xl font-bold shadow-sm shadow-blue-600/20"
           >
-            <span>前往采购订单中心</span>
+            <span>前往客户中心</span>
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
           </Button>
         </Link>
@@ -274,17 +274,17 @@ export function EmployeeProfileMetricsGrid({
 export function PermissionAnalysisPanels({
   sqlWhere,
   fieldModes,
-  canReadOrder,
-  canCreateOrder,
-  canAuditOrder,
-  canExportOrder,
+  canReadCustomer,
+  canCreateCustomer,
+  canUpdateCustomer,
+  canExportCustomer,
 }: {
   readonly sqlWhere: unknown;
   readonly fieldModes: WorkbenchDataDTO["fieldModes"];
-  readonly canReadOrder: boolean;
-  readonly canCreateOrder: boolean;
-  readonly canAuditOrder: boolean;
-  readonly canExportOrder: boolean;
+  readonly canReadCustomer: boolean;
+  readonly canCreateCustomer: boolean;
+  readonly canUpdateCustomer: boolean;
+  readonly canExportCustomer: boolean;
 }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -322,11 +322,11 @@ export function PermissionAnalysisPanels({
           <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
             <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
               <ShieldCheck className="size-3.5 text-blue-600" />
-              <span>采购中心功能权限断言状态</span>
+              <span>客户中心功能权限断言状态</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
               <div className="flex items-center gap-1.5">
-                {canReadOrder ? (
+                {canReadCustomer ? (
                   <Check className="size-3.5 text-emerald-600" />
                 ) : (
                   <X className="size-3.5 text-rose-500" />
@@ -336,17 +336,17 @@ export function PermissionAnalysisPanels({
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                {canCreateOrder ? (
+                {canCreateCustomer ? (
                   <Check className="size-3.5 text-emerald-600" />
                 ) : (
                   <X className="size-3.5 text-rose-500" />
                 )}
                 <span className="text-slate-600 dark:text-slate-400">
-                  新建采购
+                  新建客户
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                {canAuditOrder ? (
+                {canUpdateCustomer ? (
                   <Check className="size-3.5 text-emerald-600" />
                 ) : (
                   <X className="size-3.5 text-rose-500" />
@@ -356,7 +356,7 @@ export function PermissionAnalysisPanels({
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                {canExportOrder ? (
+                {canExportCustomer ? (
                   <Check className="size-3.5 text-emerald-600" />
                 ) : (
                   <X className="size-3.5 text-rose-500" />
@@ -388,38 +388,38 @@ export function PermissionAnalysisPanels({
         </CardHeader>
         <CardContent className="space-y-4">
           <AuthorizedField
-            mode={fieldModes.supplierName}
-            subject="PurchaseOrder"
-            field="supplierName"
-            label="供应商全称 (supplierName)"
+            mode={fieldModes.customerName}
+            subject="Customer"
+            field="customerName"
+            label="客户名称 (customerName)"
           >
             <Input defaultValue="晨润精密设备供应链有限公司" />
           </AuthorizedField>
 
           <AuthorizedField
-            mode={fieldModes.costPrice}
-            subject="PurchaseOrder"
-            field="costPrice"
-            label="采购成本价 (costPrice)"
+            mode={fieldModes.settlementType}
+            subject="Customer"
+            field="settlementType"
+            label="结算方式 (settlementType)"
             fallback={
               <div className="rounded-xl border border-dashed border-rose-200 bg-rose-50/60 p-3 text-xs text-rose-600 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-400">
-                🔒 采购成本价属于敏感字段，当前角色无查看权限
+                🔒 结算方式属于敏感字段，当前角色无查看权限
               </div>
             }
           >
             <Input
-              defaultValue="¥ 246,800.00"
+              defaultValue="月结 30 天"
               className="font-semibold text-emerald-600 tabular-nums dark:text-emerald-400"
             />
           </AuthorizedField>
 
           <AuthorizedField
-            mode={fieldModes.quantity}
-            subject="PurchaseOrder"
-            field="quantity"
-            label="采购批次数量 (quantity)"
+            mode={fieldModes.contactPhone}
+            subject="Customer"
+            field="contactPhone"
+            label="联系电话 (contactPhone)"
           >
-            <Input defaultValue="1,200" />
+            <Input defaultValue="021-6688-0000" />
           </AuthorizedField>
 
           <div className="text-[11px] text-slate-400 leading-relaxed bg-slate-50/80 p-3 rounded-xl dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
@@ -474,10 +474,10 @@ export function WorkbenchView({ data }: WorkbenchViewProps) {
       <PermissionAnalysisPanels
         sqlWhere={data.sqlWhere}
         fieldModes={data.fieldModes}
-        canReadOrder={data.permissions.canReadOrder}
-        canCreateOrder={data.permissions.canCreateOrder}
-        canAuditOrder={data.permissions.canAuditOrder}
-        canExportOrder={data.permissions.canExportOrder}
+        canReadCustomer={data.permissions.canReadCustomer}
+        canCreateCustomer={data.permissions.canCreateCustomer}
+        canUpdateCustomer={data.permissions.canUpdateCustomer}
+        canExportCustomer={data.permissions.canExportCustomer}
       />
     </div>
   );
