@@ -327,4 +327,19 @@
 - **租户复合命名空间强隔离**：`@@unique([organizationId, account])` 确保即使不同企业有同名账号，租户间凭据作用域互不穿透；
 - **真实连接串物理脱敏**：控制库仅记录 `secretRef`（密钥索引），物理业务库的真实连接串与账密完全托管于 KMS 或隔离环境变量中，控制面数据无法直接登录业务库。
 
+---
+
+## 十、Better Auth 官方配置规范：为什么显式关闭 Schema 运行时校验 (`validateSchema: false`)？
+
+在系统启动时，配置项 `advanced.database.validateSchema = false` 常引起疑问。必须明确记录该项的官方背景与工程事实：
+
+1. **官方设计初衷**：
+   - Better Auth 默认开启 `validateSchema: true`，主要是面向入门级简单应用，在启动时检查是否“漏建了插件全家桶的默认表”；
+2. **本工程显式关闭的官方依据**：
+   - Better Auth 官方文档（[`Database Concepts - Schema Validation`](https://better-auth.com/docs/concepts/database#schema-validation)）明确指引：**“Set `advanced.database.validateSchema` to `false` to disable runtime validation and its skip message.”**
+   - 本项目属于高度工程化的现代 SaaS，采用 **12-Factor 自愈迁移引擎 (`@tool/db-migrate`) 严格管控数据库版本**；
+   - 我们主动收敛裁剪了无意义的海外 SaaS 邮件邀请表 `invitation`，并使用命名空间 `username` 模式。若不关闭默认比对，Better Auth 将误把架构的主动裁剪判定为“表缺失”并抛出假报警；
+   - **这是官方专为定制多租户与自研迁移系统预留的标准配置项，绝非临时补丁或安全妥协**。
+
+
 

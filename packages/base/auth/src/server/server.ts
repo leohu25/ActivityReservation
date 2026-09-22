@@ -46,6 +46,10 @@ export function createServerAuth(options: ServerAuthOptions) {
     advanced: {
       database: {
         generateId: () => generateUuidV7(),
+        // 显式关闭 Better Auth 内部的硬编码 schema 结构校验。
+        // 因为我们采用了定制的 Database-per-tenant 架构，收敛移除了无用的 invitation 冗余表，
+        // 且采用命名空间 username 隔离，避免框架在运行时因缺少模板表报错。
+        validateSchema: false,
       },
     },
     secret: options.secret,

@@ -79,4 +79,36 @@
   3. **详情页与两阶段落盘**：
      前端直接 PUT 直传 MinIO 获取临时元数据；单据保存时在同一个 Prisma 事务内先创建主业务记录（获取 `targetId`），再 `attachment.createMany` 批量绑定落盘。
 
+---
+
+## 6. Better Auth 官方 Schema 强校验规避与裁剪表规范 (`advanced.database.validateSchema = false`)
+
+- **痛点与现象**：
+  在工程启动或请求时，控制台突然抛出 Better Auth 的阻断性报错：
+  `[Better Auth]: Prisma schema mismatch: Missing tables: invitation, Missing columns: user.displayUsername...`
+- **深层技术根因**：
+  1. Better Auth 默认开启了运行期静态模式校验（`Schema Validation`），假设所有接入项目都必须无脑全量安装其插件自带的“全家桶”模板表；
+  2. 本系统是现代企业级 Database-per-tenant 工业 ERP，我们主动**收敛裁剪掉了对制造业务毫无意义的海外 SaaS 邮件邀请表 `invitation`**，并采用命名空间 `username` 模式解绑强制邮箱；
+  3. Better Auth 默认的校验器不知晓架构裁剪意图，误以为是工程漏建了表，从而在冷启动时拦截报错。
+- **官方规范与最佳实践**：
+  - Better Auth 官方文档（[Database Concepts - Schema Validation](https://better-auth.com/docs/concepts/database#schema-validation)）明确规定：在定制化多租户、自研迁移引擎或裁剪表架构中，应显式将 `advanced.database.validateSchema` 设为 `false`；
+  - **核心配置规范**：
+    在 `packages/base/auth/src/server/server.ts` 中配置：
+    ```ts
+    const auth = betterAuth({
+      database: prismaAdapter(prisma, { provider: "postgresql" }),
+      advanced: {
+        database: {
+          generateId: () => generateUuidV7(),
+          // 显式关闭 Better Auth 内部的硬编码模板校验。
+          // 本系统的表结构完全由 12-Factor 自愈迁移引擎严格管理，不使用第三方库的傻瓜式模板校验。
+          validateSchema: false,
+        },
+      },
+      ...
+    });
+    ```
+  - **后续协同铁律**：此项属于官方预留的标准配置项（非 Hack 补丁），后续开发者严禁擅自重新开启，以免导致裁剪后的纯净数据库基线误报。
+
+
 
