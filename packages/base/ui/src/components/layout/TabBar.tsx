@@ -371,10 +371,18 @@ export function TabBar({
 			const exists = prev.some((t) => t.path === pathname);
 			if (exists) return prev;
 
-			const title =
-				findTitleByPath(sections, pathname) ||
-				pathname.split("/").pop() ||
-				"新标签";
+			let title = findTitleByPath(sections, pathname);
+			if (!title) {
+				if (pathname.endsWith("/new")) {
+					const parentPath = pathname.replace(/\/new$/, "");
+					const parentTitle = findTitleByPath(sections, parentPath);
+					title = parentTitle
+						? `新建${parentTitle.replace(/管理|档案$/, "")}`
+						: "新建单据";
+				} else {
+					title = pathname.split("/").pop() || "新标签";
+				}
+			}
 			const closable = homeTab ? pathname !== homeTab.path : true;
 			const next = [
 				...prev,

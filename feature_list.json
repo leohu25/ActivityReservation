@@ -463,9 +463,9 @@
       "name": "【中央厨房P1业务域】生产 BOM 中心与版本生命周期管理 (Production BOM Center & Version Lifecycle)",
       "description": "BOM 中心核心切片开发与观麦高保真还原：1. BOM 版本族(Bom)与不可变完整版本(BomVersion)；2. 扁平化三大清单（投入 bom_version_input、产出 bom_version_output、工艺 bom_version_operation）；3. 商品默认方案(ProductDefaultBom)设置；4. 单品加工/组合配方/包装装配三种 BOM 支持；5. 参考观麦原型实现 BOM 列表管理、新增/编辑、版本图谱与详情；6. 固定/比例试算与多级展开。",
       "dependencies": ["central-kitchen-phase1-entities-and-domains"],
-      "status": "pending",
+      "status": "completed",
       "owner": "implementer",
-      "evidence": ""
+      "evidence": "1. 深入研读观麦 8 张原型截图，在 @domain/production-center 落地完整 BOM 管理切片；2. 实现 BomService 与 Server Actions (createBomAction, updateBomAction, deleteBomAction, setDefaultBomAction) 并通过事务闭环 bom, bom_version, product_default_bom 及投入产出工序子表；3. 构建高保真 BomListView，支持类型切签(全部/单品/组合/包装)、商品分类筛选、关键字搜索、默认方案标记与 CSV 导出；4. 落地 BomEditorModal，支持单品/组合/包装三大类型表单、配比投入清单与工序工艺路线增删；5. 落地 BomDetailDrawer，高保真还原观麦可视化版本流程图谱与版本切换；6. 补齐契约与 Schema 单元测试，全 Monorepo 24 包 check、21 套件 390+ 单测与 15 项门禁全部 100% 绿灯通过。"
     }
   ]
 }
