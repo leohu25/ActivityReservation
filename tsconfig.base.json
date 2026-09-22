@@ -88,8 +88,7 @@
       ],
       "@tool/db-migrate": ["tooling/db-migrate/src/index.ts"],
       "@tool/db-migrate/*": ["tooling/db-migrate/src/*"],
-      "@runtime/db": ["packages/runtime/db/index.ts"],
-      "@runtime/tenant": ["packages/runtime/tenant/src/index.ts"]
+      "@runtime/db": ["packages/runtime/db/index.ts"]
     }
   },
   "exclude": ["node_modules"]

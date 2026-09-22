@@ -13,9 +13,10 @@
 - `packages/runtime/db/**`
 - `packages/runtime/tenant/**`
 - `apps/tenant/**`
+- `turbo.json`
 - `tooling/db-migrate/**`
 - `tsconfig.base.json`
-- `scripts/check/check-entity-baseline.mjs`
+- `scripts/**`
 
 ## 二、 严禁触碰的边界 (Blacklist)
 

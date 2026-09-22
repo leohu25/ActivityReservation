@@ -141,9 +141,6 @@ importers:
       '@platform/tenant-admin':
         specifier: workspace:*
         version: link:../../packages/platform/tenant-admin
-      '@runtime/tenant':
-        specifier: workspace:*
-        version: link:../../packages/runtime/tenant
       better-auth:
         specifier: 1.7.3
         version: 1.7.3(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(typescript@5.8.2))(mysql2@3.15.3)(next@16.3.4(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.8.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -1061,43 +1058,6 @@ importers:
       '@base/shared':
         specifier: workspace:*
         version: link:../../base/shared
-    devDependencies:
-      '@types/node':
-        specifier: ^20.19.43
-        version: 20.19.43
-      typescript:
-        specifier: ^5.8.2
-        version: 5.9.3
-
-  packages/runtime/tenant:
-    dependencies:
-      '@base/authorization':
-        specifier: workspace:*
-        version: link:../../base/authorization
-      '@base/ui':
-        specifier: workspace:*
-        version: link:../../base/ui
-      '@domain/base-archives':
-        specifier: workspace:*
-        version: link:../../domains/base-archives
-      '@domain/customer-center':
-        specifier: workspace:*
-        version: link:../../domains/customer-center
-      '@domain/product-center':
-        specifier: workspace:*
-        version: link:../../domains/product-center
-      '@domain/production-center':
-        specifier: workspace:*
-        version: link:../../domains/production-center
-      '@domain/supplier-center':
-        specifier: workspace:*
-        version: link:../../domains/supplier-center
-      '@domain/warehouse-center':
-        specifier: workspace:*
-        version: link:../../domains/warehouse-center
-      '@platform/tenant-admin':
-        specifier: workspace:*
-        version: link:../../platform/tenant-admin
     devDependencies:
       '@types/node':
         specifier: ^20.19.43

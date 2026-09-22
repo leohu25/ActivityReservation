@@ -17,7 +17,7 @@
       ],
       "outputs": ["prisma/schema.prisma"]
     },
-    "@runtime/tenant#codegen": {
+    "tenant#codegen": {
       "inputs": [
         "scripts/**",
         "../../packages/domains/**/src/manifest.ts",
@@ -25,10 +25,10 @@
         "../../packages/domains/**/package.json",
         "../../packages/platform/**/package.json"
       ],
-      "outputs": ["src/registry.ts"]
+      "outputs": ["src/assembly/registry.generated.ts"]
     },
     "generate": {
-      "dependsOn": ["@runtime/db#codegen", "@runtime/tenant#codegen", "^generate"],
+      "dependsOn": ["@runtime/db#codegen", "tenant#codegen", "^generate"],
       "cache": false
     },
     "build": {

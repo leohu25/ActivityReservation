@@ -26,11 +26,22 @@ export const FRAMEWORK_PATTERNS = [
   /^eslint.*\.mjs$/,
 ];
 
+/** 自动生成的动态派生产物规则（由构建/扫描脚本动态生成，属于编译衍生品，一律豁免防篡改告警） */
+export const EXEMPT_GENERATED_PATTERNS = [
+  /\.generated\.(ts|tsx|js|mjs)$/,
+  /\/registry\.generated\.ts$/,
+  /packages\/runtime\/db\/prisma\/schema\.prisma$/,
+];
+
 /**
  * 判定指定文件是否属于平台/框架基础设施
  */
 export function isFrameworkFile(filePath) {
   const normalized = filePath.replace(/\\/g, "/").replace(/^\.\//, "");
+  // 优先排除自动生成的构建衍生品
+  if (EXEMPT_GENERATED_PATTERNS.some((pattern) => pattern.test(normalized))) {
+    return false;
+  }
   return FRAMEWORK_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 

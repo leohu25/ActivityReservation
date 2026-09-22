@@ -14,7 +14,7 @@ import {
   globalTenantCatalog,
   globalTenantPageCatalog,
   ALL_TENANT_MANIFESTS,
-} from "@runtime/tenant";
+} from "../assembly/registry.generated";
 
 /**
  * 获取租户物理库中配置的动态菜单树 (递归组装，支持任意层级)

@@ -7,6 +7,7 @@
 		"build": "next build",
 		"start": "next start",
 		"lint": "eslint",
+		"codegen": "node ./scripts/sync-features.mjs",
 		"check": "tsc --noEmit"
 	},
 	"dependencies": {
@@ -24,7 +25,6 @@
 		"@domain/supplier-center": "workspace:*",
 		"@domain/warehouse-center": "workspace:*",
 		"@platform/tenant-admin": "workspace:*",
-		"@runtime/tenant": "workspace:*",
 		"better-auth": "1.7.3",
 		"lucide-react": "^1.41.0",
 		"next": "16.3.4",

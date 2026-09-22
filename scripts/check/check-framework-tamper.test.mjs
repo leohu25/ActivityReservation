@@ -29,6 +29,16 @@ test("isFrameworkFile: 精准判定框架层基础设施与纯业务切片", () 
   assert.equal(isFrameworkFile("apps/tenant/src/kernel/workbench.ts"), true);
   assert.equal(isFrameworkFile("apps/tenant/src/kernel/navigation.ts"), true);
 
+  // 4.1 自动生成的构建衍生品 (如 *.generated.*, registry.generated.ts) -> 判定为 false (自动豁免)
+  assert.equal(
+    isFrameworkFile("apps/tenant/src/kernel/registry.generated.ts"),
+    false,
+  );
+  assert.equal(
+    isFrameworkFile("apps/tenant/src/assembly/registry.generated.ts"),
+    false,
+  );
+
   // 5. 迁移与工程治理工具 (tooling/*, scripts/*, eslint) -> 判定为 true
   assert.equal(isFrameworkFile("tooling/db-migrate/src/cli.ts"), true);
   assert.equal(isFrameworkFile("scripts/verify.mjs"), true);
