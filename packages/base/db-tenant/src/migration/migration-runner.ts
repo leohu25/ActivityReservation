@@ -1,13 +1,9 @@
 import type {
   TenantDatabaseRecord,
-  TenantMigrationRecord,
   TenantMigrationRepository,
 } from "@base/db-control";
 import type { SecretResolver } from "../pool/manager";
-import type {
-  TenantSqlExecutor,
-  TenantSqlExecutorFactory,
-} from "./sql-executor";
+import type { TenantSqlExecutorFactory } from "./sql-executor";
 import {
   compareMigrationVersions,
   type TenantMigrationBatchResult,
@@ -106,6 +102,7 @@ export class TenantMigrationRunner {
 
     const executor = await this.sqlExecutorFactory(databaseUrl);
     const executionResults: TenantMigrationExecutionResult[] = [];
+    let currentWatermark = tenantDb.schemaVersion ?? "0";
 
     try {
       for (const migration of pendingMigrations) {
@@ -136,14 +133,21 @@ export class TenantMigrationRunner {
 
           const durationMs = Date.now() - startTime;
 
+          // 计算新的水位：取当前水位与新应用版本的较大者，确保版本号单调递增，不因补跑乱序补丁而倒退
+          const newWatermark =
+            compareMigrationVersions(migration.version, currentWatermark) > 0
+              ? migration.version
+              : currentWatermark;
+
           // 记录迁移成功并更新租户库版本号
           await this.repository.recordMigrationSuccess({
             migrationId: startRecord.id,
             organizationId,
             appliedSteps: executedStepsCount,
             executionTimeMs: durationMs,
-            schemaVersion: migration.version,
+            schemaVersion: newWatermark,
           });
+          currentWatermark = newWatermark;
 
           executionResults.push({
             organizationId,

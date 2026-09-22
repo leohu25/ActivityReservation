@@ -19,15 +19,15 @@
 
 ## 二、 核心技术栈全景 (Technology Matrix)
 
-| 层次 | 技术选型 | 版本/规范 | 选型考量与工程收益 |
-| :--- | :--- | :--- | :--- |
-| **前端应用框架** | Next.js App Router | `16.3.x` (Turbopack) | React Server Components (RSC) 直调应用层，消除网络瀑布流，原生流式渲染 |
-| **UI 交互与渲染** | React + Tailwind CSS | `React 19` + `Tailwind v4` | 现代工业风高密度交互，基于 `@base/ui` 纯数据契约驱动受控三态渲染 |
-| **持久层与 ORM** | Prisma + `@prisma/adapter-pg` | `7.10.x` | 强类型安全数据访问，驱动适配器解耦，支持 PostgreSQL 17 原生连接 |
-| **数据库存储引擎** | PostgreSQL | `17-alpine` | Database-per-tenant 物理隔离，事务级咨询锁支持，JSONB 策略高效存储 |
-| **身份认证引擎** | Better Auth + Organization 插件 | `1.7.x` | 会话状态轻量安全托管，多租户上下文隔离，支持动态角色模型 |
-| **权限与授权引擎** | CASL (`@casl/ability` + `@casl/prisma`) | `6.x` | 四层细粒度权限闭环 (功能 + 数据范围 SQL 下推 + 字段三态 + 准入门禁) |
-| **单体模块化编排** | Turborepo + pnpm Workspace | `Turbo 2.x` + `pnpm 11.x` | 依赖拓扑确定性、精准增量构建缓存、严禁跨包幽灵依赖 |
+| 层次               | 技术选型                                | 版本/规范                  | 选型考量与工程收益                                                     |
+| :----------------- | :-------------------------------------- | :------------------------- | :--------------------------------------------------------------------- |
+| **前端应用框架**   | Next.js App Router                      | `16.3.x` (Turbopack)       | React Server Components (RSC) 直调应用层，消除网络瀑布流，原生流式渲染 |
+| **UI 交互与渲染**  | React + Tailwind CSS                    | `React 19` + `Tailwind v4` | 现代工业风高密度交互，基于 `@base/ui` 纯数据契约驱动受控三态渲染       |
+| **持久层与 ORM**   | Prisma + `@prisma/adapter-pg`           | `7.10.x`                   | 强类型安全数据访问，驱动适配器解耦，支持 PostgreSQL 17 原生连接        |
+| **数据库存储引擎** | PostgreSQL                              | `17-alpine`                | Database-per-tenant 物理隔离，事务级咨询锁支持，JSONB 策略高效存储     |
+| **身份认证引擎**   | Better Auth + Organization 插件         | `1.7.x`                    | 会话状态轻量安全托管，多租户上下文隔离，支持动态角色模型               |
+| **权限与授权引擎** | CASL (`@casl/ability` + `@casl/prisma`) | `6.x`                      | 四层细粒度权限闭环 (功能 + 数据范围 SQL 下推 + 字段三态 + 准入门禁)    |
+| **单体模块化编排** | Turborepo + pnpm Workspace              | `Turbo 2.x` + `pnpm 11.x`  | 依赖拓扑确定性、精准增量构建缓存、严禁跨包幽灵依赖                     |
 
 ---
 
@@ -129,7 +129,7 @@ graph TD
 - **移除运行期 Prisma CLI 依赖**：
   - 彻底解决 Next.js 打包后磁盘文件路径丢失（`ENOENT`）问题；
   - 生产镜像无需预装庞大的 Prisma CLI 与编译器依赖，实现安全轻量化；
-  - 基线与增量 SQL 在构建期预编译为静态只读常量 `runtime-catalog.ts`，运行期 0 CLI 派生，毫秒级直接执行。
+  - 基线与增量 SQL 物理文件直接作为单一事实源，运行期 0 CLI 派生，动态加载并由 pg 原生驱动毫秒级执行。
 - **切片 Schema 动态聚合 (`@db-migrate-extension`)**：各业务切片在本地声明模型与反向关系扩展，聚合器自动提取织入主模型，消除跨包外键耦合。
 - **Day 0 状态机自愈与分布式锁**：
   - 严格状态机探查：`EMPTY`（空库）-> `READY`（健康就绪）-> `PARTIAL`（残缺脏库 Fail-Closed 阻断）-> `CHECKSUM_MISMATCH`（代码篡改阻断）；
@@ -181,33 +181,33 @@ graph TD
 
 ### 1. 专项架构深度解析文档 (`docs/`)
 
-| 专项领域 | 文档路径 | 核心内容概要 |
-| :--- | :--- | :--- |
-| **权限系统全链路** | [`docs/permissions/permission-architecture-deep-dive.md`](./permissions/permission-architecture-deep-dive.md) | 前端门禁、四层权限模型、SQL 下推、字段物理剥离与端到端时序 |
-| **字段权限设计资产** | [`docs/permissions/Field_Level_Permission_Architecture_and_Implementation.md`](./permissions/Field_Level_Permission_Architecture_and_Implementation.md) | 字段三态控制、物理剥离、安全导出与组件拦截实战指南 |
-| **多租户 SaaS 架构** | [`docs/architecture/saas-multitenant-architecture.md`](./architecture/saas-multitenant-architecture.md) | 双平面隔离、Database-per-Tenant、连接池治理与租户全生命周期 |
-| **自愈数据迁移引擎** | [`docs/architecture/database-migration-engine.md`](./architecture/database-migration-engine.md) | 12-Factor、预编译 Catalog、Schema 聚合、Day 0 自愈与咨询锁 |
-| **垂直切片与动态发现** | [`docs/architecture/fdd-vertical-slice-architecture.md`](./architecture/fdd-vertical-slice-architecture.md) | FDD 切片规范、构建期清单自发现、ADR-006 解耦与工业风 UI/UX |
-| **特性清单技术架构** | [`docs/architecture/Feature_Manifest_and_Dynamic_Discovery_Architecture.md`](./architecture/Feature_Manifest_and_Dynamic_Discovery_Architecture.md) | Feature Manifest 规范、静态 AST 提取与构建流水线对接 |
-| **生产与多环境部署** | [`docs/deployment/DEPLOYMENT.md`](./deployment/DEPLOYMENT.md) | 生产容器化打包、Docker Compose、环境变量与部署实战 |
-| **团队协同与 Harness** | [`docs/collaboration/harness-collaboration-guide.md`](./collaboration/harness-collaboration-guide.md) | 智能体协作工程流、角色契约与记忆演进指南 |
-| **历史归档与 PRD 资产** | [`docs/archive/README.md`](./archive/README.md) | 早期 SaaS 实施规格、闭环设计方案与租户产品结构定义 |
+| 专项领域                | 文档路径                                                                                                                                                | 核心内容概要                                                |
+| :---------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------ | :---------------------------------------------------------- |
+| **权限系统全链路**      | [`docs/permissions/permission-architecture-deep-dive.md`](./permissions/permission-architecture-deep-dive.md)                                           | 前端门禁、四层权限模型、SQL 下推、字段物理剥离与端到端时序  |
+| **字段权限设计资产**    | [`docs/permissions/Field_Level_Permission_Architecture_and_Implementation.md`](./permissions/Field_Level_Permission_Architecture_and_Implementation.md) | 字段三态控制、物理剥离、安全导出与组件拦截实战指南          |
+| **多租户 SaaS 架构**    | [`docs/architecture/saas-multitenant-architecture.md`](./architecture/saas-multitenant-architecture.md)                                                 | 双平面隔离、Database-per-Tenant、连接池治理与租户全生命周期 |
+| **自愈数据迁移引擎**    | [`docs/architecture/database-migration-engine.md`](./architecture/database-migration-engine.md)                                                         | 12-Factor、预编译 Catalog、Schema 聚合、Day 0 自愈与咨询锁  |
+| **垂直切片与动态发现**  | [`docs/architecture/fdd-vertical-slice-architecture.md`](./architecture/fdd-vertical-slice-architecture.md)                                             | FDD 切片规范、构建期清单自发现、ADR-006 解耦与工业风 UI/UX  |
+| **特性清单技术架构**    | [`docs/architecture/Feature_Manifest_and_Dynamic_Discovery_Architecture.md`](./architecture/Feature_Manifest_and_Dynamic_Discovery_Architecture.md)     | Feature Manifest 规范、静态 AST 提取与构建流水线对接        |
+| **生产与多环境部署**    | [`docs/deployment/DEPLOYMENT.md`](./deployment/DEPLOYMENT.md)                                                                                           | 生产容器化打包、Docker Compose、环境变量与部署实战          |
+| **团队协同与 Harness**  | [`docs/collaboration/harness-collaboration-guide.md`](./collaboration/harness-collaboration-guide.md)                                                   | 智能体协作工程流、角色契约与记忆演进指南                    |
+| **历史归档与 PRD 资产** | [`docs/archive/README.md`](./archive/README.md)                                                                                                         | 早期 SaaS 实施规格、闭环设计方案与租户产品结构定义          |
 
 ### 2. 团队持久记忆与架构决策记录 (ADR - `.harness/memory/adr/`)
 
-| ADR 编号 | 决策记录路径 | 核心决策要点 |
-| :--- | :--- | :--- |
-| **ADR-001** | [ADR-001: Modular Monorepo、Feature-based Vertical Slice 与 Harness 工程架构](../.harness/memory/adr/ADR-001-fdd-and-harness.md) | 确立模块化 Monorepo、业务垂直切片与智能体工程协作体系 |
-| **ADR-002** | [ADR-002: Database-per-tenant 物理隔离战略](../.harness/memory/adr/ADR-002-database-per-tenant.md) | 确立放弃共享单库、全面采用物理分库隔离的战略决策 |
-| **ADR-003** | [ADR-003: Better Auth 与 CASL 四层权限闭环](../.harness/memory/adr/ADR-003-four-tier-permissions.md) | 确立 Better Auth 认证与 CASL 授权分工以及四层权限模型 |
-| **ADR-004** | [ADR-004: Feature-based Vertical Slice 与多 App 解耦](../.harness/memory/adr/ADR-004-fdd-vertical-slices-and-multi-app.md) | 消除内部 HTTP 伪接口自调，推行 RSC 直调应用服务 |
-| **ADR-005** | [ADR-005: 特性清单与构建期动态自发现](../.harness/memory/adr/ADR-005-feature-manifest-and-build-time-discovery.md) | 确立构建期扫描静态聚合清单、解决 Turbopack 限制 |
-| **ADR-006** | [ADR-006: 租户应用 Kernel 装配与切片解耦机制](../.harness/memory/adr/ADR-006-app-kernel-assembly-and-slice-decoupling.md) | 拨乱反正消除兄弟切片横向依赖，确立顶层 Kernel 装配与 IoC |
+| ADR 编号    | 决策记录路径                                                                                                                     | 核心决策要点                                             |
+| :---------- | :------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------- |
+| **ADR-001** | [ADR-001: Modular Monorepo、Feature-based Vertical Slice 与 Harness 工程架构](../.harness/memory/adr/ADR-001-fdd-and-harness.md) | 确立模块化 Monorepo、业务垂直切片与智能体工程协作体系    |
+| **ADR-002** | [ADR-002: Database-per-tenant 物理隔离战略](../.harness/memory/adr/ADR-002-database-per-tenant.md)                               | 确立放弃共享单库、全面采用物理分库隔离的战略决策         |
+| **ADR-003** | [ADR-003: Better Auth 与 CASL 四层权限闭环](../.harness/memory/adr/ADR-003-four-tier-permissions.md)                             | 确立 Better Auth 认证与 CASL 授权分工以及四层权限模型    |
+| **ADR-004** | [ADR-004: Feature-based Vertical Slice 与多 App 解耦](../.harness/memory/adr/ADR-004-fdd-vertical-slices-and-multi-app.md)       | 消除内部 HTTP 伪接口自调，推行 RSC 直调应用服务          |
+| **ADR-005** | [ADR-005: 特性清单与构建期动态自发现](../.harness/memory/adr/ADR-005-feature-manifest-and-build-time-discovery.md)               | 确立构建期扫描静态聚合清单、解决 Turbopack 限制          |
+| **ADR-006** | [ADR-006: 租户应用 Kernel 装配与切片解耦机制](../.harness/memory/adr/ADR-006-app-kernel-assembly-and-slice-decoupling.md)        | 拨乱反正消除兄弟切片横向依赖，确立顶层 Kernel 装配与 IoC |
 
 ### 3. 工程规范与交互指南 (`.harness/context/`)
 
-| 维度 | 规范路径 | 适用场景 |
-| :--- | :--- | :--- |
-| **工业风设计系统** | [`.harness/context/design-system.md`](../.harness/context/design-system.md) | 工业数智化高密度 UI/UX 规范、色彩代币与响应式交互 |
-| **领域拓扑矩阵** | [`.harness/context/tier-2-domain-matrix.md`](../.harness/context/tier-2-domain-matrix.md) | Monorepo 模块分层矩阵、边界防腐与反平铺规约 |
-| **深度协议指南** | [`.harness/context/tier-3-deep-dives.md`](../.harness/context/tier-3-deep-dives.md) | 物理分库连接池协议、四层鉴权落地与状态机判定 |
+| 维度               | 规范路径                                                                                  | 适用场景                                          |
+| :----------------- | :---------------------------------------------------------------------------------------- | :------------------------------------------------ |
+| **工业风设计系统** | [`.harness/context/design-system.md`](../.harness/context/design-system.md)               | 工业数智化高密度 UI/UX 规范、色彩代币与响应式交互 |
+| **领域拓扑矩阵**   | [`.harness/context/tier-2-domain-matrix.md`](../.harness/context/tier-2-domain-matrix.md) | Monorepo 模块分层矩阵、边界防腐与反平铺规约       |
+| **深度协议指南**   | [`.harness/context/tier-3-deep-dives.md`](../.harness/context/tier-3-deep-dives.md)       | 物理分库连接池协议、四层鉴权落地与状态机判定      |

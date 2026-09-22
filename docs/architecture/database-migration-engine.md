@@ -20,55 +20,51 @@
 
 ---
 
-## 二、 核心架构：开发态编译与运行时静态目录
+## 二、 核心架构：开发态物理工件生成与运行时纯 SQL 动态加载
 
-系统将数据库迁移彻底拆分为**开发编译态 (Dev/Build-Time)** 与 **运行时无状态执行态 (Runtime-Zero-CLI)**：
+系统将数据库迁移彻底拆分为**开发态工件生成 (Dev-Time Artifact Generation)** 与 **运行态纯 SQL 动态加载执行 (Runtime-Zero-CLI)**：
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                       开发期 / 构建期 (Dev & Build Time)                    │
 │  - 开发者修改各切片 prisma/schema.prisma                                     │
-│  - 执行 pnpm db:catalog:build 生成预编译工件                                 │
 │  - 聚合器解析 @db-migrate-extension 注解并完成 Schema 合并                   │
-│  - 生成只读静态常量: tooling/db-migrate/generated/runtime-catalog.ts        │
+│  - 执行 pnpm db:migrate:generate / baseline 产出物理 SQL 工件                 │
+│  - 产出磁盘物理清单: baselines/* (baseline.sql) 与 migrations/* (migration.sql)│
 └──────────────────────────────────────┬──────────────────────────────────────┘
-                                       │ 编译打包进生产镜像 (无任何磁盘文件依赖)
+                                       │ 物理目录部署打入应用镜像 (包含 .sql 与 manifest.json)
 ┌──────────────────────────────────────┴──────────────────────────────────────┐
 │                        生产运行态 (Production Runtime)                      │
-│  - 生产镜像内 0 Prisma CLI，0 磁盘 Schema 依赖，0 子进程派生                │
-│  - 纯 TS 代码引入: import { PLATFORM_CATALOG, TENANT_CATALOG }             │
-│  - 纯 pg 驱动原生驱动，毫秒级直接执行预编译 SQL 文本                        │
+│  - 生产镜像内 0 Prisma CLI，0 TS 常量黑盒，0 子进程派生                      │
+│  - 动态文件扫描加载: getMigrationCatalog(scope) 毫秒级读取真实 SQL 资产      │
+│  - 纯 pg 驱动原生直连执行，带 SHA-256 防篡改校验和比对                      │
 │  - Day 0 自愈引擎配合分布式咨询锁保障绝对原子性与并发安全                  │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 1. 运行时静态目录工件 (`runtime-catalog.ts`)
+### 1. 物理 SQL 资产与清单目录 (`baselines/` 与 `migrations/`)
 
-编译输出的静态目录包含迁移所需的全部元数据、基线全量 DDL 与增量迁移列表：
+系统彻底废弃了将 SQL 转换为 TypeScript 代码常量的脆弱模式，100% 采用物理文件系统动态加载真实 SQL 资产：
 
-```typescript
-// tooling/db-migrate/generated/runtime-catalog.ts (节选)
-export const TENANT_CATALOG = {
-  scope: "tenant",
-  baseline: {
-    version: "20260910141219",
-    checksum:
-      "6882650be6ba13b35522e8486001258ef9c7bb72911bfbe2427aae69c36280b2",
-    sql: `
-      CREATE TABLE IF NOT EXISTS "department" (
-        "id" TEXT NOT NULL,
-        "name" TEXT NOT NULL,
-        "parent_id" TEXT,
-        ...
-      );
-      ...
-    `,
-  },
-  migrations: [
-    // 历史增量迁移文件及其 SHA-256 校验和
-  ],
-} as const;
+```text
+tooling/db-migrate/
+├── baselines/                # 各作用域的完整基线快照
+│   └── <scope>/<version>/
+│       ├── baseline.sql      # 全量建表原生 DDL
+│       ├── manifest.json     # 基线元数据、SHA-256 校验和与 Schema 哈希
+│       └── schema.prisma     # 对应的 canonical 聚合 Schema
+└── migrations/               # 增量版本迁移目录
+    └── <scope>/<version>_<name>/
+        ├── migration.sql     # 升级 SQL (up)
+        ├── down.sql          # 回滚 SQL (down)
+        ├── manifest.json     # 风险等级标记、校验和与审批元数据
+        └── schema.snapshot.prisma # 本次变更对应的 Schema 快照
 ```
+
+运行时通过 `getMigrationCatalog(scope)`（位于 `src/runtime/catalog.ts` 与 `src/core/artifacts.ts`）在应用启动或执行升级时实时加载：
+
+- `loadLatestBaseline(root, scope)`：动态读取最新版本的 `baseline.sql` 并核验 SHA-256；
+- `loadMigrationArtifacts(root, scope)`：按版本升序扫描所有已发布的增量迁移目录，严格核验每个 `migration.sql` 的完整性与风险批准签名。
 
 ---
 
@@ -121,7 +117,7 @@ graph TD
     CheckCore -- 核心表均不存在 --> StateEmpty["状态: EMPTY (Day 0 严格空库)"]
 
     StateEmpty --> GetLock["获取事务级咨询锁 pg_advisory_xact_lock"]
-    GetLock --> RunBaseline["原子执行 runtime-catalog Baseline DDL"]
+    GetLock --> RunBaseline["原子执行物理基线 baseline.sql DDL"]
     RunBaseline --> RecordLedger["持久化登记迁移账本与校验和"]
     RecordLedger --> SeedData["幂等注入环境种子数据 (平台超管/租户基础数据)"]
     SeedData --> CommitTrans["提交事务并转为 READY 状态"]
@@ -132,11 +128,11 @@ graph TD
 1. **`EMPTY` (纯净空库)**：
    数据库中既无迁移账本表，也无任何业务核心表（如 `user`、`organization`、`session`，即使预装了 PostGIS 扩展表如 `spatial_ref_sys` 也不会被误判）。且必须提供初始超管配置（`CONTROL_BOOTSTRAP_ADMIN_*`），方可自动执行 Day 0 初始化。
 2. **`READY` (健康就绪)**：
-   账本存在，所有登记的基线与增量迁移 SHA-256 校验和与代码中的 `runtime-catalog.ts` 严格吻合，核心表完整存在，直接放行系统启动。
+   账本存在，所有登记的基线与增量迁移 SHA-256 校验和与磁盘物理工件中的 `baseline.sql` / `migration.sql` 严格吻合，核心表完整存在，直接放行系统启动。
 3. **`PARTIAL` (非空残缺库 - Fail-Closed 阻断)**：
    库中存在部分业务表，但迁移账本不存在；或者账本虽在但核心表发生物理丢失。系统判定为“脏库或遭到非正常篡改”，**严禁自动运行任何建表语句**，立即抛出致命错误，要求人工运维介入，防止覆盖破坏存量数据。
 4. **`CHECKSUM_MISMATCH` (校验和冲突 - 防架构漂移阻断)**：
-   数据库中记录的历史迁移 SQL 哈希与当前代码预编译工件中的哈希不一致，说明代码发生了未经过正式迁移的私自篡改，立即阻断部署。
+   数据库中记录的历史迁移 SQL 哈希与当前磁盘物理迁移工件中的哈希不一致，说明代码或迁移文件发生了未经过正式迁移的私自篡改，立即阻断部署。
 
 ### 💡 核心设计问答与排障指南 (FAQ)
 
@@ -190,9 +186,11 @@ COMMIT; -- 事务提交时，锁自动释放，天然免疫长连接泄漏与 Pg
 
 | 架构职责           | 权威源码文件路径                                    | 核心类 / 导出                            | 架构说明                                                 |
 | :----------------- | :-------------------------------------------------- | :--------------------------------------- | :------------------------------------------------------- |
-| **运行时静态目录** | `tooling/db-migrate/generated/runtime-catalog.ts`   | `PLATFORM_CATALOG`, `TENANT_CATALOG`     | 预编译全量基线 DDL、增量迁移与校验和常量                 |
-| **Schema 聚合器**  | `tooling/db-migrate/src/schema/aggregate.ts`        | `aggregateSchemas`                       | 解析 `@db-migrate-extension` 注解，聚合跨切片模型        |
-| **状态机探查器**   | `tooling/db-migrate/src/runtime/inspection.ts`      | `inspectDatabaseState`                   | 判定 `EMPTY` / `READY` / `PARTIAL` / `CHECKSUM_MISMATCH` |
+| **物理工件目录**   | `tooling/db-migrate/baselines/`, `migrations/`      | `baseline.sql`, `migration.sql`          | 物理原生 DDL/DML 与 SHA-256 校验和清单单一事实源         |
+| **运行时 Catalog** | `tooling/db-migrate/src/runtime/catalog.ts`         | `getMigrationCatalog`                    | 动态从物理文件系统加载基线与增量迁移工件并校验哈希       |
+| **工件加载与断言** | `tooling/db-migrate/src/core/artifacts.ts`          | `loadLatestBaseline`, `loadMigration...` | 物理 SQL 文件安全加载器，带 SHA-256 强校验与高危操作审批 |
+| **Schema 聚合器**  | `tooling/db-migrate/src/schema/aggregate.ts`        | `buildCanonicalSchema`                   | 解析 `@db-migrate-extension` 注解，聚合跨切片业务模型    |
 | **平台库执行器**   | `tooling/db-migrate/src/runtime/platform-runner.ts` | `PlatformMigrationRunner`                | 平台集中管控库 Day 0 自愈、迁移升级与 Advisory 锁管理    |
+| **租户库执行器**   | `tooling/db-migrate/src/runtime/tenant-runner.ts`   | `TenantMigrationRunner`                  | 多租户物理库版本预检、Advisory 锁并发保护与舰队批量升级  |
 | **租户库开通器**   | `tooling/db-migrate/src/runtime/provisioner.ts`     | `TenantDatabaseProvisioner`              | 租户物理库原子开通、Baseline 批量执行与健康自检          |
-| **迁移 CLI 入口**  | `tooling/db-migrate/src/cli.ts`                     | `db:catalog:build`, `db:platform:ensure` | 开发与部署期命令行工具                                   |
+| **迁移 CLI 入口**  | `tooling/db-migrate/src/cli.ts`                     | `baseline`, `generate`, `check`, ...     | 命令行脚手架调度入口                                     |

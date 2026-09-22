@@ -96,7 +96,7 @@ graph TD
 
 - **职责**：多租户物理分库的数据库结构演进与自动初始化。
 - **核心机制**：
-  - **移除运行期 Prisma CLI 依赖**：彻底消除 Next.js 打包后 `ENOENT` 路径丢失风险，构建期将增量与基线 SQL 预编译为只读常量 `runtime-catalog.ts`，运行期 0 子进程毫秒级执行；
+  - **移除运行期 Prisma CLI 依赖**：彻底消除 Next.js 打包后 `ENOENT` 路径丢失风险，物理 SQL 文件与清单作为唯一事实源，运行期 0 子进程动态毫秒级执行；
   - **切片 Schema 动态聚合 (`@db-migrate-extension`)**：各 Feature 在本地声明专属模型与反向关系扩展，聚合器统一合并生成主 Schema，消除跨包外键硬耦合；
   - **Day 0 状态机自愈**：严格探查 `EMPTY`（自动初装基线）、`READY`（健康运行）、`PARTIAL`（脏库 Fail-Closed 阻断）、`CHECKSUM_MISMATCH`（代码篡改硬拦截）；
   - **分布式咨询锁**：执行迁移时强制获取 PostgreSQL 事务级咨询锁 `pg_advisory_xact_lock`，事务提交自动释放，完美适配 PgBouncer。
@@ -183,5 +183,5 @@ npx shadcn@latest add <component-name> -y -c packages/base/ui
 ### 场景 4：升级 `tooling/db-migrate` 数据库演进引擎
 
 1. 运行 `pnpm --filter @tool/db-migrate test` 验证状态机和咨询锁逻辑；
-2. 若涉及基线迁移文件变更，运行 `pnpm db:migrate:generate` 重新生成静态 `runtime-catalog.ts`；
+2. 若涉及基线或增量迁移文件变更，运行 `pnpm db:migrate:generate` 生成物理 SQL 工件并通过 `pnpm db:migrate:check` 校验；
 3. 验证冷启动自愈逻辑（空库初装、已有库增量追平、损坏库拦截）。

@@ -115,7 +115,7 @@ pnpm run db:migrate:baseline:reset:platform
 - `tooling/db-migrate/migrations/**`
 - `tooling/db-migrate/baselines/**`
 
-数据库结构需要修复时必须新增迁移，禁止重写历史。`scripts/check/check-migration-immutability.mjs` 会检查 Git 暂存区，并由 `scripts/verify.mjs` 和 pre-commit 钩子在提交前硬拦截。新增迁移目录允许提交，`generated/runtime-catalog.ts` 可随新增迁移正常更新。
+数据库结构需要修复时必须新增迁移，禁止重写历史。`scripts/check/check-migration-immutability.mjs` 会检查 Git 暂存区，并由 `scripts/verify.mjs` 和 pre-commit 钩子在提交前硬拦截。新增迁移目录允许提交，物理工件清单必须保持完整并带有有效 SHA-256 校验和。
 
 `baseline:reset` 属于需要同步重建对应数据库的受控操作，不是普通提交的豁免开关；执行前必须单独确认影响范围并建立专用重置流程。
 

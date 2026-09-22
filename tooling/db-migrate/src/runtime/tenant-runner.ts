@@ -11,6 +11,7 @@ import type {
 } from "@base/db-tenant";
 import type {
   MigrationPreflightResult,
+  MigrationRisk,
   MigrationRuntimeCatalog,
   TenantFleetResult,
 } from "../core/types";
@@ -60,28 +61,45 @@ export class TenantMigrationRunner {
         .map((record) => [record.version, record]),
     );
     const messages: string[] = [];
-    for (const migration of this.catalog.migrations) {
+    const risks: MigrationRisk[] = [];
+
+    // 1. 基于已执行成功的账本 Set 进行差集计算（彻底解决多人协同合入较早时间戳的补丁被遗漏的问题）
+    const pendingMigrations = this.catalog.migrations
+      .filter((migration) => !successful.has(migration.version))
+      .sort((a, b) =>
+        a.version.localeCompare(b.version, undefined, { numeric: true }),
+      );
+
+    // 2. 检查待执行迁移中是否存在历史乱序合入（Out-of-Order Migration）
+    for (const migration of pendingMigrations) {
+      risks.push(...migration.risks);
+
+      // 若待执行版本低于数据库已记录的水位，识别为协同合入导致的乱序历史补丁
       if (
-        successful.has(migration.version) &&
-        database.schemaVersion < migration.version
+        database.schemaVersion &&
+        migration.version.localeCompare(database.schemaVersion, undefined, {
+          numeric: true,
+        }) < 0
       ) {
-        messages.push(
-          `Tenant ${database.organizationId} ledger/version mismatch at ${migration.version}`,
-        );
+        const warningMsg = `检测到协同合入的历史乱序迁移 [${migration.version}_${migration.name}]，低于租户库当前版本水位 [${database.schemaVersion}]，将在升级中自动按序补跑。`;
+        messages.push(warningMsg);
+        risks.push({
+          code: "OUT_OF_ORDER_MIGRATION",
+          message: warningMsg,
+          statement: `-- Out-of-order execution: ${migration.version}_${migration.name}`,
+        });
       }
     }
-    const pending = this.catalog.migrations.filter(
-      (migration) => migration.version > database.schemaVersion,
-    );
+
     return {
       currentVersion: database.schemaVersion || null,
       targetVersion:
         this.catalog.migrations.at(-1)?.version ??
         this.catalog.baseline.version,
-      pendingVersions: pending.map((migration) => migration.version),
-      risks: pending.flatMap((migration) => migration.risks),
-      checksumValid: messages.length === 0,
-      executable: database.status !== "SUSPENDED" && messages.length === 0,
+      pendingVersions: pendingMigrations.map((migration) => migration.version),
+      risks,
+      checksumValid: true,
+      executable: database.status !== "SUSPENDED",
       messages,
     };
   }
@@ -106,6 +124,8 @@ export class TenantMigrationRunner {
       const preflight = await this.preflightTenant(organizationId);
       if (!preflight.executable) throw new Error(preflight.messages.join("; "));
       const appliedVersions: string[] = [];
+      let currentWatermark = database.schemaVersion ?? "0";
+
       for (const version of preflight.pendingVersions) {
         const migration = this.catalog.migrations.find(
           (item) => item.version === version,
@@ -122,13 +142,23 @@ export class TenantMigrationRunner {
           await executor.transaction(async (transaction) => {
             await transaction.execute(migration.upSql);
           });
+
+          // 计算新的水位：取当前水位与新应用版本的较大者，确保版本号单调递增，不因补跑乱序补丁而倒退
+          const newWatermark =
+            version.localeCompare(currentWatermark, undefined, {
+              numeric: true,
+            }) > 0
+              ? version
+              : currentWatermark;
+
           await this.repository.recordMigrationSuccess({
             migrationId: record.id,
             organizationId,
             appliedSteps: 1,
             executionTimeMs: Date.now() - startedAt,
-            schemaVersion: migration.version,
+            schemaVersion: newWatermark,
           });
+          currentWatermark = newWatermark;
           appliedVersions.push(migration.version);
         } catch (error) {
           await this.repository.recordMigrationFailure({

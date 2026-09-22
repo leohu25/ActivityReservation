@@ -7,7 +7,8 @@ export type MigrationRiskCode =
   | "ALTER_COLUMN_TYPE"
   | "ADD_REQUIRED_COLUMN"
   | "ADD_UNIQUE_CONSTRAINT"
-  | "DROP_ENUM_VALUE";
+  | "DROP_ENUM_VALUE"
+  | "OUT_OF_ORDER_MIGRATION";
 
 export interface MigrationRisk {
   readonly code: MigrationRiskCode;
@@ -80,11 +81,7 @@ export interface TenantFleetResult {
 }
 
 export type DatabaseInitializationState =
-  | "EMPTY"
-  | "READY"
-  | "UPGRADE_REQUIRED"
-  | "PARTIAL"
-  | "CHECKSUM_MISMATCH";
+  "EMPTY" | "READY" | "UPGRADE_REQUIRED" | "PARTIAL" | "CHECKSUM_MISMATCH";
 
 export interface DatabaseInitializationInspection {
   readonly state: DatabaseInitializationState;

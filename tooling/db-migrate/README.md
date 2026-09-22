@@ -19,9 +19,9 @@
 
 - **开发期显式生成**：开发者在修改 Prisma Schema 后运行命令生成迁移文件，提交至 Git 审查；
 - **构建期只读校验**：`pnpm dev`、`pnpm build` 与 `pnpm check` 仅作一致性断言，**绝不自动修改工作区代码**；
-- **新库走全量基线**：新租户开通直接执行预编译、带校验和的最新 Baseline SQL，0 秒冷启动；
+- **新库走全量基线**：新租户开通直接执行物理带校验和的最新 Baseline SQL，0 秒冷启动；
 - **老库走增量升级**：控制平台后台看板手动触发，支持单租户或舰队批量升级；
-- **运行期零依赖**：预先编译只读 `runtime-catalog.ts` 打入应用 Bundle，生产环境脱离 Prisma CLI。
+- **运行期零依赖**：物理 SQL 文件与 Manifest 清单作为唯一事实源，运行期动态加载执行，生产环境彻底脱离 Prisma CLI。
 
 ---
 
@@ -34,40 +34,37 @@ tooling/db-migrate/
 ├── prisma.config.ts          # 仅用于开发阶段调用 Prisma CLI 的数据源配置文件
 ├── README.md                 # 架构设计、目录定位与日常操作指南 (本文件)
 │
-├── baselines/                # 【开发期对照源】各作用域的完整基线快照（文件工件，给 CLI Diff 用）
+├── baselines/                # 各作用域的完整基线快照（物理 SQL 与元数据）
 │   ├── platform/             # 平台库基线
 │   │   └── <version>/
-│   │       ├── baseline.sql  # 平台库全量建表 DDL
-│   │       ├── manifest.json # 基线元数据与校验和
+│   │       ├── baseline.sql  # 平台库全量建表原生 DDL
+│   │       ├── manifest.json # 基线元数据、SHA-256 校验和与 Schema 哈希
 │   │       └── schema.prisma # 对应的 canonical 聚合 Schema
 │   └── tenant/               # 租户库基线
 │       └── <version>/
-│           ├── baseline.sql  # 包含部门、员工档案、岗位、采购、客户等的全量 DDL
+│           ├── baseline.sql  # 包含部门、员工档案、岗位、采购、客户等的全量原生 DDL
 │           ├── manifest.json # 基线元数据与 SHA-256 校验和
 │           └── schema.prisma # 聚合各业务 Feature 后的唯一事实源 Schema
 │
-├── migrations/               # 增量版本迁移目录（老库演进专用）
+├── migrations/               # 增量版本迁移目录（老库演进专用物理 SQL）
 │   ├── platform/             # 平台库各历史版本的增量升级补丁
 │   └── tenant/               # 租户库各历史版本的增量升级补丁
 │       └── <YYYYMMDDHHmmss>_<name>/
-│           ├── migration.sql # 升级 SQL (up)
-│           ├── down.sql      # 回滚 SQL (down，若支持)
-│           ├── manifest.json # 包含风险标记与审批元数据的清单
+│           ├── migration.sql # 升级原生 SQL (up)
+│           ├── down.sql      # 回滚原生 SQL (down，若支持)
+│           ├── manifest.json # 包含风险标记、SHA-256 与审批元数据的清单
 │           └── schema.snapshot.prisma # 本次变更对应的快照
-│
-├── generated/                # 【线上运行时代码】编译产物目录 (纳入版本控制)
-│   └── runtime-catalog.ts    # 预编译为 TypeScript 常量的总账 (包含最新 Baseline + 历次增量 SQL)
 │
 └── src/                      # 源码实现
     ├── cli.ts                # 命令行调度入口 (pnpm db:migrate:*)
     ├── index.ts              # 模块对外统一导出入口
-    ├── check.ts              # 校验 Canonical Schema 与快照/Catalog 的一致性
+    ├── check.ts              # 校验 Canonical Schema 与快照的一致性
     │
     ├── core/                 # 核心模型与领域工具
     │   ├── types.ts          # 作用域、清单、风险代码等核心契约
     │   ├── paths.ts          # 工作区目录解析与定位
     │   ├── risk.ts           # 危险 SQL 静态扫描 (DROP TABLE, DROP COLUMN 等) 与批准断言
-    │   └── artifacts.ts      # 文件目录清单安全加载器 (带 SHA-256 防篡改比对)
+    │   └── artifacts.ts      # 物理 SQL 文件清单安全加载器 (带 SHA-256 防篡改比对)
     │
     ├── schema/               # 租户 Schema 动态扫描与聚合
     │   ├── aggregate.ts      # 扫描 db-tenant 与 features/*/prisma，支持 @db-migrate-extension
@@ -75,44 +72,23 @@ tooling/db-migrate/
     │
     ├── generation/           # 迁移与基线生成引擎 (开发期运行)
     │   ├── prisma.ts         # 调用本地依赖的 Prisma CLI 执行 diff 与 validate
-    │   └── generate.ts       # 增量迁移脚手架生成、全量基线生成与 Runtime Catalog 序列化
+    │   └── generate.ts       # 增量迁移脚手架生成、全量基线生成
     │
     └── runtime/              # 生产运行期服务 (纯 SQL 执行，无 Prisma CLI 依赖)
-        ├── catalog.ts        # 获取只读 Catalog
+        ├── catalog.ts        # 动态扫描物理文件系统加载基线与迁移工件 (getMigrationCatalog)
         ├── platform-runner.ts# 带 advisory lock 锁保护的平台升级执行器
         ├── tenant-runner.ts  # 带 advisory lock 锁保护的多租户执行升级引擎
         ├── provisioner.ts    # 租户物理库自动化原子开通、基线建表与 Seed 初始化器
         └── service.ts        # 提供给应用层的总控 Facade (DatabaseMigrationService)
 ```
 
-### 💡 核心认知：`baselines/` 与 `runtime-catalog.ts` 的区别与联系
+### 💡 核心认知：物理 SQL 资产单一事实源
 
-很多开发者初次接触时会有疑问：**它们是否是同一个东西？**
+系统彻底移除了将 SQL 编译为 TypeScript 常量文件的中间形态，全面转向**物理文件系统原生 SQL 资产**：
 
-**结论：它们本质上是同一批迁移数据的“两种不同生命周期形态”。**
-
-| 维度 | `baselines/` (工件目录) | `generated/runtime-catalog.ts` (代码文件) |
-| :--- | :--- | :--- |
-| **存在形态** | 目录结构，包含磁盘文件 (`.sql`、`schema.prisma`、`manifest.json`) | 单个只读 TypeScript 代码文件，导出常量对象 |
-| **适用阶段** | **开发态 (Dev-time / Build-time)** | **运行态 (Runtime / Production)** |
-| **主要用途** | 供 CLI 工具（如 `prisma migrate diff`）读取，用于对比当前代码与基线的差异、生成增量迁移。 | 供生产环境（Node.js / Next.js 服务端）直接 `import` 调用，作为建表与升级的执行总账。 |
-| **包含内容** | 仅包含对应作用域的**初始全量大底子快照**。 | **全量汇总**：包含 Baseline 完整 SQL **+** 后续所有增量 Migrations 的 SQL。 |
-| **为什么转 TS** | 磁盘文件容易在 Docker/Serverless 打包中丢失路径；开发工具解析语法需要文件。 | 编译为 TS 常量可直接打入 Bundle，**零文件 I/O、无路径脆弱性、免装 Prisma CLI**。 |
-
-**两者的联动链路**：
-
-```text
-开发者修改 Prisma Schema
-       │
-       ▼ (CLI 开发态对比差异)
-   [baselines/] (静态文件快照对照物)
-       │
-       ▼ (产出增量目录)
-   [migrations/] (每次版本变更的 migration.sql)
-       │
-       ▼ (自动聚合编译入库: pnpm db:migrate catalog)
-[generated/runtime-catalog.ts] ──> 供 Next.js / Better Auth / 租户开通服务直接内存引用
-```
+1. **唯一事实源**：`baselines/` 与 `migrations/` 目录中的 `.sql` 文件就是最终被数据库执行的唯一 SQL。
+2. **防篡改保障**：每个目录伴随 `manifest.json`，在加载时由 `artifacts.ts` 动态计算真实 SQL 的 SHA-256 并与清单严格核验。
+3. **零 CLI 运行时**：运行时直接通过 `getMigrationCatalog(scope)` 读取物理 SQL 文本，通过原生 `pg` 驱动执行，完全不需要 Prisma CLI。
 
 ---
 
@@ -154,7 +130,7 @@ tooling/db-migrate/
 4. 断言目标库为空库 (防止半成品污染)
        │
        ▼
-5. 单事务执行 runtime-catalog.ts 中的最新 Baseline SQL
+5. 单事务执行物理文件中的最新 Baseline SQL (`baseline.sql`)
        │
        ▼
 6. 执行基线种子数据 (TenantDatabaseSeeder: ROOT部门、岗位、Owner档案)
@@ -169,7 +145,7 @@ tooling/db-migrate/
 ### 3. 老租户增量升级机制 (`TenantMigrationRunner`)
 
 - 平台管理员进入 `/migrations` 迁移中枢；
-- 系统对比租户物理库当前 `schema_version` 与 `runtime-catalog.ts` 中的最新版本；
+- 系统对比租户物理库已成功执行的账本版本与物理迁移目录中的清单；
 - 预检通过后，针对选定租户单独加 Advisory Lock 并在事务中按序执行增量 SQL，记录详细耗时与状态。
 
 ---
@@ -228,3 +204,18 @@ pnpm db:platform:ensure
 运行时只对 `public` 下完全没有用户表的严格空库应用最新 Platform Baseline，随后登记 `platform_migration` 基线记录并幂等创建 Better Auth credential 超管。完整库直接放行；非空但缺表或 checksum 冲突的库会阻断，不会自动补表。已有库的增量迁移也不会由此命令自动执行。
 
 `apps/control/src/instrumentation.ts` 与 `apps/tenant/src/instrumentation.ts` 在 Node.js 服务进程启动时执行同一 ensure；认证请求路径另有进程内 Promise 去重兜底。
+
+### 场景 E：多人协同分支合并分叉与本地库一键自愈 (`db:local:reset`)
+
+在多人协同开发时，如果同事合入了较早时间戳的历史迁移（减字段或改表），或者本地物理库与远端主干发生结构分叉：
+
+1. **控制台自动识别与补跑**：平台看板采用账本集合差集算法，会自动识别合入的历史补丁并标记 `OUT_OF_ORDER_MIGRATION` 风险警告，提示管理员一键升级补跑；
+2. **本地开发库一键重置**：若两人同时修改同一张表导致物理库脏乱或产生结构冲突，严禁在脏库上手工修改，直接运行本地一键重置命令推倒重来：
+
+```bash
+pnpm db:local:reset
+# 或清空指定租户库：
+pnpm db:local:reset -- --name tenant_001
+```
+
+系统会自动安全校验（仅限 localhost 执行）、清空物理库并按物理文件目录顺次灌装 Baseline + 全部 Migrations + 种子数据，2 秒内自愈至最新干净状态。

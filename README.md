@@ -81,11 +81,11 @@ docker compose -f compose.local.yaml up -d
 
 根据你当前开发的子应用选择执行：
 
-| 服务类型 | 启动命令 | 本地访问地址 | 职责定位 |
-| :--- | :--- | :--- | :--- |
+| 服务类型                       | 启动命令               | 本地访问地址                                   | 职责定位                                               |
+| :----------------------------- | :--------------------- | :--------------------------------------------- | :----------------------------------------------------- |
 | **平台管控端 (Control Admin)** | `pnpm run dev:control` | [http://localhost:3001](http://localhost:3001) | 平台超级管理员、租户开通、物理库生命周期、数据迁移中枢 |
-| **租户业务端 (Tenant SaaS)** | `pnpm run dev:tenant` | [http://localhost:3000](http://localhost:3000) | 租户端登录、组织架构、权限工作台、采购中心、客户中心 |
-| **全栈全量启动** | `pnpm run dev` | 同时启动 3000 与 3001 | 全局联调 |
+| **租户业务端 (Tenant SaaS)**   | `pnpm run dev:tenant`  | [http://localhost:3000](http://localhost:3000) | 租户端登录、组织架构、权限工作台、采购中心、客户中心   |
+| **全栈全量启动**               | `pnpm run dev`         | 同时启动 3000 与 3001                          | 全局联调                                               |
 
 ---
 
@@ -132,8 +132,8 @@ pnpm run db:migrate:baseline --scope platform --reset
 # 也可直接使用快捷重置命令将当前所有增量压平进全新基线（上线前/重构开发阶段专用）
 pnpm run db:migrate:baseline:reset
 
-# 5. 重新编译生成运行期只读 Catalog (generated/runtime-catalog.ts)
-pnpm run db:migrate:catalog
+# 5. 校验物理迁移工件一致性与防篡改哈希
+pnpm run db:migrate:check
 ```
 
 ---
