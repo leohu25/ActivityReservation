@@ -120,18 +120,19 @@ export const tenantCredentialsPlugin = (options?: TenantCredentialsPluginOptions
           }
 
           if (!userId) {
-            const virtualEmail = `${cleanAccount}@${cleanSlug}.local`;
+            const namespacedUsername = `${cleanSlug}:${cleanAccount}`;
             let user = await prisma.user.findUnique({
-              where: { email: virtualEmail },
+              where: { username: namespacedUsername },
               select: { id: true },
             });
             if (!user) {
               user = await prisma.user.create({
                 data: {
                   id: generateUuidV7(),
-                  email: virtualEmail,
+                  username: namespacedUsername,
                   name: tenantAccount.name,
-                  emailVerified: true,
+                  email: null,
+                  emailVerified: false,
                 },
                 select: { id: true },
               });

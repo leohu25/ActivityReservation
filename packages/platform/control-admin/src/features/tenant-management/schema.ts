@@ -16,11 +16,22 @@ export const provisionTenantSchema = z.object({
       /^[a-z0-9-]+$/,
       "租户标识仅支持小写字母、数字和中划线 (-)，用于子域名或路由",
     ),
+  adminAccount: z
+    .string()
+    .trim()
+    .min(2, "管理员账号最少 2 个字符")
+    .max(50, "管理员账号不能超过 50 个字符")
+    .regex(
+      /^[a-zA-Z0-9_-]+$/,
+      "管理员账号仅支持字母、数字、下划线与连字符",
+    )
+    .default("admin"),
   adminEmail: z
     .string()
     .trim()
-    .min(1, "管理员邮箱为必填项")
-    .email("请输入合法的管理员邮箱格式"),
+    .email("请输入合法的管理员邮箱格式")
+    .optional()
+    .or(z.literal("")),
   adminName: z
     .string()
     .trim()

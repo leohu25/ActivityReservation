@@ -249,6 +249,7 @@ export class TenantManagementService {
             user: {
               select: {
                 id: true,
+                username: true,
                 name: true,
                 email: true,
                 image: true,
@@ -268,10 +269,12 @@ export class TenantManagementService {
     if (search) {
       filteredMembers = filteredMembers.filter((m) => {
         const name = (m.user.name ?? "").toLowerCase();
-        const email = m.user.email.toLowerCase();
+        const username = (m.user.username ?? "").toLowerCase();
+        const email = (m.user.email ?? "").toLowerCase();
         const role = m.role.toLowerCase();
         return (
           name.includes(search) ||
+          username.includes(search) ||
           email.includes(search) ||
           role.includes(search)
         );
@@ -299,7 +302,8 @@ export class TenantManagementService {
       id: m.id,
       userId: m.userId,
       name: m.user.name || "未命名用户",
-      email: m.user.email,
+      username: m.user.username,
+      email: m.user.email ?? (m.user.username ? `${m.user.username}` : "未设邮箱"),
       image: m.user.image,
       role: m.role,
       createdAt: m.createdAt,
@@ -346,10 +350,11 @@ export class TenantManagementService {
 
     const cleanName = input.name.trim();
     const cleanSlug = input.slug.trim().toLowerCase();
-    const cleanEmail = input.adminEmail.trim().toLowerCase();
+    const cleanAccount = (input.adminAccount?.trim() || input.adminEmail?.trim() || "admin");
+    const cleanEmail = input.adminEmail?.trim().toLowerCase() || null;
 
-    if (!cleanName || !cleanSlug || !cleanEmail) {
-      throw new Error("租户名称、Slug 标识与管理员邮箱均为必填项");
+    if (!cleanName || !cleanSlug || !cleanAccount) {
+      throw new Error("租户名称、Slug 标识与管理员账号均为必填项");
     }
 
     if (!/^[a-z0-9_-]{2,32}$/.test(cleanSlug)) {
@@ -365,42 +370,27 @@ export class TenantManagementService {
       throw new Error(`租户 Slug [${cleanSlug}] 已存在，请更换`);
     }
 
+    // 平台 User 核心主体：统一采用企业 Slug 命名空间隔离用户名 {slug}:{account}
+    // 彻底杜绝不同租户因同名账号 (如都叫 admin) 导致开户失败或串号
+    const namespacedUsername = `${cleanSlug}:${cleanAccount}`;
     let adminUser = await this.prisma.user.findUnique({
-      where: { email: cleanEmail },
+      where: { username: namespacedUsername },
     });
 
     if (!adminUser) {
       adminUser = await this.prisma.user.create({
         data: {
           id: generateUuidV7(),
+          username: namespacedUsername,
           email: cleanEmail,
-          name: input.adminName?.trim() || cleanEmail.split("@")[0],
-          emailVerified: true,
+          name: input.adminName?.trim() || cleanAccount,
+          emailVerified: Boolean(cleanEmail),
         },
       });
     }
 
     const initialPassword = input.initialPassword ?? "Admin123456!";
     const hashedPassword = await hashPassword(initialPassword);
-
-    const existingAccount = await this.prisma.account.findFirst({
-      where: {
-        userId: adminUser.id,
-        providerId: "credential",
-      },
-    });
-
-    if (!existingAccount) {
-      await this.prisma.account.create({
-        data: {
-          id: generateUuidV7(),
-          accountId: adminUser.id,
-          providerId: "credential",
-          userId: adminUser.id,
-          password: hashedPassword,
-        },
-      });
-    }
 
     const orgId = generateUuidV7();
     const ownerMemberId = generateUuidV7();
@@ -459,12 +449,12 @@ export class TenantManagementService {
       });
 
       // 独立租户凭证入库：无论平台 User 是否已存在，在当前租户下建立独立的 TenantAccount
-      // 账号完全忠实于用户输入（支持自定义账号、手机号、邮箱、工号），严禁擅自截断或篡改！
+      // 账号完全忠实于用户输入（支持自定义账号、手机号、工号），严禁擅自截断或篡改！
       await tx.tenantAccount.create({
         data: {
           id: generateUuidV7(),
           organizationId: created.id,
-          account: cleanEmail,
+          account: cleanAccount,
           password: hashedPassword,
           name: ownerName,
           memberId: ownerMemberId,
@@ -507,7 +497,7 @@ export class TenantManagementService {
       ownerUserId,
       ownerMemberId,
       ownerName,
-      ownerEmail: cleanEmail,
+      ownerEmail: cleanEmail ?? `${cleanAccount}@${cleanSlug}.corp`,
     };
 
     if (this.provisioner) {
@@ -611,7 +601,14 @@ export class TenantManagementService {
         },
       },
       include: {
-        user: true,
+        user: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            email: true,
+          },
+        },
       },
     });
 
@@ -628,40 +625,20 @@ export class TenantManagementService {
 
     const hashedPassword = await hashPassword(temporaryPassword);
 
-    const account = await this.prisma.account.findFirst({
+    // 租户人员密码单一事实源：严格更新当前租户的 TenantAccount，绝不污染全局 Account 表
+    await this.prisma.tenantAccount.updateMany({
       where: {
-        userId,
-        providerId: "credential",
+        organizationId: orgId,
+        memberId: member.id,
+      },
+      data: {
+        password: hashedPassword,
       },
     });
 
-    if (account) {
-      await this.prisma.account.update({
-        where: {
-          providerId_accountId: {
-            providerId: "credential",
-            accountId: account.accountId,
-          },
-        },
-        data: {
-          password: hashedPassword,
-        },
-      });
-    } else {
-      await this.prisma.account.create({
-        data: {
-          id: generateUuidV7(),
-          accountId: userId,
-          providerId: "credential",
-          userId,
-          password: hashedPassword,
-        },
-      });
-    }
-
     return {
       userId,
-      email: member.user.email,
+      email: member.user.email ?? member.user.username ?? "未设账号",
       temporaryPassword,
     };
   }

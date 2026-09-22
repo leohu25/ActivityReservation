@@ -108,9 +108,6 @@ test("Better Auth Organization session resolves a real tenant context", {
       await runtime.prisma.tenantDatabase.deleteMany({
         where: { organizationId },
       });
-      await runtime.prisma.invitation.deleteMany({
-        where: { organizationId },
-      });
       await runtime.prisma.member.deleteMany({
         where: { organizationId },
       });
@@ -119,9 +116,6 @@ test("Better Auth Organization session resolves a real tenant context", {
       });
     }
     if (userId) {
-      await runtime.prisma.invitation.deleteMany({
-        where: { inviterId: userId },
-      });
       await runtime.prisma.member.deleteMany({ where: { userId } });
       await runtime.prisma.session.deleteMany({ where: { userId } });
       await runtime.prisma.account.deleteMany({ where: { userId } });

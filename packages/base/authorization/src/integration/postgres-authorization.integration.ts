@@ -161,7 +161,6 @@ test("dynamic PostgreSQL roles compile into an organization-isolated CASL abilit
       await runtime.prisma.tenantDatabase.deleteMany({
         where: { organizationId },
       });
-      await runtime.prisma.invitation.deleteMany({ where: { organizationId } });
       await runtime.prisma.member.deleteMany({ where: { organizationId } });
       await runtime.prisma.organizationRole.deleteMany({
         where: { organizationId },

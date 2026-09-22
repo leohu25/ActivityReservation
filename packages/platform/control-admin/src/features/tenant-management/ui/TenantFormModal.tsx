@@ -42,6 +42,7 @@ export function TenantFormModal({
     () => ({
       name: record?.name || "",
       slug: record?.slug || "",
+      adminAccount: "admin",
       adminEmail: "",
       adminName: "",
       clusterCode: record?.database?.clusterCode || "primary",
@@ -83,11 +84,11 @@ export function TenantFormModal({
         columns: 2,
         fields: [
           {
-            name: "adminEmail",
-            label: "超管登录邮箱",
+            name: "adminAccount",
+            label: "超管登录账号 (工号/字母)",
             type: "text",
             required: true,
-            placeholder: "admin@enterprise.com",
+            placeholder: "默认: admin",
           },
           {
             name: "adminName",
@@ -100,6 +101,12 @@ export function TenantFormModal({
             label: "初始密码 (留空则系统自动随机生成)",
             type: "password",
             placeholder: "8位以上强密码",
+          },
+          {
+            name: "adminEmail",
+            label: "联系邮箱 (选填)",
+            type: "text",
+            placeholder: "可选输入",
           },
         ],
       },

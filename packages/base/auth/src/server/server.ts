@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { organization } from "better-auth/plugins";
+import { organization, username } from "better-auth/plugins";
 import { generateUuidV7 } from "@base/shared";
 import { tenantCredentialsPlugin } from "./tenant-credentials-plugin";
 import {
@@ -61,6 +61,8 @@ export function createServerAuth(options: ServerAuthOptions) {
       enabled: options.enableEmailAndPassword === true,
     },
     plugins: [
+      // 官方标准 username 插件：解绑强制邮箱依赖，支持用户以命名空间用户名运作
+      username(),
       organization({
         // Better Auth's role types are invariant in the injected statement.
         // The factory above is the only constructor accepted at this boundary.

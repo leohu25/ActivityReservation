@@ -13,8 +13,10 @@ model User {
   id            String       @id @default(uuid(7)) @db.Uuid
   /// 用户姓名或称谓
   name          String
-  /// 用户登录邮箱 (唯一)
-  email         String       @unique
+  /// 全局唯一用户名/工号标识 (支持多租户命名空间 {slug}:{account})
+  username      String?      @unique
+  /// 用户登录邮箱 (可选联系方式)
+  email         String?      @unique
   /// 邮箱是否已通过验证
   emailVerified Boolean      @default(false) @map("email_verified")
   /// 用户头像 URL
@@ -26,7 +28,6 @@ model User {
   sessions      Session[]
   accounts      Account[]
   memberships   Member[]
-  invitations   Invitation[] @relation("InvitationInviter")
 
   @@map("user")
 }
@@ -129,7 +130,6 @@ model Organization {
   /// 权限版本号 (CASL 缓存失效基准)
   authorizationVersion Int             @default(1) @map("authorization_version")
   members              Member[]
-  invitations          Invitation[]
   roles                OrganizationRole[]
   tenantDatabase       TenantDatabase?
   migrations           TenantMigration[]
@@ -156,32 +156,6 @@ model Member {
   @@unique([organizationId, userId])
   @@index([userId])
   @@map("member")
-}
-
-/// 租户邀请记录表
-model Invitation {
-  /// 邀请记录ID
-  id             String       @id @default(uuid(7)) @db.Uuid
-  /// 目标租户企业ID
-  organizationId String       @map("organization_id") @db.Uuid
-  /// 受邀人邮箱地址
-  email          String
-  /// 预分配角色
-  role           String?
-  /// 邀请状态: pending / accepted / rejected / canceled
-  status         String       @default("pending")
-  /// 邀请链接有效期截止时间
-  expiresAt      DateTime     @map("expires_at")
-  /// 发起邀请时间
-  createdAt      DateTime     @default(now()) @map("created_at")
-  /// 邀请人用户ID
-  inviterId      String       @map("inviter_id") @db.Uuid
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  inviter        User         @relation("InvitationInviter", fields: [inviterId], references: [id], onDelete: Cascade)
-
-  @@index([organizationId])
-  @@index([email])
-  @@map("invitation")
 }
 
 /// 企业自定义权限角色表

@@ -27,20 +27,6 @@ CREATE TABLE "account" (
 );
 
 -- CreateTable
-CREATE TABLE "invitation" (
-    "id" UUID NOT NULL,
-    "organization_id" UUID NOT NULL,
-    "email" TEXT NOT NULL,
-    "role" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'pending',
-    "expires_at" TIMESTAMP(3) NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "inviter_id" UUID NOT NULL,
-
-    CONSTRAINT "invitation_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "member" (
     "id" UUID NOT NULL,
     "organization_id" UUID NOT NULL,
@@ -154,7 +140,8 @@ CREATE TABLE "tenant_migration" (
 CREATE TABLE "user" (
     "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
-    "email" TEXT NOT NULL,
+    "username" TEXT,
+    "email" TEXT,
     "email_verified" BOOLEAN NOT NULL DEFAULT false,
     "image" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -180,12 +167,6 @@ CREATE INDEX "account_user_id_idx" ON "account"("user_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "account_provider_id_account_id_key" ON "account"("provider_id", "account_id");
-
--- CreateIndex
-CREATE INDEX "invitation_organization_id_idx" ON "invitation"("organization_id");
-
--- CreateIndex
-CREATE INDEX "invitation_email_idx" ON "invitation"("email");
 
 -- CreateIndex
 CREATE INDEX "member_user_id_idx" ON "member"("user_id");
@@ -242,6 +223,9 @@ CREATE INDEX "tenant_migration_batch_id_idx" ON "tenant_migration"("batch_id");
 CREATE INDEX "tenant_migration_organization_id_version_idx" ON "tenant_migration"("organization_id", "version");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "user_username_key" ON "user"("username");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
 
 -- CreateIndex
@@ -249,12 +233,6 @@ CREATE INDEX "verification_identifier_idx" ON "verification"("identifier");
 
 -- AddForeignKey
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "invitation" ADD CONSTRAINT "invitation_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "invitation" ADD CONSTRAINT "invitation_inviter_id_fkey" FOREIGN KEY ("inviter_id") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "member" ADD CONSTRAINT "member_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -292,15 +270,6 @@ COMMENT ON COLUMN "account"."scope" IS 'OAuth 授权作用域';
 COMMENT ON COLUMN "account"."password" IS '哈希加密后的本地密码凭据';
 COMMENT ON COLUMN "account"."created_at" IS '记录绑定时间';
 COMMENT ON COLUMN "account"."updated_at" IS '记录更新时间';
-COMMENT ON TABLE "invitation" IS '租户邀请记录表';
-COMMENT ON COLUMN "invitation"."id" IS '邀请记录ID';
-COMMENT ON COLUMN "invitation"."organization_id" IS '目标租户企业ID';
-COMMENT ON COLUMN "invitation"."email" IS '受邀人邮箱地址';
-COMMENT ON COLUMN "invitation"."role" IS '预分配角色';
-COMMENT ON COLUMN "invitation"."status" IS '邀请状态: pending / accepted / rejected / canceled';
-COMMENT ON COLUMN "invitation"."expires_at" IS '邀请链接有效期截止时间';
-COMMENT ON COLUMN "invitation"."created_at" IS '发起邀请时间';
-COMMENT ON COLUMN "invitation"."inviter_id" IS '邀请人用户ID';
 COMMENT ON TABLE "member" IS '租户企业成员归属表 (关联 User 与 Organization)';
 COMMENT ON COLUMN "member"."id" IS '成员记录ID';
 COMMENT ON COLUMN "member"."organization_id" IS '所属租户企业ID';
@@ -374,7 +343,8 @@ COMMENT ON COLUMN "tenant_migration"."updated_at" IS '任务更新时间';
 COMMENT ON TABLE "user" IS '平台用户账号表 (Better Auth 核心认证主体)';
 COMMENT ON COLUMN "user"."id" IS '用户全局唯一标识 UUID';
 COMMENT ON COLUMN "user"."name" IS '用户姓名或称谓';
-COMMENT ON COLUMN "user"."email" IS '用户登录邮箱 (唯一)';
+COMMENT ON COLUMN "user"."username" IS '全局唯一用户名/工号标识 (支持多租户命名空间 {slug}:{account})';
+COMMENT ON COLUMN "user"."email" IS '用户登录邮箱 (可选联系方式)';
 COMMENT ON COLUMN "user"."email_verified" IS '邮箱是否已通过验证';
 COMMENT ON COLUMN "user"."image" IS '用户头像 URL';
 COMMENT ON COLUMN "user"."created_at" IS '注册创建时间';

@@ -30,7 +30,8 @@ export interface ControlTenantItem {
 export interface ProvisionTenantInput {
   readonly name: string;
   readonly slug: string;
-  readonly adminEmail: string;
+  readonly adminAccount?: string;
+  readonly adminEmail?: string;
   readonly adminName?: string;
   readonly clusterCode?: string;
   readonly initialPassword?: string;
@@ -54,6 +55,7 @@ export interface ControlTenantMember {
   readonly id: string;
   readonly userId: string;
   readonly name: string;
+  readonly username?: string | null;
   readonly email: string;
   readonly image: string | null;
   readonly role: string;

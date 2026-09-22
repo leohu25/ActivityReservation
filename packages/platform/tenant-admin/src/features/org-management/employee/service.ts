@@ -163,7 +163,7 @@ export class EmployeeManagementService {
           .filter(Boolean);
         memberMap.set(m.id, {
           roles,
-          email: m.user?.email,
+          email: m.user?.email ?? undefined,
           name: m.user?.name,
           userId: m.userId,
         });
@@ -325,7 +325,7 @@ export class EmployeeManagementService {
           .filter(Boolean);
         memberMap.set(m.id, {
           roles,
-          email: m.user?.email,
+          email: m.user?.email ?? undefined,
           name: m.user?.name,
           userId: m.userId,
         });
@@ -463,11 +463,11 @@ export class EmployeeManagementService {
       throw new Error("当前企业不存在");
     }
 
-    // 4. User 会话载体：统一使用租户隔离虚拟邮箱，真实邮箱仅存档案快照
-    //    形如 `${loginAccount}@${orgSlug}.local`，跨租户同名账号不会串号
-    const virtualEmail = `${cleanLoginAccount}@${org.slug}.local`;
+    // 4. User 会话载体：统一使用带企业 Slug 命名空间的合法唯一 username
+    //    形如 `${orgSlug}:${cleanLoginAccount}`，彻底消除伪邮箱
+    const namespacedUsername = `${org.slug}:${cleanLoginAccount}`;
     let targetUser = await controlPrisma.user.findUnique({
-      where: { email: virtualEmail },
+      where: { username: namespacedUsername },
     });
 
     const plainPassword = input.password?.trim() || "Admin123456!";
@@ -495,9 +495,10 @@ export class EmployeeManagementService {
       targetUser = await controlPrisma.user.create({
         data: {
           id: generateUuidV7(),
-          email: virtualEmail,
+          username: namespacedUsername,
           name: cleanName,
-          emailVerified: true,
+          email: null,
+          emailVerified: false,
         },
       });
     }
