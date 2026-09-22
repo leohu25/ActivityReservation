@@ -145,19 +145,19 @@ export function TenantDetailDrawer({
         </Badge>
       );
     }
-    if (role === "buyer") {
+    if (role === "member") {
       return (
         <Badge
           variant="outline"
-          className="border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[11px] font-medium"
+          className="border-slate-500/30 bg-slate-500/10 text-slate-600 dark:text-slate-400 text-[11px] font-medium"
         >
-          采购员 / Buyer
+          标准成员 / Member
         </Badge>
       );
     }
     return (
-      <Badge variant="secondary" className="text-[11px] font-medium">
-        普通成员 / Member
+      <Badge variant="secondary" className="text-[11px] font-mono capitalize">
+        {role}
       </Badge>
     );
   };

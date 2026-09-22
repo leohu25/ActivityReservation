@@ -290,7 +290,7 @@ export class DepartmentService {
       throw new Error("该部门下仍有在职员工，请先将员工迁移至其他部门");
     }
 
-    // 3. 关联业务单据防护已随采购/订单 demo 切片下线；恢复业务切片时在此补充引用计数
+    // 3. 组织架构解耦保护：前序已拦截在职员工与下属部门防孤儿；业务单据关联由各领域切片通过逻辑外键/事件保护，平台组织架构层无业务单向依赖
     await tenantPrisma.department.delete({
       where: { id },
     });

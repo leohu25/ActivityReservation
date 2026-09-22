@@ -25,7 +25,7 @@ const bold = (text) => `\x1b[1m${text}\x1b[0m`;
 
 async function main() {
   console.log("\n" + cyan(bold("==================================================")));
-  console.log(cyan(bold("      宸润数智 ERP — Docker 生产镜像交互式打包      ")));
+  console.log(cyan(bold("      多租户 SaaS 平台 — Docker 生产镜像交互式打包      ")));
   console.log(cyan(bold("==================================================")) + "\n");
 
   // 1. 检查 Docker 是否可用

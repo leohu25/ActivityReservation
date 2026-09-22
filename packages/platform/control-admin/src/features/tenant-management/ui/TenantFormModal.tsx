@@ -61,14 +61,14 @@ export function TenantFormModal({
             label: "租户全称",
             type: "text",
             required: true,
-            placeholder: "例如: 辰润供应链科技有限公司",
+            placeholder: "例如: 示范数智科技有限公司",
           },
           {
             name: "slug",
             label: "租户Slug标识 (子域名/代号)",
             type: "text",
             required: true,
-            placeholder: "例如: chenrun-scm",
+            placeholder: "例如: demo-corp",
           },
           {
             name: "clusterCode",

@@ -5,19 +5,11 @@ import {
 	assertTenantAccessGate,
 } from "@base/auth";
 import {
-	CaslAbilityFactory,
-	getAccessibleWhere,
-	getFieldMode,
-	type AppPrismaAbility,
-} from "@base/authorization";
-import {
 	getTenantDbManager,
 	resolveEmployeeTopology,
 	type ResolvedDepartmentTopology,
 } from "@base/db-tenant";
 import { toPlainData } from "@base/shared";
-import { customerCatalog } from "@domain/customer-center/catalog";
-import { CustomerSubject } from "@domain/customer-center/customer-management";
 import type {
 	EmployeeProfileDTO,
 	WorkbenchDataDTO,
@@ -101,22 +93,10 @@ export async function getTenantWorkbenchData(): Promise<WorkbenchPageData> {
 		{ userId: tenantCtx.user.id, memberId: tenantCtx.member.id },
 	);
 
-	const factory = new CaslAbilityFactory(
-		authRuntime.tenantContextRepository,
-		customerCatalog,
-	);
-
-	const prismaAbility = (await factory.createPrismaAbilityForTenant(
-		tenantCtx,
-		topology,
-	)) as AppPrismaAbility<string, typeof CustomerSubject>;
-
-	const sqlWhere = getAccessibleWhere(prismaAbility, CustomerSubject, "read");
-
 	const data: WorkbenchDataDTO = {
 		kind: "authenticated",
 		org: {
-			name: org?.name ?? "ERP 租户控制台",
+			name: org?.name ?? "企业控制台",
 			slug: org?.slug ?? tenantCtx.organizationId,
 			authorizationVersion: org?.authorizationVersion ?? 1,
 		},
@@ -126,22 +106,6 @@ export async function getTenantWorkbenchData(): Promise<WorkbenchPageData> {
 		},
 		profile,
 		treeCount: topology.departmentTreeIds.length,
-		sqlWhere,
-		fieldModes: {
-			customerName: getFieldMode(
-				prismaAbility,
-				CustomerSubject,
-				"customerName",
-			),
-			settlementType: getFieldMode(prismaAbility, CustomerSubject, "settlementType"),
-			contactPhone: getFieldMode(prismaAbility, CustomerSubject, "contactPhone"),
-		},
-		permissions: {
-			canReadCustomer: prismaAbility.can("read", CustomerSubject),
-			canCreateCustomer: prismaAbility.can("create", CustomerSubject),
-			canUpdateCustomer: prismaAbility.can("update", CustomerSubject),
-			canExportCustomer: prismaAbility.can("export", CustomerSubject),
-		},
 	};
 
 	return toPlainData(data);

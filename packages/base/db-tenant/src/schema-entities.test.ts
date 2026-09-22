@@ -20,14 +20,14 @@ test("Tenant DB Schema 契约支持 Position、CompanyProfile 及增强版 Emplo
   // 2. 验证 PositionCreateInput 包含编码、排序与状态
   const posInput: TenantPrisma.PositionCreateInput = {
     id: "pos_test_01",
-    name: "采购主管",
-    code: "pos_customer_mgr",
-    description: "负责采购供应链统筹",
+    name: "技术主管",
+    code: "pos_dept_mgr",
+    description: "负责部门业务统筹",
     sort: 10,
     status: "ACTIVE",
   };
-  assert.equal(posInput.name, "采购主管");
-  assert.equal(posInput.code, "pos_customer_mgr");
+  assert.equal(posInput.name, "技术主管");
+  assert.equal(posInput.code, "pos_dept_mgr");
   assert.equal(posInput.sort, 10);
 
   // 3. 验证 EmployeeProfileCreateInput 支持 memberId 为 null（先建档未激活态）
@@ -51,8 +51,8 @@ test("Tenant DB Schema 契约支持 Position、CompanyProfile 及增强版 Emplo
   // 4. 验证 CompanyProfileCreateInput 完整包含企业私有资料
   const companyInput: TenantPrisma.CompanyProfileCreateInput = {
     id: "comp_01",
-    companyName: "宸润数字科技有限公司",
-    shortName: "宸润科技",
+    companyName: "数智数字科技有限公司",
+    shortName: "数智科技",
     creditCode: "91330100MA2XXXXX1",
     legalPerson: "王总",
     contactPhone: "0571-88888888",
@@ -61,7 +61,7 @@ test("Tenant DB Schema 契约支持 Position、CompanyProfile 及增强版 Emplo
     timezone: "Asia/Shanghai",
     currency: "CNY",
   };
-  assert.equal(companyInput.companyName, "宸润数字科技有限公司");
+  assert.equal(companyInput.companyName, "数智数字科技有限公司");
   assert.equal(companyInput.currency, "CNY");
 });
 

@@ -60,10 +60,10 @@ import {
 } from "./index";
 
 test("Result 工具：支持 ok, err, isOk, isErr 与 unwrap", () => {
-  const successRes = ok({ name: "晨润", id: 101 });
+  const successRes = ok({ name: "示例企业", id: 101 });
   assert.equal(isOk(successRes), true);
   assert.equal(isErr(successRes), false);
-  assert.equal(unwrap(successRes).name, "晨润");
+  assert.equal(unwrap(successRes).name, "示例企业");
   assert.equal(unwrapOr(successRes, { name: "default", id: 0 }).id, 101);
 
   const failRes = err(new BusinessError("金额不能小于0"));

@@ -18,9 +18,9 @@ import type {
 
 /** 租户基础设置默认值 */
 export const DEFAULT_GENERAL_SETTINGS: GeneralSettingsData = {
-  systemName: "宸润数智 ERP",
+  systemName: "企业数字化协同平台",
   defaultPageSize: 10,
-  orderPrefix: "PO-",
+  orderPrefix: "DOC-",
   dateFormat: "YYYY-MM-DD",
   amountPrecision: 2,
 };

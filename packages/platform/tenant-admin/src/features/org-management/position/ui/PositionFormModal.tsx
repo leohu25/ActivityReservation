@@ -46,7 +46,7 @@ export function PositionFormModal({
         label: "岗位名称",
         type: "text",
         required: true,
-        placeholder: "例如: 采购经理、技术主管",
+        placeholder: "例如: 运营主管、技术经理",
       },
       {
         name: "code",
@@ -54,7 +54,7 @@ export function PositionFormModal({
         type: "text",
         required: true,
         disabled: isEdit,
-        placeholder: "例如: pos_customer_mgr",
+        placeholder: "例如: pos_dept_mgr",
         hint: isEdit ? "岗位编码创建后不可变更" : undefined,
       },
       {

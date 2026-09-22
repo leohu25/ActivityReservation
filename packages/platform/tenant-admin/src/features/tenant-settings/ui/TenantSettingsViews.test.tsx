@@ -17,21 +17,21 @@ const mockAbility = {
 
 const mockCompanyData: CompanyProfileData = {
   id: "comp_123",
-  companyName: "杭州宸润制造科技有限公司",
-  shortName: "宸润制造",
+  companyName: "杭州示范制造科技有限公司",
+  shortName: "示范制造",
   creditCode: "91330100MA2XXXXX",
   legalPerson: "张三",
   contactPhone: "0571-88888888",
-  contactEmail: "service@chenrun.com",
+  contactEmail: "service@example.com",
   address: "浙江省杭州市余杭区仓前街道",
   timezone: "Asia/Shanghai",
   currency: "CNY",
 };
 
 const mockGeneralData: GeneralSettingsData = {
-  systemName: "宸润数智供应链协同系统",
+  systemName: "示范数智供应链协同系统",
   defaultPageSize: 20,
-  orderPrefix: "CR-PO-",
+  orderPrefix: "DEMO-DOC-",
   dateFormat: "YYYY/MM/DD",
   amountPrecision: 3,
 };
@@ -51,7 +51,7 @@ describe("tenant-settings UI views", () => {
       </UiAbilityProvider>,
     );
     assert.match(html, /企业信息管理/);
-    assert.match(html, /杭州宸润制造科技有限公司/);
+    assert.match(html, /杭州示范制造科技有限公司/);
     assert.match(html, /ID: comp_123/);
   });
 
@@ -60,8 +60,8 @@ describe("tenant-settings UI views", () => {
       <GeneralSettingsView data={mockGeneralData} />,
     );
     assert.match(html, /基础偏好设置/);
-    assert.match(html, /宸润数智供应链协同系统/);
-    assert.match(html, /CR-PO-/);
+    assert.match(html, /示范数智供应链协同系统/);
+    assert.match(html, /DEMO-DOC-/);
   });
 
   it("renders SecuritySettingsView with controlled data and comboboxes", () => {

@@ -10,11 +10,11 @@ describe("tenant-settings schemas", () => {
   describe("updateCompanyProfileSchema", () => {
     it("should validate valid company profile", () => {
       const parsed = updateCompanyProfileSchema.parse({
-        companyName: "宸润制造科技集团",
+        companyName: "示范制造科技集团",
         creditCode: "91320000XXXXXXXXXX",
-        contactEmail: "admin@chenrun.com",
+        contactEmail: "admin@example.com",
       });
-      assert.equal(parsed.companyName, "宸润制造科技集团");
+      assert.equal(parsed.companyName, "示范制造科技集团");
       assert.equal(parsed.currency, "CNY");
       assert.equal(parsed.timezone, "Asia/Shanghai");
     });
@@ -31,7 +31,7 @@ describe("tenant-settings schemas", () => {
   describe("updateGeneralSettingsSchema", () => {
     it("should validate and apply defaults for general settings", () => {
       const parsed = updateGeneralSettingsSchema.parse({});
-      assert.equal(parsed.systemName, "宸润数智 ERP");
+      assert.equal(parsed.systemName, "企业数字化协同平台");
       assert.equal(parsed.defaultPageSize, 10);
       assert.equal(parsed.amountPrecision, 2);
     });

@@ -120,7 +120,7 @@ test("TenantDatabaseSeeder 基线种子初始化与幂等执行", async () => {
 
   const seedInput: TenantSeedInput = {
     organizationId: "org_base_test",
-    organizationName: "宸润制造集团",
+    organizationName: "示范制造集团",
     ownerUserId: "usr_owner_001",
     ownerMemberId: "mem_owner_001",
     ownerName: "张三",
@@ -136,7 +136,7 @@ test("TenantDatabaseSeeder 基线种子初始化与幂等执行", async () => {
   // 验证数据正确注入
   assert.equal(executor.departments.length, 1);
   assert.equal(executor.departments[0]?.code, "ROOT");
-  assert.equal(executor.departments[0]?.name, "宸润制造集团");
+  assert.equal(executor.departments[0]?.name, "示范制造集团");
   assert.equal(executor.departments[0]?.leaderMemberId, "mem_owner_001");
 
   assert.equal(executor.positions.length, 3);

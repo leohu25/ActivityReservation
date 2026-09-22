@@ -65,10 +65,10 @@ export default function LoginPage() {
       <Card className="w-full max-w-md border-slate-200/80 bg-white py-6 shadow-lg shadow-slate-200/50 dark:border-slate-800 dark:bg-slate-900 dark:shadow-none animate-in fade-in zoom-in-95 duration-200">
         <CardHeader className="text-center pb-4">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 text-white font-black text-lg shadow-md shadow-blue-500/25 ring-1 ring-blue-500/20">
-            CR
+            SaaS
           </div>
           <CardTitle className="mt-3 text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">
-            宸润数智 ERP 租户登录
+            企业数智平台登录
           </CardTitle>
           <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
             企业作用域专属独立入口 · 物理隔离与数据安全保障
@@ -94,7 +94,7 @@ export default function LoginPage() {
               <Input
                 id="orgSlug"
                 type="text"
-                placeholder="例如: cr-corp 或您的企业代号"
+                placeholder="例如: demo-corp 或您的企业代号"
                 value={orgSlug}
                 onChange={(e) => setOrgSlug(e.target.value)}
                 required

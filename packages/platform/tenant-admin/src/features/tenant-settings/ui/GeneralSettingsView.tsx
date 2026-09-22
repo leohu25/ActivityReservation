@@ -47,9 +47,9 @@ export function GeneralSettingsView({
   isReadOnly = false,
 }: GeneralSettingsViewProps) {
   const [formData, setFormData] = useState<UpdateGeneralSettingsSchemaInput>({
-    systemName: data.systemName || "宸润数智 ERP",
+    systemName: data.systemName || "企业数字化协同平台",
     defaultPageSize: data.defaultPageSize || 10,
-    orderPrefix: data.orderPrefix || "PO-",
+    orderPrefix: data.orderPrefix || "DOC-",
     dateFormat: data.dateFormat || "YYYY-MM-DD",
     amountPrecision: data.amountPrecision ?? 2,
   });
@@ -115,7 +115,7 @@ export function GeneralSettingsView({
                     systemName: e.target.value,
                   }))
                 }
-                placeholder="例如：宸润数智供应链协同系统"
+                placeholder="例如：企业数字化协同管理系统"
                 disabled={isReadOnly || isPending}
               />
             </div>
@@ -155,7 +155,7 @@ export function GeneralSettingsView({
                 htmlFor="general-order-prefix"
                 className="text-xs font-semibold text-slate-700 dark:text-slate-300"
               >
-                采购单据编号前缀
+                默认单据编号前缀
               </Label>
               <Input
                 id="general-order-prefix"
@@ -166,7 +166,7 @@ export function GeneralSettingsView({
                     orderPrefix: e.target.value,
                   }))
                 }
-                placeholder="PO-"
+                placeholder="例如: DOC- 或 CR-"
                 disabled={isReadOnly || isPending}
               />
             </div>

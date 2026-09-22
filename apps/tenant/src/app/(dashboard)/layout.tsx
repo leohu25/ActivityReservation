@@ -56,8 +56,8 @@ export default async function DashboardLayout({
       memberRoleLabel = "拥有者 / Owner";
     } else if (member?.role === "admin") {
       memberRoleLabel = "企业管理员";
-    } else if (member?.role === "buyer") {
-      memberRoleLabel = "采购员";
+    } else if (member?.role === "member") {
+      memberRoleLabel = "标准成员";
     } else if (member?.role) {
       memberRoleLabel = member.role;
     }

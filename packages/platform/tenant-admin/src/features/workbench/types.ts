@@ -33,18 +33,6 @@ export interface WorkbenchDataDTO {
   };
   readonly profile: EmployeeProfileDTO | null;
   readonly treeCount: number;
-  readonly sqlWhere: unknown;
-  readonly fieldModes: {
-    readonly customerName: FieldAccessMode;
-    readonly settlementType: FieldAccessMode;
-    readonly contactPhone: FieldAccessMode;
-  };
-  readonly permissions: {
-    readonly canReadCustomer: boolean;
-    readonly canCreateCustomer: boolean;
-    readonly canUpdateCustomer: boolean;
-    readonly canExportCustomer: boolean;
-  };
 }
 
 export interface WorkbenchUnauthenticatedDTO {

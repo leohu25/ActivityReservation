@@ -98,8 +98,8 @@ test("TenantSettingsService 读写企业资料 (CompanyProfile) 与平台 Organi
 
   // 2. 首次写入企业资料 (触发 create)
   const created = await service.updateCompanyProfile("org_test", {
-    companyName: "宸润数智工业制造有限公司",
-    shortName: "宸润数智",
+    companyName: "示范数智工业制造有限公司",
+    shortName: "示范数智",
     creditCode: "914403001922038216",
     legalPerson: "郭顺顺",
     contactPhone: "13800138000",
@@ -109,22 +109,22 @@ test("TenantSettingsService 读写企业资料 (CompanyProfile) 与平台 Organi
     timezone: "Asia/Shanghai",
   });
 
-  assert.equal(created.companyName, "宸润数智工业制造有限公司");
-  assert.equal(created.shortName, "宸润数智");
+  assert.equal(created.companyName, "示范数智工业制造有限公司");
+  assert.equal(created.shortName, "示范数智");
   assert.equal(created.creditCode, "914403001922038216");
   assert.equal(created.legalPerson, "郭顺顺");
   // 验证 Control DB 的组织名称被同步更新
-  assert.equal(orgName, "宸润数智工业制造有限公司");
+  assert.equal(orgName, "示范数智工业制造有限公司");
 
   // 3. 再次更新企业资料 (触发 update)
   const updated = await service.updateCompanyProfile("org_test", {
-    companyName: "宸润数智工业全球控股",
-    shortName: "宸润控股",
+    companyName: "示范数智工业全球控股",
+    shortName: "示范控股",
     creditCode: "914403001922038216",
   });
-  assert.equal(updated.companyName, "宸润数智工业全球控股");
-  assert.equal(updated.shortName, "宸润控股");
-  assert.equal(orgName, "宸润数智工业全球控股");
+  assert.equal(updated.companyName, "示范数智工业全球控股");
+  assert.equal(updated.shortName, "示范控股");
+  assert.equal(orgName, "示范数智工业全球控股");
 
   // 4. 输入空企业名称时校验拦截
   await assert.rejects(
@@ -169,25 +169,25 @@ test("TenantSettingsService 读写基础偏好设置 (GeneralSettings)", async (
   const defaultGeneral = await service.getGeneralSettings("org_test");
   assert.equal(defaultGeneral.systemName, DEFAULT_GENERAL_SETTINGS.systemName);
   assert.equal(defaultGeneral.defaultPageSize, 10);
-  assert.equal(defaultGeneral.orderPrefix, "PO-");
+  assert.equal(defaultGeneral.orderPrefix, "DOC-");
 
   // 2. 更新基础设置
   const updatedGeneral = await service.updateGeneralSettings("org_test", {
-    systemName: "晨润数字化协同底座",
+    systemName: "示范数字化协同底座",
     defaultPageSize: 50,
-    orderPrefix: "PUR-",
+    orderPrefix: "TEST-",
     amountPrecision: 3,
   });
 
-  assert.equal(updatedGeneral.systemName, "晨润数字化协同底座");
+  assert.equal(updatedGeneral.systemName, "示范数字化协同底座");
   assert.equal(updatedGeneral.defaultPageSize, 50);
-  assert.equal(updatedGeneral.orderPrefix, "PUR-");
+  assert.equal(updatedGeneral.orderPrefix, "TEST-");
   assert.equal(updatedGeneral.amountPrecision, 3);
 
   // 3. 再次读取验证持久化成功
   const reread = await service.getGeneralSettings("org_test");
-  assert.equal(reread.systemName, "晨润数字化协同底座");
-  assert.equal(reread.orderPrefix, "PUR-");
+  assert.equal(reread.systemName, "示范数字化协同底座");
+  assert.equal(reread.orderPrefix, "TEST-");
 
   // 4. 边界校验：非法分页大小与非法小数精度
   await assert.rejects(

@@ -16,7 +16,6 @@ import {
 } from "@tool/db-migrate";
 import { hashPassword } from "better-auth/crypto";
 import {
-  StandardAction,
   serializeRolePermissions,
   type RolePermissionPayload,
 } from "@base/authorization";
@@ -407,6 +406,11 @@ export class TenantManagementService {
     const ownerMemberId = generateUuidV7();
     const ownerUserId = adminUser.id;
     const ownerName = adminUser.name;
+
+    // 平台管控平面与租户业务切片严格解耦（Zero-Knowledge Architecture）：
+    // 平台开通租户时仅预置核心系统角色（owner、admin、member）占位记录，
+    // 严禁在此硬编码任何具体业务切片（如客户、物料、订单等）的资源符号或业务角色（如 buyer）；
+    // 业务权限由租户端根据已装配的 Feature Manifests 动态推导 (deriveBuiltInRoleDefaults) 或由租户管理员自主配置。
     const defaultRoles: Array<{
       role: string;
       payload: RolePermissionPayload;
@@ -414,80 +418,24 @@ export class TenantManagementService {
       {
         role: "owner",
         payload: {
-          statement: {
-            "customer.customer": [
-              StandardAction.READ,
-              StandardAction.CREATE,
-              StandardAction.UPDATE,
-              StandardAction.DELETE,
-              StandardAction.EXPORT,
-            ],
-            "customer.store": [
-              StandardAction.READ,
-              StandardAction.CREATE,
-              StandardAction.UPDATE,
-              StandardAction.DELETE,
-              StandardAction.EXPORT,
-            ],
-            "customer.quote": [
-              StandardAction.READ,
-              StandardAction.CREATE,
-              StandardAction.UPDATE,
-              StandardAction.DELETE,
-              StandardAction.EXPORT,
-            ],
-          },
-          dataScopes: [{ resource: "customer.customer", scopeType: "ALL" }],
+          statement: {},
+          dataScopes: [],
           fieldPolicies: [],
         },
       },
       {
         role: "admin",
         payload: {
-          statement: {
-            "customer.customer": [
-              StandardAction.READ,
-              StandardAction.CREATE,
-              StandardAction.UPDATE,
-              StandardAction.DELETE,
-              StandardAction.EXPORT,
-            ],
-            "customer.store": [
-              StandardAction.READ,
-              StandardAction.CREATE,
-              StandardAction.UPDATE,
-              StandardAction.DELETE,
-              StandardAction.EXPORT,
-            ],
-            "customer.quote": [
-              StandardAction.READ,
-              StandardAction.CREATE,
-              StandardAction.UPDATE,
-              StandardAction.DELETE,
-              StandardAction.EXPORT,
-            ],
-          },
-          dataScopes: [
-            { resource: "customer.customer", scopeType: "DEPT_TREE" },
-          ],
+          statement: {},
+          dataScopes: [],
           fieldPolicies: [],
         },
       },
       {
-        role: "buyer",
+        role: "member",
         payload: {
-          statement: {
-            "customer.customer": [StandardAction.READ, StandardAction.CREATE],
-            "customer.store": [StandardAction.READ],
-            "customer.quote": [StandardAction.READ, StandardAction.CREATE],
-          },
-          dataScopes: [
-            {
-              resource: "customer.customer",
-              action: StandardAction.READ,
-              scopeType: "DEPT",
-            },
-          ],
+          statement: {},
+          dataScopes: [],
           fieldPolicies: [],
         },
       },

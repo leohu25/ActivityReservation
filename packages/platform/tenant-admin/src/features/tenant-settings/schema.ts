@@ -63,7 +63,7 @@ export const updateGeneralSettingsSchema = z.object({
     .trim()
     .min(1, "系统显示名称为必填项")
     .max(64, "系统显示名称不能超过 64 个字符")
-    .default("宸润数智 ERP"),
+    .default("企业数字化协同平台"),
   defaultPageSize: z
     .number()
     .int()
@@ -76,7 +76,7 @@ export const updateGeneralSettingsSchema = z.object({
     .trim()
     .min(1, "单据编号前缀不能为空")
     .max(16, "单据编号前缀不能超过 16 个字符")
-    .default("PO-"),
+    .default("DOC-"),
   dateFormat: z
     .string()
     .trim()

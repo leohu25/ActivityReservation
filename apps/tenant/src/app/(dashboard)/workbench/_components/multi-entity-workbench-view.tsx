@@ -121,7 +121,7 @@ export function MultiEntityWorkbenchView({
     return createAbilityFromSnapshot(snapshots);
   }, [snapshots]);
 
-  const orgName = pageData.kind === "authenticated" ? pageData.org.name : "ERP 租户控制台";
+  const orgName = pageData.kind === "authenticated" ? pageData.org.name : "企业控制台";
   const orgSlug = pageData.kind === "authenticated" ? pageData.org.slug : "-";
   const employeeProfile = pageData.kind === "authenticated" ? pageData.profile : null;
 
@@ -233,9 +233,8 @@ export function MultiEntityWorkbenchView({
                 </Card>
               </CompositeGuard>
 
-              {/* 实体 3: 客户档案统计 (联合受控: view_customer_stats + Customer:read) */}
+              {/* 实体 3: 客户档案统计 (受控于 Customer:read) */}
               <CompositeGuard
-                viewAction="view_customer_stats"
                 entitySubject="Customer"
                 entityAction="read"
                 permissions={permissions}
@@ -261,9 +260,8 @@ export function MultiEntityWorkbenchView({
                 </Card>
               </CompositeGuard>
 
-              {/* 实体 4: 客户分类统计 (联合受控: view_category_stats + CustomerCategory:read) */}
+              {/* 实体 4: 客户分类统计 (受控于 CustomerCategory:read) */}
               <CompositeGuard
-                viewAction="view_category_stats"
                 entitySubject="CustomerCategory"
                 entityAction="read"
                 permissions={permissions}
@@ -293,10 +291,9 @@ export function MultiEntityWorkbenchView({
 
           {/* 3. 中间区域：实体 5 (客户标签列表) + 快捷受控操作区 */}
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-            {/* 实体 5: 客户标签列表卡片 (联合受控: view_tags + CustomerTag:read) */}
+            {/* 实体 5: 客户标签列表卡片 (受控于 CustomerTag:read) */}
             <div className="lg:col-span-2">
               <CompositeGuard
-                viewAction="view_tags"
                 entitySubject="CustomerTag"
                 entityAction="read"
                 permissions={permissions}

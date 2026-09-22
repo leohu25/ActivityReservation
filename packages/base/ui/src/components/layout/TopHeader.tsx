@@ -21,6 +21,10 @@ export interface TopHeaderProps {
 	readonly onOpenLogin?: () => void;
 	/** 是否显示侧边栏折叠触发器，默认 true */
 	readonly showSidebarTrigger?: boolean;
+	/** 系统展示名称，默认为 '企业数字化协同平台' */
+	readonly title?: string;
+	/** 系统标志短标，默认为 'SaaS' */
+	readonly logoText?: string;
 }
 
 /**
@@ -34,6 +38,8 @@ export function TopHeader({
 	onSignOut,
 	onOpenLogin,
 	showSidebarTrigger = true,
+	title,
+	logoText,
 }: TopHeaderProps) {
 	const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -79,14 +85,14 @@ export function TopHeader({
 
 				<div
 					className="flex items-center gap-2.5 cursor-default select-none"
-					title="宸润数智 ERP - 数字化供应链与制造运营系统"
+					title={title ?? "企业数字化协同管理平台"}
 				>
 					<div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-xs font-black text-sidebar-primary-foreground shadow-xs">
-						CR
+						{logoText ?? "SaaS"}
 					</div>
 					<div className="flex items-center gap-2 min-w-0">
 						<span className="truncate text-sm font-bold tracking-tight text-sidebar-foreground">
-							宸润数智 ERP
+							{title ?? "企业数字化协同平台"}
 						</span>
 						{platformBadge ? (
 							platformBadge

@@ -5,7 +5,7 @@ import { ThemeProvider, Toaster } from "@base/ui";
 import "./globals.css";
 
 export const metadata: Metadata = {
- title: "宸润数智 ERP · 控制平面 (Control Plane)",
+ title: "多租户 SaaS · 控制平面 (Control Plane)",
  description:
   "Control Plane Super Admin & Multi-Tenant Database Provisioning Central",
 };

@@ -6,31 +6,25 @@ import {
   CardDescription,
   CardContent,
   Badge,
-  Input,
   Button,
-  AuthorizedField,
 } from "@base/ui";
 import {
   Building2,
-  Database,
   ShieldAlert,
   ArrowRight,
   UserCheck,
-  Code2,
-  SlidersHorizontal,
   CheckCircle2,
   Users,
   Briefcase,
-  GitFork,
   AlertCircle,
   ShieldCheck,
-  Check,
-  X,
   Building,
+  KeyRound,
+  FileCheck,
+  GitFork,
 } from "lucide-react";
 import type {
   WorkbenchPageData,
-  WorkbenchDataDTO,
   EmployeeProfileDTO,
 } from "../types";
 
@@ -50,11 +44,11 @@ export function TenantUnauthenticatedCard({
         <CardTitle className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
           <ShieldAlert className="size-5 text-amber-600" />
           <span>
-            {isNoOrg ? "尚未选择或激活任何 ERP 租户组织" : "租户会话未激活"}
+            {isNoOrg ? "尚未选择或激活任何企业租户组织" : "租户会话未激活"}
           </span>
         </CardTitle>
         <CardDescription className="text-amber-700 dark:text-amber-300">
-          晨润 ERP 采用严格的 Database-per-Tenant 物理隔离机制。
+          本系统采用严格的 Database-per-Tenant 物理隔离机制。
           {isNoOrg ? "请在顶部导航栏组织切换器中选择或创建企业租户。" : message}
         </CardDescription>
       </CardHeader>
@@ -158,13 +152,13 @@ export function WorkbenchHeaderBanner({
           </div>
         </div>
 
-        <Link href="/customer/customers">
+        <Link href="/organization/employees">
           <Button
             variant="default"
             size="lg"
             className="group rounded-xl font-bold shadow-sm shadow-blue-600/20"
           >
-            <span>前往客户中心</span>
+            <span>进入组织管理</span>
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
           </Button>
         </Link>
@@ -269,103 +263,46 @@ export function EmployeeProfileMetricsGrid({
 }
 
 /**
- * 四层权限下推与字段策略展示
+ * 系统基础设施与系统管理指引面板（保持平台套件 100% 纯净，零业务实体硬编码）
  */
-export function PermissionAnalysisPanels({
-  sqlWhere,
-  fieldModes,
-  canReadCustomer,
-  canCreateCustomer,
-  canUpdateCustomer,
-  canExportCustomer,
-}: {
-  readonly sqlWhere: unknown;
-  readonly fieldModes: WorkbenchDataDTO["fieldModes"];
-  readonly canReadCustomer: boolean;
-  readonly canCreateCustomer: boolean;
-  readonly canUpdateCustomer: boolean;
-  readonly canExportCustomer: boolean;
-}) {
+export function SystemOverviewPanel() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
-              <Database className="size-4 text-blue-600" />
-              <span>数据库数据下推 (Prisma accessibleBy)</span>
+              <ShieldCheck className="size-4 text-blue-600" />
+              <span>多租户基座与权限闭环 (Tenant Platform Infrastructure)</span>
             </CardTitle>
             <Badge variant="success" size="sm">
               <CheckCircle2 className="size-3" />
-              <span>实时计算生效</span>
+              <span>正常运行</span>
             </Badge>
           </div>
           <CardDescription>
-            由当前登录员工档案部门拓扑与 CASL 角色规则动态编译生成的 Prisma
-            Where 查询条件：
+            租户运行于物理隔离的独立数据库，所有数据操作受控于 CASL 四层权限模型与部门拓扑下推。
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="relative rounded-xl bg-slate-900 p-4 font-mono text-xs text-emerald-400 shadow-inner overflow-x-auto dark:bg-slate-950 border border-slate-800">
-            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[10px] text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <Code2 className="size-3" />
-                <span>CASL Prisma Where Clause</span>
-              </span>
-              <span>编译结果</span>
+        <CardContent className="space-y-3">
+          <div className="rounded-xl bg-slate-50 p-3.5 text-xs text-slate-600 dark:bg-slate-800/60 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 space-y-2">
+            <div className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+              <Building2 className="size-3.5 text-blue-600" />
+              <span>Database-per-Tenant 隔离</span>
             </div>
-            <pre className="leading-relaxed">
-              {JSON.stringify(sqlWhere, null, 2)}
-            </pre>
+            <p className="text-slate-500 dark:text-slate-400">
+              当前租户的数据存储于独立的 PostgreSQL 物理库，由平台动态连接池统一管理，物理杜绝跨租户数据泄露。
+            </p>
           </div>
 
-          <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
-            <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
-              <ShieldCheck className="size-3.5 text-blue-600" />
-              <span>客户中心功能权限断言状态</span>
+          <div className="rounded-xl bg-slate-50 p-3.5 text-xs text-slate-600 dark:bg-slate-800/60 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 space-y-2">
+            <div className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+              <ShieldCheck className="size-3.5 text-emerald-600" />
+              <span>四层权限闭环 (CASL Engine)</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              <div className="flex items-center gap-1.5">
-                {canReadCustomer ? (
-                  <Check className="size-3.5 text-emerald-600" />
-                ) : (
-                  <X className="size-3.5 text-rose-500" />
-                )}
-                <span className="text-slate-600 dark:text-slate-400">
-                  查看单据
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {canCreateCustomer ? (
-                  <Check className="size-3.5 text-emerald-600" />
-                ) : (
-                  <X className="size-3.5 text-rose-500" />
-                )}
-                <span className="text-slate-600 dark:text-slate-400">
-                  新建客户
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {canUpdateCustomer ? (
-                  <Check className="size-3.5 text-emerald-600" />
-                ) : (
-                  <X className="size-3.5 text-rose-500" />
-                )}
-                <span className="text-slate-600 dark:text-slate-400">
-                  单据审核
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {canExportCustomer ? (
-                  <Check className="size-3.5 text-emerald-600" />
-                ) : (
-                  <X className="size-3.5 text-rose-500" />
-                )}
-                <span className="text-slate-600 dark:text-slate-400">
-                  数据导出
-                </span>
-              </div>
-            </div>
+            <p className="text-slate-500 dark:text-slate-400">
+              功能权限 (Action)、数据范围 (Data Scope)、字段脱敏 (Field Policy) 与准入门禁严格在服务端与数据库下推层执行。
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -374,57 +311,78 @@ export function PermissionAnalysisPanels({
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
-              <SlidersHorizontal className="size-4 text-blue-600" />
-              <span>字段策略三态保护 (AuthorizedField 自动感知)</span>
+              <KeyRound className="size-4 text-indigo-600" />
+              <span>系统设置与快捷通道</span>
             </CardTitle>
             <Badge variant="default" size="sm">
-              CASL 实时推导生效
+              管理套件
             </Badge>
           </div>
           <CardDescription>
-            根据当前角色的字段策略，受控字段自动匹配可编辑 (EDITABLE)、只读
-            (READONLY) 或隐藏 (HIDDEN) 模式：
+            快速进入组织架构维护、角色权限分配及审计安全日志中心：
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <AuthorizedField
-            mode={fieldModes.customerName}
-            subject="Customer"
-            field="customerName"
-            label="客户名称 (customerName)"
-          >
-            <Input defaultValue="晨润精密设备供应链有限公司" />
-          </AuthorizedField>
-
-          <AuthorizedField
-            mode={fieldModes.settlementType}
-            subject="Customer"
-            field="settlementType"
-            label="结算方式 (settlementType)"
-            fallback={
-              <div className="rounded-xl border border-dashed border-rose-200 bg-rose-50/60 p-3 text-xs text-rose-600 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-400">
-                🔒 结算方式属于敏感字段，当前角色无查看权限
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Link
+              href="/organization/departments"
+              className="flex items-center gap-3 p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-slate-100/80 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 transition-colors"
+            >
+              <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+                <Building className="size-4" />
               </div>
-            }
-          >
-            <Input
-              defaultValue="月结 30 天"
-              className="font-semibold text-emerald-600 tabular-nums dark:text-emerald-400"
-            />
-          </AuthorizedField>
+              <div>
+                <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  部门架构
+                </div>
+                <div className="text-[11px] text-slate-400">维护层级与汇报线</div>
+              </div>
+            </Link>
 
-          <AuthorizedField
-            mode={fieldModes.contactPhone}
-            subject="Customer"
-            field="contactPhone"
-            label="联系电话 (contactPhone)"
-          >
-            <Input defaultValue="021-6688-0000" />
-          </AuthorizedField>
+            <Link
+              href="/settings/roles"
+              className="flex items-center gap-3 p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-slate-100/80 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 transition-colors"
+            >
+              <div className="rounded-lg bg-indigo-100 p-2 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
+                <KeyRound className="size-4" />
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  角色权限
+                </div>
+                <div className="text-[11px] text-slate-400">配置四层权限规则</div>
+              </div>
+            </Link>
 
-          <div className="text-[11px] text-slate-400 leading-relaxed bg-slate-50/80 p-3 rounded-xl dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
-            💡 字段策略与角色直接绑定。管理员在【系统管理 /
-            角色与权限】中调整字段策略后，页面将自动响应隐藏、只读或编辑模式。
+            <Link
+              href="/organization/employees"
+              className="flex items-center gap-3 p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-slate-100/80 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 transition-colors"
+            >
+              <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                <Users className="size-4" />
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  员工档案
+                </div>
+                <div className="text-[11px] text-slate-400">入职与岗位调度</div>
+              </div>
+            </Link>
+
+            <Link
+              href="/audit/login"
+              className="flex items-center gap-3 p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-slate-100/80 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 transition-colors"
+            >
+              <div className="rounded-lg bg-amber-100 p-2 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
+                <FileCheck className="size-4" />
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  安全审计
+                </div>
+                <div className="text-[11px] text-slate-400">追踪登录与操作记录</div>
+              </div>
+            </Link>
           </div>
         </CardContent>
       </Card>
@@ -437,7 +395,7 @@ export interface WorkbenchViewProps {
 }
 
 /**
- * 租户工作台整体视图组件（无底层直连与 CASL 编译，纯渲染装配）
+ * 租户工作台整体视图组件（系统平台纯净视图）
  */
 export function WorkbenchView({ data }: WorkbenchViewProps) {
   if (data.kind === "unauthenticated") {
@@ -471,14 +429,7 @@ export function WorkbenchView({ data }: WorkbenchViewProps) {
         treeCount={data.treeCount}
       />
 
-      <PermissionAnalysisPanels
-        sqlWhere={data.sqlWhere}
-        fieldModes={data.fieldModes}
-        canReadCustomer={data.permissions.canReadCustomer}
-        canCreateCustomer={data.permissions.canCreateCustomer}
-        canUpdateCustomer={data.permissions.canUpdateCustomer}
-        canExportCustomer={data.permissions.canExportCustomer}
-      />
+      <SystemOverviewPanel />
     </div>
   );
 }

@@ -160,7 +160,7 @@ export function CompanySettingsView({
               <Input
                 value={formData.companyName}
                 onChange={(e) => handleChange("companyName", e.target.value)}
-                placeholder="例如：杭州宸润数智工贸有限公司"
+                placeholder="例如：示范数智工贸制造有限公司"
                 disabled={isPending}
                 required
               />
@@ -176,7 +176,7 @@ export function CompanySettingsView({
               <Input
                 value={formData.shortName || ""}
                 onChange={(e) => handleChange("shortName", e.target.value)}
-                placeholder="例如：宸润数智"
+                placeholder="例如：数智科技"
                 disabled={isPending}
               />
             </AuthorizedField>
@@ -281,7 +281,7 @@ export function CompanySettingsView({
               时区与本位币种
             </CardTitle>
             <CardDescription className="text-xs text-slate-400">
-              决定 ERP 单据时间戳显示规则与采购财务核算币种
+              决定系统业务单据时间戳显示规则与财务核算币种
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">

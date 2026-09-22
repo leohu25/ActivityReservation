@@ -7,7 +7,7 @@ export interface ThemeProviderProps
     extends React.ComponentProps<typeof NextThemesProvider> {}
 
 /**
- * 宸润全栈主题上下文提供者 (支持暗色 / 亮色 / 跟随系统)
+ * 全栈主题上下文提供者 (支持暗色 / 亮色 / 跟随系统)
  */
 export function ThemeProvider({
     children,

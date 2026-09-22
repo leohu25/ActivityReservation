@@ -53,7 +53,7 @@ export function RoleFormModal({
         type: "text",
         required: isCreate,
         disabled: !isCreate,
-        placeholder: "例如: customer_manager, buyer_leader",
+        placeholder: "例如: dept_manager, project_lead",
         hint: isCreate
           ? "以小写字母开头，由 2-32 位小写字母、数字或下划线组成；创建后全局不可修改"
           : "角色标识代码为不可变业务主键",
@@ -64,7 +64,7 @@ export function RoleFormModal({
         type: "text",
         required: true,
         disabled: isView,
-        placeholder: "例如: 客户业务经理",
+        placeholder: "例如: 部门经理、项目主管",
       },
       {
         name: "description",
