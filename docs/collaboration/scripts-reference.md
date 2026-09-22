@@ -10,40 +10,51 @@
 
 ## 一、Turborepo 原生拓扑流水线 (Task Pipeline)
 
-根命令通过 `turbo.json` 显式声明依赖拓扑与增量缓存，无需手动前置依赖：
+根命令通过 `turbo.json` 显式声明依赖拓扑与增量缓存。**根 `package.json` 只保留 `turbo run *` 调度器**；编译期生成脚本归属产物包，由拓扑拉起，禁止 `&&` 胶水串联。
 
 | 顶层命令           | 底层实际调度                     | 拓扑前置依赖 (`dependsOn`) | 增量缓存策略                 | 职责定位                          |
 | :----------------- | :------------------------------- | :------------------------- | :--------------------------- | :-------------------------------- |
-| `pnpm dev`         | `turbo run dev`                  | `//#codegen`               | 缓存命中时 20ms 跳过代码生成 | 本地全端联调 (Turbo 并行拉起双端) |
-| `pnpm dev:tenant`  | `turbo run dev --filter=tenant`  | `//#codegen`               | 依赖切片无变动则直接拉起应用 | 租户端独立开发 (`:3000`)          |
-| `pnpm dev:control` | `turbo run dev --filter=control` | `//#codegen` + 运行时自愈  | 依赖切片无变动则直接拉起应用 | 平台总控端独立开发 (`:3001`)      |
-| `pnpm build`       | `turbo run build`                | `//#codegen`, `^build`     | 产物增量缓存                 | 生产全端构建                      |
-| `pnpm check`       | `turbo run check`                | `//#codegen`, `^check`     | 执行各包类型检查与迁移校验   | 全仓静态扫描 (`tsc --noEmit`)     |
-| `pnpm test`        | `turbo run test`                 | `//#codegen`, `^test`      | 单元测试拓扑调度             | 全仓单测执行                      |
+| `pnpm dev`         | `turbo run dev`                  | `generate` → 包级 `codegen` | codegen 按文件 Hash 缓存 | 本地全端联调 (Turbo 并行拉起双端) |
+| `pnpm dev:tenant`  | `turbo run dev --filter=tenant`  | 同上                       | 依赖切片无变动则跳过 codegen | 租户端独立开发 (`:3000`)          |
+| `pnpm dev:control` | `turbo run dev --filter=control` | 同上 + 运行时自愈          | 依赖切片无变动则跳过 codegen | 平台总控端独立开发 (`:3001`)      |
+| `pnpm build`       | `turbo run build`                | `generate`, `^build`       | 产物增量缓存                 | 生产全端构建                      |
+| `pnpm check`       | `turbo run check`                | `generate`, `^check`       | 执行各包类型检查与迁移校验   | 全仓静态扫描 (`tsc --noEmit`)     |
+| `pnpm test`        | `turbo run test`                 | `generate`, `^test`        | 单元测试拓扑调度             | 全仓单测执行                      |
+| `pnpm generate`    | `turbo run generate`             | 包级 `codegen`             | codegen 缓存 / Client 强制新鲜 | 仅刷新聚合产物与 Prisma Client |
+
+开发与正式打包共用同一条前置链：`*#dev|build → *#generate → @runtime/*#codegen`。
 
 ---
 
-## 二、特性装配与代码生成 (`turbo codegen`)
+## 二、特性装配与代码生成（包级 `codegen`）
 
-### `pnpm codegen` (别名 `pnpm sync:features`)
+生成物**住在产物所属包**，由 `generate` 任务的 `dependsOn` 编排，不使用根任务 `//#codegen`，也不在根 `package.json` 挂业务脚本。
 
-在 `turbo.json` 中声明为根任务 `//#codegen`，配置了严格的文件 Hash 监听范围：
+| 任务 | 所在包 | 脚本 | 产物 |
+| --- | --- | --- | --- |
+| `@runtime/tenant#codegen` | `@runtime/tenant` | `node ./scripts/sync-features.mjs` | `src/registry.ts` |
+| `@runtime/db#codegen` | `@runtime/db` | `node ./scripts/sync-schema.mjs` | `prisma/schema.prisma` |
 
-- **监听输入 (`inputs`)**：`packages/features/**/{manifest.ts,schema.prisma,package.json}`、`packages/db-tenant/prisma/schema.prisma`、`scripts/sync/**`
-- **缓存产物 (`outputs`)**：`packages/runtime/tenant/src/registry.ts`、`packages/runtime/db/prisma/schema.prisma`
+`generate`（`@base/db-tenant` / `@base/db-control` 的 `prisma generate`）声明：
 
-#### 1. 注册表生成 (`scripts/sync/sync-features.mjs`)
+```json
+"dependsOn": ["@runtime/db#codegen", "@runtime/tenant#codegen", "^generate"]
+```
 
-- **扫描机制**：扫描 `packages/features/*`（排除 `control-admin`），匹配 `src/manifest.ts`。按 `tenant-admin` 置顶、其余字典序排序。
+#### 1. 注册表生成 (`packages/runtime/tenant/scripts/sync-features.mjs`)
+
+- **扫描机制**：扫描 `packages/domains/*`、`packages/platform/*` 的 `src/manifest.ts`。按稳定顺序排序。
 - **生成产物**：`packages/runtime/tenant/src/registry.ts`（导出 `ALL_TENANT_MANIFESTS`、CASL `globalTenantCatalog`、侧边栏导航、权限树）。
 - **运行特性**：**幂等保护**，内容未变跳过磁盘写入，避免触发 Turbopack 热重载。依据 **ADR-006** 解耦切片间依赖。
 
-#### 2. 租户 Schema 聚合 (`scripts/sync/sync-tenant-schema.mjs`)
+#### 2. 租户 Schema 聚合 (`packages/runtime/db/scripts/sync-schema.mjs`)
 
-- **聚合机制**：以 `packages/db-tenant/prisma/schema.prisma` 为底座，合并各业务切片 `prisma/schema.prisma`。
+- **聚合机制**：以 `packages/base/db-tenant/prisma/schema.prisma` 为基座，合并 `packages/domains/*` 与 `packages/platform/*` 的 `prisma/schema.prisma`。
 - **扩展语法**：支持 `// @db-migrate-extension ModelName` 声明切片侧模型扩展字段。
 - **冲突拦截**：模型重复定义、扩展无主模型、同名字段类型契约冲突时硬报错中断。
 - **生成产物**：`packages/runtime/db/prisma/schema.prisma`（自动挂载 `@prisma/client-tenant` 生成头）。
+
+> 需要单独触发时：`pnpm --filter @runtime/tenant codegen` 或 `pnpm --filter @runtime/db codegen`；日常无需手动，`pnpm dev` / `pnpm build` 会自动执行。
 
 ---
 
@@ -72,7 +83,6 @@
 | 命令                                      | 说明                                                                                                   | 适用阶段                       |
 | :---------------------------------------- | :----------------------------------------------------------------------------------------------------- | :----------------------------- |
 | `pnpm db:migrate:check`                   | **只读一致性校验**（CI 与 `pre-commit` 门禁使用）                                                      | 门禁、CI、改动 Schema 后的自检 |
-| `pnpm db:migrate:catalog`                 | 重新生成预编译运行时 Catalog 快照                                                                      | 迁移脚本目录变更后             |
 | `pnpm db:migrate:generate`                | 生成新迁移：`--scope platform/tenant --name <名称>`；破坏性变更需加 `--allow-destructive --reason ...` | 数据模型字段增删改             |
 | `pnpm db:migrate:baseline`                | 为已有数据库打基线：`--scope platform/tenant`                                                          | 存量库接入管理                 |
 | `pnpm db:migrate:baseline:reset:tenant`   | 重置租户基线：`--scope tenant --reset`                                                                 | 租户基线异常重建 (谨慎)        |
@@ -86,7 +96,7 @@
 1. **文档注释门禁**：校验所有模型与字段必须包含 `///` 文档注释；
 2. **Schema 校验和**：当前 Schema 的 SHA-256 必须与最新迁移快照严格匹配；
 3. **迁移链连续性**：按序检验各版本 `previousVersion` 链接，杜绝迁移分叉与断链；
-4. **Catalog 就绪性**：确认预编译运行时文件存在。
+4. **迁移目录完整性**：确认迁移与基线工件可被运行时 Catalog 正确加载。
 
 > 注：`@tool/db-migrate` 包的 `check` 任务已被挂载至 `turbo run check`，在执行 `pnpm check` 或 `git commit` 时自动校验。
 

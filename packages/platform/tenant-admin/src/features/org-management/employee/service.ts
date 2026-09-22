@@ -88,8 +88,9 @@ export class EmployeeManagementService {
     if (filter.search && filter.search.trim().length > 0) {
       const s = filter.search.trim();
       where.OR = [
-        { nameSnapshot: { contains: s, mode: "insensitive" } },
-        { emailSnapshot: { contains: s, mode: "insensitive" } },
+        { name: { contains: s, mode: "insensitive" } },
+        { email: { contains: s, mode: "insensitive" } },
+        { phone: { contains: s, mode: "insensitive" } },
         { employeeNo: { contains: s, mode: "insensitive" } },
       ];
     }
@@ -114,7 +115,7 @@ export class EmployeeManagementService {
             select: { id: true, name: true },
           },
           manager: {
-            select: { id: true, nameSnapshot: true },
+            select: { id: true, name: true },
           },
         },
         orderBy: [{ createdAt: "desc" }],
@@ -170,6 +171,14 @@ export class EmployeeManagementService {
     }
 
     // 6. 组装最终展示项
+    const accounts = await controlPrisma.tenantAccount.findMany({
+      where: { organizationId: orgId, memberId: { in: memberIds } },
+      select: { memberId: true, account: true },
+    });
+    const accountByMemberId = new Map(
+      accounts.map((a) => [a.memberId ?? "", a.account]),
+    );
+
     const items: EmployeeItem[] = profiles.map((p) => {
       const memberInfo = p.memberId ? memberMap.get(p.memberId) : undefined;
       const roles = memberInfo?.roles ?? [];
@@ -179,14 +188,16 @@ export class EmployeeManagementService {
         memberId: p.memberId,
         userId: p.userId ?? memberInfo?.userId ?? null,
         employeeNo: p.employeeNo,
-        name: memberInfo?.name || p.nameSnapshot || "未命名员工",
-        email: memberInfo?.email || p.emailSnapshot || "",
+        name: memberInfo?.name || p.name || "未命名员工",
+        loginAccount: accountByMemberId.get(p.memberId ?? "") || "",
+        email: p.email || "",
+        phone: p.phone || "",
         departmentId: p.departmentId,
         departmentName: p.department?.name ?? null,
         positionId: p.positionId,
         positionName: p.position?.name ?? null,
         managerEmployeeId: p.managerEmployeeId,
-        managerName: p.manager?.nameSnapshot ?? null,
+        managerName: p.manager?.name ?? null,
         jobTitle: p.jobTitle,
         avatarUrl: p.avatarUrl ?? null,
         roles,
@@ -231,8 +242,9 @@ export class EmployeeManagementService {
       positionId?: string;
       status?: string;
       OR?: Array<{
-        nameSnapshot?: { contains: string; mode: "insensitive" };
-        emailSnapshot?: { contains: string; mode: "insensitive" };
+        name?: { contains: string; mode: "insensitive" };
+        email?: { contains: string; mode: "insensitive" };
+        phone?: { contains: string; mode: "insensitive" };
         employeeNo?: { contains: string; mode: "insensitive" };
       }>;
     } = {};
@@ -250,8 +262,9 @@ export class EmployeeManagementService {
       const s = filter.search.trim();
       if (s) {
         whereCondition.OR = [
-          { nameSnapshot: { contains: s, mode: "insensitive" } },
-          { emailSnapshot: { contains: s, mode: "insensitive" } },
+          { name: { contains: s, mode: "insensitive" } },
+          { email: { contains: s, mode: "insensitive" } },
+          { phone: { contains: s, mode: "insensitive" } },
           { employeeNo: { contains: s, mode: "insensitive" } },
         ];
       }
@@ -267,7 +280,7 @@ export class EmployeeManagementService {
           select: { id: true, name: true },
         },
         manager: {
-          select: { id: true, nameSnapshot: true },
+          select: { id: true, name: true },
         },
       },
       orderBy: [{ createdAt: "desc" }],
@@ -322,6 +335,14 @@ export class EmployeeManagementService {
     // 4. 组装最终展示项并支持角色过滤
     const results: EmployeeItem[] = [];
 
+    const accounts = await controlPrisma.tenantAccount.findMany({
+      where: { organizationId: orgId, memberId: { in: memberIds } },
+      select: { memberId: true, account: true },
+    });
+    const accountByMemberId = new Map(
+      accounts.map((a) => [a.memberId ?? "", a.account]),
+    );
+
     for (const p of profiles) {
       const memberInfo = p.memberId ? memberMap.get(p.memberId) : undefined;
       const roles = memberInfo?.roles ?? [];
@@ -336,14 +357,16 @@ export class EmployeeManagementService {
         memberId: p.memberId,
         userId: p.userId ?? memberInfo?.userId ?? null,
         employeeNo: p.employeeNo,
-        name: memberInfo?.name || p.nameSnapshot || "未命名员工",
-        email: memberInfo?.email || p.emailSnapshot || "",
+        name: memberInfo?.name || p.name || "未命名员工",
+        loginAccount: accountByMemberId.get(p.memberId ?? "") || "",
+        email: p.email || "",
+        phone: p.phone || "",
         departmentId: p.departmentId,
         departmentName: p.department?.name ?? null,
         positionId: p.positionId,
         positionName: p.position?.name ?? null,
         managerEmployeeId: p.managerEmployeeId,
-        managerName: p.manager?.nameSnapshot ?? null,
+        managerName: p.manager?.name ?? null,
         jobTitle: p.jobTitle,
         avatarUrl: p.avatarUrl ?? null,
         roles,
@@ -366,20 +389,35 @@ export class EmployeeManagementService {
     input: DirectCreateEmployeeInput,
   ): Promise<EmployeeItem> {
     const cleanName = input.name.trim();
-    const cleanEmail = input.email.trim().toLowerCase();
+    const cleanLoginAccount = input.loginAccount.trim();
     const cleanEmployeeNo = input.employeeNo?.trim() || null;
+    const cleanPhone = input.phone?.trim() || null;
+    const cleanEmail = input.email?.trim().toLowerCase() || null;
 
     if (!cleanName) {
       throw new Error("员工姓名不能为空");
     }
-    if (!cleanEmail || !cleanEmail.includes("@")) {
-      throw new Error("请输入合法的员工邮箱");
+    if (!cleanLoginAccount) {
+      throw new Error("登录账号不能为空");
     }
     if (!input.initialRoleCodes || input.initialRoleCodes.length === 0) {
       throw new Error("必须为新员工至少指定一个初始系统角色");
     }
 
-    // 1. 校验工号唯一性
+    // 1. 校验登录账号租户内唯一
+    const existingAccount = await controlPrisma.tenantAccount.findUnique({
+      where: {
+        organizationId_account: {
+          organizationId: orgId,
+          account: cleanLoginAccount,
+        },
+      },
+    });
+    if (existingAccount) {
+      throw new Error(`登录账号 [${cleanLoginAccount}] 已被占用，请更换`);
+    }
+
+    // 2. 校验工号唯一性
     if (cleanEmployeeNo) {
       const existingNo = await tenantPrisma.employeeProfile.findUnique({
         where: { employeeNo: cleanEmployeeNo },
@@ -389,7 +427,7 @@ export class EmployeeManagementService {
       }
     }
 
-    // 2. 校验部门、岗位与上级是否存在
+    // 3. 校验部门、岗位与上级是否存在
     if (input.departmentId) {
       const dept = await tenantPrisma.department.findUnique({
         where: { id: input.departmentId },
@@ -417,9 +455,19 @@ export class EmployeeManagementService {
       }
     }
 
-    // 3. 在 Control DB 查找或创建 User (作为平台会话载体)
+    const org = await controlPrisma.organization.findUnique({
+      where: { id: orgId },
+      select: { slug: true },
+    });
+    if (!org) {
+      throw new Error("当前企业不存在");
+    }
+
+    // 4. User 会话载体：统一使用租户隔离虚拟邮箱，真实邮箱仅存档案快照
+    //    形如 `${loginAccount}@${orgSlug}.local`，跨租户同名账号不会串号
+    const virtualEmail = `${cleanLoginAccount}@${org.slug}.local`;
     let targetUser = await controlPrisma.user.findUnique({
-      where: { email: cleanEmail },
+      where: { email: virtualEmail },
     });
 
     const plainPassword = input.password?.trim() || "Admin123456!";
@@ -429,7 +477,6 @@ export class EmployeeManagementService {
     const hashedPassword = await hashPassword(plainPassword);
 
     if (targetUser) {
-      // 检查是否已经在当前租户中有成员记录
       const existingMember = await controlPrisma.member.findUnique({
         where: {
           organizationId_userId: {
@@ -441,32 +488,21 @@ export class EmployeeManagementService {
 
       if (existingMember) {
         throw new Error(
-          `邮箱 [${cleanEmail}] 的用户已属于当前企业，请直接在列表中编辑或调岗`,
+          `登录账号 [${cleanLoginAccount}] 的用户已属于当前企业，请直接在列表中编辑`,
         );
       }
     } else {
-      // 创建新 User 与初始凭证 Account
       targetUser = await controlPrisma.user.create({
         data: {
           id: generateUuidV7(),
-          email: cleanEmail,
+          email: virtualEmail,
           name: cleanName,
           emailVerified: true,
         },
       });
-
-      await controlPrisma.account.create({
-        data: {
-          id: generateUuidV7(),
-          accountId: targetUser.id,
-          providerId: "credential",
-          userId: targetUser.id,
-          password: hashedPassword,
-        },
-      });
     }
 
-    // 4. 在 Control DB 中创建当前租户的 Member 记录
+    // 5. 在 Control DB 中创建当前租户的 Member 记录
     const memberId = generateUuidV7();
     const roleString = input.initialRoleCodes.join(",");
 
@@ -479,26 +515,12 @@ export class EmployeeManagementService {
       },
     });
 
-    // 4.1 在 Control DB 中创建当前租户专属的独立凭据 TenantAccount
-    // 账号规则：严格保真，优先使用工号；若未填写工号则完整使用邮箱或姓名，绝不擅自截断 @ 字符！
-    const loginAccount = cleanEmployeeNo || cleanEmail || cleanName;
-    await controlPrisma.tenantAccount.upsert({
-      where: {
-        organizationId_account: {
-          organizationId: orgId,
-          account: loginAccount,
-        },
-      },
-      create: {
+    // 6. 独立凭据 TenantAccount：严格使用显式登录账号，禁止后端择优降级
+    await controlPrisma.tenantAccount.create({
+      data: {
         id: generateUuidV7(),
         organizationId: orgId,
-        account: loginAccount,
-        password: hashedPassword,
-        name: cleanName,
-        memberId: createdMember.id,
-        status: "ACTIVE",
-      },
-      update: {
+        account: cleanLoginAccount,
         password: hashedPassword,
         name: cleanName,
         memberId: createdMember.id,
@@ -506,7 +528,7 @@ export class EmployeeManagementService {
       },
     });
 
-    // 5. 在 Tenant DB 中创建在职 EmployeeProfile (直接 ACTIVE 态)
+    // 7. 在 Tenant DB 中创建在职 EmployeeProfile (直接 ACTIVE 态)
     const profile = await tenantPrisma.employeeProfile.create({
       data: {
         memberId: createdMember.id,
@@ -515,8 +537,9 @@ export class EmployeeManagementService {
         departmentId: input.departmentId ?? null,
         positionId: input.positionId ?? null,
         managerEmployeeId: input.managerEmployeeId ?? null,
-        nameSnapshot: cleanName,
-        emailSnapshot: cleanEmail,
+        name: cleanName,
+        email: cleanEmail ?? "",
+        phone: cleanPhone ?? "",
         jobTitle: input.jobTitle?.trim() || null,
         avatarUrl: input.avatarUrl?.trim() || null,
         status: "ACTIVE",
@@ -525,11 +548,11 @@ export class EmployeeManagementService {
       include: {
         department: { select: { id: true, name: true } },
         position: { select: { id: true, name: true } },
-        manager: { select: { id: true, nameSnapshot: true } },
+        manager: { select: { id: true, name: true } },
       },
     });
 
-    // 6. 租户权限版本自增 (authorizationVersion++)，驱动权限即时失效重构
+    // 8. 租户权限版本自增 (authorizationVersion++)，驱动权限即时失效重构
     await controlPrisma.organization.update({
       where: { id: orgId },
       data: { authorizationVersion: { increment: 1 } },
@@ -541,13 +564,15 @@ export class EmployeeManagementService {
       userId: profile.userId,
       employeeNo: profile.employeeNo,
       name: cleanName,
-      email: cleanEmail,
+      loginAccount: cleanLoginAccount,
+      email: cleanEmail ?? "",
+      phone: cleanPhone ?? "",
       departmentId: profile.departmentId,
       departmentName: profile.department?.name ?? null,
       positionId: profile.positionId,
       positionName: profile.position?.name ?? null,
       managerEmployeeId: profile.managerEmployeeId,
-      managerName: profile.manager?.nameSnapshot ?? null,
+      managerName: profile.manager?.name ?? null,
       jobTitle: profile.jobTitle,
       avatarUrl: profile.avatarUrl ?? null,
       roles: input.initialRoleCodes,
@@ -567,7 +592,10 @@ export class EmployeeManagementService {
     employeeId: string,
     input: {
       name?: string;
+      loginAccount?: string;
       employeeNo?: string | null;
+      phone?: string | null;
+      email?: string | null;
       departmentId?: string | null;
       positionId?: string | null;
       jobTitle?: string | null;
@@ -612,17 +640,29 @@ export class EmployeeManagementService {
     }
 
     // 3. 更新 Tenant DB 员工档案
-    const cleanName = input.name?.trim() || profile.nameSnapshot;
+    const cleanName = input.name?.trim() || profile.name;
     const cleanEmployeeNo =
       input.employeeNo !== undefined
         ? input.employeeNo?.trim() || null
         : profile.employeeNo;
+    const cleanPhone =
+      input.phone !== undefined ? input.phone?.trim() || null : null;
+    const cleanEmail =
+      input.email !== undefined
+        ? input.email?.trim().toLowerCase() || null
+        : null;
 
     const updatedProfile = await tenantPrisma.employeeProfile.update({
       where: { id: employeeId },
       data: {
-        nameSnapshot: cleanName,
+        name: cleanName,
         employeeNo: cleanEmployeeNo,
+        ...(input.phone !== undefined
+          ? { phone: cleanPhone ?? "" }
+          : {}),
+        ...(input.email !== undefined
+          ? { email: cleanEmail ?? "" }
+          : {}),
         department: targetDeptId
           ? { connect: { id: targetDeptId } }
           : { disconnect: true },
@@ -641,11 +681,55 @@ export class EmployeeManagementService {
       include: {
         department: { select: { id: true, name: true } },
         position: { select: { id: true, name: true } },
-        manager: { select: { id: true, nameSnapshot: true } },
+        manager: { select: { id: true, name: true } },
       },
     });
 
-    // 4. 同步更新 Control DB 用户名
+    // 4. 同步 Control DB：登录账号（显式改名）+ 姓名
+    let loginAccount = "";
+    if (profile.memberId) {
+      const tenantAccount = await controlPrisma.tenantAccount.findFirst({
+        where: { memberId: profile.memberId, organizationId: orgId },
+      });
+      const cleanLoginAccount = input.loginAccount?.trim();
+      if (cleanLoginAccount) {
+        if (tenantAccount && tenantAccount.account !== cleanLoginAccount) {
+          const conflict = await controlPrisma.tenantAccount.findUnique({
+            where: {
+              organizationId_account: {
+                organizationId: orgId,
+                account: cleanLoginAccount,
+              },
+            },
+          });
+          if (conflict) {
+            throw new Error(
+              `登录账号 [${cleanLoginAccount}] 已被占用，请更换`,
+            );
+          }
+          await controlPrisma.tenantAccount.update({
+            where: { id: tenantAccount.id },
+            data: { account: cleanLoginAccount, name: cleanName },
+          });
+          loginAccount = cleanLoginAccount;
+        } else if (tenantAccount) {
+          await controlPrisma.tenantAccount.update({
+            where: { id: tenantAccount.id },
+            data: { name: cleanName },
+          });
+          loginAccount = tenantAccount.account;
+        } else {
+          throw new Error("该员工尚未开通登录账号，无法修改");
+        }
+      } else if (tenantAccount) {
+        await controlPrisma.tenantAccount.update({
+          where: { id: tenantAccount.id },
+          data: { name: cleanName },
+        });
+        loginAccount = tenantAccount.account;
+      }
+    }
+
     if (input.name && profile.userId) {
       await controlPrisma.user.update({
         where: { id: profile.userId },
@@ -692,13 +776,15 @@ export class EmployeeManagementService {
       userId: updatedProfile.userId,
       employeeNo: updatedProfile.employeeNo,
       name: cleanName,
-      email: profile.emailSnapshot || "",
+      loginAccount,
+      email: updatedProfile.email || "",
+      phone: updatedProfile.phone || "",
       departmentId: updatedProfile.departmentId,
       departmentName: updatedProfile.department?.name ?? null,
       positionId: updatedProfile.positionId,
       positionName: updatedProfile.position?.name ?? null,
       managerEmployeeId: updatedProfile.managerEmployeeId,
-      managerName: updatedProfile.manager?.nameSnapshot ?? null,
+      managerName: updatedProfile.manager?.name ?? null,
       jobTitle: updatedProfile.jobTitle,
       avatarUrl: updatedProfile.avatarUrl ?? null,
       roles,

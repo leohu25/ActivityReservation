@@ -250,7 +250,7 @@ export function MigrationsView({
               </div>
               <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-2.5 text-center">
                 <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block">
-                  已是最新
+                  已对齐库
                 </span>
                 <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5 block tabular-nums">
                   {fleet.upToDateCount}
@@ -258,10 +258,10 @@ export function MigrationsView({
               </div>
               <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-2.5 text-center">
                 <span className="text-[10px] text-amber-600 dark:text-amber-400 block">
-                  待升级
+                  待升级库 / 待补版本
                 </span>
                 <span className="text-sm font-extrabold text-amber-600 dark:text-amber-400 mt-0.5 block tabular-nums">
-                  {fleet.pendingCount}
+                  {fleet.pendingCount} / {fleet.pendingVersionTotal}
                 </span>
               </div>
             </div>
@@ -372,7 +372,7 @@ export function MigrationsView({
                             className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 gap-1 text-[11px]"
                           >
                             <Clock className="size-3" />
-                            待升级 ({item.pendingVersionCount})
+                            待补 {item.pendingVersionCount} 个版本
                           </Badge>
                         )}
                       </TableCell>

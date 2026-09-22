@@ -119,7 +119,7 @@ import { cache } from "react";
 import { headers } from "next/headers";
 import { getCurrentTenantContext, getServerAuthRuntime } from "@base/auth";
 import { CaslAbilityFactory } from "@base/authorization";
-import { globalTenantCatalog } from "./registry.generated";
+import { globalTenantCatalog } from "@runtime/tenant";
 
 /**
  * 缓存单次请求周期内的 TenantContext 与 CASL Ability

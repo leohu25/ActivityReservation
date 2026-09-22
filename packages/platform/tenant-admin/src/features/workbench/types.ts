@@ -4,8 +4,8 @@ export interface EmployeeProfileDTO {
   readonly id: string;
   readonly memberId: string | null;
   readonly employeeNo: string | null;
-  readonly nameSnapshot: string;
-  readonly emailSnapshot: string;
+  readonly name: string;
+  readonly email: string;
   readonly jobTitle: string | null;
   readonly status: string;
   readonly department: {

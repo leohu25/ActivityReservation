@@ -10,6 +10,7 @@ import { loadLatestBaseline, loadMigrationArtifacts } from "../core/artifacts";
 import { buildCanonicalSchema } from "../schema/aggregate";
 import { diffCommentsSql } from "../schema/diff-comments";
 import { runPrismaDiff, validatePrismaSchema } from "./prisma";
+import { rewriteDropAddColumnsToRenames } from "./rename-columns";
 
 export function diffSchema(input: {
   readonly scope: MigrationScope;
@@ -45,11 +46,13 @@ export function diffSchema(input: {
         )
       : baselineSchemaPath;
 
-  const rawSql = runPrismaDiff({
-    workspaceRoot,
-    fromSchema: fromSchemaPath,
-    toSchema: schemaPath,
-  });
+  const rawSql = rewriteDropAddColumnsToRenames(
+    runPrismaDiff({
+      workspaceRoot,
+      fromSchema: fromSchemaPath,
+      toSchema: schemaPath,
+    }),
+  );
   const fromSchema = fs.readFileSync(fromSchemaPath, "utf-8");
   const commentsDiffSql = diffCommentsSql(fromSchema, schema);
 

@@ -51,8 +51,8 @@ class MemoryTenantSqlExecutor implements TenantSqlExecutor {
           employeeNo: "E0001",
           departmentId: p[0],
           positionId: "pos_gm",
-          nameSnapshot: p[8],
-          emailSnapshot: p[9],
+          name: p[8],
+          email: p[9],
           jobTitle: "企业所有者",
           status: "ACTIVE",
           joinedAt: new Date(),
@@ -150,8 +150,8 @@ test("TenantDatabaseSeeder 基线种子初始化与幂等执行", async () => {
   assert.equal(profile?.userId, "usr_owner_001");
   assert.equal(profile?.employeeNo, "E0001");
   assert.equal(profile?.departmentId, firstResult.rootDepartmentId);
-  assert.equal(profile?.nameSnapshot, "张三");
-  assert.equal(profile?.emailSnapshot, "zhangsan@example.com");
+  assert.equal(profile?.name, "张三");
+  assert.equal(profile?.email, "zhangsan@example.com");
   assert.equal(profile?.status, "ACTIVE");
 
   // 2. 再次执行种子填充（测试幂等性）

@@ -38,8 +38,8 @@ interface FakeEmployeeProfile {
   departmentId: string | null;
   positionId: string | null;
   managerEmployeeId: string | null;
-  nameSnapshot: string;
-  emailSnapshot: string;
+  name: string;
+  email: string;
   jobTitle: string | null;
   avatarUrl?: string | null;
   status: string;
@@ -119,8 +119,8 @@ test("DepartmentService 部门树形层级加载、防环调换与 Fail-Closed �
       departmentId: "dept_root",
       positionId: "pos_gm",
       managerEmployeeId: null,
-      nameSnapshot: "张总",
-      emailSnapshot: "gm@example.com",
+      name: "张总",
+      email: "gm@example.com",
       jobTitle: "总经理",
       status: "ACTIVE",
       joinedAt: new Date(),
@@ -137,8 +137,8 @@ test("DepartmentService 部门树形层级加载、防环调换与 Fail-Closed �
       departmentId: "dept_sales_east",
       positionId: "pos_sp",
       managerEmployeeId: "emp_1",
-      nameSnapshot: "李销售",
-      emailSnapshot: "sales@example.com",
+      name: "李销售",
+      email: "sales@example.com",
       jobTitle: "销售专员",
       status: "ACTIVE",
       joinedAt: new Date(),
@@ -364,8 +364,8 @@ test("PositionService 岗位字典 CRUD、在职人数统计与删除保护", as
       departmentId: "dept_1",
       positionId: "pos_1",
       managerEmployeeId: null,
-      nameSnapshot: "张采购",
-      emailSnapshot: "buyer@test.com",
+      name: "张采购",
+      email: "buyer@test.com",
       jobTitle: "主管",
       status: "ACTIVE",
       joinedAt: new Date(),
@@ -578,6 +578,12 @@ test("EmployeeManagementService 直接录入建号、调岗调部门与版本号
       },
     },
     organization: {
+      async findUnique({ where }: { where: { id: string } }) {
+        if (where.id === "org_test") {
+          return { id: "org_test", name: "测试企业", slug: "org-test" };
+        }
+        return null;
+      },
       async update({
         where,
         data,
@@ -592,14 +598,71 @@ test("EmployeeManagementService 直接录入建号、调岗调部门与版本号
       },
     },
     tenantAccount: {
-      async upsert({
-        create,
-        update,
+      store: [] as Array<Record<string, unknown>>,
+      async findUnique({
+        where,
       }: {
-        create: Record<string, unknown>;
-        update: Record<string, unknown>;
+        where: {
+          organizationId_account?: { organizationId: string; account: string };
+          id?: string;
+        };
       }) {
-        return { ...create, ...update };
+        const list = (mockControlPrisma as unknown as { tenantAccount: { store: Array<Record<string, unknown>> } }).tenantAccount.store;
+        if (where.organizationId_account) {
+          return (
+            list.find(
+              (a) =>
+                a.organizationId === where.organizationId_account!.organizationId &&
+                a.account === where.organizationId_account!.account,
+            ) ?? null
+          );
+        }
+        return list.find((a) => a.id === where.id) ?? null;
+      },
+      async findFirst({
+        where,
+      }: {
+        where: { organizationId: string; memberId?: string | null };
+      }) {
+        const list = (mockControlPrisma as unknown as { tenantAccount: { store: Array<Record<string, unknown>> } }).tenantAccount.store;
+        return (
+          list.find(
+            (a) =>
+              a.organizationId === where.organizationId &&
+              (where.memberId === undefined || a.memberId === where.memberId),
+          ) ?? null
+        );
+      },
+      async findMany({
+        where,
+      }: {
+        where: { organizationId: string; memberId?: { in: string[] } };
+      }) {
+        const list = (mockControlPrisma as unknown as { tenantAccount: { store: Array<Record<string, unknown>> } }).tenantAccount.store;
+        return list.filter(
+          (a) =>
+            a.organizationId === where.organizationId &&
+            (!where.memberId?.in ||
+              where.memberId.in.includes(String(a.memberId ?? ""))),
+        );
+      },
+      async create({ data }: { data: Record<string, unknown> }) {
+        const list = (mockControlPrisma as unknown as { tenantAccount: { store: Array<Record<string, unknown>> } }).tenantAccount.store;
+        list.push(data);
+        return data;
+      },
+      async update({
+        where,
+        data,
+      }: {
+        where: { id: string };
+        data: Record<string, unknown>;
+      }) {
+        const list = (mockControlPrisma as unknown as { tenantAccount: { store: Array<Record<string, unknown>> } }).tenantAccount.store;
+        const idx = list.findIndex((a) => a.id === where.id);
+        if (idx < 0) throw new Error("TenantAccount not found");
+        list[idx] = { ...list[idx], ...data };
+        return list[idx];
       },
     },
   } as unknown as ControlPrismaClient;
@@ -766,14 +829,16 @@ test("EmployeeManagementService 直接录入建号、调岗调部门与版本号
 
   const service = new EmployeeManagementService();
 
-  // 1. 直接录入建号新员工 (自动创建 User + Account + Member + Profile + authVersion++)
+  // 1. 直接录入建号新员工 (显式登录账号 + Member + Profile + TenantAccount + authVersion++)
   const newEmp = await service.directCreateEmployee(
     mockTenantPrisma,
     mockControlPrisma,
     "org_test",
     {
       name: "新员工小王",
+      loginAccount: "E1001",
       email: "wang@example.com",
+      phone: "13800001001",
       employeeNo: "E1001",
       departmentId: "dept_dev",
       positionId: "pos_engineer",
@@ -783,30 +848,29 @@ test("EmployeeManagementService 直接录入建号、调岗调部门与版本号
   );
 
   assert.equal(newEmp.name, "新员工小王");
+  assert.equal(newEmp.loginAccount, "E1001");
   assert.equal(newEmp.email, "wang@example.com");
+  assert.equal(newEmp.phone, "13800001001");
   assert.equal(newEmp.status, "ACTIVE");
   assert.equal(newEmp.roles[0], "buyer");
   assert.equal(authVersion, 2); // authorizationVersion incremented
 
-  // 验证 Account 凭证已正确哈希
-  const createdAccount = accounts.find((a) => a.userId === newEmp.userId);
-  assert.ok(createdAccount?.password && createdAccount.password.length > 20);
-
-  // 2. 复用已有全局用户开通当前租户
+  // 2. 无邮箱员工：仅登录账号也可建号
   const emp2 = await service.directCreateEmployee(
     mockTenantPrisma,
     mockControlPrisma,
     "org_test",
     {
-      name: "已有全局用户",
-      email: "existing@example.com",
-      employeeNo: "E1002",
+      name: "车间员工",
+      loginAccount: "001",
+      employeeNo: "001",
       departmentId: "dept_root",
       positionId: "pos_lead",
       initialRoleCodes: ["admin"],
     },
   );
-  assert.equal(emp2.userId, "usr_existing");
+  assert.equal(emp2.loginAccount, "001");
+  assert.equal(emp2.email, "");
   assert.equal(emp2.roles[0], "admin");
   assert.equal(authVersion, 3);
 

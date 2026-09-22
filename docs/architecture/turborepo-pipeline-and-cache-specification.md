@@ -14,8 +14,11 @@ Turborepo 在本项目中作为 **Monorepo 构建与任务拓扑调度引擎**�
   "ui": "tui",
   "cacheMaxSize": "2GB",
   "cacheMaxAge": "7d",
+  "globalDependencies": ["turbo.json", "pnpm-workspace.yaml"],
   "tasks": {
-    "//#codegen": { ... },
+    "codegen": { ... },
+    "@runtime/db#codegen": { ... },
+    "@runtime/tenant#codegen": { ... },
     "generate": { ... },
     "build": { ... },
     "lint": { ... },
@@ -31,6 +34,14 @@ Turborepo 在本项目中作为 **Monorepo 构建与任务拓扑调度引擎**�
 - **`ui: "tui"`**：在交互式终端下启用 Turborepo 现代 TUI 界面，清晰分屏展示各包并行日志。
 - **`cacheMaxSize: "2GB"`**：本地文件缓存上限为 2GB，超出时自动淘汰最久未使用的构建产物。
 - **`cacheMaxAge: "7d"`**：本地缓存有效期为 7 天。
+- **`globalDependencies`**：`turbo.json` / `pnpm-workspace.yaml` 变更会使全部任务缓存失效。
+
+### 设计原则（教科书式 Turborepo）
+
+1. **根 `package.json` 只保留 `turbo run *` 调度器**，不挂业务编排脚本、不写 `&&` 胶水；
+2. **编译期生成物住在产物所属包**：谁产出 `registry.ts` / 聚合 Schema，谁暴露 `codegen` 脚本；
+3. **依赖一律写在 `turbo.json#tasks.*.dependsOn`**，开发 (`dev`) 与正式打包 (`build`) 共用同一拓扑；
+4. **有哈希输入/输出的生成任务开启缓存**；`prisma generate` 保持 `cache: false` 强制新鲜。
 
 ---
 
@@ -38,7 +49,10 @@ Turborepo 在本项目中作为 **Monorepo 构建与任务拓扑调度引擎**�
 
 ```mermaid
 graph TD
-  Codegen["//#codegen<br>(特性清单扫描与 Schema 聚合)"] --> Generate["generate<br>(Prisma Client 自愈生成)"]
+  SF["@runtime/tenant#codegen<br>(manifest → registry.ts)"]
+  SS["@runtime/db#codegen<br>(切片 Schema → 聚合 schema.prisma)"]
+  SF --> Generate["generate<br>(Prisma Client 生成)"]
+  SS --> Generate
   Generate --> Dev["dev (开发服务器)"]
   Generate --> Check["check (类型与静态检查)"]
   Generate --> Test["test (单元测试)"]
@@ -46,39 +60,40 @@ graph TD
   BuildDep["^build (上游依赖包 build)"] --> Build
 ```
 
+`pnpm dev` 与 `pnpm build` 均沿 `*#dev|build → *#generate → @runtime/*#codegen` 执行，不存在「仅开发聚合、打包不聚合」的分叉。
+
 ---
 
 ## 三、各任务详细配置与作用解析
 
-### 1. `//#codegen`（根任务：物理 Schema 与特性注册表聚合）
+### 1. `@runtime/db#codegen`（包任务：租户 Schema 聚合）
 
-- **类型**：Root Task（前缀 `//#` 表示只在根目录执行一次，不拆分到各个子 package）。
-- **职责**：
-  1. 调用 `scripts/sync/sync-features.mjs`：全自动扫描所有垂直业务切片 (`packages/domains/*`) 的 `src/manifest.ts`，动态生成 `packages/runtime/tenant/src/registry.ts`（包含导航树、Manifest 注册表与 CASL 权限目录）；
-  2. 调用 `scripts/sync/sync-tenant-schema.mjs`：将所有业务切片的 `prisma/schema.prisma` 与底座 Schema 自动聚合为 `packages/runtime/db/prisma/schema.prisma`。
-- **监听输入 (`inputs`)**：
-  - `packages/features/**/src/manifest.ts`
-  - `packages/features/**/prisma/schema.prisma`
-  - `packages/features/**/package.json`
-  - `packages/db-tenant/prisma/schema.prisma`
-  - `scripts/sync/**`
-- **缓存产物 (`outputs`)**：
-  - `packages/runtime/tenant/src/registry.ts`
-  - `packages/runtime/db/prisma/schema.prisma`
-- **增量缓存效果**：当上述输入文件未发生变动时，Turborepo 会在 **20ms** 内命中缓存，直接跳过生成过程。
+- **类型**：Package Task（脚本位于产物包 `packages/runtime/db`，路径 `@runtime/db#codegen`）。
+- **脚本**：`node ./scripts/sync-schema.mjs`
+- **职责**：将 `@base/db-tenant` 与 `packages/domains/*`、`packages/platform/*` 的 `prisma/schema.prisma` 聚合为 `packages/runtime/db/prisma/schema.prisma`（Canonical Tenant Schema）。
+- **监听输入 (`inputs`)**：本包 `scripts/**`、`packages/base/db-tenant/prisma/schema.prisma`、`packages/domains/**/prisma/schema.prisma`、`packages/platform/**/prisma/schema.prisma`
+- **缓存产物 (`outputs`)**：`prisma/schema.prisma`
+- **扩展语法**：支持 `// @db-migrate-extension ModelName` 声明切片对基座模型的字段扩展；模型冲突/字段类型冲突硬失败。
 
----
+### 2. `@runtime/tenant#codegen`（包任务：特性注册表聚合）
 
-### 2. `generate`（Prisma 客户端自愈生成）
+- **类型**：Package Task（`packages/runtime/tenant`）。
+- **脚本**：`node ./scripts/sync-features.mjs`
+- **职责**：扫描 `packages/domains/*`、`packages/platform/*` 的 `src/manifest.ts`，生成 `src/registry.ts`（导航树、Manifest 注册表、CASL 权限目录）。
+- **监听输入 (`inputs`)**：本包 `scripts/**`、各切片 `src/manifest.ts` 与 `package.json`
+- **缓存产物 (`outputs`)**：`src/registry.ts`
+- **运行特性**：幂等保护，内容未变跳过磁盘写入，避免无谓的 Turbopack 热重载。
 
-- **依赖关系 (`dependsOn`)**：`["//#codegen"]`
+### 3. `generate`（Prisma 客户端生成）
+
+- **依赖关系 (`dependsOn`)**：`["@runtime/db#codegen", "@runtime/tenant#codegen", "^generate"]`
 - **缓存策略 (`cache`)**：`false`
-- **职责**：在 `//#codegen` 产出聚合 Schema 之后，触发 `packages/db-control` 和 `packages/db-tenant` 生成最新的强类型 Prisma Client。
-- **定位**：作为 `dev`、`build`、`check`、`test` 的前置基石，确保任何下游任务运行前，客户端类型与数据库映射已经 100% 同步就绪。
+- **职责**：在两个 codegen 产出之后，由 `@base/db-tenant` / `@base/db-control` 执行 `prisma generate`，得到强类型 Client。
+- **定位**：`dev`、`build`、`check`、`test` 的共同前置，保证类型与库映射就绪。
 
 ---
 
-### 3. `build`（生产全端构建）
+### 4. `build`（生产全端构建）
 
 - **依赖关系 (`dependsOn`)**：`["generate", "^build"]`
   - `generate`：必须先有最新的 Prisma Client；
@@ -93,7 +108,7 @@ graph TD
 
 ---
 
-### 4. `check`（全仓强类型与门禁静态扫描）
+### 5. `check`（全仓强类型与门禁静态扫描）
 
 - **依赖关系 (`dependsOn`)**：`["generate", "^check"]`
 - **缓存策略 (`cache`)**：`false`
@@ -101,7 +116,7 @@ graph TD
 
 ---
 
-### 5. `test`（单元测试调度）
+### 6. `test`（单元测试调度）
 
 - **依赖关系 (`dependsOn`)**：`["generate", "^test"]`
 - **缓存策略 (`cache`)**：`false`
@@ -109,14 +124,14 @@ graph TD
 
 ---
 
-### 6. `lint`（代码规范扫描）
+### 7. `lint`（代码规范扫描）
 
 - **依赖关系 (`dependsOn`)**：`["^lint"]`
 - **职责**：拓扑调度 ESLint，对代码规范、边界引用（`eslint-plugin-boundaries`）进行严格审查。
 
 ---
 
-### 7. `dev`（本地多端微服务并行启动）
+### 8. `dev`（本地多端微服务并行启动）
 
 - **依赖关系 (`dependsOn`)**：`["generate"]`
 - **缓存策略 (`cache`)**：`false`

@@ -200,7 +200,7 @@ export function EmployeeProfileMetricsGrid({
               {profile?.employeeNo || "未分配工号"}
             </div>
             <div className="text-[11px] text-slate-500">
-              {profile?.nameSnapshot || fallbackName || "在职档案"}
+              {profile?.name || fallbackName || "在职档案"}
             </div>
           </div>
         </div>

@@ -100,10 +100,7 @@ pnpm run db:migrate:generate --scope tenant --name add_xxx_fields
 # 2. 检查生成的迁移工件与运行时总账一致性 (门禁自检)
 pnpm run db:migrate:check
 
-# 3. 重新编译生成运行期内存 Catalog (供 Next.js 服务端零 IO 引用)
-pnpm run db:migrate:catalog
-
-# 4. (开发重构/上线前专用) 将所有增量演进完整压平进全新 Day 0 基线快照
+# 3. (开发重构/上线前专用) 将所有增量演进完整压平进全新 Day 0 基线快照
 pnpm run db:migrate:baseline:reset:tenant
 pnpm run db:migrate:baseline:reset:platform
 ```

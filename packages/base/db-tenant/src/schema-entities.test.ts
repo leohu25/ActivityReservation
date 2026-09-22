@@ -37,16 +37,16 @@ test("Tenant DB Schema 契约支持 Position、CompanyProfile 及增强版 Emplo
     userId: null,
     invitationId: "inv_123",
     employeeNo: "E1001",
-    nameSnapshot: "张三",
-    emailSnapshot: "zhangsan@example.com",
+    name: "张三",
+    email: "zhangsan@example.com",
     jobTitle: "资深采购专员",
     status: "ACTIVE",
     joinedAt: new Date("2026-09-01"),
     terminatedAt: null,
   };
   assert.equal(draftEmployeeInput.memberId, null);
-  assert.equal(draftEmployeeInput.nameSnapshot, "张三");
-  assert.equal(draftEmployeeInput.emailSnapshot, "zhangsan@example.com");
+  assert.equal(draftEmployeeInput.name, "张三");
+  assert.equal(draftEmployeeInput.email, "zhangsan@example.com");
 
   // 4. 验证 CompanyProfileCreateInput 完整包含企业私有资料
   const companyInput: TenantPrisma.CompanyProfileCreateInput = {

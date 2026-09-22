@@ -29,6 +29,8 @@ export function getControlAuthRuntime(): ServerAuthRuntime {
       process.env.CONTROL_AUTH_URL ??
       process.env.PLATFORM_AUTH_URL ??
       "http://localhost:3001",
+    // 平台管控面独立超管通道；租户业务面默认关闭邮箱密码
+    enableEmailAndPassword: true,
   });
   return controlAuthSingleton;
 }

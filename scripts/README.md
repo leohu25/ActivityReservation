@@ -13,10 +13,6 @@ scripts/
 │   ├── check-vertical-slices.mjs   # 业务垂直切片 (Vertical Slice) 架构完整性门禁
 │   └── check-vertical-slices.test.mjs # 垂直切片门禁专属单元测试
 │
-├── sync/                           # 静态元数据与 Schema 构建期自发现/聚合生成器
-│   ├── sync-features.mjs           # 自动发现租户切片 manifest 并生成静态注册表 (ADR-005/006)
-│   └── sync-tenant-schema.mjs      # 自动聚合 Canonical Tenant Prisma Schema (物理库隔离)
-│
 ├── reporter/                       # 测试与控制台输出报告器
 │   └── fail-only-reporter.mjs      # 仅报告失败异常与简洁 ok N/N 的 Node Test Reporter
 │
@@ -34,11 +30,16 @@ scripts/
 | 目录/文件 | 核心职责 | 调用方式 / 场景 |
 | --- | --- | --- |
 | `scripts/check/` | 质量与架构安全静态门禁 | `pnpm verify` 或 CI/Commit 阶段执行 |
-| `scripts/sync/` | 编译期静态代码与 Schema 自动生成 | `pnpm sync:features` / `pnpm build` 前置执行 |
 | `scripts/reporter/` | 精简测试日志输出，抑制无关噪音 | 各 package `package.json` 中的 `test` 脚本挂载 |
 | `scripts/tools/` | 开发者与智能体日常辅助运维 | `pnpm status` 等手动按需调用 |
 | `scripts/init.mjs` | 启动自检与环境/门禁初始化统一入口 | `pnpm init` 或环境初始化时调用 |
 | `scripts/verify.mjs` | 集中汇聚所有门禁自检的统一入口 | `git commit` 时由 `.git/hooks/pre-commit` 自动触发 |
+
+> 编译期代码生成（特性注册表、租户 Schema 聚合）**不在 `scripts/`**，归属产物包：
+> - `packages/runtime/tenant/scripts/sync-features.mjs` → `pnpm --filter @runtime/tenant codegen`
+> - `packages/runtime/db/scripts/sync-schema.mjs` → `pnpm --filter @runtime/db codegen`
+>
+> 由 Turbo `generate` 拓扑在 `pnpm dev` / `pnpm build` 前自动执行。
 
 ## 垂直切片架构门禁检查规则 (check-vertical-slices)
 
@@ -71,8 +72,9 @@ pnpm verify # 或 node scripts/verify.mjs
 # 查看当前开发者协同状态与激活特性
 pnpm status # 或 node scripts/tools/status.mjs
 
-# 手动触发特性注册表与 Schema 自动同步
-pnpm sync:features
+# 手动触发特性注册表与 Schema 自动同步（一般无需手动，dev/build 自动执行）
+pnpm --filter @runtime/tenant codegen
+pnpm --filter @runtime/db codegen
 
 # 单独执行垂直切片架构自检
 node scripts/check/check-vertical-slices.mjs

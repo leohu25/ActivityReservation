@@ -152,7 +152,7 @@ chenrun-erp-nextjs/
 │           │       ├── organization/
 │           │       └── workbench/
 │           └── kernel/
-│               └── registry.generated.ts    # 构建期自发现注册活跃切片
+│               └── registry.ts               # @runtime/tenant 构建期自发现注册活跃切片
 │
 ├── packages/
 │   ├── base/                                # 纯技术基础设施（0 业务语义）

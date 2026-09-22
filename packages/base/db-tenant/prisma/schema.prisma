@@ -81,10 +81,12 @@ model EmployeeProfile {
   positionId        String?          @map("position_id") @db.Uuid
   /// 直属上级经理档案ID
   managerEmployeeId String?          @map("manager_employee_id") @db.Uuid
-  /// 员工姓名快照 (冗余展示与防变更穿透)
-  nameSnapshot      String           @default("") @map("name_snapshot")
-  /// 员工工作邮箱快照
-  emailSnapshot     String           @default("") @map("email_snapshot")
+  /// 员工姓名
+  name              String           @default("") @map("name")
+  /// 员工工作邮箱
+  email             String           @default("") @map("email")
+  /// 员工手机号
+  phone             String?          @map("phone")
   /// 职务头衔/对外称谓
   jobTitle          String?          @map("job_title")
   /// 员工头像/工牌照 URL

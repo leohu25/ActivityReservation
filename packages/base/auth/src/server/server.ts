@@ -29,6 +29,8 @@ export interface ServerAuthOptions {
   secret: string;
   baseURL?: string;
   organizationAccessControl?: OrganizationAccessControl;
+  /** 平台管控端可开启邮箱密码；租户端必须关闭，仅保留三要素插件 */
+  enableEmailAndPassword?: boolean;
 }
 
 export function createServerAuth(options: ServerAuthOptions) {
@@ -55,7 +57,8 @@ export function createServerAuth(options: ServerAuthOptions) {
       return origin ? [origin] : [];
     },
     emailAndPassword: {
-      enabled: true,
+      // 租户端默认关闭，仅保留 /sign-in/tenant 单分支；平台管控端可显式开启
+      enabled: options.enableEmailAndPassword === true,
     },
     plugins: [
       organization({
@@ -128,6 +131,7 @@ export function getServerAuthRuntime(
     secret,
     baseURL: options?.baseURL ?? process.env.BETTER_AUTH_URL,
     organizationAccessControl: options?.organizationAccessControl,
+    enableEmailAndPassword: options?.enableEmailAndPassword === true,
   });
   return singleton;
 }

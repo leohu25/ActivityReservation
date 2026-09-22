@@ -108,7 +108,7 @@ pnpm run test
 pnpm run lint
 
 # 全栈门禁完整验证 (git commit 前会自动触发)
-./scripts/verify.sh
+pnpm verify
 ```
 
 ### 数据库管理与演进 (`tooling/db-migrate`)

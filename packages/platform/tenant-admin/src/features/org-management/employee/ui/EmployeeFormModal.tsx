@@ -70,21 +70,25 @@ export function EmployeeFormModal({
     if (isCreate) {
       return {
         name: "",
-        email: "",
+        loginAccount: "",
         employeeNo: "",
+        phone: "",
+        email: "",
         departmentId: defaultDeptId ?? "",
         positionId: "",
         managerEmployeeId: null,
         jobTitle: "",
         avatarUrl: "",
         initialRoleCodes: ["member"],
-        password: "123456",
+        password: "Admin123456!",
       };
     }
     return {
       name: record?.name ?? "",
-      email: record?.email ?? "",
+      loginAccount: record?.loginAccount ?? "",
       employeeNo: record?.employeeNo ?? "",
+      phone: record?.phone ?? "",
+      email: record?.email ?? "",
       departmentId: record?.departmentId ?? "",
       positionId: record?.positionId ?? "",
       jobTitle: record?.jobTitle ?? "",
@@ -104,13 +108,15 @@ export function EmployeeFormModal({
         placeholder: "例如: 王小明",
       },
       {
-        name: "email",
-        label: "登录邮箱",
+        name: "loginAccount",
+        label: "登录账号",
         type: "text",
-        required: isCreate,
-        disabled: !isCreate,
-        placeholder: "例如: wang@company.com",
-        hint: !isCreate ? "登录邮箱为员工唯一账号凭据，不可更改" : undefined,
+        required: true,
+        disabled: isView,
+        placeholder: "例如: E0001 / zhangsan / 手机号",
+        hint: isCreate
+          ? "企业内唯一登录名。留空时可按工号或手机号填写；与工号、邮箱相互独立"
+          : "登录账号为企业内唯一凭证，修改后请告知员工使用新账号登录",
       },
       {
         name: "employeeNo",
@@ -118,6 +124,23 @@ export function EmployeeFormModal({
         type: "text",
         disabled: isView,
         placeholder: "例如: CR-0089",
+        hint: "人事档案字段，不直接作为登录标识",
+      },
+      {
+        name: "phone",
+        label: "手机号",
+        type: "text",
+        disabled: isView,
+        placeholder: "例如: 13800001111",
+      },
+      {
+        name: "email",
+        label: "电子邮箱",
+        type: "text",
+        required: false,
+        disabled: isView,
+        placeholder: "可选，仅作工作联系方式",
+        hint: "不参与登录；无邮箱可留空",
       },
       {
         name: "jobTitle",
@@ -167,9 +190,9 @@ export function EmployeeFormModal({
     if (isCreate) {
       list.push({
         name: "password",
-        label: "初始登录密码 (选填，留空默认 123456)",
+        label: "初始登录密码 (选填，留空默认 Admin123456!)",
         type: "text",
-        placeholder: "123456",
+        placeholder: "Admin123456!",
         span: 2,
       });
     }
@@ -206,15 +229,18 @@ export function EmployeeFormModal({
     if (isCreate) {
       const payload: DirectCreateEmployeeSchema = {
         name: String(values.name ?? "").trim(),
-        email: String(values.email ?? "").trim(),
+        loginAccount: String(values.loginAccount ?? "").trim(),
         employeeNo: String(values.employeeNo ?? "").trim(),
+        phone: String(values.phone ?? "").trim(),
+        email: String(values.email ?? "").trim(),
         departmentId: String(values.departmentId ?? ""),
         positionId: values.positionId ? String(values.positionId) : null,
         managerEmployeeId: null,
         jobTitle: String(values.jobTitle ?? "").trim(),
         avatarUrl: values.avatarUrl ? String(values.avatarUrl).trim() : null,
         initialRoleCodes: selectedRoles,
-        password: String(values.password ?? "").trim() || "123456",
+        password:
+          String(values.password ?? "").trim() || "Admin123456!",
       };
 
       const res = await directCreateEmployeeAction(payload);
@@ -226,7 +252,10 @@ export function EmployeeFormModal({
     } else if (record) {
       const payload: UpdateEmployeeSchema = {
         name: String(values.name ?? "").trim(),
+        loginAccount: String(values.loginAccount ?? "").trim(),
         employeeNo: String(values.employeeNo ?? "").trim(),
+        phone: String(values.phone ?? "").trim(),
+        email: String(values.email ?? "").trim(),
         departmentId: String(values.departmentId ?? ""),
         positionId: values.positionId ? String(values.positionId) : null,
         jobTitle: String(values.jobTitle ?? "").trim(),
@@ -262,7 +291,7 @@ export function EmployeeFormModal({
       }
       description={
         isCreate
-          ? "原子创建全局用户凭据、租户组织成员并在职生成员工档案。凭初始密码可登录系统。"
+          ? "原子创建租户独立登录账号与在职员工档案。员工凭企业编码 + 登录账号 + 密码登录。"
           : isView
             ? "查看员工基础档案、归属部门、职务岗位与授权角色。"
             : "维护员工姓名、工号、职务、归属部门、岗位字典与业务角色。"

@@ -108,12 +108,12 @@ export default function LoginPage() {
                 className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300"
               >
                 <User className="size-3.5 text-slate-400" />
-                员工账号 / 工号 / 手机号
+                登录账号
               </label>
               <Input
                 id="account"
                 type="text"
-                placeholder="例如: E0001 / admin / 手机号"
+                placeholder="例如: E0001 / zhangsan"
                 value={account}
                 onChange={(e) => setAccount(e.target.value)}
                 required

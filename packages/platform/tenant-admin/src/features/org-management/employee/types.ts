@@ -5,7 +5,9 @@ export interface EmployeeItem {
   readonly userId: string | null;
   readonly employeeNo: string | null;
   readonly name: string;
+  readonly loginAccount: string;
   readonly email: string;
+  readonly phone: string;
   readonly departmentId: string | null;
   readonly departmentName: string | null;
   readonly positionId: string | null;
@@ -43,7 +45,9 @@ export interface ListEmployeesResult {
 /** 直接录入建号创建员工输入模型 */
 export interface DirectCreateEmployeeInput {
   readonly name: string;
-  readonly email: string;
+  readonly loginAccount: string;
+  readonly email?: string | null;
+  readonly phone?: string | null;
   readonly password?: string;
   readonly employeeNo?: string | null;
   readonly departmentId?: string | null;

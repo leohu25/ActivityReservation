@@ -1,0 +1,12 @@
+{
+  "formatVersion": 1,
+  "scope": "tenant",
+  "version": "20260922020205",
+  "name": "align_employee_contact_field_names",
+  "previousVersion": "20260922015710",
+  "checksum": "9d20bd19c27e173f3e57ad25237fb096505971fca7c8476823e20a04962d7970",
+  "schemaChecksum": "c8c52d413de32f31e122885b7b986ba078ba737b4c1ccaaf7572ee1f882250e1",
+  "createdAt": "2026-09-22T02:02:05.635Z",
+  "risks": [],
+  "rollbackSupported": true
+}

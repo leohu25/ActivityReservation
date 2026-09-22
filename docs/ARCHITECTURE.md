@@ -147,8 +147,8 @@ graph TD
   - 单一切片涵盖数据模型、纯数据权限契约（`contracts/`）、领域服务（`services/`）、安全 Actions 与交互组件（`components/`）；
   - 对外仅导出受控清单 `manifest.ts` 与统一入口 `index.ts`。
 - **构建期动态自发现 (`Feature Manifest`)**：
-  - 在 `dev` / `build` 前置执行轻量脚本 `scripts/sync-features.mjs`（~10ms）；
-  - 静态聚合生成 `apps/tenant/src/kernel/registry.generated.ts`，汇聚全局菜单、CASL 权限目录与角色赋权树。
+  - 在 `dev` / `build` 前由 Turbo 拓扑执行 `@runtime/tenant#codegen`（`packages/runtime/tenant/scripts/sync-features.mjs`，~10ms）；
+  - 静态聚合生成 `packages/runtime/tenant/src/registry.ts`（`@runtime/tenant`），汇聚全局菜单、CASL 权限目录与角色赋权树。
 - **切片依赖解耦防腐 (ADR-006)**：
   - 所有业务切片（`customer-center`、`procurement-center`、`tenant-admin`）彼此平级，**严禁互相依赖**；
   - `apps/tenant` 位于拓扑顶层作为“装配者”；系统管理组件 `RolePermissionManager` 采用控制反转 (IoC)，由页面 SSR 阶段注入全局权限树。

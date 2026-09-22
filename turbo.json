@@ -3,24 +3,32 @@
   "ui": "tui",
   "cacheMaxSize": "2GB",
   "cacheMaxAge": "7d",
+  "globalDependencies": ["turbo.json", "pnpm-workspace.yaml"],
   "tasks": {
-    "//#codegen": {
+    "codegen": {
+      "cache": true
+    },
+    "@runtime/db#codegen": {
       "inputs": [
-        "packages/platform/**/src/manifest.ts",
-        "packages/domains/**/src/manifest.ts",
-        "packages/domains/**/prisma/schema.prisma",
-        "packages/platform/**/package.json",
-        "packages/domains/**/package.json",
-        "packages/base/db-tenant/prisma/schema.prisma",
-        "scripts/sync/**"
+        "scripts/**",
+        "../../packages/base/db-tenant/prisma/schema.prisma",
+        "../../packages/domains/**/prisma/schema.prisma",
+        "../../packages/platform/**/prisma/schema.prisma"
       ],
-      "outputs": [
-        "packages/runtime/tenant/src/registry.ts",
-        "packages/runtime/db/prisma/schema.prisma"
-      ]
+      "outputs": ["prisma/schema.prisma"]
+    },
+    "@runtime/tenant#codegen": {
+      "inputs": [
+        "scripts/**",
+        "../../packages/domains/**/src/manifest.ts",
+        "../../packages/platform/**/src/manifest.ts",
+        "../../packages/domains/**/package.json",
+        "../../packages/platform/**/package.json"
+      ],
+      "outputs": ["src/registry.ts"]
     },
     "generate": {
-      "dependsOn": ["//#codegen"],
+      "dependsOn": ["@runtime/db#codegen", "@runtime/tenant#codegen", "^generate"],
       "cache": false
     },
     "build": {

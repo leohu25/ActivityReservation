@@ -411,7 +411,7 @@
       "dependencies": ["base-archives"],
       "status": "completed",
       "owner": "coordinator",
-      "evidence": "1. Control DB 引入 TenantAccount 实体模型，基于 @@unique([organizationId, account]) 建立租户独立凭证，更新平台基线至 20260921150838；2. 在 @base/auth 落地 authenticateTenantUser 独立三要素认证服务与 Scrypt 密码校验单测；3. 租户端落地 /api/auth/tenant-login 与三要素登录表单 (企业编码+账号/工号/手机号+密码)，直通工作台；4. 平台开通租户与租户员工管理全面接入 TenantAccount 独立入库；5. 单元测试 122/122 全绿，check 0 错误，Jev 结构化裁决置信度 95% 通过。"
+      "evidence": "1. Control DB 引入 TenantAccount 实体模型，基于 @@unique([organizationId, account]) 建立租户独立凭证，更新平台基线至 20260921150838；2. 在 @base/auth 落地 tenantCredentialsPlugin 三要素认证插件与 Scrypt 密码校验；3. 租户端落地 /api/auth/sign-in/tenant 与三要素登录表单 (企业编码+登录账号+密码)，直通工作台；4. 平台开通租户与租户员工管理全面接入 TenantAccount 独立入库；5. 【显式登录账号收敛】员工维护新增一等字段 loginAccount（必填、租户内唯一），邮箱改可选联系方式并补 phone 字段，彻底移除工号||邮箱||姓名后端降级；UI 仅在账号为空时按工号→手机号预填建议；User 会话载体改用 `${account}@${slug}.local` 虚拟邮箱防串号；租户端默认关闭 emailAndPassword，仅保留插件单分支（平台管控端可显式开启）；6. 生成租户迁移 20260922015710_add_employee_phone（字段名 phone，对齐主流）；tenant-admin 92/92、auth 16/16 单测全绿。"
     }
   ]
 }

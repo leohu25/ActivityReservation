@@ -10,7 +10,7 @@
 
 1. **极薄装配层**：自身仅负责路由声明 (`src/app/`)、布局骨架 (`DashboardShell`) 与安全门禁，严禁在应用层内堆积重度业务领域逻辑；
 2. **应用内核装配 (`src/kernel/`)**：
-   - `registry.generated.ts`：由 Turborepo 拓扑任务 `codegen` 自动发现并聚合所有已安装的 `TenantFeatureManifest`；
+   - `registry.ts`（`@runtime/tenant`）：由 `@runtime/tenant#codegen` 自动发现并聚合所有已安装的 `TenantFeatureManifest`；
    - `permissions.ts`：承载 Server Component 专用的 `getTenantSubjectPermissions` 强类型纯数据权限读取；
    - `navigation.ts`：承载服务端导航过滤引擎 `getAuthorizedTenantNavSections`；
 3. **多租户物理分库路由**：基于会话中的 `activeOrganizationId`，通过 `@base/db-tenant` 的 `TenantDbManager` 动态路由至租户独立物理数据库。
@@ -27,7 +27,7 @@ pnpm run dev:tenant
 ```
 
 > 💡 **构建拓扑特性**：
-> 启动前 Turborepo 会自动按需执行 `//#codegen` 任务，若各切片的 `manifest.ts` 或 Schema 未发生改动，基于文件 Hash **20ms 命中 FULL TURBO 缓存跳过**；若有改动则自动完成静态代码聚合再拉起应用。
+> 启动前 Turborepo 会自动执行 `generate`（依赖 `@runtime/tenant#codegen` / `@runtime/db#codegen`）；若各切片的 `manifest.ts` 或 Schema 未发生改动，基于文件 Hash **命中 FULL TURBO 缓存跳过**；若有改动则自动完成静态代码聚合与 Prisma Client 生成再拉起应用。
 
 ### 环境变量配置
 

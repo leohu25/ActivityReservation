@@ -7,6 +7,8 @@ export interface TenantFleetItem {
   readonly isUpToDate: boolean;
   readonly status: string;
   readonly pendingVersionCount: number;
+  /** 该库待补执行的迁移版本号列表 */
+  readonly pendingVersions?: readonly string[];
 }
 
 export interface MigrationDashboardData {
@@ -20,7 +22,10 @@ export interface MigrationDashboardData {
     readonly latestAvailableVersion: string;
     readonly totalCount: number;
     readonly upToDateCount: number;
+    /** 待升级租户库数量 */
     readonly pendingCount: number;
+    /** 全舰队待补执行的迁移版本总数 */
+    readonly pendingVersionTotal: number;
     readonly items: readonly TenantFleetItem[];
   };
 }

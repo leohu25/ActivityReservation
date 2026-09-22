@@ -140,7 +140,7 @@ export function EmployeeView({
             <div className="min-w-0">
               <div className="font-bold text-foreground truncate">{emp.name}</div>
               <div className="text-[11px] text-muted-foreground font-mono truncate">
-                {emp.email}
+                {emp.loginAccount || emp.email || emp.phone || "—"}
               </div>
             </div>
           </div>
@@ -311,7 +311,7 @@ export function EmployeeView({
               setModalState({ open: true, mode: "create", record: null })
             }
             createText="新建员工"
-            keywordPlaceholder="搜索员工姓名、邮箱、工号..."
+            keywordPlaceholder="搜索员工姓名、登录账号、工号、手机号..."
             statusOptions={[
               { value: MasterDataStatus.ACTIVE, label: "在职" },
               { value: "SUSPENDED", label: "已停用" },

@@ -36,7 +36,9 @@ const mockEmployee: EmployeeItem = {
   userId: "usr-1",
   employeeNo: "CR-0089",
   name: "王小明",
+  loginAccount: "E0001",
   email: "wang@company.com",
+  phone: "13800001111",
   departmentId: "dept-1",
   departmentName: "研发中心",
   positionId: "pos-1",
@@ -66,7 +68,9 @@ test("EmployeeFormModal [新建模式]: 渲染新建员工标题、必填字段�
 
   assert.match(html, /新建员工档案/);
   assert.match(html, /员工姓名/);
-  assert.match(html, /登录邮箱/);
+  assert.match(html, /登录账号/);
+  assert.match(html, /手机号/);
+  assert.match(html, /电子邮箱/);
   assert.match(html, /归属部门/);
   assert.match(html, /员工证件头像/);
   assert.match(html, /初始登录密码/);
@@ -74,7 +78,7 @@ test("EmployeeFormModal [新建模式]: 渲染新建员工标题、必填字段�
   assert.match(html, /分配系统业务角色/);
 });
 
-test("EmployeeFormModal [编辑模式]: 回填员工档案并锁定账号邮箱", () => {
+test("EmployeeFormModal [编辑模式]: 回填登录账号与联系方式", () => {
   const html = renderToString(
     <EmployeeFormModal
       open={true}
@@ -89,6 +93,8 @@ test("EmployeeFormModal [编辑模式]: 回填员工档案并锁定账号邮箱"
   );
 
   assert.match(html, /编辑员工: 王小明/);
+  assert.match(html, /E0001/);
+  assert.match(html, /13800001111/);
   assert.match(html, /wang@company.com/);
   assert.match(html, /CR-0089/);
   assert.match(html, /归属部门/);

@@ -157,7 +157,7 @@ export function MultiEntityWorkbenchView({
             {employeeProfile ? (
               <div className="flex items-center gap-3 self-end md:self-auto text-xs text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-md border border-border/50">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-foreground font-medium">{employeeProfile.nameSnapshot}</span>
+                  <span className="text-foreground font-medium">{employeeProfile.name}</span>
                   <span className="text-muted-foreground/60">·</span>
                   <span>{employeeProfile.department?.name ?? "未分配部门"}</span>
                   <span className="text-muted-foreground/60">·</span>

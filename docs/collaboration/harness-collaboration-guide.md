@@ -45,7 +45,7 @@
 │   └── lifecycle/                 # 会话生命周期脚本 (session-start / session-end)
 │
 └── scripts/
-    ├── verify.sh                  # 全栈极速门禁自检（类型检查 + 静态扫描 + 基础单测）
+    ├── verify.mjs                 # 全栈极速门禁自检（类型检查 + 静态扫描 + 基础单测）
     └── status.sh                  # 快速查看当前激活的 Feature 与 Git 改动
 ```
 
@@ -79,9 +79,9 @@
 - 智能体只加载对应特性沙盒中的 `context.md`、`scope.md` 和 `progress.md`；
 - 严格遵循 `scope.md` 中的**文件修改白名单**，严禁触碰白名单外的其他业务目录和受保护底座。
 
-### 4. 门禁验证 (`./scripts/verify.sh`)
+### 4. 门禁验证 (`pnpm verify` / `node scripts/verify.mjs`)
 
-- 编码完成后，必须运行 `verification.md` 中的专属测试，并执行全栈门禁 `./scripts/verify.sh`；
+- 编码完成后，必须运行 `verification.md` 中的专属测试，并执行全栈门禁 `pnpm verify`；
 - 确保：类型检查 0 错误、单元测试 100% 通过、静态规范 0 违规。
 
 ### 5. 换手交接与归档 (`pnpm session:end`)
@@ -90,7 +90,7 @@
 - 运行生命周期收尾校验命令 `node .harness/lifecycle/session-end.mjs`（或 `pnpm session:end`），校验交接状态完备性：
   - 若任务全部闭环且验证充分，方可在 `feature_list.json` 中将状态改为 `completed`，且必须附带 `evidence` 验证凭据；
   - 若会话结束但任务未完，在 `handoff.md` 明确记录下一步动作，供下一任开发者/智能体秒级接力；
-  - 会话结束前确保门禁 `./scripts/verify.sh` 和收尾校验 `pnpm session:end` 双 100% 通过。
+  - 会话结束前确保门禁 `pnpm verify` 和收尾校验 `pnpm session:end` 双 100% 通过。
 
 ---
 
@@ -117,6 +117,6 @@
 1. 代码架构：Modular Monorepo + Feature-based Vertical Slice；业务分析与任务拆解采用 Feature-Driven Development（FDD）思想；
 2. 初始化根目录最高宪法：AGENTS.md、CLAUDE.md、scripts/init.mjs、feature_list.json、member.local.example.md；
 3. 初始化 .harness/ 基础设施：agents/、context/、docs/、lifecycle/、memory/ (含 ADR 模板)、features/ 目录；
-4. 建立 ./scripts/verify.sh 门禁脚本，包含类型检查与测试验证；
+4. 建立 `scripts/verify.mjs` 门禁脚本，包含类型检查与测试验证；
 5. 建立基于 member.local.md 的单特性锁定与沙盒边界保护机制。
 ```

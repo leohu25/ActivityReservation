@@ -35,9 +35,9 @@ export type EmployeeResource = typeof EmployeeResource;
 /** 员工受控字段字典 */
 export const EmployeeField = {
   NAME: "name",
-  NAME_SNAPSHOT: "nameSnapshot",
+  LOGIN_ACCOUNT: "loginAccount",
   EMAIL: "email",
-  EMAIL_SNAPSHOT: "emailSnapshot",
+  PHONE: "phone",
   EMPLOYEE_NO: "employeeNo",
   DEPARTMENT_ID: "departmentId",
   POSITION_ID: "positionId",
@@ -54,8 +54,18 @@ export const employeeConfigurableFields = [
     isSensitive: false,
   },
   {
+    field: EmployeeField.LOGIN_ACCOUNT,
+    label: "登录账号",
+    isSensitive: false,
+  },
+  {
     field: EmployeeField.EMAIL,
     label: "电子邮箱",
+    isSensitive: true,
+  },
+  {
+    field: EmployeeField.PHONE,
+    label: "手机号",
     isSensitive: true,
   },
   { field: EmployeeField.EMPLOYEE_NO, label: "员工工号", isSensitive: false },

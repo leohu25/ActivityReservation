@@ -48,8 +48,8 @@
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │ 层级 2：构建期自动发现引擎 (Build-Time Auto-Discovery)                   │
-│ - scripts/sync/sync-features.mjs (极速 10ms 扫描切片 manifest.ts)      │
-│ - 自动生成 apps/tenant/src/kernel/registry.generated.ts (遵循 ADR-006)  │
+│ - @runtime/tenant#codegen → packages/runtime/tenant/scripts/sync-features.mjs │
+│ - 自动生成 packages/runtime/tenant/src/registry.ts (遵循 ADR-006)        │
 │ - 纯静态 TypeScript 导入，零运行时 I/O，100% Tree-Shaking 与类型安全   │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │ (导出聚合派生工具)
@@ -130,35 +130,49 @@ export interface FeatureNavSection {
 
 ---
 
-## 五、 构建期自动发现机制 (`scripts/sync-features.mjs`)
+## 五、 构建期自动发现机制 (`packages/runtime/tenant/scripts/sync-features.mjs`)
 
-通过轻量脚本实现真正的“零配置自发现”：
+由 **`@runtime/tenant#codegen`** 包任务驱动（Turbo `generate` 前置），实现“零配置自发现”：
 
 ### 1. 扫描与生成流程
 
-1. 扫描 `packages/features/*/src/manifest.ts`；
+1. 扫描 `packages/domains/*/src/manifest.ts` 与 `packages/platform/*/src/manifest.ts`；
 2. 读取各切片 `package.json` 中的包名；
 3. 提取导出的 `*Manifest` 对象；
-4. 自动写入 `packages/features/tenant-admin/src/registry.generated.ts`（带有防重复写入对比机制）；
+4. 自动写入 `packages/runtime/tenant/src/registry.ts`（带有防重复写入对比机制）；
 5. 若文件无变化则秒级跳过，避免引起文件监听器重复热更新。
 
-### 2. 流水线无缝挂载
+### 2. 流水线无缝挂载（Turborepo 包级任务）
 
-在根目录 `package.json` 中配置：
+生成脚本归属产物包，**禁止**在根 `package.json` 使用 `&&` 胶水串联：
 
 ```json
+// packages/runtime/tenant/package.json
 {
   "scripts": {
-    "sync:features": "node scripts/sync-features.mjs",
-    "build": "pnpm sync:features && turbo run build",
-    "dev": "pnpm sync:features && turbo run dev",
-    "check": "pnpm sync:features && turbo run check",
-    "test": "pnpm sync:features && turbo run test"
+    "codegen": "node ./scripts/sync-features.mjs"
   }
 }
 ```
 
-**无论开发者运行构建、调试、单测还是类型检查，特性注册表始终保证自动同步！**
+```json
+// turbo.json（节选）
+{
+  "tasks": {
+    "@runtime/tenant#codegen": {
+      "inputs": ["scripts/**", "../../packages/domains/**/src/manifest.ts", "../../packages/platform/**/src/manifest.ts"],
+      "outputs": ["src/registry.ts"]
+    },
+    "generate": {
+      "dependsOn": ["@runtime/db#codegen", "@runtime/tenant#codegen", "^generate"]
+    },
+    "dev": { "dependsOn": ["generate"] },
+    "build": { "dependsOn": ["generate", "^build"] }
+  }
+}
+```
+
+**无论 `pnpm dev`、`pnpm build`、`pnpm check` 还是 `pnpm test`，都会经由同一拓扑在需要时生成特性注册表。**
 
 ---
 

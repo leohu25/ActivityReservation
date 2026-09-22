@@ -21,17 +21,15 @@ export interface MigrationManagementServiceOptions {
   readonly seeder?: TenantDatabaseSeeder;
 }
 
-let migrationServiceSingleton: MigrationManagementService | undefined;
-
+/**
+ * 每次取服务时重读磁盘 Catalog，保证 db:migrate:generate 后无需重启控制面即可看到待升级版本。
+ * 不复用旧 DatabaseMigrationService 实例，避免迁移目录被构造时快照缓存。
+ */
 export function getMigrationManagementService(): MigrationManagementService {
-  if (migrationServiceSingleton) {
-    return migrationServiceSingleton;
-  }
   const runtime = getControlAuthRuntime();
-  migrationServiceSingleton = MigrationManagementService.create({
+  return MigrationManagementService.create({
     prisma: runtime.prisma,
   });
-  return migrationServiceSingleton;
 }
 
 /**
@@ -124,6 +122,7 @@ export class MigrationManagementService {
                 isUpToDate: true,
                 status: o.tenantDatabase.status,
                 pendingVersionCount: 0,
+                pendingVersions: [],
               },
             ]
           : [],
@@ -141,6 +140,7 @@ export class MigrationManagementService {
           totalCount: fleetItems.length,
           upToDateCount: fleetItems.length,
           pendingCount: 0,
+          pendingVersionTotal: 0,
           items: fleetItems,
         },
       };
@@ -173,6 +173,7 @@ export class MigrationManagementService {
     });
 
     const fleetItems: TenantFleetItem[] = [];
+    let pendingVersionTotal = 0;
     for (const org of orgsWithDb) {
       const db = org.tenantDatabase;
       if (!db) continue;
@@ -180,6 +181,7 @@ export class MigrationManagementService {
         await this.migrationService.tenantRunner.preflightTenant(org.id);
       const isUpToDate = preflight.pendingVersions.length === 0;
       const pendingCount = preflight.pendingVersions.length;
+      pendingVersionTotal += pendingCount;
 
       fleetItems.push({
         organizationId: org.id,
@@ -190,6 +192,7 @@ export class MigrationManagementService {
         isUpToDate,
         status: db.status,
         pendingVersionCount: pendingCount,
+        pendingVersions: preflight.pendingVersions,
       });
     }
 
@@ -207,6 +210,7 @@ export class MigrationManagementService {
         totalCount: fleetItems.length,
         upToDateCount,
         pendingCount: fleetItems.length - upToDateCount,
+        pendingVersionTotal,
         items: fleetItems,
       },
     };

@@ -66,12 +66,12 @@ export class DepartmentService {
         },
         select: {
           memberId: true,
-          nameSnapshot: true,
+          name: true,
         },
       });
       for (const leader of leaders) {
         if (leader.memberId) {
-          leaderMap.set(leader.memberId, leader.nameSnapshot);
+          leaderMap.set(leader.memberId, leader.name);
         }
       }
     }
@@ -233,9 +233,9 @@ export class DepartmentService {
     if (updated.leaderMemberId) {
       const leader = await tenantPrisma.employeeProfile.findUnique({
         where: { memberId: updated.leaderMemberId },
-        select: { nameSnapshot: true },
+        select: { name: true },
       });
-      leaderName = leader?.nameSnapshot ?? null;
+      leaderName = leader?.name ?? null;
     }
 
     const count = await tenantPrisma.employeeProfile.count({

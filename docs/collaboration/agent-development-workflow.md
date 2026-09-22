@@ -105,7 +105,7 @@ flowchart TD
 - **Phase 3 (服务与只读)**：封装领域服务，编写 RSC server-only Query，行级数据范围通过 `accessibleBy` 自动下推为 Prisma Where 物理 SQL 条件；
 - **Phase 4 (安全 Actions)**：写操作必须由 `defineServerAction` 包装，执行认证校验、CASL 守卫 (`assert*Ability`) 与 `toPlainData` 跨端序列化；
 - **Phase 5 (工业风交互)**：基于 `@base/ui` 纯标准原子套件构建；消费官方 `TenantAbilityProvider` 与 `useAbility()`；破坏性操作单次确认；右上角 Toast 反馈；杜绝全页强刷；
-- **Phase 6 (路由装配)**：租户端 `layout.tsx` 挂载 `*AbilityBoundary`，`manifest.ts` 注册页面元数据并经由 `sync-features.mjs` 静态接入全局导航树；
+- **Phase 6 (路由装配)**：租户端 `layout.tsx` 挂载 `*AbilityBoundary`，`manifest.ts` 注册页面元数据并经由 `@runtime/tenant#codegen`（`sync-features.mjs`）静态接入全局导航树；
 - **Phase 7 (对齐单测)**：编写视图与契约 100% 对齐的自动化单元测试。
 
 #### 2. 平台基座与基础设施框架迭代（四大铁律）
@@ -125,7 +125,7 @@ flowchart TD
 
 #### 1. 日常即时反馈（只测改动文件，不跑全量门禁）
 
-日常编码过程中，智能体与开发者**严禁频繁手动执行全量 `./scripts/verify.sh`**（耗时且消耗资源），即时反馈通过以下轻量方式进行：
+日常编码过程中，智能体与开发者**严禁频繁手动执行全量 `pnpm verify`**（耗时且消耗资源），即时反馈通过以下轻量方式进行：
 
 ```bash
 # 1. 针对当前改动文件运行同级单测 (Colocation)
@@ -137,7 +137,7 @@ pnpm --filter <target-package> check
 
 #### 2. Git 物理门禁硬拦截 (Pre-commit Hook)
 
-提交代码时执行 `git commit`，`.git/hooks/pre-commit` 会自动触发 `./scripts/verify.sh` 极速验证流水线：
+提交代码时执行 `git commit`，`.git/hooks/pre-commit` 会自动触发 `pnpm verify`（`scripts/verify.mjs`）极速验证流水线：
 
 1. **元数据格式校验**：验证 `feature_list.json` JSON 语法与依赖合法性；
 2. **沙盒白名单拦截 (`check-boundary.mjs`)**：比对工作区改动文件，**一旦修改了当前特性 `scope.md` 白名单以外的业务文件，直接硬报错阻断提交**；

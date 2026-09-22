@@ -9,6 +9,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "codegen": "node ./scripts/sync-features.mjs",
     "check": "tsc --noEmit",
     "lint": "eslint ."
   },
