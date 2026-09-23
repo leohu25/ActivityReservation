@@ -8,7 +8,7 @@
 
 - **痛点**：手写私有 UI 伪冒 shadcn 原生规范，不仅颜色硬编码（如 `slate-*`），且绕过了 `--muted`、`--border` 等设计令牌，导致主题与暗色模式切换失效；在 Monorepo 随意运行交互式 CLI 容易卡死终端或落入错误路径。
 - **解法与固化规范**：
-  - **基础原子组件标准**：`packages/base/ui` 原子组件必须 100% 遵循 `shadcn/ui (new-york)` 原生实现，使用 React 19 标准签名与 CSS 变量设计令牌；
+  - **组件源码所有权属于项目本身**：`packages/base/ui/src/components/ui/` 下的原子组件源码 100% 归本工程所有并由 Git 跟踪。**允许且推崇就地演进与功能增强**（如直接在 `select.tsx` 中增强对 `options` 开箱即用支持），杜绝生搬硬套“绝对不可修改官方代码”的教条主义，坚决消灭多余别扭的“伪包装层”；
   - **安装新组件走统一命令**：
     ```bash
     pnpm ui:add <component_name>
@@ -137,4 +137,41 @@
   4. **坚决去除 AI 味与内部术语**：
      - **杜绝说教式长说明**：各区块标题回归极简业务概念（“基础信息”、“结算与授信”、“业务归属”），删除所有废话副标题；
      - **严禁向用户暴露框架实现术语**：严禁在 UI 界面文案中出现“CASL”、“权限校验”、“动态受控”、“工业级标准”等开发者内部自嗨词汇；没有真实审计时间或操作人信息时，底栏左侧一律保持干净留白。
+
+---
+
+## 9. 下拉控件 Base UI 迁移踩坑与 Label 丢失防线 (Select vs Combobox)
+
+- **痛点与核心根因**：
+  - 开发者习惯了 Radix UI 时代 `<SelectTrigger><SelectValue /></SelectTrigger>` 自动反查 DOM 提取子项文本的旧机制；
+  - 迁移至 **Base UI (`@base-ui/react`)** 后，组件解除了侵入式 DOM 反查，当 `<SelectValue />` 未显式传入 children 时，**默认直接把原始 `value` 打印为文本**，导致输入框直接渲染为英文枚举 Key（如 `MAIN`）或长串 UUID 主键（如 `0195e...`），严重破坏用户体验。
+- **解法与全仓固化标准**：
+  1. **实体主数据与外键关联：一律使用 `Combobox`**：
+     - 包括商品、单位、产线、客户、供应商、仓库等；
+     - 统一传入 `options: [{ value: id, label: name }]`，组件内部内置双向 Label 映射，确保永远对外展示业务名称，对内提交稳定主键；并自带拼音/文字搜索与触底分页；
+  2. **官方原生 `Select` 正确写法：必须显式给 `<SelectValue>` 注入 Label**：
+     - 不改动任何官方底层源码，保持 `@base/ui` 的 Base UI 原生纯净；
+     - 在业务端使用原生 `Select` 时，必须给 `<SelectValue>` 标签体内显式传入映射好的中文文本：
+       ```tsx
+       const ROLE_LABELS: Record<string, string> = {
+         MAIN: "主料",
+         AUXILIARY: "辅料",
+         PACKAGING: "包材",
+       };
+
+       // 官方规范写法：
+       <Select value={role} onValueChange={(val) => setRole(val || "MAIN")}>
+         <SelectTrigger className="h-9 text-xs">
+           <SelectValue placeholder="选择角色">
+             {ROLE_LABELS[role] || role}
+           </SelectValue>
+         </SelectTrigger>
+         <SelectContent>
+           <SelectItem value="MAIN">主料</SelectItem>
+           <SelectItem value="AUXILIARY">辅料</SelectItem>
+         </SelectContent>
+       </Select>
+       ```
+  3. **海量与外键数据首选 `Combobox`**（带搜索/分页/清空），彻底消除手写字典映射。
+
 

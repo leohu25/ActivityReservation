@@ -62,11 +62,7 @@ export const departmentPageContract: FeaturePagePermissionDescriptor = {
       supportedScopes: STANDARD_DATA_SCOPES,
     },
     { action: StandardAction.CREATE, label: "新建" },
-    {
-      action: StandardAction.UPDATE,
-      label: "调整部门",
-      supportedScopes: STANDARD_DATA_SCOPES,
-    },
+    { action: StandardAction.UPDATE, label: "调整部门" },
     { action: StandardAction.DELETE, label: "撤销部门" },
   ],
   configurableFields: departmentConfigurableFields.map((f) => ({

@@ -93,11 +93,7 @@ export const employeePageContract: FeaturePagePermissionDescriptor = {
       supportedScopes: STANDARD_DATA_SCOPES,
     },
     { action: StandardAction.CREATE, label: "新建" },
-    {
-      action: StandardAction.UPDATE,
-      label: "调岗/调部门",
-      supportedScopes: STANDARD_DATA_SCOPES,
-    },
+    { action: StandardAction.UPDATE, label: "调岗/调部门" },
     { action: StandardAction.DELETE, label: "停用/离职" },
     { action: EmployeeAction.TRANSFER_DEPT, label: "调动部门" },
     { action: EmployeeAction.TRANSFER_POSITION, label: "调整岗位" },

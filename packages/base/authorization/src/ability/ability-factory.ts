@@ -24,6 +24,7 @@ import {
   type RoleFieldPolicyConfig,
 } from "../fields/field-policy";
 
+
 export type AppAbility<
   TAction extends string,
   TSubject extends string,
@@ -525,7 +526,7 @@ export class CaslAbilityFactory<
         this.options.ignoreUnknownResources ?? true,
       );
       for (const grant of grants) {
-        // 匹配与当前动作严格对应（或全局通用）的数据范围配置，杜绝读写跨 Action 范围污染
+        // 严格精确匹配当前动作的数据范围配置；数据范围仅针对列表查询等只读操作下发，杜绝隐式黑盒继承
         const roleResourceScopes = mergedDataScopes.filter(
           (s) =>
             s.role === roleName &&

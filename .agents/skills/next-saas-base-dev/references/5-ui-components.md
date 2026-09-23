@@ -187,6 +187,8 @@ const list = useListSearch(resourceSearchParams);
 | 积木                                     | 职责                                                                            | 关键开关                                                                  |
 | :--------------------------------------- | :------------------------------------------------------------------------------ | :------------------------------------------------------------------------ |
 | `DataTable`                              | **标准列表一体组件（推荐）** 默认 chrome + 可扩展 `filterExtra`/`statusOptions` | `title/subject/columns`、`dataTableProps`（useListSearch）、`filterExtra` |
+| `Select`                                 | **开箱即用单选下拉组件**（基于 Base UI 编排，支持 `{ value, onChange, options }`，内置防漏 Key 解析）| `value/onChange/options/placeholder/disabled/size`                        |
+| `Combobox`                               | **企业级搜索下拉首选控件**（双向 Label 解析、防漏枚举 Key、支持远程分页检索）| `value/onChange/options/onSearchChange/onLoadMore/clearable`              |
 | `DataTable.Workspace`                    | 自定义工作台积木（非标准 CRUD 首选）                                            | `showRefresh/Export/...`                                                  |
 | `DataTable.Root`                         | 状态上下文 + 一体化白卡                                                         | `integratedCard`                                                          |
 | `DataTable.Header`                       | 分类小标 + 竖条标题 + 说明 + actions 插槽                                       | `category/title/description/actions`                                      |
@@ -204,7 +206,63 @@ const list = useListSearch(resourceSearchParams);
 | `DataTable.AuthField`                    | 字段三态表单控件（shadcn `Field`+`Badge` 组合）                                 | `field/action`                                                            |
 | `DataTable.AuthGuard`                    | 权限包裹任意插槽                                                                | `action`                                                                  |
 
-### 2.3 自定义操作按钮如何加权限
+### 2.3 下拉选择控件规范：官方 Base UI `Select` 正确用法与 `Combobox` 选型
+
+全仓下拉交互必须遵循以下官方标准范式，保持官方原子组件纯净，**严禁出现输入框内展示英文枚举 Key 或 UUID 主键**：
+
+#### 1. 业务主数据与外键关联：一律使用 `Combobox`
+- **适用场景**：商品、单位、产线、客户、供应商、仓库等海量、动态或需要搜索的数据；
+- **标准写法**：
+  ```tsx
+  <Combobox
+    value={productId}
+    placeholder="选择商品..."
+    options={products.map((p) => ({ value: p.id, label: `${p.name} (${p.code})` }))}
+    onChange={(val) => setProductId(val)}
+  />
+  ```
+
+#### 2. 官方原生 `Select` 控件正确使用规范（严禁犯错）
+Base UI 的 `<Select>` 解除了对 DOM 的侵入式反查。**如果使用官方 `Select`，必须在 `<SelectValue>` 中显式传入映射好的中文 Label**：
+
+- **❌ 错误写法（Base UI 陷阱）**：
+  ```tsx
+  // 严禁这样写！SelectValue 内部为空时，Base UI 会直接把 value (如 "MAIN" 或 UUID) 打印为文本！
+  <Select value={role} onValueChange={setRole}>
+    <SelectTrigger>
+      <SelectValue placeholder="请选择" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="MAIN">主料</SelectItem>
+      <SelectItem value="AUXILIARY">辅料</SelectItem>
+    </SelectContent>
+  </Select>
+  ```
+
+- **✅ 正确写法（官方原生标准）**：
+  在 `<SelectValue>` 标签体内部**显式传入计算好的中文名称**：
+  ```tsx
+  const ROLE_LABELS: Record<string, string> = {
+    MAIN: "主料",
+    AUXILIARY: "辅料",
+    PACKAGING: "包材",
+  };
+
+  <Select value={role} onValueChange={(val) => setRole(val || "MAIN")}>
+    <SelectTrigger className="h-9 text-xs">
+      <SelectValue placeholder="请选择角色">
+        {ROLE_LABELS[role] || role}
+      </SelectValue>
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="MAIN">主料</SelectItem>
+      <SelectItem value="AUXILIARY">辅料</SelectItem>
+      <SelectItem value="PACKAGING">包材</SelectItem>
+    </SelectContent>
+  </Select>
+  ```
+
+### 2.4 自定义操作按钮如何加权限
 
 **约定大于配置**：页面直接声明按钮；普通用户按权限隐藏；不需要的按钮用 `hide*` 或不写该 Button，并同步从契约删 action。
 

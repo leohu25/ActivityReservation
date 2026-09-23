@@ -1,5 +1,6 @@
 import {
 	StandardAction,
+	STANDARD_DATA_SCOPES,
 	type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
 import { defineListSearchParams } from "@base/ui";
@@ -102,7 +103,11 @@ export const bomPageContract: FeaturePagePermissionDescriptor = {
 	label: "生产BOM管理",
 	path: "/production/bom",
 	actions: [
-		{ action: StandardAction.READ, label: "查看BOM列表与详情" },
+		{
+			action: StandardAction.READ,
+			label: "查看BOM列表与详情",
+			supportedScopes: STANDARD_DATA_SCOPES,
+		},
 		{ action: StandardAction.CREATE, label: "新建生产BOM" },
 		{ action: StandardAction.UPDATE, label: "编辑生产BOM" },
 		{ action: StandardAction.DELETE, label: "删除生产BOM" },

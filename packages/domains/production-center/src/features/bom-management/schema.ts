@@ -86,6 +86,7 @@ export const createBomSchema = z.object({
 	defaultCookedYieldRate: z.coerce.number().min(0).max(1).nullish(),
 	minimumBatchQuantity: z.coerce.number().min(0).nullish(),
 	isDefault: z.boolean().default(false),
+	isDraft: z.boolean().default(false),
 	inputs: z.array(bomInputItemSchema).default([]),
 	outputs: z.array(bomOutputItemSchema).default([]),
 	operations: z.array(bomOperationItemSchema).default([]),

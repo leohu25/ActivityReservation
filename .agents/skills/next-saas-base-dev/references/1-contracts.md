@@ -190,6 +190,10 @@ export const resourceConfigurableFields = [
 ] as const;
 
 // 4. 页面级纯数据权限契约 (SSoT)
+// 核心架构规范与边界划分（透明直观，拒绝黑盒）：
+// 1. 数据范围（行级数据权限）100% 专职服务于“列表查询与数据加载（READ）”，通过 getAccessibleWhere 下推数据库 SQL 过滤；
+// 2. 操作权限（CREATE/UPDATE/DELETE/EXPORT/PUBLISH 等）纯粹由“角色”控制（二元开关：角色有该动作即允许操作，无则拦截），不叠加复杂隐式行数据范围，保证界面配置所见即所得；
+// 3. 契约规范：只有 StandardAction.READ 声明 supportedScopes，其余操作禁止声明 supportedScopes。
 export const resourcePageContract: FeaturePagePermissionDescriptor = {
   resource: ResourceResource,
   subject: ResourceSubject,
@@ -199,14 +203,10 @@ export const resourcePageContract: FeaturePagePermissionDescriptor = {
     {
       action: StandardAction.READ,
       label: "查看记录",
-      supportedScopes: STANDARD_DATA_SCOPES,
+      supportedScopes: STANDARD_DATA_SCOPES, // 仅列表读取声明行数据范围
     },
     { action: StandardAction.CREATE, label: "新建记录" },
-    {
-      action: StandardAction.UPDATE,
-      label: "修改记录",
-      supportedScopes: STANDARD_DATA_SCOPES,
-    },
+    { action: StandardAction.UPDATE, label: "修改记录" },
     { action: StandardAction.DELETE, label: "删除记录" },
     { action: StandardAction.EXPORT, label: "数据导出" },
   ],

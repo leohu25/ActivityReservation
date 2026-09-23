@@ -143,6 +143,7 @@ export interface CreateBomInput {
 	readonly defaultCookedYieldRate?: number | null;
 	readonly minimumBatchQuantity?: number | null;
 	readonly isDefault?: boolean;
+	readonly isDraft?: boolean;
 	readonly inputs: readonly {
 		readonly productId: string;
 		readonly quantity?: number | null;
