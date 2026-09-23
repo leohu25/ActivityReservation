@@ -570,7 +570,31 @@ export default async function XxxPage({ searchParams }: PageProps) {
 
 ---
 
-## 4. 复杂业务应对与扩展指南（逃生舱）
+## 4. 资源 CRUD 场景分流准则：分支 A (标准简易资源) vs 分支 B (复杂装配非标资源)
+
+本底座在界面与交互构建上坚持**“有意为之的场景分流标准”**，严禁搞一刀切：
+
+### 分支 A：标准简易资源范式 (Standard Resource Paradigm)
+- **适用场景**：字段明确、单表或标准主从表（如客户档案、客户分类、供应商主档、计量单位、系统字典等）；
+- **核心模式**：**直接使用封装好的标准化大组件**（`DataTable` 列表 + `FormModal` 弹窗 / `FormPage` 全屏单据工作台）；
+- **权限闭环心智**：
+  - **列表端 (`DataTable`)**：传入 `subject={XxxSubject}`，受控列声明 `field: XxxField.YYY`（因为复合列无法自动推导，必须显式指派受控归属）；
+  - **表单端 (`FormModal` / `FormPage`)**：只需在容器外层传入 `subject={XxxSubject}`，内部输入控件直接根据 DTO 属性 `name` 全自动完成 `HIDDEN` 剥离与 `READONLY` 置灰，**严禁在每个输入框上手写重复的 `field` 样板代码**。
+
+### 分支 B：复杂装配非标切片范式 (Complex Assembly & Non-Standard Paradigm)
+- **适用场景**：制造 BOM、工艺路线、多级配方、批次装配、多层流程图谱、动态增删行等非标高度定制界面；
+- **核心模式**：**严禁将复杂业务强行削足适履塞入通用 FormPage**！采用**积木化物理拆解架构**，并结合使用封装好的原子权限控件；
+- **实施标准与架构铁律**：
+  1. **物理目录积木化约定 (Modular Lego Decomposition)**：强制建立 `form/`、`graph/`、`detail/`、`list/` 四大积木子目录，单文件严格控制在 50~180 行以内，彻底杜绝近千行单文件巨石（Monolith）；
+  2. **纯状态逻辑抽离 (State Hook Decoupling)**：强制抽取 `useXxxFormState.ts` 纯逻辑 Hook，状态响应式联动与提交组装与 UI 彻底解耦；
+  3. **操作权限使用封装控件 (`<AuthGuard>`)**：动作按钮必须使用封装好的 `<AuthGuard action={...} subject={...}>` 声明式包裹，严禁在页面侧手写 `can("create", ...) && <Button>` 或层层透传 `canCreate/canUpdate` 布尔值 props；
+  4. **字段权限使用封装控件 (`<AuthField>`)**：输入控件必须使用封装好的 `<AuthField field={XxxField.YYY} subject={...}>` 声明式包裹，底层自动处理 `HIDDEN`（彻底不入 DOM）与 `READONLY`（自动禁用并挂载只读徽章）；
+  5. **动态可见性与必填协同原则**：表单校验时被 `HIDDEN` 的字段自动豁免必填，绝不阻塞用户提交其他合法字段；
+  6. **服务端写防线物理闭环 (`assertEditableFields`)**：在对应的 `createXxxAction` 与 `updateXxxAction` 中首行调用 `assertEditableFields(ability, Subject, extractControlledPayload(input))`，阻断网络层越权篡改。
+
+---
+
+## 5. 复杂业务应对与扩展指南（逃生舱）
 
 本流程作为通用模板，主要覆盖单实体的标准增删改查。当遇到复杂度更高的业务页面时，推荐按以下合规方式扩展，无需削足适履：
 
@@ -584,7 +608,7 @@ export default async function XxxPage({ searchParams }: PageProps) {
 
 ---
 
-## 5. 红线与底线
+## 6. 红线与底线
 
 无论业务如何复杂定制，以下原则始终不可突破：
 
@@ -595,6 +619,6 @@ export default async function XxxPage({ searchParams }: PageProps) {
 
 ---
 
-## 5. 存量迁移（DEBT）
+## 7. 存量迁移（DEBT）
 
 凡仍使用旧版 URL hook、手动计算权限或手绘表单的存量视图，按本标准最佳范式重构对齐；迁完删除 `@deprecated` API。

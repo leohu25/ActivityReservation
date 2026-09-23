@@ -25,7 +25,7 @@ export interface TopHeaderProps {
 	readonly title?: string;
 	/** 系统标志短标，默认为 'SaaS' */
 	readonly logoText?: string;
-	/** 系统 Logo 图片地址 (若提供则优先于 logoText 渲染图片) */
+	/** 系统 Logo 图片地址 (若提供则优先于默认系统 Logo 渲染；默认使用 '/logo/logo.png') */
 	readonly logoUrl?: string | null;
 }
 
@@ -78,6 +78,7 @@ export function TopHeader({
 
 	const displayName = user?.name || user?.email?.split("@")[0] || "";
 	const initial = (displayName || user?.email || "?")[0]?.toUpperCase() ?? "?";
+	const effectiveLogoUrl = logoUrl ?? "/logo/logo.png";
 
 	return (
 		<header className="sticky top-0 z-40 flex h-12 w-full items-center justify-between border-b border-sidebar-border bg-sidebar px-3 text-sidebar-foreground md:px-4">
@@ -90,13 +91,13 @@ export function TopHeader({
 					className="flex items-center gap-2.5 cursor-default select-none"
 					title={title ?? "企业数字化协同管理平台"}
 				>
-					{logoUrl ? (
+					{effectiveLogoUrl ? (
 						<div className="relative flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-sidebar-border bg-background shadow-xs">
 							{/* eslint-disable-next-line @next/next/no-img-element */}
 							<img
-								src={logoUrl}
+								src={effectiveLogoUrl}
 								alt={title ?? "系统 Logo"}
-								className="size-full object-cover"
+								className="size-full object-contain p-0.5"
 							/>
 						</div>
 					) : (

@@ -78,8 +78,13 @@ export default function LoginPage() {
 
       <Card className="w-full max-w-md border-border/80 bg-card/95 py-6 shadow-xl shadow-black/5 dark:shadow-2xl dark:shadow-black/50 text-card-foreground animate-in fade-in zoom-in-95 duration-200">
         <CardHeader className="text-center pb-4">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 text-white font-black text-lg shadow-md shadow-blue-500/25 ring-1 ring-white/20 dark:ring-white/10">
-            SaaS
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-border/80 bg-background/80 p-2 shadow-lg shadow-primary/10 backdrop-blur-xs ring-1 ring-border/50">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo/logo.png"
+              alt="系统 Logo"
+              className="size-full object-contain"
+            />
           </div>
           <CardTitle className="mt-3 text-xl font-black tracking-tight text-foreground">
             企业数智平台登录

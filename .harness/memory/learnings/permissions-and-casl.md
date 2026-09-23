@@ -157,4 +157,34 @@
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
+---
+
+## 10. 列表 (DataTable) 与表单 (FormModal/FormPage) 字段权限绑定的差异与设计意图 (有意为之的正交设计)
+
+- **痛点与常见疑惑**：
+  - 开发者常常产生疑问：“为什么在列表 `DataTable` 的每列定义（`ColumnDef`）中必须手动显式传入 `field: CustomerField.SETTLEMENT_METHOD`，而在表单 `FormModal` 或 `FormPage` 中却只需在外层容器声明一次 `subject={CustomerSubject}`，内部控件无需重复传入 `field` 属性？两者的机制为何不统一？”
+- **深层架构原因（有意为之的正交设计）**：
+  1. **表单控件是“1对1”实体字段属性（天然契约映射）**：
+     - 表单中的每一个输入控件天然拥有一个唯一的 `name`（如 `name: "settlementMethod"`）；
+     - 该 `name` 在 99% 的场景下与后端的实体字段名（即 `CustomerField.SETTLEMENT_METHOD = "settlementMethod"`）完全一致；
+     - 底座 `FormModal` / `FormPage` 内部算法为 `const authKey = field.field || field.name;`，当未传 `field` 时自动回退使用 `field.name` 对齐 CASL 规则；
+     - **收益**：开发者在表单容器外层声明一次 `subject={XxxSubject}` 即可，底层自动批量完成全量表单项的读取隐藏（`HIDDEN`）与写入置灰（`READONLY`），**消除了在全库成百上千个表单控件上手动重复配置 `field` 的繁琐样板代码**。
+  2. **列表列常常是“1对多/人工展示组装”的复合列（无法自动推导）**：
+     - 表格列为了移动端或信息密度展示，常常将多个字段合并单列呈现（例如 `id: "contact"` 复合列内部同时渲染了联系人姓名与电话两个字段，或者 `id: "actions"` 纯操作列）；
+     - 表格列的 `id` 是前端展示标识，**绝不能与数据库实体字段等同**（如果表格拿 `id: "contact"` 自动匹配，CASL 会因找不到 `contact` 字段而全量误判）；
+     - 因此，`DataTableContent` 内部遵循明确约定：`if (!col.field || !ability || !subject) return true; return ability.can("read", subject, col.field);`，必须由开发者显式传入 `field: CustomerField.CONTACT_PHONE` 明确指定该复合列绑定哪个受控敏感字段。
+  3. **复杂非标业务（如 BOM 装配、流程图谱）的字段权限接入范式**：
+     - 类似 BOM 管理这种包含动态投入增删表、工艺工序菱形链、多副产品标签与流程图谱的非标制造装配表单，不应强行削足适履塞进通用两列表单 `FormPage(sections)`；
+     - 最佳实践是保持组件本身的积木化拆分（`ui/form/*`），并在商业敏感字段（如 `BomField.TOTAL_YIELD_RATE` 总出成率、`BomField.DEFAULT_COOKED_YIELD_RATE` 熟化率）上，通过 `<AuthField field={...} subject={...}>` 或声明式调用 `ability.can("read", BomSubject, BomField.TOTAL_YIELD_RATE)` 实现单一事实源的显隐与只读控制。
+- **经典惨痛失败教训 (Anti-Patterns)**：
+  1. **手写裸 DOM 漏权限漏洞**：在定制组件里手写裸 `<div>`、`<label>` 和 `<Input>`，未挂载 `<AuthField>`，导致角色配置了 `HIDDEN` 敏感字段依然赤裸裸展示在界面中；
+  2. **手写布尔值层层透传样板代码**：在页面顶层计算一堆 `canCreate`, `canUpdate`, `canPublish`，层层向子组件 props 钻取透传，并在子组件中手写脆弱的多重三元表达式判定；
+  3. **“UI 隐藏 = 安全”的虚假安全感**：前端界面用 `<AuthField>` 隐藏了输入框，但服务端 Server Action 漏掉了 `assertEditableFields` 物理强校验，攻击者绕过前端伪造网络请求仍能越权篡改只读/隐藏字段。
+- **标准成功范式与三位一体闭环 (Success Paradigm)**：
+  1. **动作/按钮层**：全量使用 `<AuthGuard action={...} subject={...}>`，彻底消除手动权限计算与 props 钻取透传；
+  2. **字段输入层**：全量使用 `<AuthField field={...} subject={...}>`，自动完成 `HIDDEN` 彻底从 DOM 剥离、`READONLY` 置灰加徽章；
+  3. **服务端写防线**：在 `createXxxAction` 与 `updateXxxAction` 中首行调用 `assertEditableFields(ability, Subject, extractControlledPayload(input))`，封死网络越权路径；
+  4. **动态可见性与必填协同原则**：表单校验时被 `HIDDEN` 的字段自动豁免必填，绝不阻塞用户提交其他合法字段。
+
+
 
