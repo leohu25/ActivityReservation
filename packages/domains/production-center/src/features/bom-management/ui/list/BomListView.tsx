@@ -222,6 +222,7 @@ export function BomListView({ data, total, formOptions }: BomListViewProps) {
 
 	// 导出 CSV
 	const handleExport = useCallback(() => {
+		// SAFETY: BomListItemDto 兼容 CSV 导出纯对象键值记录
 		exportContractCsv(data as unknown as readonly Record<string, unknown>[], [], {
 			subject: BomSubject,
 			ability,
@@ -305,16 +306,8 @@ export function BomListView({ data, total, formOptions }: BomListViewProps) {
 					router?.push(`/production/bom/${detail.id}?mode=edit`);
 				}}
 				onSelectVersion={handleSelectVersion}
-				onNavigateBom={async (targetBomId) => {
-					try {
-						const res = await getBomDetailAction(targetBomId);
-						if (res.success && res.data) {
-							setActiveDetail(res.data);
-							toast.info(`已切入子方案: ${res.data.currentVersion.name}`);
-						}
-					} catch (err: unknown) {
-						toast.error("跳转子 BOM 失败");
-					}
+				onNavigateBom={(_targetBomId) => {
+					// 抽屉内部自闭环维护多级导航栈与无损回溯，外部无需覆写根状态
 				}}
 				onPublishVersion={async (bomId, versionNum) => {
 					try {

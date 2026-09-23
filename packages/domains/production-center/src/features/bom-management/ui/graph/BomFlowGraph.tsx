@@ -177,6 +177,8 @@ export function BomFlowGraph({ detail, onNavigateBom }: BomFlowGraphProps) {
 						if (!isExpanded) return null;
 						const nodeY =
 							centerY - inputsTotalHeight / 2 + idx * (nodeHeight + nodeGap);
+						const subPanelHeight = 124;
+						const subPanelTop = nodeY + (nodeHeight - subPanelHeight) / 2;
 
 						return (
 							<SubGraphPanel
@@ -185,8 +187,8 @@ export function BomFlowGraph({ detail, onNavigateBom }: BomFlowGraphProps) {
 								isLoading={Boolean(loadingSubBoms[inp.id])}
 								fallbackName={inp.name}
 								childBomId={inp.childBomId}
-								top={nodeY - 8}
-								height={nodeHeight + 16}
+								top={subPanelTop}
+								height={subPanelHeight}
 								onNavigateBom={onNavigateBom}
 							/>
 						);

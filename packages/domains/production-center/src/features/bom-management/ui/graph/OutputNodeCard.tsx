@@ -62,7 +62,7 @@ export function OutputNodeCard({
 			</div>
 			<div
 				className={cn(
-					"text-white text-[11px] py-1 text-center font-mono font-medium",
+					"shrink-0 h-6 flex items-center justify-center text-white text-[11px] font-mono font-medium leading-none text-center px-1",
 					out.isPrimary ? "bg-blue-600" : "bg-amber-600",
 				)}
 			>

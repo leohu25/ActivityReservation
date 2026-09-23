@@ -26,7 +26,7 @@ export function SubGraphPanel({
 }: SubGraphPanelProps) {
 	return (
 		<div
-			className="absolute w-[470px] rounded-xl border-2 border-dashed border-cyan-400/80 bg-cyan-50/20 dark:bg-cyan-950/20 p-2.5 shadow-sm transition-all animate-in fade-in zoom-in-95 duration-200 flex flex-col justify-between"
+			className="absolute w-[500px] rounded-xl border-2 border-dashed border-cyan-400/80 bg-cyan-50/25 dark:bg-cyan-950/25 p-3 shadow-sm transition-all animate-in fade-in zoom-in-95 duration-200 flex flex-col justify-between"
 			style={{
 				left: "20px",
 				top: `${top}px`,
@@ -34,7 +34,7 @@ export function SubGraphPanel({
 			}}
 		>
 			{/* 子方案信息栏 */}
-			<div className="flex items-center justify-between border-b border-cyan-200 dark:border-cyan-800/60 pb-1.5 text-[11px]">
+			<div className="h-6.5 shrink-0 flex items-center justify-between border-b border-cyan-200/80 dark:border-cyan-800/60 pb-1.5 text-[11px]">
 				<div className="flex items-center gap-1.5 font-bold text-cyan-900 dark:text-cyan-200 truncate">
 					<Layers className="size-3.5 text-cyan-600" />
 					<span>子方案: {subDetail?.currentVersion.name || fallbackName}</span>
@@ -67,13 +67,13 @@ export function SubGraphPanel({
 					<span>正在实时加载子 BOM 图谱...</span>
 				</div>
 			) : subDetail ? (
-				<div className="flex-1 flex items-center justify-between gap-2 pt-1 overflow-hidden">
+				<div className="flex-1 min-h-0 flex items-center justify-between gap-3 pt-2 overflow-hidden">
 					{/* 子级原料 */}
-					<div className="flex flex-col gap-1 w-32 shrink-0">
+					<div className="flex flex-col gap-1 w-28 shrink-0">
 						{subDetail.currentVersion.inputs.slice(0, 2).map((subInp, subIdx) => (
 							<div
 								key={subIdx}
-								className="rounded border border-cyan-300 bg-white dark:bg-slate-900 px-2 py-1 text-[11px]"
+								className="rounded border border-cyan-300 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] shadow-xs"
 								title={`${subInp.productName} (${subInp.quantity} ${subInp.unitName || ""})`}
 							>
 								<div className="font-semibold text-cyan-900 dark:text-cyan-100 truncate">
@@ -92,28 +92,34 @@ export function SubGraphPanel({
 					</div>
 
 					{/* 箭头指向子工序 */}
-					<div className="text-cyan-500 text-xs">➔</div>
+					<div className="text-cyan-500 font-bold text-xs shrink-0 select-none">➔</div>
 
 					{/* 子级工序流程 */}
-					<div className="flex items-center gap-2 overflow-x-auto flex-1 justify-center py-1">
-						{subDetail.currentVersion.operations.map((subOp, opIdx) => (
-							<div
-								key={opIdx}
-								className="flex flex-col items-center justify-center shrink-0"
-								title={subOp.operationName}
-							>
-								<div className="w-[52px] h-[38px] flex items-center justify-center relative">
-									<div className="absolute inset-0 border border-emerald-500 bg-white dark:bg-slate-900 rotate-45 rounded-xs shadow-xs" />
-									<span className="relative z-10 text-[10px] font-bold text-emerald-800 dark:text-emerald-200 truncate px-1 max-w-[46px] text-center leading-tight">
-										{subOp.operationName}
+					<div className="flex items-center gap-3 overflow-x-auto flex-1 justify-center py-1">
+						{subDetail.currentVersion.operations.map((subOp, opIdx) => {
+							const opName = subOp.operationName || "工序";
+							return (
+								<div
+									key={opIdx}
+									className="relative flex items-center justify-center shrink-0 w-[58px] h-[52px]"
+									title={opName}
+								>
+									{/* 正方形旋转 45 度的工序菱形，外接对角线 51px，在 58x52 容器内绝不越界穿透 */}
+									<div className="size-[36px] border-[1.5px] border-emerald-500 bg-white dark:bg-slate-900 rotate-45 rounded-xs shadow-xs" />
+									<span className="absolute inset-0 z-10 flex flex-col items-center justify-center text-[10px] font-bold text-emerald-800 dark:text-emerald-200 px-1 text-center leading-tight">
+										{opName.length > 3 ? (
+											<>
+												<span>{opName.slice(0, 2)}</span>
+												<span>{opName.slice(2, 5)}</span>
+											</>
+										) : (
+											<span>{opName}</span>
+										)}
 									</span>
 								</div>
-							</div>
-						))}
+							);
+						})}
 					</div>
-
-					{/* 箭头引向主方案投入 */}
-					<div className="text-emerald-600 font-bold text-xs">➔</div>
 				</div>
 			) : (
 				<div className="flex-1 flex items-center justify-center text-xs text-muted-foreground">

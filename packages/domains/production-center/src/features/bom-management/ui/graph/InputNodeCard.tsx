@@ -34,13 +34,18 @@ export function InputNodeCard({
 			)}
 			style={{ left: `${left}px`, top: `${top}px`, height: `${height}px` }}
 		>
-			<div className="p-2 text-center flex-1 flex flex-col justify-center">
+			<div
+				className={cn(
+					"px-2 flex-1 flex flex-col justify-center text-center min-h-0",
+					node.isSubBom ? "pt-1.5 pb-1" : "py-2",
+				)}
+			>
 				{/* 嵌套子 BOM 状态徽章与展开控制按钮 */}
 				{node.isSubBom ? (
 					<div className="flex items-center justify-between mb-1">
 						<Badge
 							variant="secondary"
-							className="h-4 px-1 text-[9px] bg-cyan-100 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-300 border-cyan-300"
+							className="h-4 px-1 text-[9px] bg-cyan-100 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-300 border-cyan-300 font-semibold"
 						>
 							嵌套子BOM
 						</Badge>
@@ -51,7 +56,7 @@ export function InputNodeCard({
 							onClick={() =>
 								node.childBomId && onToggleSubBom(node.id, node.childBomId)
 							}
-							className="h-5 px-1 text-[10px] text-cyan-600 hover:text-cyan-800 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 font-bold"
+							className="h-5 px-1 text-[10px] text-cyan-600 hover:text-cyan-800 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 font-bold gap-0.5"
 						>
 							{isLoading ? (
 								<Loader2 className="size-2.5 animate-spin" />
@@ -68,16 +73,32 @@ export function InputNodeCard({
 					</div>
 				) : null}
 
-				<div className="text-xs font-bold text-amber-900 dark:text-amber-100 truncate">
+				<div
+					className={cn(
+						"text-xs font-bold truncate",
+						node.isSubBom
+							? "text-cyan-950 dark:text-cyan-100"
+							: "text-amber-950 dark:text-amber-100",
+					)}
+					title={node.name}
+				>
 					{node.name}
 				</div>
-				<div className="text-[11px] font-mono text-amber-700/90 dark:text-amber-300/90 mt-0.5">
+				<div
+					className={cn(
+						"text-[11px] font-mono mt-0.5",
+						node.isSubBom
+							? "text-cyan-700/90 dark:text-cyan-300/90 font-medium"
+							: "text-amber-700/90 dark:text-amber-300/90",
+					)}
+				>
 					{node.quantity}
 				</div>
 			</div>
+			{/* 底部业务角色横条：锁定高度与居中，彻底消除文字被截断的渲染异常 */}
 			<div
 				className={cn(
-					"text-white text-[11px] py-1 text-center font-mono font-medium",
+					"shrink-0 h-6 flex items-center justify-center text-white text-[11px] font-mono font-medium leading-none text-center px-1",
 					node.isSubBom
 						? "bg-gradient-to-r from-cyan-600 to-blue-600"
 						: "bg-gradient-to-r from-amber-500 to-amber-600",

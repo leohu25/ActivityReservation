@@ -194,17 +194,18 @@ export function GraphSvgWires({
 					idx * (nodeHeight + nodeGap) +
 					nodeHeight / 2;
 
+				const subPanelRight = 520; // left(20) + width(500)
 				return (
 					<g key={`sub-wire-${idx}`}>
 						<line
-							x1={490}
+							x1={subPanelRight}
 							y1={nodeY}
 							x2={col2X - 8}
 							y2={nodeY}
-							stroke="#22c55e"
-							strokeWidth="2"
-							strokeDasharray="4 2"
-							markerEnd="url(#arrow-green)"
+							stroke="#06b6d4"
+							strokeWidth="1.8"
+							strokeDasharray="4 3"
+							markerEnd="url(#arrow-cyan)"
 						/>
 					</g>
 				);
