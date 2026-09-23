@@ -733,18 +733,24 @@ export function BomFormPage({
 								onChange={(e) => setPrimaryQuantity(Number(e.target.value))}
 								className="h-9 w-28 text-xs font-mono font-bold text-blue-600"
 							/>
-							<Select value={primaryUnitId} disabled={isView} onValueChange={(val) => setPrimaryUnitId(val || "")}>
-								<SelectTrigger className="h-9 w-28 text-xs">
-									<SelectValue placeholder="单位" />
-								</SelectTrigger>
-								<SelectContent>
-									{formOptions.units.map((u) => (
-										<SelectItem key={u.id} value={u.id}>
-											{u.name || u.code}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+							{isView ? (
+								<div className="h-9 px-3 bg-muted/40 rounded-md border flex items-center font-medium">
+									{formOptions.units.find((u) => u.id === primaryUnitId)?.name || primaryUnitId}
+								</div>
+							) : (
+								<Select value={primaryUnitId} disabled={isView} onValueChange={(val) => setPrimaryUnitId(val || "")}>
+									<SelectTrigger className="h-9 w-28 text-xs">
+										<SelectValue placeholder="单位" />
+									</SelectTrigger>
+									<SelectContent>
+										{formOptions.units.map((u) => (
+											<SelectItem key={u.id} value={u.id}>
+												{u.name || u.code}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							)}
 						</div>
 					</div>
 
