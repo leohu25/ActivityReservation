@@ -64,16 +64,8 @@ export const positionPageContract: FeaturePagePermissionDescriptor = {
       supportedScopes: STANDARD_DATA_SCOPES,
     },
     { action: StandardAction.CREATE, label: "新建" },
-    {
-      action: StandardAction.UPDATE,
-      label: "编辑",
-      supportedScopes: STANDARD_DATA_SCOPES,
-    },
-    {
-      action: PositionAction.TOGGLE_STATUS,
-      label: "启用/停用",
-      supportedScopes: STANDARD_DATA_SCOPES,
-    },
+    { action: StandardAction.UPDATE, label: "编辑" },
+    { action: PositionAction.TOGGLE_STATUS, label: "启用/停用" },
     { action: StandardAction.DELETE, label: "删除" },
     { action: StandardAction.EXPORT, label: "导出岗位列表" },
   ],

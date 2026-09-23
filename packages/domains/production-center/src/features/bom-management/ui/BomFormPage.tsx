@@ -8,24 +8,16 @@ import {
 	Textarea,
 	Switch,
 	Combobox,
-	Select,
-	SelectTrigger,
-	SelectValue,
-	SelectContent,
-	SelectItem,
 	Table,
 	TableHeader,
 	TableBody,
 	TableHead,
 	TableRow,
 	TableCell,
-	Tabs,
-	TabsList,
-	TabsTrigger,
-	TabsContent,
 	useSafeRouter,
 	updateTabTitle,
 	toast,
+	ConfirmDialog,
 	type FormPageMode,
 } from "@base/ui";
 import {
@@ -36,25 +28,27 @@ import {
 	Trash2,
 	Edit,
 	CheckCircle2,
+	Check,
 	Box,
 	Clock,
-	GitBranch,
-	ArrowRight,
 } from "lucide-react";
 import {
 	BOM_TYPES,
 	QUANTITY_MODES,
 	MATERIAL_ROLES,
 	OUTPUT_ROLES,
+	BomSubject,
+	BomAction,
 	type BomType,
 } from "../contract";
+import { StandardAction, useAbility } from "@base/authorization";
 import type {
 	BomDetailDto,
 	BomFormOptions,
 	CreateBomInput,
 	UpdateBomInput,
 } from "../types";
-import { createBomAction, updateBomAction, setDefaultBomAction } from "../actions";
+import { createBomAction, updateBomAction } from "../actions";
 
 export interface BomFormPageProps {
 	readonly mode?: FormPageMode;
@@ -71,9 +65,15 @@ export function BomFormPage({
 	formOptions,
 	backUrl = "/production/bom",
 }: BomFormPageProps) {
+	const ability = useAbility();
 	const router = useSafeRouter();
 	const isView = mode === "view";
 	const isEdit = mode === "edit";
+
+	// 权限判定 (CASL 声明式防护)
+	const canCreate = ability.can(StandardAction.CREATE, BomSubject);
+	const canUpdate = ability.can(StandardAction.UPDATE, BomSubject);
+	const canPublish = ability.can(BomAction.PUBLISH, BomSubject);
 
 	const [submitting, setSubmitting] = useState<boolean>(false);
 
@@ -271,8 +271,8 @@ export function BomFormPage({
 		[],
 	);
 
-	// 保存提交
-	const handleSave = async () => {
+	// 保存提交 (支持保存草稿或发布生效)
+	const handleSave = async (isDraftAction: boolean = false) => {
 		if (!productId) {
 			toast.error("请选择 BOM 主产出商品");
 			return;
@@ -303,6 +303,7 @@ export function BomFormPage({
 				totalYieldEnabled,
 				totalYieldRate: totalYieldEnabled ? totalYieldRate / 100 : null,
 				isDefault,
+				isDraft: isDraftAction,
 				outputs: [
 					{
 						productId,
@@ -335,18 +336,20 @@ export function BomFormPage({
 			if (isEdit && bomId) {
 				const res = await updateBomAction(bomId, payload as UpdateBomInput);
 				if (res.success) {
-					toast.success("BOM 版本已成功更新");
+					toast.success(isDraftAction ? "BOM 草稿已成功保存" : "BOM 新版本已发布生效");
+					router?.refresh();
 					router?.push(backUrl);
 				} else {
-					toast.error(res.error || "更新失败");
+					toast.error(res.error || "保存失败");
 				}
 			} else {
 				const res = await createBomAction(payload);
 				if (res.success) {
-					toast.success("生产 BOM 创建成功");
+					toast.success(isDraftAction ? "BOM 草稿已保存" : "生产 BOM 已发布生效");
+					router?.refresh();
 					router?.push(backUrl);
 				} else {
-					toast.error(res.error || "创建失败");
+					toast.error(res.error || "操作失败");
 				}
 			}
 		} catch (err: unknown) {
@@ -392,13 +395,15 @@ export function BomFormPage({
 				{/* 顶栏右侧操作动作 */}
 				<div className="flex items-center gap-2.5">
 					{isView ? (
-						<Button
-							size="sm"
-							onClick={() => router?.push(`/production/bom/${bomId}?mode=edit`)}
-							className="h-8 text-xs gap-1.5"
-						>
-							<Edit className="size-3.5" /> 编辑方案
-						</Button>
+						canUpdate ? (
+							<Button
+								size="sm"
+								onClick={() => router?.push(`/production/bom/${bomId}?mode=edit`)}
+								className="h-8 text-xs gap-1.5"
+							>
+								<Edit className="size-3.5" /> 编辑方案
+							</Button>
+						) : null
 					) : (
 						<>
 							<Button
@@ -410,14 +415,41 @@ export function BomFormPage({
 							>
 								取消
 							</Button>
-							<Button
-								size="sm"
-								onClick={handleSave}
-								disabled={submitting}
-								className="h-8 text-xs gap-1.5 min-w-[84px]"
-							>
-								<Save className="size-3.5" /> {submitting ? "保存中..." : "保存方案"}
-							</Button>
+							{((!isEdit && canCreate) || (isEdit && canUpdate)) && (
+								<Button
+									variant="secondary"
+									size="sm"
+									onClick={() => handleSave(true)}
+									disabled={submitting}
+									className="h-8 text-xs gap-1.5 min-w-[80px]"
+								>
+									<Save className="size-3.5 text-muted-foreground" />
+									{submitting ? "保存中..." : "保存草稿"}
+								</Button>
+							)}
+							{canPublish && (
+								<ConfirmDialog
+									trigger={
+										<Button
+											size="sm"
+											disabled={submitting}
+											className="h-8 text-xs gap-1.5 min-w-[88px] bg-blue-600 hover:bg-blue-700 text-white"
+										>
+											<Check className="size-3.5" />
+											{submitting ? "处理中..." : isEdit ? "发布新版本" : "立即发布"}
+										</Button>
+									}
+									title={isEdit ? "确认发布生产 BOM 新版本？" : "确认立即发布生产 BOM 方案？"}
+									description={
+										isEdit
+											? "编辑发布生产BOM后只影响后续未生成的生产计划与工单，历史及已生成的计划不受影响。"
+											: "发布后该方案将作为生效标准，供后续创建生产计划与工单时引用。"
+									}
+									confirmText="确认发布"
+									cancelText="返回修改"
+									onConfirm={() => handleSave(false)}
+								/>
+							)}
 						</>
 					)}
 				</div>
@@ -507,18 +539,16 @@ export function BomFormPage({
 									{initialDetail?.currentVersion.productionLineName || "未指定产线"}
 								</div>
 							) : (
-								<Select value={productionLineId} onValueChange={(val) => setProductionLineId(val || "")}>
-									<SelectTrigger className="h-10 text-xs">
-										<SelectValue placeholder="请选择产线 (选填)" />
-									</SelectTrigger>
-									<SelectContent>
-										{formOptions.productionLines.map((l) => (
-											<SelectItem key={l.id} value={l.id}>
-												{l.name} ({l.code})
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
+								<Combobox
+									value={productionLineId}
+									placeholder="请选择产线 (选填)..."
+									clearable={true}
+									options={formOptions.productionLines.map((l) => ({
+										value: l.id,
+										label: `${l.name} (${l.code})`,
+									}))}
+									onChange={(val) => setProductionLineId(val || "")}
+								/>
 							)}
 						</div>
 
@@ -651,38 +681,45 @@ export function BomFormPage({
 											/>
 										</TableCell>
 										<TableCell className="p-3">
-											<Select
-												value={inp.unitId}
-												disabled={isView}
-												onValueChange={(val) => handleUpdateInput(idx, "unitId", val || "")}
-											>
-												<SelectTrigger className="h-9 text-xs">
-													<SelectValue placeholder="单位" />
-												</SelectTrigger>
-												<SelectContent>
-													{formOptions.units.map((u) => (
-														<SelectItem key={u.id} value={u.id}>
-															{u.name || u.code}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
+											{isView ? (
+												<div className="font-medium text-xs">
+													{formOptions.units.find((u) => u.id === inp.unitId)?.name || inp.unitId}
+												</div>
+											) : (
+												<Combobox
+													value={inp.unitId}
+													placeholder="单位"
+													options={formOptions.units.map((u) => ({
+														value: u.id,
+														label: u.name || u.code,
+													}))}
+													onChange={(val) => handleUpdateInput(idx, "unitId", val || "")}
+												/>
+											)}
 										</TableCell>
 										<TableCell className="p-3">
-											<Select
-												value={inp.materialRole}
-												disabled={isView}
-												onValueChange={(val) => handleUpdateInput(idx, "materialRole", val || "")}
-											>
-												<SelectTrigger className="h-9 text-xs">
-													<SelectValue />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value={MATERIAL_ROLES.MAIN}>主料</SelectItem>
-													<SelectItem value={MATERIAL_ROLES.AUXILIARY}>辅料</SelectItem>
-													<SelectItem value={MATERIAL_ROLES.PACKAGING}>包材</SelectItem>
-												</SelectContent>
-											</Select>
+											{isView ? (
+												<div className="font-medium text-xs">
+													{inp.materialRole === MATERIAL_ROLES.MAIN
+														? "主料"
+														: inp.materialRole === MATERIAL_ROLES.AUXILIARY
+															? "辅料"
+															: "包材"}
+												</div>
+											) : (
+												<Combobox
+													value={inp.materialRole}
+													placeholder="物料角色"
+													options={[
+														{ value: MATERIAL_ROLES.MAIN, label: "主料" },
+														{ value: MATERIAL_ROLES.AUXILIARY, label: "辅料" },
+														{ value: MATERIAL_ROLES.PACKAGING, label: "包材" },
+													]}
+													onChange={(val) =>
+														handleUpdateInput(idx, "materialRole", val || MATERIAL_ROLES.MAIN)
+													}
+												/>
+											)}
 										</TableCell>
 										<TableCell className="p-3">
 											<Input
@@ -738,18 +775,17 @@ export function BomFormPage({
 									{formOptions.units.find((u) => u.id === primaryUnitId)?.name || primaryUnitId}
 								</div>
 							) : (
-								<Select value={primaryUnitId} disabled={isView} onValueChange={(val) => setPrimaryUnitId(val || "")}>
-									<SelectTrigger className="h-9 w-28 text-xs">
-										<SelectValue placeholder="单位" />
-									</SelectTrigger>
-									<SelectContent>
-										{formOptions.units.map((u) => (
-											<SelectItem key={u.id} value={u.id}>
-												{u.name || u.code}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
+								<div className="w-36">
+									<Combobox
+										value={primaryUnitId}
+										placeholder="单位"
+										options={formOptions.units.map((u) => ({
+											value: u.id,
+											label: u.name || u.code,
+										}))}
+										onChange={(val) => setPrimaryUnitId(val || "")}
+									/>
+								</div>
 							)}
 						</div>
 					</div>
@@ -839,26 +875,20 @@ export function BomFormPage({
 											<TableCell className="p-3">
 												{isView ? (
 													<span className="font-semibold">
-														{formOptions.operations.find((o) => o.id === op.operationId)?.name}
+														{formOptions.operations.find((o) => o.id === op.operationId)?.name || op.operationId}
 													</span>
 												) : (
-													<Select
+													<Combobox
 														value={op.operationId}
-														onValueChange={(val) =>
+														placeholder="选择工序..."
+														options={formOptions.operations.map((o) => ({
+															value: o.id,
+															label: `${o.name} (${o.code})`,
+														}))}
+														onChange={(val) =>
 															handleUpdateOperation(idx, "operationId", val || "")
 														}
-													>
-														<SelectTrigger className="h-9 text-xs">
-															<SelectValue placeholder="选择工序" />
-														</SelectTrigger>
-														<SelectContent>
-															{formOptions.operations.map((o) => (
-																<SelectItem key={o.id} value={o.id}>
-																	{o.name} ({o.code})
-																</SelectItem>
-															))}
-														</SelectContent>
-													</Select>
+													/>
 												)}
 											</TableCell>
 											<TableCell className="p-3">

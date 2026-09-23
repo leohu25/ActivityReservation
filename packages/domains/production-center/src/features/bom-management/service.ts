@@ -34,20 +34,24 @@ export interface BomAuditContext {
 
 export class BomService {
 	/**
-	 * 分页查询 BOM 列表
+	 * 分页查询 BOM 列表 (接收 CASL 授权下推条件 accessibleWhere 进行 SQL 行级过滤)
 	 */
 	static async listBomsPaged(
 		client: TenantPrismaClient,
 		filter: ListBomFilter = {},
+		accessibleWhere: TenantPrisma.BomWhereInput = {},
 	): Promise<ListBomsResult> {
 		const { page, pageSize, skip, take } = resolvePagination(filter, {
 			defaultPageSize: 10,
 		});
 
-		// 查询没有软删除的 BOM 版本族
+		// 查询没有软删除且符合 CASL 行级权限过滤的 BOM 版本族
 		const boms = await client.bom.findMany({
 			where: {
-				isDeleted: false,
+				AND: [
+					accessibleWhere,
+					{ isDeleted: false },
+				],
 			},
 			include: {
 				versions: {
@@ -430,12 +434,17 @@ export class BomService {
 				},
 			});
 
-			// 2. 创建第一版 BOM Version (直接作为已发布初始版本)
+			// 2. 创建第一版 BOM Version (根据 isDraft 决定为 DRAFT 或 PUBLISHED)
+			const isDraft = Boolean(input.isDraft);
+			const versionStatus = isDraft
+				? BOM_VERSION_STATUS.DRAFT
+				: BOM_VERSION_STATUS.PUBLISHED;
+
 			const version = await tx.bomVersion.create({
 				data: {
 					bomId: bom.id,
 					versionNumber: 1,
-					versionStatus: BOM_VERSION_STATUS.PUBLISHED,
+					versionStatus,
 					code: input.code.trim(),
 					name: input.name.trim(),
 					bomType: input.bomType,
@@ -446,18 +455,20 @@ export class BomService {
 					totalYieldRate: input.totalYieldRate ?? null,
 					defaultCookedYieldRate: input.defaultCookedYieldRate ?? null,
 					minimumBatchQuantity: input.minimumBatchQuantity ?? null,
-					publishedById: audit.userId,
-					publishedAt: new Date(),
+					publishedById: isDraft ? null : audit.userId,
+					publishedAt: isDraft ? null : new Date(),
 					createdById: audit.userId,
 					deptId: audit.deptId ?? null,
 				},
 			});
 
-			// 3. 将 BOM 族的当前版本指向该初始版本
-			await tx.bom.update({
-				where: { id: bom.id },
-				data: { currentPublishedVersionId: version.id },
-			});
+			// 3. 若为正式发布，将 BOM 族的当前版本指向该初始版本
+			if (!isDraft) {
+				await tx.bom.update({
+					where: { id: bom.id },
+					data: { currentPublishedVersionId: version.id },
+				});
+			}
 
 			// 4. 写入产出清单 (保证 PRIMARY 唯一且指向 BOM 主商品)
 			const outputsToInsert = [...(input.outputs || [])];
@@ -565,7 +576,7 @@ export class BomService {
 	}
 
 	/**
-	 * 编辑 BOM (创建新版本或在草稿态更新)
+	 * 编辑 BOM (若最新版本是草稿则原地覆盖更新；若最新版本已发布，则派生新版本号)
 	 */
 	static async updateBom(
 		client: TenantPrismaClient,
@@ -589,39 +600,137 @@ export class BomService {
 		}
 
 		const latestVersion = existing.versions[0];
-		const nextVersionNumber = (latestVersion?.versionNumber ?? 0) + 1;
+		const isDraftAction = Boolean(input.isDraft);
+
+		// 判断最新版本是否为草稿态
+		const isUpdatingExistingDraft =
+			latestVersion && latestVersion.versionStatus === BOM_VERSION_STATUS.DRAFT;
+
+		const targetVersionNumber = isUpdatingExistingDraft
+			? latestVersion.versionNumber
+			: (latestVersion?.versionNumber ?? 0) + 1;
 
 		return await client.$transaction(async (tx) => {
-			// 1. 生成不可变新版本 (记录衍生来源 basedOnVersionId)
-			const version = await tx.bomVersion.create({
-				data: {
-					bomId,
-					basedOnVersionId: latestVersion?.id ?? null,
-					versionNumber: nextVersionNumber,
-					versionStatus: BOM_VERSION_STATUS.PUBLISHED,
-					code: input.code?.trim() || latestVersion.code,
-					name: input.name?.trim() || latestVersion.name,
-					bomType: input.bomType || (latestVersion.bomType as BomType),
-					description: input.description !== undefined ? input.description?.trim() || null : latestVersion.description,
-					productionLineId: input.productionLineId !== undefined ? input.productionLineId : latestVersion.productionLineId,
-					quantityMode: input.quantityMode || (latestVersion.quantityMode as QuantityMode),
-					totalYieldEnabled: input.totalYieldEnabled !== undefined ? input.totalYieldEnabled : latestVersion.totalYieldEnabled,
-					totalYieldRate: input.totalYieldRate !== undefined ? input.totalYieldRate : latestVersion.totalYieldRate,
-					defaultCookedYieldRate: input.defaultCookedYieldRate !== undefined ? input.defaultCookedYieldRate : latestVersion.defaultCookedYieldRate,
-					minimumBatchQuantity: input.minimumBatchQuantity !== undefined ? input.minimumBatchQuantity : latestVersion.minimumBatchQuantity,
-					changeReason: input.changeReason?.trim() || "版本迭代更新",
-					publishedById: audit.userId,
-					publishedAt: new Date(),
-					createdById: audit.userId,
-					deptId: audit.deptId ?? null,
-				},
-			});
+			let versionId: string;
 
-			// 2. 将当前有效发布版本指向新版本
-			await tx.bom.update({
-				where: { id: bomId },
-				data: { currentPublishedVersionId: version.id },
-			});
+			if (isUpdatingExistingDraft) {
+				// 若目标是草稿，支持在草稿上继续保存更新或直接发布
+				versionId = latestVersion.id;
+				const newStatus = isDraftAction
+					? BOM_VERSION_STATUS.DRAFT
+					: BOM_VERSION_STATUS.PUBLISHED;
+
+				await tx.bomVersion.update({
+					where: { id: versionId },
+					data: {
+						versionStatus: newStatus,
+						code: input.code?.trim() || latestVersion.code,
+						name: input.name?.trim() || latestVersion.name,
+						bomType: input.bomType || (latestVersion.bomType as BomType),
+						description:
+							input.description !== undefined
+								? input.description?.trim() || null
+								: latestVersion.description,
+						productionLineId:
+							input.productionLineId !== undefined
+								? input.productionLineId
+								: latestVersion.productionLineId,
+						quantityMode:
+							input.quantityMode ||
+							(latestVersion.quantityMode as QuantityMode),
+						totalYieldEnabled:
+							input.totalYieldEnabled !== undefined
+								? input.totalYieldEnabled
+								: latestVersion.totalYieldEnabled,
+						totalYieldRate:
+							input.totalYieldRate !== undefined
+								? input.totalYieldRate
+								: latestVersion.totalYieldRate,
+						defaultCookedYieldRate:
+							input.defaultCookedYieldRate !== undefined
+								? input.defaultCookedYieldRate
+								: latestVersion.defaultCookedYieldRate,
+						minimumBatchQuantity:
+							input.minimumBatchQuantity !== undefined
+								? input.minimumBatchQuantity
+								: latestVersion.minimumBatchQuantity,
+						changeReason: input.changeReason?.trim() || latestVersion.changeReason,
+						publishedById: isDraftAction ? null : audit.userId,
+						publishedAt: isDraftAction ? null : new Date(),
+						updatedAt: new Date(),
+					},
+				});
+
+				// 清空原有旧子项重新写入
+				await tx.bomVersionInput.deleteMany({ where: { bomVersionId: versionId } });
+				await tx.bomVersionOutput.deleteMany({ where: { bomVersionId: versionId } });
+				await tx.bomVersionOperation.deleteMany({ where: { bomVersionId: versionId } });
+
+				if (!isDraftAction) {
+					// 草稿正式发布，切换指针
+					await tx.bom.update({
+						where: { id: bomId },
+						data: { currentPublishedVersionId: versionId },
+					});
+				}
+			} else {
+				// 已发布版本不允许原地篡改，必须生成新版本快照 (草稿或发布)
+				const targetStatus = isDraftAction
+					? BOM_VERSION_STATUS.DRAFT
+					: BOM_VERSION_STATUS.PUBLISHED;
+
+				const version = await tx.bomVersion.create({
+					data: {
+						bomId,
+						basedOnVersionId: latestVersion?.id ?? null,
+						versionNumber: targetVersionNumber,
+						versionStatus: targetStatus,
+						code: input.code?.trim() || latestVersion.code,
+						name: input.name?.trim() || latestVersion.name,
+						bomType: input.bomType || (latestVersion.bomType as BomType),
+						description:
+							input.description !== undefined
+								? input.description?.trim() || null
+								: latestVersion.description,
+						productionLineId:
+							input.productionLineId !== undefined
+								? input.productionLineId
+								: latestVersion.productionLineId,
+						quantityMode:
+							input.quantityMode ||
+							(latestVersion.quantityMode as QuantityMode),
+						totalYieldEnabled:
+							input.totalYieldEnabled !== undefined
+								? input.totalYieldEnabled
+								: latestVersion.totalYieldEnabled,
+						totalYieldRate:
+							input.totalYieldRate !== undefined
+								? input.totalYieldRate
+								: latestVersion.totalYieldRate,
+						defaultCookedYieldRate:
+							input.defaultCookedYieldRate !== undefined
+								? input.defaultCookedYieldRate
+								: latestVersion.defaultCookedYieldRate,
+						minimumBatchQuantity:
+							input.minimumBatchQuantity !== undefined
+								? input.minimumBatchQuantity
+								: latestVersion.minimumBatchQuantity,
+						changeReason: input.changeReason?.trim() || "版本迭代更新",
+						publishedById: isDraftAction ? null : audit.userId,
+						publishedAt: isDraftAction ? null : new Date(),
+						createdById: audit.userId,
+						deptId: audit.deptId ?? null,
+					},
+				});
+				versionId = version.id;
+
+				if (!isDraftAction) {
+					await tx.bom.update({
+						where: { id: bomId },
+						data: { currentPublishedVersionId: version.id },
+					});
+				}
+			}
 
 			// 3. 写入产出清单
 			const outputs = input.outputs && input.outputs.length > 0 ? input.outputs : [];
@@ -629,7 +738,7 @@ export class BomService {
 				const o = outputs[idx];
 				await tx.bomVersionOutput.create({
 					data: {
-						bomVersionId: version.id,
+						bomVersionId: versionId,
 						productId: o.productId,
 						quantity: o.quantity,
 						unitId: o.unitId,
@@ -649,7 +758,7 @@ export class BomService {
 				const inp = inputs[idx];
 				await tx.bomVersionInput.create({
 					data: {
-						bomVersionId: version.id,
+						bomVersionId: versionId,
 						productId: inp.productId,
 						quantity: inp.quantity ?? null,
 						unitId: inp.unitId,
@@ -673,7 +782,7 @@ export class BomService {
 				const op = operations[idx];
 				await tx.bomVersionOperation.create({
 					data: {
-						bomVersionId: version.id,
+						bomVersionId: versionId,
 						operationId: op.operationId,
 						processingSpecificationId: op.processingSpecificationId || null,
 						sequenceNumber: op.sequenceNumber ?? (idx + 1) * 10,
@@ -714,7 +823,56 @@ export class BomService {
 				}
 			}
 
-			return { bomId, versionId: version.id };
+			return { bomId, versionId };
+		});
+	}
+
+	/**
+	 * 一键发布指定版本的 BOM 草稿 (原子切换 currentPublishedVersionId)
+	 */
+	static async publishBomVersion(
+		client: TenantPrismaClient,
+		bomId: string,
+		versionNumber: number,
+		audit: BomAuditContext,
+	): Promise<void> {
+		const targetVersion = await client.bomVersion.findFirst({
+			where: { bomId, versionNumber, isDeleted: false },
+		});
+		if (!targetVersion) {
+			throw new Error(`未找到 BOM 对应版本 ${versionNumber}`);
+		}
+		if (targetVersion.versionStatus === BOM_VERSION_STATUS.PUBLISHED) {
+			throw new Error("该版本已经处于发布生效状态");
+		}
+
+		await client.$transaction(async (tx) => {
+			// 1. 将原 current_published 版本标记为 RETIRED (退役历史版)
+			const currentBom = await tx.bom.findUnique({
+				where: { id: bomId },
+			});
+			if (currentBom?.currentPublishedVersionId) {
+				await tx.bomVersion.update({
+					where: { id: currentBom.currentPublishedVersionId },
+					data: { versionStatus: BOM_VERSION_STATUS.RETIRED },
+				});
+			}
+
+			// 2. 将目标版本置为 PUBLISHED 并记录发布人与时间
+			await tx.bomVersion.update({
+				where: { id: targetVersion.id },
+				data: {
+					versionStatus: BOM_VERSION_STATUS.PUBLISHED,
+					publishedById: audit.userId,
+					publishedAt: new Date(),
+				},
+			});
+
+			// 3. 将 BOM 族当前生效版本切换至目标版本
+			await tx.bom.update({
+				where: { id: bomId },
+				data: { currentPublishedVersionId: targetVersion.id },
+			});
 		});
 	}
 

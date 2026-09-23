@@ -88,11 +88,7 @@ export const quotePageContract: FeaturePagePermissionDescriptor = {
 			supportedScopes: STANDARD_DATA_SCOPES,
 		},
 		{ action: StandardAction.CREATE, label: "新建报价单" },
-		{
-			action: StandardAction.UPDATE,
-			label: "修改报价单",
-			supportedScopes: STANDARD_DATA_SCOPES,
-		},
+		{ action: StandardAction.UPDATE, label: "修改报价单" },
 		{ action: CustomerQuoteAction.AUDIT, label: "审核/生效报价单" },
 		{ action: StandardAction.DELETE, label: "作废报价单" },
 		{ action: StandardAction.EXPORT, label: "导出报价单" },

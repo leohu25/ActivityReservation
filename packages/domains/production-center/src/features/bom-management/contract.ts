@@ -1,5 +1,6 @@
 import {
 	StandardAction,
+	STANDARD_DATA_SCOPES,
 	type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
 import { defineListSearchParams } from "@base/ui";
@@ -18,10 +19,7 @@ export type ProductDefaultBomSubject = typeof ProductDefaultBomSubject;
 export const BomAction = {
 	...StandardAction,
 	PUBLISH: "publish",
-	RETIRE: "retire",
 	SET_DEFAULT: "set_default",
-	CALCULATE: "calculate",
-	EXPLODE: "explode",
 } as const;
 
 /** BOM 业务类型枚举 */
@@ -84,6 +82,40 @@ export const SUPPLY_POLICIES = {
 
 export type SupplyPolicy = (typeof SUPPLY_POLICIES)[keyof typeof SUPPLY_POLICIES];
 
+/** BOM 核心字段枚举 (消除魔法字符串) */
+export const BomField = {
+	CODE: "code",
+	NAME: "name",
+	BOM_TYPE: "bomType",
+	VERSION_NUMBER: "versionNumber",
+	PRODUCT_ID: "productId",
+	PRODUCTION_LINE_ID: "productionLineId",
+	STATUS: "status",
+	IS_DEFAULT: "isDefault",
+	QUANTITY_MODE: "quantityMode",
+	TOTAL_YIELD_RATE: "totalYieldRate",
+	DEFAULT_COOKED_YIELD_RATE: "defaultCookedYieldRate",
+	MINIMUM_BATCH_QUANTITY: "minimumBatchQuantity",
+	DESCRIPTION: "description",
+} as const;
+
+/** BOM 受控字段元数据定义（供角色权限工作台配置查看/编辑/隐藏策略） */
+export const bomConfigurableFields = [
+	{ field: BomField.CODE, label: "BOM编码", sensitive: false },
+	{ field: BomField.NAME, label: "BOM名称", sensitive: false },
+	{ field: BomField.BOM_TYPE, label: "BOM类型", sensitive: false },
+	{ field: BomField.VERSION_NUMBER, label: "版本号", sensitive: false },
+	{ field: BomField.PRODUCT_ID, label: "产出物料/商品", sensitive: false },
+	{ field: BomField.PRODUCTION_LINE_ID, label: "所属产线", sensitive: false },
+	{ field: BomField.STATUS, label: "版本状态", sensitive: false },
+	{ field: BomField.IS_DEFAULT, label: "是否默认BOM", sensitive: false },
+	{ field: BomField.QUANTITY_MODE, label: "用量模式", sensitive: false },
+	{ field: BomField.TOTAL_YIELD_RATE, label: "综合成品率(%)", sensitive: true },
+	{ field: BomField.DEFAULT_COOKED_YIELD_RATE, label: "熟制得率(%)", sensitive: true },
+	{ field: BomField.MINIMUM_BATCH_QUANTITY, label: "起产批量/批量约束", sensitive: false },
+	{ field: BomField.DESCRIPTION, label: "说明备注", sensitive: false },
+] as const;
+
 /** BOM 列表 URL 查询参数契约 (Nuqs 兼容) */
 export const bomSearchParams = defineListSearchParams({
 	bomType: "",
@@ -102,14 +134,20 @@ export const bomPageContract: FeaturePagePermissionDescriptor = {
 	label: "生产BOM管理",
 	path: "/production/bom",
 	actions: [
-		{ action: StandardAction.READ, label: "查看BOM列表与详情" },
+		{
+			action: StandardAction.READ,
+			label: "查看BOM列表与详情",
+			supportedScopes: STANDARD_DATA_SCOPES,
+		},
 		{ action: StandardAction.CREATE, label: "新建生产BOM" },
 		{ action: StandardAction.UPDATE, label: "编辑生产BOM" },
 		{ action: StandardAction.DELETE, label: "删除生产BOM" },
 		{ action: BomAction.PUBLISH, label: "发布BOM版本" },
-		{ action: BomAction.RETIRE, label: "退役BOM版本" },
 		{ action: BomAction.SET_DEFAULT, label: "设置默认BOM" },
-		{ action: BomAction.CALCULATE, label: "BOM试算" },
-		{ action: BomAction.EXPLODE, label: "多级BOM展开" },
 	],
+	configurableFields: bomConfigurableFields.map((f) => ({
+		field: f.field,
+		label: f.label,
+		sensitive: f.sensitive,
+	})),
 };

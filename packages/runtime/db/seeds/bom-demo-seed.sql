@@ -2,9 +2,9 @@
 -- 中央厨房第一版：BOM 全链路闭环演示 DDL 种子数据脚本 (BOM Demo Seed SQL)
 -- 包含：数据字典、计量单位、商品分类、物料主档、仓储设施、车间产线、工序能力与三类生产 BOM
 -- 真实还原观麦原型数据：
---   1. 单品加工 BOM：青椒 (01010004) -> 青椒段5cm (120013) (产线: 蔬菜清洗切割)
---   2. 组合配方 BOM：食用盐 + 海天酱油 -> 小炒汁 (02070001) (产线: 半成品加工)
---   3. 包装装配 BOM：青椒段5cm + 包装袋 -> 65克青椒段 (110003) (产线: 包装分拣)
+--   1. 单品加工 BOM：青椒 (01010004) -> 青椒段5cm (120013) (版本1: 粗切洗净出成90%; 版本2: 优化清洗工艺出成92%)
+--   2. 组合配方 BOM：食用盐 + 海天酱油 -> 小炒汁 (02070001) (版本1: 1:1经典比例; 版本2草稿: 低盐配比)
+--   3. 包装装配 BOM：青椒段5cm + 包装袋 -> 65克青椒缎 (110003) (版本1: 简易自封袋包装; 版本2: 增加充氮保鲜工艺)
 -- 统一审计基线：00000000-0000-7000-8000-000000000000
 -- ==============================================================================
 
@@ -143,28 +143,30 @@ INSERT INTO "operation" (
 ('0195e000-0006-7000-8000-000000000002', 'scqx7938', '蔬菜清洗', '0195e000-0001-7000-8000-000000000051', 10, 10, 0.95000000, 2, '流动臭氧水循环三遍浸洗去农残', 'ACTIVE', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()),
 ('0195e000-0006-7000-8000-000000000003', 'cut5cm', '切段5cm', '0195e000-0001-7000-8000-000000000052', 5, 5, 0.92000000, 1, '全自动切菜机设定5cm刀距均匀切配', 'ACTIVE', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()),
 ('0195e000-0006-7000-8000-000000000004', 'wzhh3021', '碗汁混合', '0195e000-0001-7000-8000-000000000053', 5, 5, 1.00000000, 1, '调料槽恒温搅拌充分溶解混匀', 'ACTIVE', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()),
-('0195e000-0006-7000-8000-000000000005', 'scbz2760', '蔬菜包装', '0195e000-0001-7000-8000-000000000054', 10, 10, 1.00000000, 2, '按设定克重自动定量入袋并抽真空密封', 'ACTIVE', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW())
+('0195e000-0006-7000-8000-000000000005', 'scbz2760', '蔬菜包装', '0195e000-0001-7000-8000-000000000054', 10, 10, 1.00000000, 2, '按设定克重自动定量入袋并抽真空密封', 'ACTIVE', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()),
+('0195e000-0006-7000-8000-000000000006', 'qj2891', '切块2cm', '0195e000-0001-7000-8000-000000000052', 5, 5, 0.95000000, 1, '滚刀切配成2cm规则块状', 'ACTIVE', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW())
 ON CONFLICT ("code") DO NOTHING;
 
 -- ------------------------------------------------------------------------------
--- 7. 生产 BOM：三大类型完整闭环演示数据
+-- 7. 生产 BOM：多版本全生命周期闭环演示数据
 -- ------------------------------------------------------------------------------
 
 -- ==============================================================================
 -- 7.1 单品加工 BOM：青椒段5cm测试 (qjd5cm7290)
--- 主产出：青椒段5cm (120013) 1000g
--- 原料投入：青椒 (01010004) 1111g (总出成率 90%)
--- 工艺工序：分拣 -> 蔬菜清洗
+-- 方案主表 (bom)：当前发布版本为 版本2
+--   - 版本 1 (已发布历史版): 基础切段出成90%，工序为分拣+蔬菜清洗
+--   - 版本 2 (当前最新发布): 引入切段5cm与质检工序，总出成率提升至92%
 -- ==============================================================================
 INSERT INTO "bom" (
     "id", "current_published_version_id", "lifecycle_status",
     "created_by_id", "is_deleted", "created_at", "updated_at"
 ) VALUES (
     '0195e000-0007-7000-8000-000000000001',
-    '0195e000-0007-7000-8000-000000000011',
+    '0195e000-0007-7000-8000-000000000021', -- 指向最新发布的版本 2
     'ACTIVE', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
-) ON CONFLICT ("id") DO NOTHING;
+) ON CONFLICT ("id") DO UPDATE SET "current_published_version_id" = EXCLUDED."current_published_version_id";
 
+-- 7.1.1 版本 1：初期工艺方案
 INSERT INTO "bom_version" (
     "id", "bom_id", "version_number", "version_status", "code", "name", "bom_type",
     "description", "production_line_id", "quantity_mode", "total_yield_enabled",
@@ -174,14 +176,14 @@ INSERT INTO "bom_version" (
 ) VALUES (
     '0195e000-0007-7000-8000-000000000011',
     '0195e000-0007-7000-8000-000000000001',
-    1, 'PUBLISHED', 'qjd5cm7290', '青椒段5cm测试', 'PROCESSING',
-    '鲜青椒挑选洗净后切成5cm标准长条', '0195e000-0005-7000-8000-000000000011', 'FIXED',
+    1, 'PUBLISHED', 'qjd5cm7290', '青椒段5cm初版方案', 'PROCESSING',
+    '第一代清洗切配基线工艺', '0195e000-0005-7000-8000-000000000011', 'FIXED',
     true, 0.90000000, 0.90000000, 10.0,
-    '00000000-0000-7000-8000-000000000000', NOW(), 0,
-    '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
+    '00000000-0000-7000-8000-000000000000', NOW() - INTERVAL '15 days', 0,
+    '00000000-0000-7000-8000-000000000000', false, NOW() - INTERVAL '15 days', NOW() - INTERVAL '15 days'
 ) ON CONFLICT ("id") DO NOTHING;
 
--- 单品投入：青椒 1.11 斤
+-- 版本 1 投入：青椒 1.11 斤
 INSERT INTO "bom_version_input" (
     "id", "bom_version_id", "product_id", "quantity", "unit_id", "ratio",
     "material_role", "cooked_yield_rate", "normal_loss_rate", "supply_policy",
@@ -191,11 +193,11 @@ INSERT INTO "bom_version_input" (
     '0195e000-0007-7000-8000-000000000101',
     '0195e000-0007-7000-8000-000000000011',
     '0195e000-0004-7000-8000-000000000001', 1.110000, '0195e000-0002-7000-8000-000000000003', NULL,
-    'MAIN', 0.90000000, 0.10000000, 'EXTERNAL', 0, '主要原料青椒',
+    'MAIN', 0.90000000, 0.10000000, 'EXTERNAL', 0, '主要原料青椒 (损耗率10%)',
     '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
 ) ON CONFLICT ("id") DO NOTHING;
 
--- 单品主产出：青椒段5cm 1 斤
+-- 版本 1 主产出：青椒段5cm 1 斤
 INSERT INTO "bom_version_output" (
     "id", "bom_version_id", "product_id", "quantity", "unit_id", "output_role",
     "sort_order", "remark",
@@ -208,15 +210,71 @@ INSERT INTO "bom_version_output" (
     '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
 ) ON CONFLICT ("id") DO NOTHING;
 
--- 单品工序：分拣 -> 蔬菜清洗
+-- 版本 1 工序：分拣 -> 蔬菜清洗
 INSERT INTO "bom_version_operation" (
     "id", "bom_version_id", "operation_id", "sequence_number", "setup_minutes",
     "cleanup_minutes", "standard_labor_hours", "quality_checkpoint", "instruction_text",
     "sort_order", "remark",
     "created_by_id", "is_deleted", "created_at", "updated_at"
 ) VALUES
-('0195e000-0007-7000-8000-000000000301', '0195e000-0007-7000-8000-000000000011', '0195e000-0006-7000-8000-000000000001', 10, 5, 5, 0.1000, false, '拆包分拣1遍', 0, '人工初拣', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()),
+('0195e000-0007-7000-8000-000000000301', '0195e000-0007-7000-8000-000000000011', '0195e000-0006-7000-8000-000000000001', 10, 5, 5, 0.1000, false, '人工初次分拣剔除烂斑', 0, '初级挑选', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()),
 ('0195e000-0007-7000-8000-000000000302', '0195e000-0007-7000-8000-000000000011', '0195e000-0006-7000-8000-000000000002', 20, 10, 10, 0.2000, true, '气泡冲洗2次并沥干', 1, '清洗沥水质检', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW())
+ON CONFLICT ("id") DO NOTHING;
+
+-- 7.1.2 版本 2：工艺改良升级版 (总出成率提升至 92%，增加切段工序)
+INSERT INTO "bom_version" (
+    "id", "bom_id", "version_number", "version_status", "code", "name", "bom_type",
+    "description", "production_line_id", "quantity_mode", "total_yield_enabled",
+    "total_yield_rate", "default_cooked_yield_rate", "minimum_batch_quantity",
+    "published_by_id", "published_at", "row_version",
+    "created_by_id", "is_deleted", "created_at", "updated_at"
+) VALUES (
+    '0195e000-0007-7000-8000-000000000021',
+    '0195e000-0007-7000-8000-000000000001',
+    2, 'PUBLISHED', 'qjd5cm7290', '青椒段5cm改良版(高出成率)', 'PROCESSING',
+    '工艺升级：优化切刀角度与清洗水循环，总出成率提升至92%', '0195e000-0005-7000-8000-000000000011', 'FIXED',
+    true, 0.92000000, 0.92000000, 15.0,
+    '00000000-0000-7000-8000-000000000000', NOW(), 1,
+    '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
+) ON CONFLICT ("id") DO NOTHING;
+
+-- 版本 2 投入：青椒 1.087 斤 (出成率92%)
+INSERT INTO "bom_version_input" (
+    "id", "bom_version_id", "product_id", "quantity", "unit_id", "ratio",
+    "material_role", "cooked_yield_rate", "normal_loss_rate", "supply_policy",
+    "sort_order", "remark",
+    "created_by_id", "is_deleted", "created_at", "updated_at"
+) VALUES (
+    '0195e000-0007-7000-8000-000000000102',
+    '0195e000-0007-7000-8000-000000000021',
+    '0195e000-0004-7000-8000-000000000001', 1.087000, '0195e000-0002-7000-8000-000000000003', NULL,
+    'MAIN', 0.92000000, 0.08000000, 'EXTERNAL', 0, '精选高出成鲜青椒 (损耗率仅8%)',
+    '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
+) ON CONFLICT ("id") DO NOTHING;
+
+-- 版本 2 主产出：青椒段5cm 1 斤
+INSERT INTO "bom_version_output" (
+    "id", "bom_version_id", "product_id", "quantity", "unit_id", "output_role",
+    "sort_order", "remark",
+    "created_by_id", "is_deleted", "created_at", "updated_at"
+) VALUES (
+    '0195e000-0007-7000-8000-000000000202',
+    '0195e000-0007-7000-8000-000000000021',
+    '0195e000-0004-7000-8000-000000000002', 1.000000, '0195e000-0002-7000-8000-000000000003', 'PRIMARY',
+    0, '标准单品主产出(高品质)',
+    '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
+) ON CONFLICT ("id") DO NOTHING;
+
+-- 版本 2 工序链：分拣 -> 蔬菜清洗(质检) -> 切段5cm(精加工)
+INSERT INTO "bom_version_operation" (
+    "id", "bom_version_id", "operation_id", "sequence_number", "setup_minutes",
+    "cleanup_minutes", "standard_labor_hours", "quality_checkpoint", "instruction_text",
+    "sort_order", "remark",
+    "created_by_id", "is_deleted", "created_at", "updated_at"
+) VALUES
+('0195e000-0007-7000-8000-000000000303', '0195e000-0007-7000-8000-000000000021', '0195e000-0006-7000-8000-000000000001', 10, 5, 5, 0.0800, false, '机械辊轴辅助分拣', 0, '高效分选', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()),
+('0195e000-0007-7000-8000-000000000304', '0195e000-0007-7000-8000-000000000021', '0195e000-0006-7000-8000-000000000002', 20, 8, 8, 0.1500, true, '臭氧水超声波双重去残', 1, '高级清洗质检', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()),
+('0195e000-0007-7000-8000-000000000305', '0195e000-0007-7000-8000-000000000021', '0195e000-0006-7000-8000-000000000003', 30, 5, 5, 0.1200, false, '数控伺服刀具50mm均匀切断', 2, '数控精密切配', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW())
 ON CONFLICT ("id") DO NOTHING;
 
 -- 关联默认 BOM：青椒段默认方案
@@ -232,9 +290,8 @@ INSERT INTO "product_default_bom" (
 
 -- ==============================================================================
 -- 7.2 组合配方 BOM：小炒汁 (xcz4926)
--- 主产出：小炒汁 (02070001) 200g
--- 原料投入：食用盐 100g (50%) + 海天酱油 100g (50%)
--- 工艺工序：碗汁混合
+--   - 版本 1 (已发布): 经典配比 (盐100g + 酱油100g)
+--   - 版本 2 (研发草稿版 DRAFT): 减盐健康配比 (盐60g + 酱油140g)
 -- ==============================================================================
 INSERT INTO "bom" (
     "id", "current_published_version_id", "lifecycle_status",
@@ -245,6 +302,7 @@ INSERT INTO "bom" (
     'ACTIVE', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
 ) ON CONFLICT ("id") DO NOTHING;
 
+-- 7.2.1 版本 1：经典发布版
 INSERT INTO "bom_version" (
     "id", "bom_id", "version_number", "version_status", "code", "name", "bom_type",
     "description", "production_line_id", "quantity_mode", "total_yield_enabled",
@@ -254,25 +312,25 @@ INSERT INTO "bom_version" (
 ) VALUES (
     '0195e000-0007-7000-8000-000000000012',
     '0195e000-0007-7000-8000-000000000002',
-    1, 'PUBLISHED', 'xcz4926', '小炒汁', 'FORMULA',
-    '多调味品精确比例调配', '0195e000-0005-7000-8000-000000000012', 'FIXED',
+    1, 'PUBLISHED', 'xcz4926', '小炒汁经典配方', 'FORMULA',
+    '基础经典配比：盐与酱油 1:1 恒温调配', '0195e000-0005-7000-8000-000000000012', 'FIXED',
     false, NULL, 1.00000000, 5.0,
-    '00000000-0000-7000-8000-000000000000', NOW(), 0,
-    '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
+    '00000000-0000-7000-8000-000000000000', NOW() - INTERVAL '10 days', 0,
+    '00000000-0000-7000-8000-000000000000', false, NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days'
 ) ON CONFLICT ("id") DO NOTHING;
 
--- 组合投入：食用盐 100g + 酱油 100g
+-- 版本 1 投入：食用盐 100g + 酱油 100g
 INSERT INTO "bom_version_input" (
     "id", "bom_version_id", "product_id", "quantity", "unit_id", "ratio",
     "material_role", "cooked_yield_rate", "normal_loss_rate", "supply_policy",
     "sort_order", "remark",
     "created_by_id", "is_deleted", "created_at", "updated_at"
 ) VALUES
-('0195e000-0007-7000-8000-000000000111', '0195e000-0007-7000-8000-000000000012', '0195e000-0004-7000-8000-000000000003', 100.000000, '0195e000-0002-7000-8000-000000000002', 0.50000000, 'MAIN', 1.00000000, 0.00000000, 'EXTERNAL', 0, '调味食盐', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()),
-('0195e000-0007-7000-8000-000000000112', '0195e000-0007-7000-8000-000000000012', '0195e000-0004-7000-8000-000000000004', 100.000000, '0195e000-0002-7000-8000-000000000002', 0.50000000, 'MAIN', 1.00000000, 0.00000000, 'EXTERNAL', 1, '海天生抽酱油', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW())
+('0195e000-0007-7000-8000-000000000111', '0195e000-0007-7000-8000-000000000012', '0195e000-0004-7000-8000-000000000003', 100.000000, '0195e000-0002-7000-8000-000000000002', 0.50000000, 'MAIN', 1.00000000, 0.00000000, 'EXTERNAL', 0, '调味食盐 (50%)', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()),
+('0195e000-0007-7000-8000-000000000112', '0195e000-0007-7000-8000-000000000012', '0195e000-0004-7000-8000-000000000004', 100.000000, '0195e000-0002-7000-8000-000000000002', 0.50000000, 'MAIN', 1.00000000, 0.00000000, 'EXTERNAL', 1, '海天生抽酱油 (50%)', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW())
 ON CONFLICT ("id") DO NOTHING;
 
--- 组合主产出：小炒汁 200g
+-- 版本 1 主产出：小炒汁 200g
 INSERT INTO "bom_version_output" (
     "id", "bom_version_id", "product_id", "quantity", "unit_id", "output_role",
     "sort_order", "remark",
@@ -285,7 +343,7 @@ INSERT INTO "bom_version_output" (
     '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
 ) ON CONFLICT ("id") DO NOTHING;
 
--- 组合工序：碗汁混合
+-- 版本 1 工序：碗汁混合
 INSERT INTO "bom_version_operation" (
     "id", "bom_version_id", "operation_id", "sequence_number", "setup_minutes",
     "cleanup_minutes", "standard_labor_hours", "quality_checkpoint", "instruction_text",
@@ -296,6 +354,61 @@ INSERT INTO "bom_version_operation" (
     '0195e000-0007-7000-8000-000000000012',
     '0195e000-0006-7000-8000-000000000004',
     10, 5, 5, 0.2000, false, '机械搅拌3分钟至完全溶解', 0, '调配混合',
+    '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
+) ON CONFLICT ("id") DO NOTHING;
+
+-- 7.2.2 版本 2 (草稿态 DRAFT)：减盐研发方案
+INSERT INTO "bom_version" (
+    "id", "bom_id", "version_number", "version_status", "code", "name", "bom_type",
+    "description", "production_line_id", "quantity_mode", "total_yield_enabled",
+    "total_yield_rate", "default_cooked_yield_rate", "minimum_batch_quantity",
+    "published_by_id", "published_at", "row_version",
+    "created_by_id", "is_deleted", "created_at", "updated_at"
+) VALUES (
+    '0195e000-0007-7000-8000-000000000022',
+    '0195e000-0007-7000-8000-000000000002',
+    2, 'DRAFT', 'xcz4926', '小炒汁低钠配方(草稿)', 'FORMULA',
+    '研发中：响应健康轻食需求，降低食盐投料比例', '0195e000-0005-7000-8000-000000000012', 'FIXED',
+    false, NULL, 1.00000000, 5.0,
+    NULL, NULL, 0,
+    '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
+) ON CONFLICT ("id") DO NOTHING;
+
+-- 版本 2 投入：盐60g (30%) + 酱油140g (70%)
+INSERT INTO "bom_version_input" (
+    "id", "bom_version_id", "product_id", "quantity", "unit_id", "ratio",
+    "material_role", "cooked_yield_rate", "normal_loss_rate", "supply_policy",
+    "sort_order", "remark",
+    "created_by_id", "is_deleted", "created_at", "updated_at"
+) VALUES
+('0195e000-0007-7000-8000-000000000113', '0195e000-0007-7000-8000-000000000022', '0195e000-0004-7000-8000-000000000003', 60.000000, '0195e000-0002-7000-8000-000000000002', 0.30000000, 'MAIN', 1.00000000, 0.00000000, 'EXTERNAL', 0, '调味食盐 (减量至30%)', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()),
+('0195e000-0007-7000-8000-000000000114', '0195e000-0007-7000-8000-000000000022', '0195e000-0004-7000-8000-000000000004', 140.000000, '0195e000-0002-7000-8000-000000000002', 0.70000000, 'MAIN', 1.00000000, 0.00000000, 'EXTERNAL', 1, '海天生抽酱油 (增至70%)', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW())
+ON CONFLICT ("id") DO NOTHING;
+
+-- 版本 2 产出：低钠小炒汁 200g
+INSERT INTO "bom_version_output" (
+    "id", "bom_version_id", "product_id", "quantity", "unit_id", "output_role",
+    "sort_order", "remark",
+    "created_by_id", "is_deleted", "created_at", "updated_at"
+) VALUES (
+    '0195e000-0007-7000-8000-000000000212',
+    '0195e000-0007-7000-8000-000000000022',
+    '0195e000-0004-7000-8000-000000000005', 200.000000, '0195e000-0002-7000-8000-000000000002', 'PRIMARY',
+    0, '研发低钠调味汁试验产出',
+    '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
+) ON CONFLICT ("id") DO NOTHING;
+
+-- 版本 2 工序：碗汁混合 (研发增加温控质检)
+INSERT INTO "bom_version_operation" (
+    "id", "bom_version_id", "operation_id", "sequence_number", "setup_minutes",
+    "cleanup_minutes", "standard_labor_hours", "quality_checkpoint", "instruction_text",
+    "sort_order", "remark",
+    "created_by_id", "is_deleted", "created_at", "updated_at"
+) VALUES (
+    '0195e000-0007-7000-8000-000000000312',
+    '0195e000-0007-7000-8000-000000000022',
+    '0195e000-0006-7000-8000-000000000004',
+    10, 5, 5, 0.2500, true, '恒温35℃匀速搅拌5分钟并测定盐度', 0, '温控低钠调配',
     '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
 ) ON CONFLICT ("id") DO NOTHING;
 
@@ -312,19 +425,19 @@ INSERT INTO "product_default_bom" (
 
 -- ==============================================================================
 -- 7.3 包装装配 BOM：65克青椒缎 (65kqjd1723)
--- 主产出：65克青椒缎 (110003) 1包
--- 投入清单：青椒段5cm 65g + 食品保鲜袋 1个
--- 工艺工序：蔬菜包装
+--   - 版本 1 (已发布): 青椒段 65g + 保鲜袋 1个
+--   - 版本 2 (最新发布): 升级充氮保鲜工艺 (青椒段 65g + 复合保鲜袋 1个 + 质检)
 -- ==============================================================================
 INSERT INTO "bom" (
     "id", "current_published_version_id", "lifecycle_status",
     "created_by_id", "is_deleted", "created_at", "updated_at"
 ) VALUES (
     '0195e000-0007-7000-8000-000000000003',
-    '0195e000-0007-7000-8000-000000000013',
+    '0195e000-0007-7000-8000-000000000023', -- 当前最新发布指向版本 2
     'ACTIVE', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
-) ON CONFLICT ("id") DO NOTHING;
+) ON CONFLICT ("id") DO UPDATE SET "current_published_version_id" = EXCLUDED."current_published_version_id";
 
+-- 7.3.1 版本 1：基础自封袋包装版
 INSERT INTO "bom_version" (
     "id", "bom_id", "version_number", "version_status", "code", "name", "bom_type",
     "description", "production_line_id", "quantity_mode", "total_yield_enabled",
@@ -334,14 +447,14 @@ INSERT INTO "bom_version" (
 ) VALUES (
     '0195e000-0007-7000-8000-000000000013',
     '0195e000-0007-7000-8000-000000000003',
-    1, 'PUBLISHED', '65kqjd1723', '65克青椒缎', 'PACKAGING',
-    '半成品按65g精确分装密封', '0195e000-0005-7000-8000-000000000013', 'FIXED',
+    1, 'PUBLISHED', '65kqjd1723', '65克青椒缎常规装', 'PACKAGING',
+    '第一代普通PE袋定量分装', '0195e000-0005-7000-8000-000000000013', 'FIXED',
     false, NULL, 1.00000000, 20.0,
-    '00000000-0000-7000-8000-000000000000', NOW(), 0,
-    '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
+    '00000000-0000-7000-8000-000000000000', NOW() - INTERVAL '7 days', 0,
+    '00000000-0000-7000-8000-000000000000', false, NOW() - INTERVAL '7 days', NOW() - INTERVAL '7 days'
 ) ON CONFLICT ("id") DO NOTHING;
 
--- 包装投入：半成品青椒段 65g (指向子方案) + 包装袋 1 个
+-- 版本 1 投入：半成品青椒段 65g + 包装袋 1 个
 INSERT INTO "bom_version_input" (
     "id", "bom_version_id", "product_id", "quantity", "unit_id", "ratio",
     "material_role", "cooked_yield_rate", "normal_loss_rate", "supply_policy",
@@ -352,7 +465,7 @@ INSERT INTO "bom_version_input" (
 ('0195e000-0007-7000-8000-000000000122', '0195e000-0007-7000-8000-000000000013', '0195e000-0004-7000-8000-000000000006', 1.000000, '0195e000-0002-7000-8000-000000000004', NULL, 'PACKAGING', 1.00000000, 0.00000000, 'EXTERNAL', NULL, NULL, 1, '定量自封保鲜袋', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW())
 ON CONFLICT ("id") DO NOTHING;
 
--- 包装主产出：65克青椒缎 1包
+-- 版本 1 主产出：65克青椒缎 1包
 INSERT INTO "bom_version_output" (
     "id", "bom_version_id", "product_id", "quantity", "unit_id", "output_role",
     "sort_order", "remark",
@@ -361,11 +474,11 @@ INSERT INTO "bom_version_output" (
     '0195e000-0007-7000-8000-000000000221',
     '0195e000-0007-7000-8000-000000000013',
     '0195e000-0004-7000-8000-000000000007', 1.000000, '0195e000-0002-7000-8000-000000000004', 'PRIMARY',
-    0, '最终销售定量包装袋成品',
+    0, '销售常规包装成品',
     '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
 ) ON CONFLICT ("id") DO NOTHING;
 
--- 包装工序：蔬菜包装
+-- 版本 1 工序：蔬菜包装
 INSERT INTO "bom_version_operation" (
     "id", "bom_version_id", "operation_id", "sequence_number", "setup_minutes",
     "cleanup_minutes", "standard_labor_hours", "quality_checkpoint", "instruction_text",
@@ -375,7 +488,62 @@ INSERT INTO "bom_version_operation" (
     '0195e000-0007-7000-8000-000000000321',
     '0195e000-0007-7000-8000-000000000013',
     '0195e000-0006-7000-8000-000000000005',
-    10, 10, 10, 0.3000, true, '定量称重65g误差不超过1g并贴标签', 0, '称重封装',
+    10, 10, 10, 0.3000, false, '人工定量称重65g装袋封口', 0, '常规封口包装',
+    '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
+) ON CONFLICT ("id") DO NOTHING;
+
+-- 7.3.2 版本 2：全自动气调锁鲜升级版 (指向子BOM最新版本2 + 全自动包装质检)
+INSERT INTO "bom_version" (
+    "id", "bom_id", "version_number", "version_status", "code", "name", "bom_type",
+    "description", "production_line_id", "quantity_mode", "total_yield_enabled",
+    "total_yield_rate", "default_cooked_yield_rate", "minimum_batch_quantity",
+    "published_by_id", "published_at", "row_version",
+    "created_by_id", "is_deleted", "created_at", "updated_at"
+) VALUES (
+    '0195e000-0007-7000-8000-000000000023',
+    '0195e000-0007-7000-8000-000000000003',
+    2, 'PUBLISHED', '65kqjd1723', '65克青椒缎气调锁鲜装', 'PACKAGING',
+    '全新气调充氮保鲜包装，保质期从3天延长至7天', '0195e000-0005-7000-8000-000000000013', 'FIXED',
+    false, NULL, 1.00000000, 30.0,
+    '00000000-0000-7000-8000-000000000000', NOW(), 1,
+    '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
+) ON CONFLICT ("id") DO NOTHING;
+
+-- 版本 2 投入：青椒段(关联子BOM版本2) + 复合阻气保鲜袋 1个
+INSERT INTO "bom_version_input" (
+    "id", "bom_version_id", "product_id", "quantity", "unit_id", "ratio",
+    "material_role", "cooked_yield_rate", "normal_loss_rate", "supply_policy",
+    "child_bom_id", "child_bom_version_id", "sort_order", "remark",
+    "created_by_id", "is_deleted", "created_at", "updated_at"
+) VALUES
+('0195e000-0007-7000-8000-000000000123', '0195e000-0007-7000-8000-000000000023', '0195e000-0004-7000-8000-000000000002', 65.000000, '0195e000-0002-7000-8000-000000000002', NULL, 'MAIN', 1.00000000, 0.00000000, 'MAKE', '0195e000-0007-7000-8000-000000000001', '0195e000-0007-7000-8000-000000000021', 0, '高品质青椒段(关联版本2子BOM)', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()),
+('0195e000-0007-7000-8000-000000000124', '0195e000-0007-7000-8000-000000000023', '0195e000-0004-7000-8000-000000000006', 1.000000, '0195e000-0002-7000-8000-000000000004', NULL, 'PACKAGING', 1.00000000, 0.00000000, 'EXTERNAL', NULL, NULL, 1, '高阻隔复合气调保鲜袋', '00000000-0000-7000-8000-000000000000', false, NOW(), NOW())
+ON CONFLICT ("id") DO NOTHING;
+
+-- 版本 2 主产出：65克青椒缎(锁鲜装) 1包
+INSERT INTO "bom_version_output" (
+    "id", "bom_version_id", "product_id", "quantity", "unit_id", "output_role",
+    "sort_order", "remark",
+    "created_by_id", "is_deleted", "created_at", "updated_at"
+) VALUES (
+    '0195e000-0007-7000-8000-000000000222',
+    '0195e000-0007-7000-8000-000000000023',
+    '0195e000-0004-7000-8000-000000000007', 1.000000, '0195e000-0002-7000-8000-000000000004', 'PRIMARY',
+    0, '气调锁鲜高端定量包装品',
+    '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
+) ON CONFLICT ("id") DO NOTHING;
+
+-- 版本 2 工序：全自动气调包装 (带质检)
+INSERT INTO "bom_version_operation" (
+    "id", "bom_version_id", "operation_id", "sequence_number", "setup_minutes",
+    "cleanup_minutes", "standard_labor_hours", "quality_checkpoint", "instruction_text",
+    "sort_order", "remark",
+    "created_by_id", "is_deleted", "created_at", "updated_at"
+) VALUES (
+    '0195e000-0007-7000-8000-000000000322',
+    '0195e000-0007-7000-8000-000000000023',
+    '0195e000-0006-7000-8000-000000000005',
+    10, 15, 15, 0.2000, true, '全自动气调充氮置换率99.5%，金属检测机检测', 0, '充氮气调包装与金检',
     '00000000-0000-7000-8000-000000000000', false, NOW(), NOW()
 ) ON CONFLICT ("id") DO NOTHING;
 

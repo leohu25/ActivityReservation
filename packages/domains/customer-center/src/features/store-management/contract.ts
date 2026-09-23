@@ -93,16 +93,8 @@ export const storePageContract: FeaturePagePermissionDescriptor = {
 			supportedScopes: STANDARD_DATA_SCOPES,
 		},
 		{ action: StandardAction.CREATE, label: "新建门店" },
-		{
-			action: StandardAction.UPDATE,
-			label: "修改门店",
-			supportedScopes: STANDARD_DATA_SCOPES,
-		},
-		{
-			action: CustomerStoreAction.TOGGLE_STATUS,
-			label: "启用/停用门店",
-			supportedScopes: STANDARD_DATA_SCOPES,
-		},
+		{ action: StandardAction.UPDATE, label: "修改门店" },
+		{ action: CustomerStoreAction.TOGGLE_STATUS, label: "启用/停用门店" },
 		{ action: StandardAction.DELETE, label: "删除门店" },
 		{ action: StandardAction.EXPORT, label: "导出门店" },
 	],

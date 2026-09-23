@@ -4,20 +4,22 @@ import React, { useMemo, useCallback, useState } from "react";
 import {
 	DataTable,
 	DataTableInputGroup,
+	DataTableRowActions,
 	Badge,
 	Combobox,
-	ConfirmDialog,
 	toast,
 	useListSearch,
 	useSafeRouter,
 	type ColumnDef,
 } from "@base/ui";
 import { exportContractCsv } from "@base/shared";
-import { useAbility } from "@base/authorization";
+import { StandardAction, useAbility } from "@base/authorization";
+import { Network } from "lucide-react";
 import {
 	BOM_TYPES,
 	BOM_TYPE_OPTIONS,
 	BomSubject,
+	BomAction,
 	bomSearchParams,
 	type BomType,
 } from "../contract";
@@ -29,6 +31,8 @@ import type {
 import {
 	deleteBomAction,
 	setDefaultBomAction,
+	getBomDetailAction,
+	publishBomVersionAction,
 } from "../actions";
 import { BomDetailDrawer } from "./BomDetailDrawer";
 
@@ -87,9 +91,10 @@ export function BomListView({ data, total, formOptions }: BomListViewProps) {
 		[router],
 	);
 
-	// 打开流程图谱快速抽屉
-	const handleViewGraph = useCallback((item: BomListItemDto) => {
-		const detail: BomDetailDto = {
+	// 打开流程图谱抽屉并异步获取真实 BOM 详情（投入、产出、工序）
+	const handleViewGraph = useCallback(async (item: BomListItemDto) => {
+		// 先以骨架占位展开抽屉
+		const skeletonDetail: BomDetailDto = {
 			id: item.id,
 			lifecycleStatus: "ACTIVE",
 			isDefault: item.isDefault,
@@ -141,9 +146,49 @@ export function BomListView({ data, total, formOptions }: BomListViewProps) {
 				},
 			],
 		};
-		setActiveDetail(detail);
+		setActiveDetail(skeletonDetail);
 		setDetailDrawerOpen(true);
+
+		try {
+			// 传入 undefined 即默认拉取当前最新/发布版本，并获取服务器实时的完整 versionHistory 列表
+			const res = await getBomDetailAction(item.id);
+			if (res.success && res.data) {
+				setActiveDetail(res.data);
+			}
+		} catch (err: unknown) {
+			console.error("加载 BOM 详情失败:", err);
+		}
 	}, []);
+
+	// 在抽屉内切换版本时重新拉取对应版本详情
+	const handleSelectVersion = useCallback(async (versionNumber: number) => {
+		if (!activeDetail) return;
+		try {
+			const res = await getBomDetailAction(activeDetail.id, versionNumber);
+			if (res.success && res.data) {
+				setActiveDetail(res.data);
+			}
+		} catch (err: unknown) {
+			console.error("切换 BOM 版本失败:", err);
+		}
+	}, [activeDetail]);
+
+	// 一键发布草稿版本
+	const handlePublish = useCallback(
+		async (item: BomListItemDto) => {
+			try {
+				const res = await publishBomVersionAction(item.id, item.versionNumber);
+				if (res.success) {
+					toast.success(`已成功发布 BOM [${item.name}] 版本 ${item.versionNumber}`);
+				} else {
+					toast.error(res.error || "发布失败");
+				}
+			} catch (err: unknown) {
+				toast.error(err instanceof Error ? err.message : "发布异常");
+			}
+		},
+		[],
+	);
 
 	// 设置默认方案
 	const handleSetDefault = useCallback(
@@ -206,7 +251,7 @@ export function BomListView({ data, total, formOptions }: BomListViewProps) {
 				id: "name",
 				header: "BOM名称",
 				cell: (row) => (
-					<div className="flex items-center gap-2">
+					<div className="flex items-center gap-1.5">
 						{row.isDefault && (
 							<Badge
 								variant="default"
@@ -214,6 +259,15 @@ export function BomListView({ data, total, formOptions }: BomListViewProps) {
 								className="bg-blue-600 hover:bg-blue-600 text-[10px] py-0 h-4 px-1.5 shrink-0"
 							>
 								默认
+							</Badge>
+						)}
+						{row.versionStatus === "DRAFT" && (
+							<Badge
+								variant="secondary"
+								size="sm"
+								className="bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 text-[10px] py-0 h-4 px-1.5 shrink-0"
+							>
+								草稿 v{row.versionNumber}
 							</Badge>
 						)}
 						<button
@@ -314,60 +368,60 @@ export function BomListView({ data, total, formOptions }: BomListViewProps) {
 			{
 				id: "actions",
 				header: "操作",
-				width: 190,
+				width: 200,
 				align: "right",
 				cell: (row) => (
-					<div className="flex items-center justify-end gap-1.5 text-xs">
-						<button
-							type="button"
-							onClick={() => handleView(row)}
-							className="text-blue-600 hover:text-blue-800 font-medium hover:underline px-1"
-						>
-							详情
-						</button>
-						<button
-							type="button"
-							onClick={() => handleEdit(row)}
-							className="text-blue-600 hover:text-blue-800 font-medium hover:underline px-1"
-						>
-							编辑
-						</button>
-						<button
-							type="button"
-							onClick={() => handleViewGraph(row)}
-							className="text-muted-foreground hover:text-foreground font-medium hover:underline px-1"
-						>
-							图谱
-						</button>
-						{!row.isDefault && (
-							<button
-								type="button"
-								onClick={() => handleSetDefault(row)}
-								className="text-amber-600 hover:text-amber-800 font-medium hover:underline px-1"
-							>
-								设为默认
-							</button>
-						)}
-						<ConfirmDialog
-							trigger={
-								<button
-									type="button"
-									className="text-destructive hover:text-destructive/80 font-medium hover:underline px-1"
-								>
-									删除
-								</button>
-							}
-							title={`确认删除 BOM 方案 "${row.name}"？`}
-							description="删除后该方案及其所有历史版本将被软删除归档。"
-							confirmText="确认删除"
-							cancelText="取消"
-							onConfirm={() => handleDelete(row.id)}
-						/>
-					</div>
+					<DataTableRowActions<BomListItemDto>
+						record={row}
+						onView={(r) => handleView(r)}
+						onEdit={(r) => handleEdit(r)}
+						onDelete={(r) => handleDelete(r.id)}
+						deleteConfirm={{
+							title: `确认删除 BOM 方案 "${row.name}"？`,
+							description: "删除后该方案及其所有历史版本将被软删除归档。",
+							confirmText: "确认删除",
+							cancelText: "取消",
+						}}
+						extraActions={[
+							{
+								label: "图谱",
+								action: StandardAction.READ,
+								icon: <Network className="size-3.5" />,
+								onClick: () => handleViewGraph(row),
+							},
+							...(!row.isDefault
+								? [
+										{
+											label: "设为默认",
+											action: BomAction.SET_DEFAULT,
+											inlineClassName: "text-amber-600 hover:text-amber-800",
+											onClick: () => handleSetDefault(row),
+										},
+									]
+								: []),
+							...(row.versionStatus === "DRAFT"
+								? [
+										{
+											label: "发布",
+											action: BomAction.PUBLISH,
+											inlineClassName: "text-emerald-600 hover:text-emerald-800 font-bold",
+											confirm: {
+												title: `确认发布 BOM 方案 "${row.name}"？`,
+												description:
+													"发布后该版本将切换为生效标准，只影响后续未生成的生产计划，已生成的计划不受影响。",
+												confirmText: "确认发布",
+												cancelText: "取消",
+											},
+											onClick: () => handlePublish(row),
+										},
+									]
+								: []),
+						]}
+					/>
 				),
 			},
 		],
-		[handleView, handleEdit, handleViewGraph, handleSetDefault, handleDelete],
+		[handleView, handleEdit, handleViewGraph, handleSetDefault, handleDelete, handlePublish],
 	);
 
 	return (
@@ -434,6 +488,21 @@ export function BomListView({ data, total, formOptions }: BomListViewProps) {
 				onEdit={(detail) => {
 					setDetailDrawerOpen(false);
 					router?.push(`/production/bom/${detail.id}?mode=edit`);
+				}}
+				onSelectVersion={handleSelectVersion}
+				onPublishVersion={async (bomId, versionNum) => {
+					try {
+						const res = await publishBomVersionAction(bomId, versionNum);
+						if (res.success) {
+							toast.success(`已成功发布版本 ${versionNum}`);
+							// 刷新抽屉详情
+							handleSelectVersion(versionNum);
+						} else {
+							toast.error(res.error || "发布失败");
+						}
+					} catch (err: unknown) {
+						toast.error(err instanceof Error ? err.message : "发布异常");
+					}
 				}}
 			/>
 		</div>

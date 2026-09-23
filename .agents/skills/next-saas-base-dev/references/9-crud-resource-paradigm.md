@@ -90,24 +90,77 @@ export const {
 ### ④ service.ts
 
 - 统一分页清洗与防御：使用 `@base/shared` 的 `resolvePagination(filter, options)`，一行解构出 `{ page, pageSize, skip, take }`，严禁在各 Service 手写 `Math.max` / `Math.min` / `skip` 样板代码；
+- **必须支持接收 CASL 授权下推条件 (`accessibleWhere`)**：
+  ```ts
+  static async listPaged(
+    client: TenantPrismaClient,
+    filter: ListXxxFilter = {},
+    accessibleWhere: TenantPrisma.XxxWhereInput = {},
+  ): Promise<ListXxxResult> {
+    const { skip, take, page, pageSize } = resolvePagination(filter);
+    
+    // 合并业务过滤与行级数据权限 SQL 下推条件
+    const where: TenantPrisma.XxxWhereInput = {
+      AND: [
+        accessibleWhere,
+        { isDeleted: false },
+        filter.keyword ? { name: { contains: filter.keyword, mode: "insensitive" } } : {},
+      ],
+    };
+
+    const [items, total] = await Promise.all([
+      client.xxx.findMany({ where, skip, take, orderBy: { createdAt: "desc" } }),
+      client.xxx.count({ where }),
+    ]);
+
+    return { items, total, page, pageSize };
+  }
+  ```
 - 事务 + 稳定发号（`SEQUENCE` / `pg_advisory_xact_lock`，**禁止** `count(*)+1`）；
 - 软删除、业务约束、审计字段 `createdById`/`updatedById`/`deptId`。
 
-### ⑤ queries.ts（server-only）
+### ⑤ queries.ts（server-only，CASL + Prisma 行级数据权限下发完整范式）
 
 ```ts
 import "server-only";
 import { cache } from "react";
+import { getAccessibleWhere, pickReadableFields, StandardAction } from "@base/authorization";
+import { toPlainData } from "@base/shared";
+import { assertXxxAbility, getTenantXxxContext } from "../../assembly/context";
+import { XxxSubject } from "./contract";
+import { XxxService } from "./service";
+import type { ListXxxFilter, ListXxxResult } from "./types";
+
 export const getXxxPageOptionsQuery = cache(async () => {
   /* 下拉选项 */
 });
-export async function listXxxQuery(parsed) {
+
+/**
+ * 列表查询标准范式：
+ * 1. 门禁断言：assertXxxAbility 阻断未授权操作；
+ * 2. 行级下推：getAccessibleWhere(ability, Subject, "read") 直接下发 SQL 到 Prisma where.AND；
+ * 3. 列级脱敏：pickReadableFields 剔除无权查阅的敏感字段。
+ */
+export async function listXxxQuery(filter: ListXxxFilter = {}): Promise<ListXxxResult> {
   const { client, ability } = await getTenantXxxContext();
-  // Ability → accessibleWhere → DTO 投影（无 Decimal/Date 直出）
+  assertXxxAbility(ability, StandardAction.READ, XxxSubject);
+
+  // 核心：通过 getAccessibleWhere 生成当前用户角色对应的数据范围条件 (SELF/DEPT/DEPT_TREE/ALL)
+  const accessibleWhere = getAccessibleWhere(ability, XxxSubject, StandardAction.READ);
+
+  const result = await XxxService.listPaged(client, filter, accessibleWhere);
+
+  // 对结果进行列级权限过滤
+  const items = result.items.map((item) => {
+    const readable = pickReadableFields(ability, XxxSubject, item as Record<string, unknown>);
+    return { id: item.id, ...readable };
+  });
+
+  return toPlainData({ ...result, items });
 }
 ```
 
-### ⑥ actions.ts（"use server" 平铺导出，推荐 defineServerAction 保持直观）
+### ⑥ actions.ts（"use server" 平铺导出，操作权限纯粹由角色二元控制，直观清晰拒绝黑盒）
 
 ```ts
 "use server";
@@ -120,6 +173,12 @@ import { XxxService } from "./service";
 import { XxxSubject } from "./contract";
 import { parseCreateXxxInput, parseUpdateXxxInput } from "./schema";
 
+/**
+ * 操作鉴权规范（所见即所得，与权限界面 100% 对应）：
+ * 1. 写操作权限纯粹由“角色”二元控制：assertXxxAbility(ability, Action, Subject)；
+ * 2. 角色勾选了该操作即允许执行，未勾选则拦截；不叠加隐式行数据判断，杜绝逻辑黑盒；
+ * 3. 行数据权限（数据范围）已在 listXxxQuery 列表查询阶段由 SQL 严格物理过滤完成。
+ */
 export const createXxxAction = defineServerAction(async (raw: unknown) => {
   const { client, ability, userId, employeeProfile } =
     await getTenantXxxContext();
@@ -411,9 +470,9 @@ export function XxxView({ data, total }: { data: XxxItem[]; total: number }) {
 }
 ```
 
-- **权限 100% 声明式接管（严禁顶层手动计算 `ability.can`）**：
+- **权限 100% 声明式接管（操作列强制使用 DataTableRowActions，严禁顶层手动计算 `ability.can`）**：
   - `DataTable` 根据 `subject` 自动判定并渲染顶部「新增」、「导出」按钮；
-  - `DataTableRowActions` 自动根据当前用户 Ability 判定「查看/编辑/删除/扩展操作」的权限与显隐，外部无需手写多余三元判断或包装 div；
+  - **操作列 (id: "actions") 必须 100% 统一使用 `<DataTableRowActions />` 渲染！** 严禁手写裸 `<button>`/`<div>` 导致权限与确认逻辑裸奔。`DataTableRowActions` 内部自动根据当前用户 Ability 判定「查看/编辑/删除/扩展操作」的权限与显隐，外部无需手写多余三元判断或包装 div，门禁脚本强制拦截任何裸奔操作列；
 - **零向后兼容胶水代码（Pure Controlled Props）**：
   - View 组件严格只接收标准 `{ data, total, ...options }` 受控 props，严禁在组件内部维护 `initialXxx`、`legacyXxx`、`propData` 等向后兼容别名与兜底胶水代码；
 - **状态筛选语义规范**：

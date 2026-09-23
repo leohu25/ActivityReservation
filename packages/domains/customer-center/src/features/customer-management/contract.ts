@@ -93,26 +93,10 @@ export const customerPageContract: FeaturePagePermissionDescriptor = {
 			supportedScopes: STANDARD_DATA_SCOPES,
 		},
 		{ action: StandardAction.CREATE, label: "新建客户" },
-		{
-			action: StandardAction.UPDATE,
-			label: "修改客户",
-			supportedScopes: STANDARD_DATA_SCOPES,
-		},
-		{
-			action: StandardAction.DELETE,
-			label: "删除客户",
-			supportedScopes: STANDARD_DATA_SCOPES,
-		},
-		{
-			action: CustomerAction.TOGGLE_STATUS,
-			label: "启用/停用客户",
-			supportedScopes: STANDARD_DATA_SCOPES,
-		},
-		{
-			action: StandardAction.EXPORT,
-			label: "导出客户列表",
-			supportedScopes: STANDARD_DATA_SCOPES,
-		},
+		{ action: StandardAction.UPDATE, label: "修改客户" },
+		{ action: StandardAction.DELETE, label: "删除客户" },
+		{ action: CustomerAction.TOGGLE_STATUS, label: "启用/停用客户" },
+		{ action: StandardAction.EXPORT, label: "导出客户列表" },
 	],
 	configurableFields: customerConfigurableFields.map((f) => ({
 		field: f.field,

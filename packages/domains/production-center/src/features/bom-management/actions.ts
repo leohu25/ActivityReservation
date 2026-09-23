@@ -81,3 +81,33 @@ export const setDefaultBomAction = defineServerAction(
 	},
 	"设置默认BOM失败",
 );
+
+export const getBomDetailAction = defineServerAction(
+	async (bomId: string, versionNumber?: number) => {
+		const { client, ability } = await getTenantProductionCenterContext();
+		assertProductionCenterAbility(ability, StandardAction.READ, BomSubject);
+
+		const detail = await BomService.getBomDetail(client, bomId, versionNumber);
+		return detail;
+	},
+	"获取生产BOM详情失败",
+);
+
+export const publishBomVersionAction = defineServerAction(
+	async (bomId: string, versionNumber: number) => {
+		const { client, ability, userId, employeeProfile } =
+			await getTenantProductionCenterContext();
+		assertProductionCenterAbility(ability, BomAction.PUBLISH, BomSubject);
+
+		await BomService.publishBomVersion(client, bomId, versionNumber, {
+			userId,
+			deptId: employeeProfile?.departmentId ?? null,
+		});
+
+		revalidatePath("/production/bom");
+		return { success: true };
+	},
+	"发布生产BOM版本失败",
+);
+
+

@@ -1,4 +1,5 @@
 import type { DataScopeType } from "../scopes/data-scope";
+import type { StandardAction } from "./actions";
 import type { PermissionDefinition } from "./catalog";
 import { createPermissionCatalog, type PermissionCatalog } from "./catalog";
 
@@ -125,13 +126,23 @@ export interface TenantMenuNode {
 }
 
 /**
- * 权限动作配置项模型
+ * 权限动作配置项模型：
+ * 架构规范铁律：
+ * - 严禁魔法值：动作一律消费 StandardAction 枚举或特定领域的 Action 枚举常量；
+ * - 读写同源·作用域级联继承：只有 action === StandardAction.READ 允许声明 supportedScopes，其余写动作自动继承读的数据范围；
+ * - 类型系统拦截：如果给非读操作声明了 supportedScopes，LSP 和 TypeScript 编译器会直接报错拦截！
  */
-export interface FeatureActionConfigItem {
-  readonly action: string;
-  readonly label: string;
-  readonly supportedScopes?: readonly DataScopeType[];
-}
+export type FeatureActionConfigItem =
+  | {
+      readonly action: typeof StandardAction.READ;
+      readonly label: string;
+      readonly supportedScopes?: readonly DataScopeType[];
+    }
+  | {
+      readonly action: string;
+      readonly label: string;
+      readonly supportedScopes?: never; // 静态拦截：非读动作在类型系统上彻底禁止声明 supportedScopes！
+    };
 
 /**
  * 页面/实体受控模型（供角色权限管理树渲染）
