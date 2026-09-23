@@ -2,7 +2,7 @@ import React from "react";
 import { headers } from "next/headers";
 import { getServerAuthRuntime } from "@base/auth";
 import { getTenantDbManager } from "@base/db-tenant";
-import { TopHeader, Sidebar, DashboardShell } from "@base/ui";
+import { TopHeader, Sidebar, DashboardShell, TabBar } from "@base/ui";
 import { redirect } from "next/navigation";
 import { Building2 } from "lucide-react";
 import { getAuthorizedTenantNavSections } from "@/kernel";
@@ -147,13 +147,21 @@ export default async function DashboardLayout({
     <DashboardShell
       header={
         <TopHeader
+          key="app-header"
           user={user}
           orgSwitcherSlot={orgBadgeSlot}
           title={systemTitle}
           logoUrl={activeOrg?.logo}
+          centerSlot={
+            <TabBar
+              homeTab={homeTab}
+              sections={navSections}
+              embedded={true}
+            />
+          }
         />
       }
-      sidebar={<Sidebar sections={navSections} />}
+      sidebar={<Sidebar key="app-sidebar" sections={navSections} />}
       navSections={navSections}
       homeTab={homeTab}
     >

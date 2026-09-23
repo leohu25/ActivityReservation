@@ -140,10 +140,15 @@ export function ControlLogin(): React.JSX.Element {
         {/* 头部品牌与中立平台 Logo */}
         <CardHeader className="text-center p-0 pb-6">
           <div
-            className="mx-auto flex h-13 w-13 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-sky-600 text-white shadow-lg shadow-blue-500/25 ring-1 ring-white/20 dark:ring-white/10"
+            className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-border/80 bg-background/80 p-2 shadow-lg shadow-primary/10 backdrop-blur-xs ring-1 ring-border/50"
             aria-label="控制平面平台中枢标识"
           >
-            <Layers className="size-6 text-white" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo/logo.png"
+              alt="控制平面平台中枢标识"
+              className="size-full object-contain"
+            />
           </div>
           <CardTitle className="mt-4 text-xl sm:text-2xl font-black tracking-tight text-foreground">
             {isRegister ? "注册总控超级管理员" : "控制平面超级管理员登录"}

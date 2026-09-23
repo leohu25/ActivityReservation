@@ -29,7 +29,9 @@ export interface AuthFieldProps {
 		className?: string;
 	}>;
 	/** 字段中文显示名称/标题 */
-	readonly label?: string;
+	readonly label?: React.ReactNode;
+	/** 是否必填字段 (展示红色星号) */
+	readonly required?: boolean;
 	/** 隐藏或无权访问时的占位渲染内容 (默认不渲染) */
 	readonly fallback?: React.ReactNode;
 	readonly className?: string;
@@ -79,6 +81,7 @@ export function AuthField({
 	mode,
 	children,
 	label,
+	required,
 	fallback = null,
 	className,
 }: AuthFieldProps) {
@@ -113,7 +116,22 @@ export function AuthField({
 		>
 			{label ? (
 				<FieldLabel>
-					<span>{label}</span>
+					<span className="inline-flex items-center gap-1">
+						{(required ||
+							(typeof label === "string" && label.trim().startsWith("*"))) && (
+							<span
+								className="text-destructive font-bold text-xs"
+								aria-hidden="true"
+							>
+								*
+							</span>
+						)}
+						<span>
+							{typeof label === "string" && label.trim().startsWith("*")
+								? label.trim().slice(1).trim()
+								: label}
+						</span>
+					</span>
 					{isReadOnly ? (
 						<Badge variant="secondary" className="h-4 px-1.5 py-0 text-[10px]">
 							只读

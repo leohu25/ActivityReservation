@@ -8,6 +8,15 @@ export const metadata: Metadata = {
  title: "多租户 SaaS · 控制平面 (Control Plane)",
  description:
   "Control Plane Super Admin & Multi-Tenant Database Provisioning Central",
+ icons: {
+  icon: [
+   { url: "/logo/icon.png", sizes: "512x512", type: "image/png" },
+   { url: "/logo/favicon.ico", sizes: "any" },
+  ],
+  apple: [
+   { url: "/logo/apple-icon.png", sizes: "180x180", type: "image/png" },
+  ],
+ },
 };
 
 /**

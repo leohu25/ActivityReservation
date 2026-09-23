@@ -306,11 +306,22 @@ assertEditableFields(
 );
 ```
 
+### 4.2 字段权限绑定设计意图：为什么列表每列传 field，而表单只需容器注入 subject？（有意为之的正交设计）
+
+| 维度 | 列表 `DataTable (ColumnDef)` | 表单 `FormModal` / `FormPage (FormFieldSchema)` |
+| :--- | :--- | :--- |
+| **字段映射关系** | **1 对多 / 复合展示列**（如 `id: "contact"` 组合展示姓名+电话） | **1 对 1 实体属性**（控件 `name` 本身即 DTO/实体属性名） |
+| **权限配置方式** | **显式声明** `field: CustomerField.CONTACT_PHONE` | **容器一次注入** `<FormPage subject={CustomerSubject}>` |
+| **底座匹配机制** | `col.field ? ability.can("read", subject, col.field) : true` | `authKey = field.field || field.name; ability.can("read", subject, authKey)` |
+| **设计核心意图** | 表格列 ID 为前端虚拟标识，无法自动推断后端字段，必须显式指派受控归属，防止复合列漏敏 | 消除全库重复手写 `field` 样板代码，依托纯 DTO 属性名自动完成 `HIDDEN` 剥离与 `READONLY` 置灰 |
+| **非标复杂表单** | 在复合视图/自定义卡片上显式绑定 `field` | 使用 `<AuthField field={...}>` 或 `ability.can()` 闭环敏感字段 |
+
 > ⚠️ **严禁反模式**：
 >
 > 1. 严禁直接手写裸 `<Button onClick={...}>新建</Button>` 却不加 `<AuthGuard>` 包裹；
 > 2. 严禁使用 `<DataTable>` 时遗漏 `subject` 属性，导致内部权限判断失效；
-> 3. 严禁在页面侧手写 `can("create", ...) && <Button>`（用 `<AuthGuard>` 声明式包裹）。
+> 3. 严禁在页面侧手写 `can("create", ...) && <Button>`（用 `<AuthGuard>` 声明式包裹）；
+> 4. 严禁在 `FormModal` / `FormPage` 内部每个字段上强迫重复编写与 `name` 相同的 `field` 样板代码（直接依托容器 `subject` 自动解析即可）。
 
 ---
 

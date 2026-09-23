@@ -174,4 +174,23 @@
        ```
   3. **海量与外键数据首选 `Combobox`**（带搜索/分页/清空），彻底消除手写字典映射。
 
+---
+
+## 10. 普通 CRUD 场景 vs 复杂自定义场景实现分流范式 (有意为之的分流设计)
+
+- **核心场景分流黄金准则**：
+  1. **普通标准场景 (Standard CRUD)**：
+     - **适用范围**：字段明确、单表或标准主从表（如客户档案、客户分类、供应商、数据字典等）；
+     - **实现方式**：直接使用封装好的标准化大组件（`DataTable` 列表 + `FormModal` 弹窗 / `FormPage` 全屏单据工作台）；
+     - **权限心智**：列表传入 `subject={XxxSubject}` 并为受控列声明 `field: XxxField.YYY`；表单只需在容器外层传入 `subject={XxxSubject}`，内部控件依据 DTO 属性 `name` 全自动完成读写权限匹配，无需在每个输入框上手写重复配置。
+  2. **复杂自定义场景 (Complex Assembly & Non-Standard Views)**：
+     - **适用范围**：制造 BOM、工艺路线、多级配方、批次装配、交互图谱、动态增删行等非标高度定制界面；
+     - **实现方式**：**严禁将复杂业务强行削足适履塞入通用 FormPage**！采用**积木化物理拆解架构**（按功能拆分 `form/`、`graph/`、`detail/`、`list/` 独立子目录，单文件控制在 50~180 行）；
+     - **权限心智（结合使用封装好的原子权限控件）**：
+       - **操作/动作按钮**：必须使用封装好的 **`<AuthGuard action={...} subject={...}>`** 声明式包裹动作按钮，严禁在页面侧手写 `can("create", ...) && <Button>` 或层层透传 `canCreate/canUpdate` 布尔值 props；
+       - **受控字段输入**：必须使用封装好的 **`<AuthField field={XxxField.YYY} subject={...}>`** 声明式包裹输入控件，底层自动处理 `HIDDEN`（彻底不入 DOM）与 `READONLY`（自动禁用并挂载只读徽章）；
+       - **表单状态 Hook**：抽取 `useXxxFormState.ts` 纯逻辑 Hook，内部践行“动态可见性与必填协同原则”，被 `HIDDEN` 隐藏的字段自动豁免必填校验，避免提交死锁；
+       - **服务端写防线**：在对应的 `createXxxAction` 与 `updateXxxAction` 中首行调用 `assertEditableFields(ability, Subject, extractControlledPayload(input))`，阻断网络层越权篡改。
+
+
 
