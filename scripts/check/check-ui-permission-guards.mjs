@@ -119,6 +119,22 @@ export function checkUiFile(_filePath, content) {
     });
   }
 
+  // 规则 D：检测 DataTable 的操作列（id: "actions" 或 header: "操作"）是否规范使用 DataTableRowActions
+  // 架构铁律：DataTable 操作列必须且只能使用 DataTableRowActions 渲染，严禁手写裸 button/div 导致权限裸奔与冗余代码
+  const actionsColumnRegex = /id:\s*["']actions["'][\s\S]*?cell:\s*\([^)]*\)\s*=>\s*([\s\S]*?)(?=},\s*\{|\s*\])/g;
+  let actionColMatch;
+  while ((actionColMatch = actionsColumnRegex.exec(content)) !== null) {
+    const cellBody = actionColMatch[1];
+    if (!cellBody.includes("DataTableRowActions")) {
+      issues.push({
+        type: "RAW_DATATABLE_ACTIONS_COLUMN",
+        message:
+          "检测到 DataTable 的操作列 (id: \"actions\") 未使用标准 <DataTableRowActions />！必须统一使用 <DataTableRowActions /> 渲染内置与扩展操作，彻底消除冗余手写代码并由底层自动接管 CASL 权限与二次确认。",
+      });
+      break;
+    }
+  }
+
   return issues;
 }
 

@@ -30,6 +30,8 @@ import {
 	GitBranch,
 	Check,
 } from "lucide-react";
+import { StandardAction, useAbility } from "@base/authorization";
+import { BomSubject, BomAction } from "../contract";
 import type { BomDetailDto } from "../types";
 import { BomFlowGraph } from "./BomFlowGraph";
 
@@ -59,9 +61,13 @@ export function BomDetailDrawer({
 	onSelectVersion,
 	onPublishVersion,
 }: BomDetailDrawerProps) {
+	const ability = useAbility();
 	const [activeTab, setActiveTab] = useState("graph");
 
 	if (!detail) return null;
+
+	const canUpdate = ability.can(StandardAction.UPDATE, BomSubject);
+	const canPublish = ability.can(BomAction.PUBLISH, BomSubject);
 
 	const { currentVersion, primaryProduct, isDefault, versionHistory } = detail;
 	const typeConfig = BOM_TYPE_BADGES[currentVersion.bomType] ?? {
@@ -92,7 +98,7 @@ export function BomDetailDrawer({
 								</Badge>
 							</SheetTitle>
 						</div>
-						{currentVersion.versionStatus === "DRAFT" && onPublishVersion && (
+						{canPublish && currentVersion.versionStatus === "DRAFT" && onPublishVersion && (
 							<ConfirmDialog
 								trigger={
 									<Button
@@ -111,7 +117,7 @@ export function BomDetailDrawer({
 								}
 							/>
 						)}
-						{onEdit && (
+						{canUpdate && onEdit && (
 							<Button
 								variant="outline"
 								size="sm"

@@ -300,7 +300,13 @@ Base UI 的 `<Select>` 解除了对 DOM 的侵入式反查。**如果使用官�
 
 **禁止**手写 `canExport && <Button>` 再包一层——用 `ActionButton` 即可。
 
-### 2.4 行级操作：平铺链接 + 折叠菜单
+### 2.4 行级操作：统一强制使用 DataTableRowActions（架构铁律与门禁校验）
+
+> 🚨 **全仓架构铁律与门禁硬拦截 (Zero-Tolerance Gate)**：
+> **DataTable 的操作列 (id: "actions") 必须 100% 使用 `<DataTableRowActions />` 渲染！**
+> - **严禁手写裸 DOM 与原生 `<button>`**：手写裸按钮不仅会造成大量冗余代码，还会导致 CASL 权限与二次确认裸奔；
+> - **自动化权限与高危二次确认**：`<DataTableRowActions />` 内部自动从 `DataTableContext` 获取 `subject` 与 `ability`，无权限的操作**自动隐形**，删除等高危操作自动弹出二次确认弹窗；
+> - **物理门禁自动兜底**：`scripts/check/check-ui-permission-guards.mjs` 在 Pre-commit 时静态强扫描，发现操作列未用 `DataTableRowActions` 立即红灯硬拦截！
 
 对齐设计系统规范：高频操作直接平铺文字链接（详情/编辑），次要与危险操作折叠进 `...`：
 
@@ -312,10 +318,11 @@ Base UI 的 `<Select>` 解除了对 DOM 的侵入式反查。**如果使用官�
 >
 > 1. **增删改查标准形态**：内置 `onView`（查看）、`onEdit`（编辑）、`onDelete`（删除）；若页面不需要某项（例如只读流水无需删除），显式传入 `hideDelete={true}`；
 > 2. **内置停用/启用状态操作**：`onToggleStatus` 已作为官方一等公民内置能力！无需再手动拼接 `extraActions`。通过 `toggleStatusOptions` 传入 status、文案与确认逻辑即可；若实体无此状态字段，不传 `onToggleStatus` 即可自动隐去；
-> 3. **严禁无回调置灰残留**：不需要的操作显式 hide，严禁漏传回调导致灰色不可点击按钮破坏界面质感。
+> 3. **业务扩展操作 (`extraActions`)**：完全支持自定义（如发布草稿、设为默认、查看图谱、审批流转等），声明好 `action` 与 `confirm`，底层全自动接管权限判断与弹窗确认；
+> 4. **严禁无回调置灰残留**：不需要的操作显式 hide，严禁漏传回调导致灰色不可点击按钮破坏界面质感。
 
 ```tsx
-<DataTable.RowActions
+<DataTableRowActions<ResourceType>
   record={row}
   onView={() => setViewing(row)}
   onEdit={() => setEditing(row)}
@@ -329,13 +336,29 @@ Base UI 的 `<Select>` 解除了对 DOM 的侵入式反查。**如果使用官�
         ? { title: `确认停用「${record.name}」？`, confirmText: "确认停用" }
         : undefined,
   }}
-  // 页面不需要删除时显式声明：
-  // hideDelete={true}
   onDelete={() => handleDelete(row)}
   deleteConfirm={{
     title: `确认删除「${row.name}」？`,
+    description: "删除后数据将软删除归档，不可恢复。",
     confirmText: "确认删除",
   }}
+  // 业务扩展操作（完全支持自定义，自动接管 action 权限与 confirm 确认）：
+  extraActions={[
+    {
+      label: "设为默认",
+      action: "set_default",
+      onClick: () => handleSetDefault(row),
+    },
+    {
+      label: "发布",
+      action: "publish",
+      confirm: {
+        title: `确认发布「${row.name}」？`,
+        confirmText: "确认发布",
+      },
+      onClick: () => handlePublish(row),
+    },
+  ]}
 />
 ```
 

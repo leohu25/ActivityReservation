@@ -4,20 +4,22 @@ import React, { useMemo, useCallback, useState } from "react";
 import {
 	DataTable,
 	DataTableInputGroup,
+	DataTableRowActions,
 	Badge,
 	Combobox,
-	ConfirmDialog,
 	toast,
 	useListSearch,
 	useSafeRouter,
 	type ColumnDef,
 } from "@base/ui";
 import { exportContractCsv } from "@base/shared";
-import { useAbility } from "@base/authorization";
+import { StandardAction, useAbility } from "@base/authorization";
+import { Network } from "lucide-react";
 import {
 	BOM_TYPES,
 	BOM_TYPE_OPTIONS,
 	BomSubject,
+	BomAction,
 	bomSearchParams,
 	type BomType,
 } from "../contract";
@@ -366,73 +368,56 @@ export function BomListView({ data, total, formOptions }: BomListViewProps) {
 			{
 				id: "actions",
 				header: "操作",
-				width: 220,
+				width: 200,
 				align: "right",
 				cell: (row) => (
-					<div className="flex items-center justify-end gap-1.5 text-xs">
-						{row.versionStatus === "DRAFT" && (
-							<ConfirmDialog
-								trigger={
-									<button
-										type="button"
-										className="text-emerald-600 hover:text-emerald-800 font-bold hover:underline px-1"
-									>
-										发布
-									</button>
-								}
-								title={`确认发布 BOM 方案 "${row.name}"？`}
-								description="发布后该版本将切换为生效标准，只影响后续未生成的生产计划，已生成的计划不受影响。"
-								confirmText="确认发布"
-								cancelText="取消"
-								onConfirm={() => handlePublish(row)}
-							/>
-						)}
-						<button
-							type="button"
-							onClick={() => handleView(row)}
-							className="text-blue-600 hover:text-blue-800 font-medium hover:underline px-1"
-						>
-							详情
-						</button>
-						<button
-							type="button"
-							onClick={() => handleEdit(row)}
-							className="text-blue-600 hover:text-blue-800 font-medium hover:underline px-1"
-						>
-							编辑
-						</button>
-						<button
-							type="button"
-							onClick={() => handleViewGraph(row)}
-							className="text-muted-foreground hover:text-foreground font-medium hover:underline px-1"
-						>
-							图谱
-						</button>
-						{!row.isDefault && (
-							<button
-								type="button"
-								onClick={() => handleSetDefault(row)}
-								className="text-amber-600 hover:text-amber-800 font-medium hover:underline px-1"
-							>
-								设为默认
-							</button>
-						)}
-						<ConfirmDialog
-							trigger={
-								<button
-									type="button"
-									className="text-destructive hover:text-destructive/80 font-medium hover:underline px-1"
-								>
-									删除
-								</button>
-							}
-							title={`确认删除 BOM 方案 "${row.name}"？`}
-							description="删除后该方案及其所有历史版本将被软删除归档。"
-							confirmText="确认删除"
-							cancelText="取消"
-							onConfirm={() => handleDelete(row.id)}
-						/>
-					</div>
+					<DataTableRowActions<BomListItemDto>
+						record={row}
+						onView={(r) => handleView(r)}
+						onEdit={(r) => handleEdit(r)}
+						onDelete={(r) => handleDelete(r.id)}
+						deleteConfirm={{
+							title: `确认删除 BOM 方案 "${row.name}"？`,
+							description: "删除后该方案及其所有历史版本将被软删除归档。",
+							confirmText: "确认删除",
+							cancelText: "取消",
+						}}
+						extraActions={[
+							{
+								label: "图谱",
+								action: StandardAction.READ,
+								icon: <Network className="size-3.5" />,
+								onClick: () => handleViewGraph(row),
+							},
+							...(!row.isDefault
+								? [
+										{
+											label: "设为默认",
+											action: BomAction.SET_DEFAULT,
+											inlineClassName: "text-amber-600 hover:text-amber-800",
+											onClick: () => handleSetDefault(row),
+										},
+									]
+								: []),
+							...(row.versionStatus === "DRAFT"
+								? [
+										{
+											label: "发布",
+											action: BomAction.PUBLISH,
+											inlineClassName: "text-emerald-600 hover:text-emerald-800 font-bold",
+											confirm: {
+												title: `确认发布 BOM 方案 "${row.name}"？`,
+												description:
+													"发布后该版本将切换为生效标准，只影响后续未生成的生产计划，已生成的计划不受影响。",
+												confirmText: "确认发布",
+												cancelText: "取消",
+											},
+											onClick: () => handlePublish(row),
+										},
+									]
+								: []),
+						]}
+					/>
 				),
 			},
 		],

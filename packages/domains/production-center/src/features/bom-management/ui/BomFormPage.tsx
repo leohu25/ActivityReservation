@@ -37,8 +37,11 @@ import {
 	QUANTITY_MODES,
 	MATERIAL_ROLES,
 	OUTPUT_ROLES,
+	BomSubject,
+	BomAction,
 	type BomType,
 } from "../contract";
+import { StandardAction, useAbility } from "@base/authorization";
 import type {
 	BomDetailDto,
 	BomFormOptions,
@@ -62,9 +65,15 @@ export function BomFormPage({
 	formOptions,
 	backUrl = "/production/bom",
 }: BomFormPageProps) {
+	const ability = useAbility();
 	const router = useSafeRouter();
 	const isView = mode === "view";
 	const isEdit = mode === "edit";
+
+	// 权限判定 (CASL 声明式防护)
+	const canCreate = ability.can(StandardAction.CREATE, BomSubject);
+	const canUpdate = ability.can(StandardAction.UPDATE, BomSubject);
+	const canPublish = ability.can(BomAction.PUBLISH, BomSubject);
 
 	const [submitting, setSubmitting] = useState<boolean>(false);
 
@@ -386,13 +395,15 @@ export function BomFormPage({
 				{/* 顶栏右侧操作动作 */}
 				<div className="flex items-center gap-2.5">
 					{isView ? (
-						<Button
-							size="sm"
-							onClick={() => router?.push(`/production/bom/${bomId}?mode=edit`)}
-							className="h-8 text-xs gap-1.5"
-						>
-							<Edit className="size-3.5" /> 编辑方案
-						</Button>
+						canUpdate ? (
+							<Button
+								size="sm"
+								onClick={() => router?.push(`/production/bom/${bomId}?mode=edit`)}
+								className="h-8 text-xs gap-1.5"
+							>
+								<Edit className="size-3.5" /> 编辑方案
+							</Button>
+						) : null
 					) : (
 						<>
 							<Button
@@ -404,37 +415,41 @@ export function BomFormPage({
 							>
 								取消
 							</Button>
-							<Button
-								variant="secondary"
-								size="sm"
-								onClick={() => handleSave(true)}
-								disabled={submitting}
-								className="h-8 text-xs gap-1.5 min-w-[80px]"
-							>
-								<Save className="size-3.5 text-muted-foreground" />
-								{submitting ? "保存中..." : "保存草稿"}
-							</Button>
-							<ConfirmDialog
-								trigger={
-									<Button
-										size="sm"
-										disabled={submitting}
-										className="h-8 text-xs gap-1.5 min-w-[88px] bg-blue-600 hover:bg-blue-700 text-white"
-									>
-										<Check className="size-3.5" />
-										{submitting ? "处理中..." : isEdit ? "发布新版本" : "立即发布"}
-									</Button>
-								}
-								title={isEdit ? "确认发布生产 BOM 新版本？" : "确认立即发布生产 BOM 方案？"}
-								description={
-									isEdit
-										? "编辑发布生产BOM后只影响后续未生成的生产计划与工单，历史及已生成的计划不受影响。"
-										: "发布后该方案将作为生效标准，供后续创建生产计划与工单时引用。"
-								}
-								confirmText="确认发布"
-								cancelText="返回修改"
-								onConfirm={() => handleSave(false)}
-							/>
+							{((!isEdit && canCreate) || (isEdit && canUpdate)) && (
+								<Button
+									variant="secondary"
+									size="sm"
+									onClick={() => handleSave(true)}
+									disabled={submitting}
+									className="h-8 text-xs gap-1.5 min-w-[80px]"
+								>
+									<Save className="size-3.5 text-muted-foreground" />
+									{submitting ? "保存中..." : "保存草稿"}
+								</Button>
+							)}
+							{canPublish && (
+								<ConfirmDialog
+									trigger={
+										<Button
+											size="sm"
+											disabled={submitting}
+											className="h-8 text-xs gap-1.5 min-w-[88px] bg-blue-600 hover:bg-blue-700 text-white"
+										>
+											<Check className="size-3.5" />
+											{submitting ? "处理中..." : isEdit ? "发布新版本" : "立即发布"}
+										</Button>
+									}
+									title={isEdit ? "确认发布生产 BOM 新版本？" : "确认立即发布生产 BOM 方案？"}
+									description={
+										isEdit
+											? "编辑发布生产BOM后只影响后续未生成的生产计划与工单，历史及已生成的计划不受影响。"
+											: "发布后该方案将作为生效标准，供后续创建生产计划与工单时引用。"
+									}
+									confirmText="确认发布"
+									cancelText="返回修改"
+									onConfirm={() => handleSave(false)}
+								/>
+							)}
 						</>
 					)}
 				</div>

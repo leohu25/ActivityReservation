@@ -42,7 +42,7 @@
 2. **严禁未经审阅擅自提交与带病提交**：必须经用户显式审阅确认后提交；代码必须保证 `git commit` 时 pre-commit 门禁一次性通过，**严禁用 `--no-verify` 绕过钩子**；
 3. **严禁用 `any` 恶性降解（强制全链路强类型与类型健全）**：全仓代码（业务切片、服务层、UI 组件、测试与工具库）必须 100% 遵循 TypeScript 强类型约束，**严禁使用 `any`、`(x as any)`、无 SAFETY 说明的任意类型强转**；所有 I/O 与入参边界必须通过 Zod Schema 或严格的 Type Guard 收敛，所有数据库查询必须依托 Prisma 强类型（如 `TenantPrisma.*WhereInput`），确保类型端到端严格可推导；
 4. **严禁手写裸 DOM 与原生非受控控件**：界面必须 100% 使用 `@base/ui` (shadcn) 原子与复合套件搭建（如 `Table`, `DatePicker`, `Select`, `Dialog`, `Button`, `DataTable.Workspace` 等），严禁在业务切片内手写原生 `<table>`、原生 `<input type="date">` 或手写零散裸 `div` 布局；
-5. **严禁写操作按钮裸奔（必须受控于 CASL）**：标准列表优先使用 `DataTable`（显式配置 `subject` 自动接管 `create`、`export` 与行操作 `DataTableRowActions`）；非 DataTable 的自定义视图（如树形卡片、独立操作栏）必须通过 `useAbility()` 或 `<AuthGuard action={...} subject={...}>` 声明式守卫进行权限控制，严禁在页面中渲染无权限守卫的写操作按钮（新增、编辑、删除、状态启停用等）；
+5. **严禁写操作按钮裸奔与操作列裸写（必须受控于 CASL 与 DataTableRowActions）**：标准列表优先使用 `DataTable`（显式配置 `subject` 自动接管 `create`、`export`）；**操作列 (id: "actions") 必须 100% 统一使用 `<DataTableRowActions />` 渲染**，严禁手写裸 `<button>`/`<div>` 绕过受控层（门禁静态硬拦截）；非 DataTable 的自定义视图（如树形卡片、独立操作栏）必须通过 `useAbility()` 或 `<AuthGuard action={...} subject={...}>` 声明式守卫进行权限控制，严禁在页面中渲染无权限守卫的写操作按钮（新增、编辑、删除、状态启停用等）；
 6. **严禁破坏运行时与序列化防线（严禁 RSC 跨端透传函数）**：RSC 通过 server-only Query 读取，禁止内部 HTTP 伪接口绕调；RSC 向 Client 组件仅允许传递经序列化的纯数据，**严禁将未标 `"use server"` 的 query 函数或普通服务端函数作为 prop 直接传递给 Client 组件**；Server Action 必须使用 `defineServerAction` 包装并通过 `toPlainData` 彻底消除 Date/Decimal 跨端序列化异常；
 7. **严禁硬编码权限与越权**：认证归 Better Auth（管进门），授权统一由 CASL 强类型判定（管屋内），禁止混淆两者边界；
 8. **严禁绕过租户物理隔离**：PostgreSQL Database-per-tenant 隔离，业务数据必须由 `TenantDbManager` 动态路由，严禁拼接直连连接串或跨租户穿透；

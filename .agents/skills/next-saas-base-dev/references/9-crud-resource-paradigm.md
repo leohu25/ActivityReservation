@@ -470,9 +470,9 @@ export function XxxView({ data, total }: { data: XxxItem[]; total: number }) {
 }
 ```
 
-- **权限 100% 声明式接管（严禁顶层手动计算 `ability.can`）**：
+- **权限 100% 声明式接管（操作列强制使用 DataTableRowActions，严禁顶层手动计算 `ability.can`）**：
   - `DataTable` 根据 `subject` 自动判定并渲染顶部「新增」、「导出」按钮；
-  - `DataTableRowActions` 自动根据当前用户 Ability 判定「查看/编辑/删除/扩展操作」的权限与显隐，外部无需手写多余三元判断或包装 div；
+  - **操作列 (id: "actions") 必须 100% 统一使用 `<DataTableRowActions />` 渲染！** 严禁手写裸 `<button>`/`<div>` 导致权限与确认逻辑裸奔。`DataTableRowActions` 内部自动根据当前用户 Ability 判定「查看/编辑/删除/扩展操作」的权限与显隐，外部无需手写多余三元判断或包装 div，门禁脚本强制拦截任何裸奔操作列；
 - **零向后兼容胶水代码（Pure Controlled Props）**：
   - View 组件严格只接收标准 `{ data, total, ...options }` 受控 props，严禁在组件内部维护 `initialXxx`、`legacyXxx`、`propData` 等向后兼容别名与兜底胶水代码；
 - **状态筛选语义规范**：

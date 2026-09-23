@@ -116,3 +116,58 @@ test("checkUiFile: DataTable onSearch 漏传 keyword 搜索参数，精准硬拦
   const goodIssues = checkUiFile("CustomerView.tsx", goodContent);
   assert.equal(goodIssues.length, 0);
 });
+
+test("checkUiFile: DataTable 操作列使用裸 button 未使用 DataTableRowActions，精准报错拦截", () => {
+  const content = `
+    import { DataTable } from "@base/ui";
+
+    const columns = [
+      {
+        id: "actions",
+        header: "操作",
+        cell: (row) => (
+          <div>
+            <button onClick={() => handleEdit(row)}>编辑</button>
+            <button onClick={() => handleDelete(row)}>删除</button>
+          </div>
+        ),
+      },
+    ];
+  `;
+  const issues = checkUiFile(
+    "src/features/customer/ui/CustomerView.tsx",
+    content,
+  );
+  assert.equal(
+    issues.some((i) => i.type === "RAW_DATATABLE_ACTIONS_COLUMN"),
+    true,
+  );
+});
+
+test("checkUiFile: DataTable 操作列规范使用 DataTableRowActions，检测通过", () => {
+  const content = `
+    import { DataTable, DataTableRowActions } from "@base/ui";
+
+    const columns = [
+      {
+        id: "actions",
+        header: "操作",
+        cell: (row) => (
+          <DataTableRowActions
+            record={row}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        ),
+      },
+    ];
+  `;
+  const issues = checkUiFile(
+    "src/features/customer/ui/CustomerView.tsx",
+    content,
+  );
+  assert.equal(
+    issues.some((i) => i.type === "RAW_DATATABLE_ACTIONS_COLUMN"),
+    false,
+  );
+});
