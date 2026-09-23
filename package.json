@@ -25,6 +25,7 @@
     "db:platform:ensure": "pnpm --filter @tool/db-migrate exec tsx src/cli.ts ensure-platform",
     "db:tenant:reset": "pnpm --filter @tool/db-migrate exec tsx src/cli.ts reset-tenant",
     "db:local:reset": "pnpm --filter @tool/db-migrate exec tsx src/cli.ts reset-tenant",
+    "db:seed:bom": "node scripts/tools/seed-bom-demo.mjs",
     "db:migrate:generate": "pnpm --filter @tool/db-migrate migration:generate",
     "db:migrate:check": "pnpm --filter @tool/db-migrate check",
     "db:migrate:baseline": "pnpm --filter @tool/db-migrate exec tsx src/cli.ts baseline",

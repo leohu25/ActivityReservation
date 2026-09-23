@@ -37,3 +37,11 @@ export const PLATFORM_BASE_SEED_SQL: string = fs.readFileSync(
   path.join(__dirname, "seeds/platform-seed.sql"),
   "utf-8",
 );
+
+/**
+ * 生产 BOM 闭环演示种子数据 SQL (单品加工、组合配方、包装装配)
+ */
+export const BOM_DEMO_SEED_SQL: string = fs.readFileSync(
+  path.join(__dirname, "seeds/bom-demo-seed.sql"),
+  "utf-8",
+);

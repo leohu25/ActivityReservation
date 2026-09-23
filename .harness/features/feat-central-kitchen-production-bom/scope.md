@@ -6,6 +6,9 @@
 - `feature_list.json`
 - `member.local.md`
 - `packages/domains/production-center/**`
+- `packages/runtime/db/**`
+- `scripts/tools/**`
+- `package.json`
 - `apps/tenant/src/app/(dashboard)/(domains)/production/**`
 - `apps/tenant/src/assembly/**`
 - `apps/tenant/scripts/**`
