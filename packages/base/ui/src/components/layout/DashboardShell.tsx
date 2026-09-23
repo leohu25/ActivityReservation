@@ -1,6 +1,6 @@
 "use client";
 
-import type React from "react";
+import * as React from "react";
 import { SidebarProvider, SidebarInset } from "../ui/sidebar";
 import { TabBar, type TabItem } from "./TabBar";
 import { BreadcrumbBar } from "./BreadcrumbBar";
@@ -34,24 +34,38 @@ export function DashboardShell({
 	hideTabBar = false,
 	hideBreadcrumbs = true,
 }: DashboardShellProps) {
+	// 若 header 自身尚未注入 centerSlot 且未隐藏 TabBar，则作为兜底自动挂载
+	const renderedHeader =
+		React.isValidElement(header) &&
+		!hideTabBar &&
+		(header.props as { centerSlot?: React.ReactNode }).centerSlot === undefined
+			? React.cloneElement(
+					header as React.ReactElement<{ centerSlot?: React.ReactNode }>,
+					{
+						centerSlot: (
+							<TabBar homeTab={homeTab} sections={navSections} embedded={true} />
+						),
+					},
+				)
+			: header;
+
 	return (
 		<SidebarProvider
 			style={{ "--sidebar-width": "13.5rem" } as React.CSSProperties}
 			className="h-svh overflow-hidden"
 		>
 			<div className="flex h-svh w-full flex-col bg-background font-sans text-foreground overflow-hidden">
-				{header}
+				{renderedHeader}
 				<div className="flex min-h-0 flex-1 overflow-hidden">
 					{sidebar}
-					<SidebarInset className="min-w-0 flex-1 flex flex-col overflow-hidden bg-background">
-						{!hideTabBar ? <TabBar homeTab={homeTab} sections={navSections} /> : null}
+					<SidebarInset key="sidebar-inset" className="min-w-0 flex-1 flex flex-col overflow-hidden bg-background">
 						<div className="min-w-0 flex-1 overflow-y-auto p-2 md:p-2.5 flex flex-col gap-2">
 							{!hideBreadcrumbs ? (
-								<div className="pb-1">
+								<div key="breadcrumb-bar" className="pb-1">
 									<BreadcrumbBar sections={navSections} />
 								</div>
 							) : null}
-							<div className="min-w-0 flex-1">{children}</div>
+							<div key="page-content" className="min-w-0 flex-1">{children}</div>
 						</div>
 					</SidebarInset>
 				</div>

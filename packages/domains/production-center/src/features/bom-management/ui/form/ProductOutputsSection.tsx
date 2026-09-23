@@ -51,17 +51,24 @@ export function ProductOutputsSection({
 		formOptions.units.find((u) => u.id === primaryUnitId)?.name || primaryUnitId;
 
 	return (
-		<div className="space-y-4">
+		<div className="bg-card rounded-xl border shadow-xs p-4 space-y-3">
+			{/* 区块统一标准头部 */}
+			<div className="border-b pb-1.5 flex items-center justify-between">
+				<h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+					<CheckCircle2 className="size-4 text-blue-600" /> 成品产出与出成率
+				</h2>
+			</div>
+
 			{/* 成品主产出设置 */}
-			<div className="rounded-xl border p-4 bg-muted/20 flex items-center justify-between text-xs">
-				<div className="flex items-center gap-3">
+			<div className="rounded-lg border border-border/80 p-2.5 bg-muted/25 flex items-center justify-between text-xs">
+				<div className="flex items-center gap-2.5">
 					<CheckCircle2 className="size-4 text-blue-600" />
 					<div>
 						<div className="font-bold text-foreground">标准批次主产出成品</div>
 						<div className="text-muted-foreground">{productName}</div>
 					</div>
 				</div>
-				<div className="flex items-center gap-3">
+				<div className="flex items-center gap-2.5">
 					<span className="font-semibold">产出数量:</span>
 					<Input
 						type="number"
@@ -69,14 +76,14 @@ export function ProductOutputsSection({
 						value={primaryQuantity}
 						disabled={isView}
 						onChange={(e) => setPrimaryQuantity(Number(e.target.value))}
-						className="h-9 w-28 text-xs font-mono font-bold text-blue-600"
+						className="h-8 w-24 text-xs font-mono font-bold text-blue-600"
 					/>
 					{isView ? (
-						<div className="h-9 px-3 bg-muted/40 rounded-md border flex items-center font-medium">
+						<div className="h-8 px-2.5 bg-muted/40 rounded-md border flex items-center font-medium">
 							{primaryUnitName}
 						</div>
 					) : (
-						<div className="w-36">
+						<div className="w-32">
 							<Combobox
 								value={primaryUnitId}
 								placeholder="单位"
@@ -92,18 +99,13 @@ export function ProductOutputsSection({
 			</div>
 
 			{/* 副产品多选产出 (观麦原型：多选副产品) */}
-			<div className="rounded-xl border p-4 bg-muted/15 space-y-3 text-xs">
+			<div className="rounded-lg border border-border/80 p-2.5 bg-muted/25 space-y-2 text-xs">
 				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-2.5">
+					<div className="flex items-center gap-2">
 						<Layers className="size-4 text-amber-600" />
-						<div>
-							<div className="font-bold text-foreground">
-								副产品产出清单 (可多选)
-							</div>
-							<div className="text-muted-foreground text-[11px]">
-								切配分割时附带产出的可用副产品物资（如鲜猪皮、精碎肉、青椒碎料等），后续工单报工按需称重登记
-							</div>
-						</div>
+						<span className="font-bold text-foreground">
+							副产品产出清单 (可多选)
+						</span>
 					</div>
 					<Badge variant="outline" className="text-[11px] font-normal">
 						已选 {byProductIds.length} 项副产品
@@ -111,7 +113,7 @@ export function ProductOutputsSection({
 				</div>
 
 				{/* 观麦风格副产品标签与添加器 */}
-				<div className="flex flex-wrap items-center gap-2 pt-1">
+				<div className="flex flex-wrap items-center gap-1.5 pt-0.5">
 					{byProductIds.length === 0 && isView && (
 						<span className="text-muted-foreground text-xs">无副产品</span>
 					)}
@@ -121,7 +123,7 @@ export function ProductOutputsSection({
 							<Badge
 								key={bpId}
 								variant="secondary"
-								className="h-7 px-2.5 gap-1.5 text-xs rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-800"
+								className="h-6 px-2 gap-1 text-xs rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-800"
 							>
 								<span>{prod?.name || bpId}</span>
 								{!isView && (
@@ -130,9 +132,9 @@ export function ProductOutputsSection({
 										variant="ghost"
 										size="icon"
 										onClick={() => handleRemoveByProduct(bpId)}
-										className="size-4 p-0 text-amber-700 dark:text-amber-400 hover:bg-transparent"
+										className="size-3.5 p-0 text-amber-700 dark:text-amber-400 hover:bg-transparent"
 									>
-										<X className="size-3" />
+										<X className="size-2.5" />
 									</Button>
 								)}
 							</Badge>
@@ -140,7 +142,7 @@ export function ProductOutputsSection({
 					})}
 
 					{!isView && (
-						<div className="w-56">
+						<div className="w-48">
 							<Combobox
 								value=""
 								placeholder="+ 添加副产品..."
@@ -158,8 +160,8 @@ export function ProductOutputsSection({
 				field={BomField.TOTAL_YIELD_RATE}
 				action={isView ? "read" : "update"}
 			>
-				<div className="flex items-center justify-between bg-muted/40 p-4 rounded-xl border text-xs">
-					<div className="flex items-center gap-3">
+				<div className="flex items-center justify-between bg-muted/25 p-2.5 rounded-lg border border-border/80 text-xs">
+					<div className="flex items-center gap-2.5">
 						<Switch
 							checked={totalYieldEnabled}
 							disabled={isView}
@@ -175,14 +177,14 @@ export function ProductOutputsSection({
 						</div>
 					</div>
 					{totalYieldEnabled && (
-						<div className="flex items-center gap-2 font-mono">
+						<div className="flex items-center gap-1.5 font-mono">
 							<span className="font-semibold">指标出成率:</span>
 							<Input
 								type="number"
 								value={totalYieldRate}
 								disabled={isView}
 								onChange={(e) => setTotalYieldRate(Number(e.target.value))}
-								className="h-9 w-24 text-xs font-bold text-emerald-600"
+								className="h-8 w-20 text-xs font-bold text-emerald-600"
 							/>
 							<span>%</span>
 						</div>

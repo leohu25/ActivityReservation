@@ -1,6 +1,6 @@
 "use client";
 
-import type React from "react";
+import * as React from "react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -84,6 +84,8 @@ export interface TabBarProps {
 	/** 用于根据 pathname 自动匹配标签名称的导航配置 */
 	readonly sections?: readonly NavSection[];
 	readonly className?: string;
+	/** 是否内嵌于顶栏展示 (Embedded Mode) */
+	readonly embedded?: boolean;
 }
 
 const STORAGE_KEY = "cr_dashboard_opened_tabs";
@@ -137,6 +139,7 @@ export function TabBar({
 	homeTab = DEFAULT_HOME_TAB,
 	sections = [],
 	className,
+	embedded = false,
 }: TabBarProps) {
 	const rawPathname = usePathname();
 	const pathname = rawPathname ?? "";
@@ -508,7 +511,9 @@ export function TabBar({
 	return (
 		<div
 			className={cn(
-				"relative flex h-9 w-full items-center border-b border-border/70 bg-muted/25 px-1.5 select-none shrink-0 gap-1",
+				embedded
+					? "relative flex h-8 w-full items-center bg-transparent px-1 select-none shrink-0 gap-1 min-w-0"
+					: "relative flex h-9 w-full items-center border-b border-border/70 bg-muted/25 px-1.5 select-none shrink-0 gap-1",
 				className,
 			)}
 		>
@@ -544,64 +549,62 @@ export function TabBar({
 					return (
 						<ContextMenu key={tab.path}>
 							<ContextMenuTrigger className="inline-flex shrink-0">
-								<Link
-									ref={(el) => {
-										if (el) {
-											tabElementsRef.current.set(tab.path, el);
-										} else {
-											tabElementsRef.current.delete(tab.path);
-										}
-									}}
-									href={tab.path}
-									onAuxClick={(e) => {
-										if (e.button === 1 && tab.closable) {
-											e.preventDefault();
-											closeTab(tab.path);
-										}
-									}}
-									className={cn(
-										"group relative flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-all select-none",
-										isActive
-											? "bg-background text-foreground shadow-xs border border-border font-semibold"
-											: "bg-background/50 text-muted-foreground border border-border/60 shadow-2xs hover:bg-background/80 hover:text-foreground hover:border-border",
-									)}
-								>
-									{isHome ? (
-										<LayoutDashboard className="size-3.5 shrink-0 opacity-70" />
-									) : (
-										<span
-											className={cn(
-												"size-1.5 rounded-full shrink-0 transition-opacity",
-												isActive
-													? "bg-primary opacity-100"
-													: "bg-muted-foreground/40 opacity-0 group-hover:opacity-100",
-											)}
-										/>
-									)}
-									<span className="truncate max-w-[130px]">{tab.title}</span>
-
-									{tab.closable ? (
-										<button
-											type="button"
-											onClick={(e) => {
+									<Link
+										ref={(el) => {
+											if (el) {
+												tabElementsRef.current.set(tab.path, el);
+											} else {
+												tabElementsRef.current.delete(tab.path);
+											}
+										}}
+										href={tab.path}
+										onAuxClick={(e) => {
+											if (e.button === 1 && tab.closable) {
 												e.preventDefault();
-												e.stopPropagation();
 												closeTab(tab.path);
-											}}
-											className={cn(
-												"size-3.5 rounded-xs p-0 transition-all flex items-center justify-center",
-												isActive
-													? "text-muted-foreground/80 hover:bg-muted hover:text-foreground"
-													: "text-muted-foreground/50 opacity-0 group-hover:opacity-100 hover:!opacity-100 hover:bg-muted hover:text-foreground",
-											)}
-											aria-label={`关闭 ${tab.title}`}
-											title="关闭 (中键或右键亦可)"
-										>
-											<X className="size-3" />
-										</button>
-									) : null}
-								</Link>
-							</ContextMenuTrigger>
+											}
+										}}
+										className={cn(
+											"group relative flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium border select-none cursor-pointer transition-colors duration-150",
+											isActive
+												? "bg-background text-primary shadow-xs border-border/80"
+												: "bg-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground border-transparent",
+										)}
+									>
+										{isHome && (
+											<LayoutDashboard
+												className={cn(
+													"size-3.5 shrink-0 transition-opacity",
+													isActive
+														? "opacity-100 text-primary"
+														: "opacity-70",
+												)}
+											/>
+										)}
+										<span className="truncate max-w-[130px]">{tab.title}</span>
+
+										{tab.closable ? (
+											<button
+												type="button"
+												onClick={(e) => {
+													e.preventDefault();
+													e.stopPropagation();
+													closeTab(tab.path);
+												}}
+												className={cn(
+													"size-4 rounded-full transition-colors flex items-center justify-center cursor-pointer shrink-0 ml-0.5",
+													isActive
+														? "text-muted-foreground hover:bg-muted hover:text-foreground"
+														: "text-muted-foreground/60 hover:bg-muted/60 hover:text-foreground",
+												)}
+												aria-label={`关闭 ${tab.title}`}
+												title="关闭 (中键或右键亦可)"
+											>
+												<X className="size-2.5" />
+											</button>
+										) : null}
+									</Link>
+								</ContextMenuTrigger>
 
 							<ContextMenuContent className="w-40 text-xs">
 								<ContextMenuItem

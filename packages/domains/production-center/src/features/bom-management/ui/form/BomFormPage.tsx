@@ -36,8 +36,8 @@ export function BomFormPage({
 	});
 
 	return (
-		<div className="flex flex-col min-h-screen bg-muted/10">
-			{/* 1. 顶部操作栏积木 (内部使用 AuthGuard 声明式管控权限) */}
+		<div className="flex flex-col h-[calc(100svh-3rem)] -m-2 md:-m-2.5 overflow-hidden bg-background">
+			{/* 1. 顶部操作栏积木：顶格吸附系统顶栏正下方，严丝合缝零缝隙 */}
 			<FormHeader
 				mode={mode}
 				bomId={bomId}
@@ -46,75 +46,76 @@ export function BomFormPage({
 				initialVersionName={initialDetail?.currentVersion.name}
 				isDefault={state.isDefault}
 				bomType={state.bomType}
+				setBomType={state.setBomType}
 				submitting={state.submitting}
 				onSave={state.handleSave}
 				onCancel={() => router?.push(backUrl)}
 				onEdit={() => router?.push(`/production/bom/${bomId}?mode=edit`)}
 			/>
 
-			{/* 2. 主表单多区块积木拼接内容 */}
-			<div className="flex-1 max-w-6xl w-full mx-auto p-8 space-y-8 pb-24">
-				{/* 区块 1：基本信息与 BOM 类型 */}
-				<BasicInfoSection
-					isView={isView}
-					isEdit={isEdit}
-					bomType={state.bomType}
-					setBomType={state.setBomType}
-					productId={state.productId}
-					handleSelectProduct={state.handleSelectProduct}
-					productionLineId={state.productionLineId}
-					setProductionLineId={state.setProductionLineId}
-					name={state.name}
-					setName={state.setName}
-					code={state.code}
-					setCode={state.setCode}
-					description={state.description}
-					setDescription={state.setDescription}
-					initialDetail={initialDetail}
-					formOptions={formOptions}
-				/>
+			{/* 2. 主表单多区块独立滚动视口：滚动完全收敛在操作栏下方，彻底杜绝向上穿透与透光缝隙 */}
+			<div className="flex-1 overflow-y-auto px-5 py-3.5 pb-16">
+				<div className="max-w-6xl w-full mx-auto space-y-3.5">
+					{/* 区块 1：基本信息 */}
+					<BasicInfoSection
+						isView={isView}
+						isEdit={isEdit}
+						productId={state.productId}
+						handleSelectProduct={state.handleSelectProduct}
+						productionLineId={state.productionLineId}
+						setProductionLineId={state.setProductionLineId}
+						name={state.name}
+						setName={state.setName}
+						code={state.code}
+						setCode={state.setCode}
+						description={state.description}
+						setDescription={state.setDescription}
+						initialDetail={initialDetail}
+						formOptions={formOptions}
+					/>
 
-				{/* 区块 2：原料投入明细与配比清单 */}
-				<MaterialInputsSection
-					isView={isView}
-					bomType={state.bomType}
-					isRatioMode={state.isRatioMode}
-					setIsRatioMode={state.setIsRatioMode}
-					inputs={state.inputs}
-					formOptions={formOptions}
-					handleAddInput={state.handleAddInput}
-					handleRemoveInput={state.handleRemoveInput}
-					handleUpdateInput={state.handleUpdateInput}
-				/>
+					{/* 区块 2：原料投入明细与配比清单 */}
+					<MaterialInputsSection
+						isView={isView}
+						bomType={state.bomType}
+						isRatioMode={state.isRatioMode}
+						setIsRatioMode={state.setIsRatioMode}
+						inputs={state.inputs}
+						formOptions={formOptions}
+						handleAddInput={state.handleAddInput}
+						handleRemoveInput={state.handleRemoveInput}
+						handleUpdateInput={state.handleUpdateInput}
+					/>
 
-				{/* 区块 3：成品主产出、联副产品多选与总出成率折算 */}
-				<ProductOutputsSection
-					isView={isView}
-					productId={state.productId}
-					primaryQuantity={state.primaryQuantity}
-					setPrimaryQuantity={state.setPrimaryQuantity}
-					primaryUnitId={state.primaryUnitId}
-					setPrimaryUnitId={state.setPrimaryUnitId}
-					byProductIds={state.byProductIds}
-					byProductCandidateOptions={state.byProductCandidateOptions}
-					handleAddByProduct={state.handleAddByProduct}
-					handleRemoveByProduct={state.handleRemoveByProduct}
-					totalYieldEnabled={state.totalYieldEnabled}
-					setTotalYieldEnabled={state.setTotalYieldEnabled}
-					totalYieldRate={state.totalYieldRate}
-					setTotalYieldRate={state.setTotalYieldRate}
-					formOptions={formOptions}
-				/>
+					{/* 区块 3：成品主产出、联副产品多选与总出成率折算 */}
+					<ProductOutputsSection
+						isView={isView}
+						productId={state.productId}
+						primaryQuantity={state.primaryQuantity}
+						setPrimaryQuantity={state.setPrimaryQuantity}
+						primaryUnitId={state.primaryUnitId}
+						setPrimaryUnitId={state.setPrimaryUnitId}
+						byProductIds={state.byProductIds}
+						byProductCandidateOptions={state.byProductCandidateOptions}
+						handleAddByProduct={state.handleAddByProduct}
+						handleRemoveByProduct={state.handleRemoveByProduct}
+						totalYieldEnabled={state.totalYieldEnabled}
+						setTotalYieldEnabled={state.setTotalYieldEnabled}
+						totalYieldRate={state.totalYieldRate}
+						setTotalYieldRate={state.setTotalYieldRate}
+						formOptions={formOptions}
+					/>
 
-				{/* 区块 4：工艺路线工序清单 */}
-				<OperationRoutesSection
-					isView={isView}
-					operations={state.operations}
-					formOptions={formOptions}
-					handleAddOperation={state.handleAddOperation}
-					handleRemoveOperation={state.handleRemoveOperation}
-					handleUpdateOperation={state.handleUpdateOperation}
-				/>
+					{/* 区块 4：工艺路线工序清单 */}
+					<OperationRoutesSection
+						isView={isView}
+						operations={state.operations}
+						formOptions={formOptions}
+						handleAddOperation={state.handleAddOperation}
+						handleRemoveOperation={state.handleRemoveOperation}
+						handleUpdateOperation={state.handleUpdateOperation}
+					/>
+				</div>
 			</div>
 		</div>
 	);

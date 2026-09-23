@@ -1,7 +1,23 @@
-import { ArrowLeft, Edit, Save, Check } from "lucide-react";
-import { AuthGuard, Button, Badge, ConfirmDialog, type FormPageMode } from "@base/ui";
+import { Edit, Save, Check } from "lucide-react";
+import {
+	AuthGuard,
+	Button,
+	Badge,
+	ConfirmDialog,
+	DocumentHeader,
+	Tabs,
+	TabsList,
+	TabsTrigger,
+	type FormPageMode,
+} from "@base/ui";
 import { StandardAction, useAbility } from "@base/authorization";
-import { BomSubject, BomAction, BomField, type BomType } from "../../contract";
+import {
+	BOM_TYPES,
+	BomSubject,
+	BomAction,
+	BomField,
+	type BomType,
+} from "../../contract";
 
 export interface FormHeaderProps {
 	readonly mode: FormPageMode;
@@ -12,6 +28,7 @@ export interface FormHeaderProps {
 	readonly isDefault: boolean;
 	readonly bomType: BomType;
 	readonly submitting: boolean;
+	readonly setBomType?: (type: BomType) => void;
 	readonly onSave: (isDraft: boolean) => void;
 	readonly onCancel: () => void;
 	readonly onEdit: () => void;
@@ -25,51 +42,76 @@ export function FormHeader({
 	isDefault,
 	bomType,
 	submitting,
+	setBomType,
 	onSave,
 	onCancel,
 	onEdit,
 }: FormHeaderProps) {
 	const isView = mode === "view";
 	const isEdit = mode === "edit";
+	const isCreate = mode === "create";
 
 	const ability = useAbility();
 	const canReadName = ability.can("read", BomSubject, BomField.NAME);
-	const displayName = canReadName ? (name || initialPrimaryProductName || initialVersionName) : initialPrimaryProductName;
+	const displayName = canReadName
+		? name || initialPrimaryProductName || initialVersionName
+		: initialPrimaryProductName;
+
+	const titleText = isView
+		? `BOM 方案详情: ${displayName || ""}`
+		: isEdit
+			? `编辑生产 BOM: ${displayName || ""}`
+			: "新建生产 BOM";
 
 	return (
-		<div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b px-8 py-3.5 flex items-center justify-between shadow-xs">
-			<div className="flex items-center gap-4">
-				<Button
-					type="button"
-					variant="ghost"
-					size="sm"
-					onClick={onCancel}
-					className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-				>
-					<ArrowLeft className="size-4" /> 返回
-				</Button>
-				<div className="h-4 w-px bg-border" />
-				<div className="flex items-center gap-2">
-					<span className="text-sm font-bold text-foreground">
-						{isView
-							? `BOM 方案详情: ${displayName || ""}`
-							: isEdit
-								? `编辑生产 BOM: ${displayName || ""}`
-								: "新建生产 BOM"}
-					</span>
-					{isDefault && (
-						<Badge
-							variant="default"
-							size="sm"
-							className="bg-blue-600 hover:bg-blue-600 text-[10px] py-0 h-4 px-1.5"
-						>
-							默认BOM
-						</Badge>
-					)}
+		<DocumentHeader
+			onBack={onCancel}
+			backText="返回"
+			title={titleText}
+			badges={
+				isDefault ? (
+					<Badge
+						variant="default"
+						size="sm"
+						className="bg-blue-600 hover:bg-blue-600 text-xs py-0 h-5 px-2"
+					>
+						默认BOM
+					</Badge>
+				) : null
+			}
+			/* 中部插槽：官方 Tabs 分段控制器注入，自带平滑物理滑块动画与键盘无障碍切换 */
+			slotMiddle={
+				isCreate && setBomType ? (
+					<Tabs
+						value={bomType}
+						onValueChange={(val) => val && setBomType(val as BomType)}
+					>
+						<TabsList className="h-7.5 p-0.5 bg-muted/70 border border-border/70 rounded-md">
+							<TabsTrigger
+								value={BOM_TYPES.PROCESSING}
+								className="h-6.5 px-2.5 text-xs rounded-xs font-medium transition-transform duration-150 hover:scale-105 active:scale-95 cursor-pointer data-active:font-bold data-active:text-blue-600 dark:data-active:text-blue-400"
+							>
+								单品BOM
+							</TabsTrigger>
+							<TabsTrigger
+								value={BOM_TYPES.FORMULA}
+								className="h-6.5 px-2.5 text-xs rounded-xs font-medium transition-transform duration-150 hover:scale-105 active:scale-95 cursor-pointer data-active:font-bold data-active:text-blue-600 dark:data-active:text-blue-400"
+							>
+								组合BOM
+							</TabsTrigger>
+							<TabsTrigger
+								value={BOM_TYPES.PACKAGING}
+								className="h-6.5 px-2.5 text-xs rounded-xs font-medium transition-transform duration-150 hover:scale-105 active:scale-95 cursor-pointer data-active:font-bold data-active:text-blue-600 dark:data-active:text-blue-400"
+							>
+								包装BOM
+							</TabsTrigger>
+						</TabsList>
+					</Tabs>
+				) : (
 					<Badge
 						variant="outline"
 						size="sm"
-						className="text-[10px] py-0 h-4 px-1.5"
+						className="text-xs py-0 h-5 px-2 font-normal"
 					>
 						{bomType === "PROCESSING"
 							? "单品加工"
@@ -77,17 +119,16 @@ export function FormHeader({
 								? "组合配方"
 								: "包装装配"}
 					</Badge>
-				</div>
-			</div>
-
-			<div className="flex items-center gap-2.5">
-				{isView ? (
+				)
+			}
+			slotActions={
+				isView ? (
 					<AuthGuard action={StandardAction.UPDATE} subject={BomSubject}>
 						<Button
 							type="button"
 							size="sm"
 							onClick={onEdit}
-							className="h-8 text-xs gap-1.5"
+							className="h-8 text-xs gap-1.5 px-3 transition-transform duration-150 hover:scale-105 active:scale-95 cursor-pointer"
 						>
 							<Edit className="size-3.5" /> 编辑方案
 						</Button>
@@ -100,7 +141,7 @@ export function FormHeader({
 							size="sm"
 							onClick={onCancel}
 							disabled={submitting}
-							className="h-8 text-xs"
+							className="h-8 text-xs px-3 transition-transform duration-150 hover:scale-105 active:scale-95 cursor-pointer"
 						>
 							取消
 						</Button>
@@ -114,7 +155,7 @@ export function FormHeader({
 								size="sm"
 								onClick={() => onSave(true)}
 								disabled={submitting}
-								className="h-8 text-xs gap-1.5 min-w-[80px]"
+								className="h-8 text-xs gap-1.5 px-3 min-w-[76px] transition-transform duration-150 hover:scale-105 active:scale-95 cursor-pointer"
 							>
 								<Save className="size-3.5 text-muted-foreground" />
 								{submitting ? "保存中..." : "保存草稿"}
@@ -127,7 +168,7 @@ export function FormHeader({
 										type="button"
 										size="sm"
 										disabled={submitting}
-										className="h-8 text-xs gap-1.5 min-w-[88px] bg-blue-600 hover:bg-blue-700 text-white"
+										className="h-8 text-xs gap-1.5 px-3.5 min-w-[84px] bg-blue-600 hover:bg-blue-700 text-white transition-transform duration-150 hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
 									>
 										<Check className="size-3.5" />
 										{submitting
@@ -153,8 +194,8 @@ export function FormHeader({
 							/>
 						</AuthGuard>
 					</>
-				)}
-			</div>
-		</div>
+				)
+			}
+		/>
 	);
 }

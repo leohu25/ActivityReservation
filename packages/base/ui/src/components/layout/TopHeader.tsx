@@ -27,6 +27,8 @@ export interface TopHeaderProps {
 	readonly logoText?: string;
 	/** 系统 Logo 图片地址 (若提供则优先于默认系统 Logo 渲染；默认使用 '/logo/logo.png') */
 	readonly logoUrl?: string | null;
+	/** 顶部栏中间动态插槽（用于嵌入多标签页 TabBar 或业务全局检索） */
+	readonly centerSlot?: ReactNode;
 }
 
 /**
@@ -43,6 +45,7 @@ export function TopHeader({
 	title,
 	logoText,
 	logoUrl,
+	centerSlot,
 }: TopHeaderProps) {
 	const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -81,8 +84,8 @@ export function TopHeader({
 	const effectiveLogoUrl = logoUrl ?? "/logo/logo.png";
 
 	return (
-		<header className="sticky top-0 z-40 flex h-12 w-full items-center justify-between border-b border-sidebar-border bg-sidebar px-3 text-sidebar-foreground md:px-4">
-			<div className="flex min-w-0 items-center gap-2.5 md:gap-3">
+		<header className="sticky top-0 z-40 flex h-12 w-full items-center justify-between border-b border-sidebar-border bg-sidebar px-3 text-sidebar-foreground md:px-4 gap-2">
+			<div className="flex shrink-0 items-center gap-2.5 md:gap-3">
 				{showSidebarTrigger ? (
 					<SidebarTrigger className="-ml-1 h-7 w-7" />
 				) : null}
@@ -120,6 +123,15 @@ export function TopHeader({
 					</div>
 				) : null}
 			</div>
+
+			{/* 中部核心插槽：用于无缝嵌入 TabBar 多标签页或全局搜索栏 */}
+			{centerSlot ? (
+				<div className="flex-1 min-w-0 flex items-center px-1 overflow-hidden">
+					{centerSlot}
+				</div>
+			) : (
+				<div className="flex-1" />
+			)}
 
 			<div className="flex shrink-0 items-center gap-1.5 md:gap-2">
 				{user ? (

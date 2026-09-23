@@ -67,7 +67,7 @@ function InputTableRow({
 
 	return (
 		<TableRow>
-			<TableCell className="p-3">
+			<TableCell className="py-1.5 px-3">
 				{isView ? (
 					<div className="font-medium">{productName}</div>
 				) : (
@@ -82,7 +82,7 @@ function InputTableRow({
 					/>
 				)}
 			</TableCell>
-			<TableCell className="p-3">
+			<TableCell className="py-1.5 px-3">
 				<Input
 					type="number"
 					step="0.01"
@@ -91,10 +91,10 @@ function InputTableRow({
 					onChange={(e) =>
 						onUpdate(idx, isRatioMode ? "ratio" : "quantity", e.target.value)
 					}
-					className="h-9 text-xs font-mono"
+					className="h-8 text-xs font-mono"
 				/>
 			</TableCell>
-			<TableCell className="p-3">
+			<TableCell className="py-1.5 px-3">
 				{isView ? (
 					<div className="font-medium text-xs">{unitName}</div>
 				) : (
@@ -109,7 +109,7 @@ function InputTableRow({
 					/>
 				)}
 			</TableCell>
-			<TableCell className="p-3">
+			<TableCell className="py-1.5 px-3">
 				{isView ? (
 					<div className="font-medium text-xs">{roleLabel}</div>
 				) : (
@@ -128,26 +128,26 @@ function InputTableRow({
 				)}
 			</TableCell>
 			{canReadCookedYield && (
-				<TableCell className="p-3">
+				<TableCell className="py-1.5 px-3">
 					<Input
 						type="number"
 						value={inp.cookedYieldRate}
 						disabled={isView || !canWriteCookedYield}
 						onChange={(e) => onUpdate(idx, "cookedYieldRate", e.target.value)}
-						className="h-9 text-xs font-mono"
+						className="h-8 text-xs font-mono"
 					/>
 				</TableCell>
 			)}
 			{!isView && bomType !== BOM_TYPES.PROCESSING && (
-				<TableCell className="p-3 text-center">
+				<TableCell className="py-1.5 px-3 text-center">
 					<Button
 						type="button"
 						variant="ghost"
 						size="icon"
 						onClick={() => onRemove(idx)}
-						className="size-8 text-destructive hover:bg-destructive/10"
+						className="size-7 text-destructive hover:bg-destructive/10"
 					>
-						<Trash2 className="size-4" />
+						<Trash2 className="size-3.5" />
 					</Button>
 				</TableCell>
 			)}
@@ -174,18 +174,13 @@ export function MaterialInputsSection({
 	const canWriteCookedYield = ability.can(isView ? "read" : "update", BomSubject, BomField.DEFAULT_COOKED_YIELD_RATE);
 
 	return (
-		<div className="bg-card rounded-xl border shadow-sm p-6 space-y-6">
-			<div className="border-b pb-3 flex items-center justify-between">
-				<div>
-					<h2 className="text-base font-bold text-foreground flex items-center gap-2">
-						<Box className="size-4 text-blue-600" /> 原料投入与配比清单
-					</h2>
-					<p className="text-xs text-muted-foreground mt-0.5">
-						配置生产所需的原材料毛投入量、配方占比与物料角色
-					</p>
-				</div>
+		<div className="bg-card rounded-xl border shadow-xs p-4 space-y-3">
+			<div className="border-b pb-1.5 flex items-center justify-between">
+				<h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+					<Box className="size-4 text-blue-600" /> 原料投入与配比清单
+				</h2>
 				{bomType !== BOM_TYPES.PROCESSING && !isView && (
-					<div className="flex items-center gap-3 text-xs bg-muted/40 px-3 py-1.5 rounded-lg border">
+					<div className="flex items-center gap-2.5 text-xs bg-muted/40 px-2.5 py-1 rounded-lg border">
 						<span className="font-semibold">BOM占比模式:</span>
 						<Switch checked={isRatioMode} onCheckedChange={setIsRatioMode} />
 						<span className="text-muted-foreground">
@@ -196,8 +191,8 @@ export function MaterialInputsSection({
 			</div>
 
 			{/* 原料投入明细表 */}
-			<div className="rounded-xl border overflow-hidden">
-				<div className="bg-muted/40 px-4 py-3 border-b flex items-center justify-between">
+			<div className="rounded-lg border overflow-hidden">
+				<div className="bg-muted/40 px-3.5 py-2 border-b flex items-center justify-between">
 					<span className="text-xs font-bold text-foreground">原料投入行</span>
 					{bomType !== BOM_TYPES.PROCESSING && !isView && (
 						<Button
@@ -205,34 +200,34 @@ export function MaterialInputsSection({
 							variant="outline"
 							size="sm"
 							onClick={handleAddInput}
-							className="h-7 text-xs gap-1"
+							className="h-6.5 px-2 text-xs gap-1"
 						>
-							<Plus className="size-3.5" /> 添加原料行
+							<Plus className="size-3" /> 添加原料行
 						</Button>
 					)}
 				</div>
 				<Table className="w-full text-xs">
 					<TableHeader className="bg-muted/20">
 						<TableRow>
-							<TableHead className="py-3 px-4 font-semibold w-72">
+							<TableHead className="py-2 px-3 font-semibold w-72">
 								投入物料商品
 							</TableHead>
-							<TableHead className="py-3 px-4 font-semibold w-36">
+							<TableHead className="py-2 px-3 font-semibold w-36">
 								{isRatioMode ? "配方占比(%)" : "标准毛投入"}
 							</TableHead>
-							<TableHead className="py-3 px-4 font-semibold w-36">
+							<TableHead className="py-2 px-3 font-semibold w-36">
 								投入单位
 							</TableHead>
-							<TableHead className="py-3 px-4 font-semibold w-32">
+							<TableHead className="py-2 px-3 font-semibold w-32">
 								物料角色
 							</TableHead>
 							{canReadCookedYield && (
-								<TableHead className="py-3 px-4 font-semibold w-32">
+								<TableHead className="py-2 px-3 font-semibold w-32">
 									熟出成率(%)
 								</TableHead>
 							)}
 							{!isView && bomType !== BOM_TYPES.PROCESSING && (
-								<TableHead className="py-3 px-4 text-center w-16">操作</TableHead>
+								<TableHead className="py-2 px-3 text-center w-16">操作</TableHead>
 							)}
 						</TableRow>
 					</TableHeader>
