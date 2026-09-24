@@ -15,6 +15,7 @@
     "dev": "turbo run dev",
     "dev:control": "turbo run dev --filter=control",
     "dev:tenant": "turbo run dev --filter=tenant",
+    "dev:mobile": "turbo run dev --filter=mobile",
     "build": "turbo run build",
     "check": "turbo run check",
     "test": "turbo run test",
