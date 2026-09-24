@@ -100,6 +100,7 @@ model ProductCategory {
 
   @@index([parentProductCategoryId])
   @@index([status])
+  @@index([deptId])
   @@map("product_category")
 }
 
@@ -189,6 +190,7 @@ model Product {
   @@index([productKind, isDeleted, status])
   @@index([inventoryUnitId])
   @@index([status])
+  @@index([deptId])
   @@map("product")
 }
 
