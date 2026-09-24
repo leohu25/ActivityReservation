@@ -8,17 +8,20 @@ import React, {
 	useRef,
 	type ReactNode,
 } from "react";
-import type { z } from "zod";
-import { ArrowLeft, Save, RotateCcw, Loader2 } from "lucide-react";
+import { z } from "zod";
+import { Save, RotateCcw, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { FormFields, type FormFieldSchema } from "./FormFields";
 import { FormBanner } from "./FormLayout";
 import { DetailTable, type DetailTableColumn } from "../data-table/DetailTable";
+import { DocumentHeader } from "../layout/DocumentHeader";
+import { AuthGuard } from "../auth/AuthGuard";
 import { toast } from "../feedback/Toast";
 import { useUiAbility, type UiAbilityLike } from "../auth";
 import { updateTabTitle, closeCurrentTab } from "../layout/TabBar";
 import { useSafeRouter } from "../../lib/use-safe-router";
+import { formatErrorMessage } from "@base/shared";
 import { cn } from "../../lib/utils";
 
 export type FormPageMode = "create" | "edit" | "view";
@@ -73,8 +76,8 @@ export interface FormPageProps<
 		prevValues: TValues,
 	) => Partial<TValues> | void;
 
-	// Zod 运行时强类型校验
-	readonly schema?: z.ZodType<TValues> | z.ZodType<any>;
+	// Zod 运行时强类型校验 (强制单一事实源，驱动表单合法性校验与字段标红)
+	readonly schema: z.ZodType<TValues> | z.ZodType<any>;
 
 	// 内置明细表集成 (DetailTable)
 	readonly detailConfig?: FormPageDetailConfig<TItem>;
@@ -119,6 +122,12 @@ export interface FormPageProps<
 	readonly columns?: 2 | 3 | 4;
 	readonly stickyHeader?: boolean;
 	readonly stickyFooter?: boolean;
+	/** 操作动作栏位置：默认 'top' 整合至 DocumentHeader 顶栏，亦支持 'bottom' 或 'both' */
+	readonly actionsPlacement?: "top" | "bottom" | "both";
+	/** DocumentHeader 中部扩展插槽 (如类型分段 Tabs) */
+	readonly slotMiddle?: ReactNode;
+	/** DocumentHeader 右侧操作区插槽 (完全自定义替换默认按钮组) */
+	readonly slotActions?: ReactNode;
 	readonly updateTabTitle?: boolean;
 	readonly tabTitle?: string;
 	readonly className?: string;
@@ -193,7 +202,10 @@ export function FormPage<
 	extraActions = EMPTY_ACTIONS,
 	columns = 3,
 	stickyHeader = true,
-	stickyFooter = true,
+	stickyFooter = false,
+	actionsPlacement = "top",
+	slotMiddle,
+	slotActions: customSlotActions,
 	updateTabTitle: enableUpdateTabTitle = true,
 	tabTitle,
 	className,
@@ -226,6 +238,7 @@ export function FormPage<
 	const [errors, setErrors] = useState<
 		Partial<Record<keyof TValues & string, string>>
 	>({});
+	const [itemCellErrors, setItemCellErrors] = useState<Record<string, string>>({});
 	const [submitting, setSubmitting] = useState(false);
 
 	const prevValuesSerializedRef = useRef<string>(safeSerialize(initialValues));
@@ -344,6 +357,20 @@ export function FormPage<
 			.filter((s) => s.fields.length > 0);
 	}, [sections, filterAndDecorateField]);
 
+	// 收集当前界面真正可见的字段名称集合，供动态必填校验与提交过滤使用
+	const visibleFieldNames = useMemo(() => {
+		const names = new Set<string>();
+		for (const f of activeFields) {
+			names.add(f.name);
+		}
+		for (const s of activeSections) {
+			for (const f of s.fields) {
+				names.add(f.name);
+			}
+		}
+		return names;
+	}, [activeFields, activeSections]);
+
 	const handleFieldChange = useCallback(
 		(name: string, value: unknown) => {
 			setValues((prev) => {
@@ -386,43 +413,114 @@ export function FormPage<
 		if (e) e.preventDefault();
 		if (isView) return;
 
+		// 1. 如果配置了 detailConfig.minRows，先校验明细最低行数
+		if (
+			activeDetailConfig &&
+			typeof activeDetailConfig.minRows === "number" &&
+			activeDetailConfig.minRows > 0 &&
+			items.length < activeDetailConfig.minRows
+		) {
+			toast.error(
+				activeDetailConfig.minRows === 1
+					? "明细条目至少需要添加一行数据"
+					: `明细条目至少需要添加 ${activeDetailConfig.minRows} 行数据`,
+			);
+			return;
+		}
+
 		const currentValues = valuesRef.current;
 		const nextErrors: Partial<Record<keyof TValues & string, string>> = {};
+		const nextItemErrors: Record<string, string> = {};
+		let detailArrayErrorMessage: string | null = null;
 
+		// 2. 主表 schema 校验（支持包含 items 数组或仅有主表字段）
 		if (effectiveSchema) {
-			const result = effectiveSchema.safeParse(currentValues);
+			const fullPayload = activeDetailConfig
+				? { ...currentValues, items }
+				: currentValues;
+			const result = effectiveSchema.safeParse(fullPayload);
 			if (!result.success) {
 				const issues = result.error.issues;
 				for (const issue of issues) {
-					const fieldKey = issue.path[0] as keyof TValues & string;
-					if (fieldKey && !nextErrors[fieldKey]) {
-						nextErrors[fieldKey] = issue.message;
+					const rootKey = String(issue.path[0] ?? "");
+					// 处理 items 数组字段的错误
+					if (rootKey === "items") {
+						if (issue.path.length >= 3 && typeof issue.path[1] === "number") {
+							const rowIdx = issue.path[1];
+							const fieldId = String(issue.path[2]);
+							const key = `${rowIdx}.${fieldId}`;
+							if (!nextItemErrors[key]) {
+								nextItemErrors[key] = issue.message;
+							}
+						} else if (!detailArrayErrorMessage) {
+							detailArrayErrorMessage = issue.message;
+						}
+						continue;
+					}
+
+					// 豁免逻辑：若当前启用了受控主体权限 (subject)，且该字段被 HIDDEN 彻底隐藏（不在可见字段集合），自动豁免该字段的校验错误
+					if (
+						subject &&
+						effectiveAbility &&
+						!visibleFieldNames.has(rootKey)
+					) {
+						continue;
+					}
+					if (rootKey && !nextErrors[rootKey as keyof TValues & string]) {
+						nextErrors[rootKey as keyof TValues & string] = issue.message;
 					}
 				}
 			}
 		}
 
+		// 3. 独立明细行 schema 校验
 		if (activeDetailConfig && effectiveItemsSchema) {
-			const itemsResult = effectiveItemsSchema.safeParse(items);
+			const arraySchema =
+				effectiveItemsSchema instanceof z.ZodArray
+					? effectiveItemsSchema
+					: z.array(effectiveItemsSchema);
+			const itemsResult = arraySchema.safeParse(items);
 			if (!itemsResult.success) {
-				toast.error(
-					`明细表校验未通过: ${itemsResult.error.issues[0]?.message || "数据有误"}`,
-				);
-				return;
+				for (const issue of itemsResult.error.issues) {
+					const rowIdx = issue.path[0];
+					const fieldId = issue.path[1];
+					if (typeof rowIdx === "number" && fieldId !== undefined) {
+						const key = `${rowIdx}.${String(fieldId)}`;
+						if (!nextItemErrors[key]) {
+							nextItemErrors[key] = issue.message;
+						}
+					} else if (!detailArrayErrorMessage) {
+						detailArrayErrorMessage = issue.message;
+					}
+				}
 			}
 		}
 
-		if (Object.keys(nextErrors).length > 0) {
+		if (
+			Object.keys(nextErrors).length > 0 ||
+			Object.keys(nextItemErrors).length > 0 ||
+			detailArrayErrorMessage
+		) {
 			setErrors(nextErrors);
-			toast.error("表单校验失败，请检查标红字段");
+			setItemCellErrors(nextItemErrors);
+			if (detailArrayErrorMessage && Object.keys(nextItemErrors).length === 0) {
+				toast.error(detailArrayErrorMessage);
+			} else {
+				toast.error("表单数据校验未通过，请检查标红提示项");
+			}
 			return;
 		}
+
+		setItemCellErrors({});
 
 		if (!onSubmit) return;
 
 		setSubmitting(true);
 		try {
 			await onSubmit(currentValues, { items: [...items] });
+		} catch (err: unknown) {
+			const msg = formatErrorMessage(err, "保存单据失败");
+			toast.error(msg);
 		} finally {
 			setSubmitting(false);
 		}
@@ -432,78 +530,149 @@ export function FormPage<
 		submitText ||
 		(mode === "create" ? "立即保存" : mode === "edit" ? "保存更改" : "确认");
 
+	const renderActionButtons = (size: "sm" | "default" = "sm") => (
+		<div className="flex items-center gap-2 shrink-0">
+			{headerExtra}
+
+			{extraActions.map((act) => (
+				<Button
+					key={act.key}
+					type="button"
+					size={size}
+					variant={act.variant || "outline"}
+					onClick={() => act.onClick(values)}
+					disabled={submitting}
+					className="h-8 text-xs cursor-pointer"
+				>
+					{act.label}
+				</Button>
+			))}
+
+			{!isView ? (
+				<Button
+					type="button"
+					size={size}
+					variant="ghost"
+					onClick={handleReset}
+					disabled={submitting}
+					className="h-8 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+					title="重置修改"
+				>
+					<RotateCcw className="size-3.5 mr-1" />
+					重置
+				</Button>
+			) : null}
+
+			<Button
+				type="button"
+				size={size}
+				variant="outline"
+				onClick={handleBack}
+				disabled={submitting}
+				className="h-8 text-xs cursor-pointer"
+			>
+				{cancelText}
+			</Button>
+
+			{!isView && onSubmit ? (
+				subject ? (
+					<AuthGuard action={mode === "edit" ? "update" : "create"} subject={subject}>
+						<Button
+							type="button"
+							size={size}
+							variant="default"
+							onClick={() => handleSubmit()}
+							disabled={submitting}
+							className="h-8 text-xs min-w-[5.5rem] cursor-pointer shadow-xs"
+						>
+							{submitting ? (
+								<Loader2 className="size-3.5 mr-1.5 animate-spin" />
+							) : (
+								<Save className="size-3.5 mr-1.5" />
+							)}
+							{defaultSubmitText}
+						</Button>
+					</AuthGuard>
+				) : (
+					<Button
+						type="button"
+						size={size}
+						variant="default"
+						onClick={() => handleSubmit()}
+						disabled={submitting}
+						className="h-8 text-xs min-w-[5.5rem] cursor-pointer shadow-xs"
+					>
+						{submitting ? (
+							<Loader2 className="size-3.5 mr-1.5 animate-spin" />
+						) : (
+							<Save className="size-3.5 mr-1.5" />
+						)}
+						{defaultSubmitText}
+					</Button>
+				)
+			) : null}
+		</div>
+	);
+
+	const topActions =
+		customSlotActions ||
+		(actionsPlacement === "top" || actionsPlacement === "both"
+			? renderActionButtons("sm")
+			: headerExtra);
+
+	const headerBadges = (
+		<div className="flex items-center gap-1.5 shrink-0">
+			{badge ? (
+				<Badge
+					variant="secondary"
+					className="font-mono text-[10px] px-1.5 py-0 h-4 uppercase tracking-wider shrink-0"
+				>
+					{badge}
+				</Badge>
+			) : null}
+
+			{documentNumber ? (
+				<span className="font-mono text-[11px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/60">
+					{documentNumber}
+				</span>
+			) : null}
+
+			{statusBadge}
+		</div>
+	);
+
 	return (
 		<div
 			className={cn(
-				"flex flex-col min-h-[calc(100vh-8rem)] w-full bg-background text-foreground animate-in fade-in-50 duration-150",
+				"flex flex-col h-full w-full bg-background text-foreground overflow-hidden",
 				className,
 			)}
 		>
-			{/* 1. 单据顶部工具栏 (Header - 紧凑结构) */}
-			<div
-				className={cn(
-					"border-b border-border/70 bg-background/95 backdrop-blur-xs px-5 py-2 z-10 transition-all",
-					stickyHeader && "sticky top-0 shadow-2xs",
-				)}
-			>
-				<div className="flex items-center justify-between gap-2.5 min-h-7">
-					{/* 标题、返回与徽章信息 */}
-					<div className="flex items-center gap-2.5 min-w-0">
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							onClick={handleBack}
-							className="size-7 p-0 text-muted-foreground hover:text-foreground shrink-0"
-							title={backText}
-						>
-							<ArrowLeft className="size-3.5" />
-							<span className="sr-only">{backText}</span>
-						</Button>
-
+			{/* 1. 单据顶部工具栏：自然顶格贴边吸附 */}
+			<DocumentHeader
+				onBack={handleBack}
+				backText={backText}
+				title={
+					resolvedDescription ? (
 						<div className="flex flex-col min-w-0 justify-center">
-							<div className="flex items-center gap-2 flex-wrap">
-								{badge ? (
-									<Badge
-										variant="secondary"
-										className="font-mono text-[10px] px-1.5 py-0 h-4 uppercase tracking-wider shrink-0"
-									>
-										{badge}
-									</Badge>
-								) : null}
-
-								<h1 className="text-sm sm:text-base font-semibold tracking-tight text-foreground truncate">
-									{resolvedTitle}
-								</h1>
-
-								{documentNumber ? (
-									<span className="font-mono text-[11px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/60">
-										{documentNumber}
-									</span>
-								) : null}
-
-								{statusBadge}
-							</div>
-
-							{resolvedDescription ? (
-								<p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-									{resolvedDescription}
-								</p>
-							) : null}
+							<span className="truncate">{resolvedTitle}</span>
+							<span className="text-[11px] font-normal text-muted-foreground truncate">
+								{resolvedDescription}
+							</span>
 						</div>
-					</div>
+					) : (
+						resolvedTitle
+					)
+				}
+				badges={headerBadges}
+				slotMiddle={slotMiddle}
+				slotActions={topActions}
+				className={cn(stickyHeader && "sticky top-0 z-20 shrink-0")}
+			/>
 
-					{/* 顶部右侧扩展插槽（主操作按钮收敛于底部操作栏） */}
-					{headerExtra ? (
-						<div className="flex items-center gap-2 shrink-0">
-							{headerExtra}
-						</div>
-					) : null}
-				</div>
-			</div>
-
-			{/* 2. 单据内容工作区 (Body) */}
-			<div className="flex-1 p-6 space-y-6 max-w-7xl w-full mx-auto">
+			{/* 2. 单据内容独立滚动视口：滚动完全收敛在操作栏下方，彻底杜绝向上穿透与透光缝隙 */}
+			<div className="flex-1 overflow-y-auto p-4 md:p-6 pb-20">
+				<div className="max-w-6xl w-full mx-auto space-y-6">
 				{/* 提示横幅 */}
 				{banner || bannerTitle ? (
 					<FormBanner
@@ -541,6 +710,8 @@ export function FormPage<
 									errors={errors}
 									onChange={handleFieldChange}
 									columns={section.columns || columns}
+									subject={subject}
+									action={mode === "edit" ? "update" : "create"}
 								/>
 							</div>
 						))}
@@ -556,6 +727,8 @@ export function FormPage<
 							errors={errors}
 							onChange={handleFieldChange}
 							columns={columns}
+							subject={subject}
+							action={mode === "edit" ? "update" : "create"}
 						/>
 					</div>
 				) : null}
@@ -579,13 +752,17 @@ export function FormPage<
 						<DetailTable<TItem>
 							columns={activeDetailConfig.columns}
 							data={items}
-							onChange={onItemsChange || setInternalItems}
+							onChange={(next) => {
+								setItemCellErrors({});
+								(onItemsChange || setInternalItems)(next);
+							}}
 							onAddRow={activeDetailConfig.onAddRow}
 							addText={activeDetailConfig.addText}
 							minRows={activeDetailConfig.minRows}
 							readOnly={isView || activeDetailConfig.readOnly}
 							emptyText={activeDetailConfig.emptyText}
 							summary={activeDetailConfig.summary}
+							cellErrors={itemCellErrors}
 						/>
 					</div>
 				) : null}
@@ -598,73 +775,18 @@ export function FormPage<
 				{typeof children === "function"
 					? children({ values, back: handleBack, loading: submitting })
 					: children}
+				</div>
 			</div>
 
-			{/* 3. 单据底部操作栏 (Sticky Footer) */}
-			{stickyFooter ? (
+			{/* 3. 单据底部操作栏 (可选，当 actionsPlacement 包含 bottom 时渲染) */}
+			{(stickyFooter || actionsPlacement === "bottom" || actionsPlacement === "both") ? (
 				<div className="sticky bottom-0 border-t border-border/70 bg-background/95 backdrop-blur-xs px-6 py-3 mt-auto shadow-xs z-10">
 					<div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
 						<div className="text-xs text-muted-foreground font-mono truncate">
 							{auditHint || null}
 						</div>
 
-						<div className="flex items-center gap-2 shrink-0">
-							{extraActions.map((act) => (
-								<Button
-									key={act.key}
-									type="button"
-									size="sm"
-									variant={act.variant || "outline"}
-									onClick={() => act.onClick(values)}
-									disabled={submitting}
-								>
-									{act.label}
-								</Button>
-							))}
-
-							{!isView ? (
-								<Button
-									type="button"
-									size="sm"
-									variant="ghost"
-									onClick={handleReset}
-									disabled={submitting}
-									className="text-muted-foreground hover:text-foreground mr-1"
-									title="重置修改"
-								>
-									<RotateCcw className="size-3.5 mr-1" />
-									重置
-								</Button>
-							) : null}
-
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={handleBack}
-								disabled={submitting}
-							>
-								{cancelText}
-							</Button>
-
-							{!isView && onSubmit ? (
-								<Button
-									type="button"
-									size="sm"
-									variant="default"
-									onClick={() => handleSubmit()}
-									disabled={submitting}
-									className="min-w-[5.5rem]"
-								>
-									{submitting ? (
-										<Loader2 className="size-3.5 mr-1.5 animate-spin" />
-									) : (
-										<Save className="size-3.5 mr-1.5" />
-									)}
-									{defaultSubmitText}
-								</Button>
-							) : null}
-						</div>
+						{renderActionButtons("sm")}
 					</div>
 				</div>
 			) : null}

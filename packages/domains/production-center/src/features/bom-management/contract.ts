@@ -8,12 +8,18 @@ import { defineListSearchParams } from "@base/ui";
 /** BOM 受控实体标识 (SSoT) */
 export const BomSubject = "Bom";
 export type BomSubject = typeof BomSubject;
+export const BomResource = "production_center.bom";
+export type BomResource = typeof BomResource;
 
 export const BomVersionSubject = "BomVersion";
 export type BomVersionSubject = typeof BomVersionSubject;
+export const BomVersionResource = "production_center.bom_version";
+export type BomVersionResource = typeof BomVersionResource;
 
 export const ProductDefaultBomSubject = "ProductDefaultBom";
 export type ProductDefaultBomSubject = typeof ProductDefaultBomSubject;
+export const ProductDefaultBomResource = "production_center.product_default_bom";
+export type ProductDefaultBomResource = typeof ProductDefaultBomResource;
 
 /** BOM 核心操作枚举 */
 export const BomAction = {
@@ -129,7 +135,7 @@ export type BomSearchParams = Awaited<
 
 /** BOM 中心页面权限契约 (SSoT) */
 export const bomPageContract: FeaturePagePermissionDescriptor = {
-	resource: "production_center.bom",
+	resource: BomResource,
 	subject: BomSubject,
 	label: "生产BOM管理",
 	path: "/production/bom",
@@ -150,4 +156,28 @@ export const bomPageContract: FeaturePagePermissionDescriptor = {
 		label: f.label,
 		sensitive: f.sensitive,
 	})),
+};
+
+export const bomVersionPageContract: FeaturePagePermissionDescriptor = {
+	resource: BomVersionResource,
+	subject: BomVersionSubject,
+	label: "生产BOM版本明细",
+	path: "/production/bom/versions",
+	actions: [
+		{ action: StandardAction.READ, label: "查看版本" },
+		{ action: StandardAction.CREATE, label: "新建版本" },
+		{ action: StandardAction.UPDATE, label: "修改版本" },
+		{ action: StandardAction.DELETE, label: "删除版本" },
+	],
+};
+
+export const productDefaultBomPageContract: FeaturePagePermissionDescriptor = {
+	resource: ProductDefaultBomResource,
+	subject: ProductDefaultBomSubject,
+	label: "默认BOM配置",
+	path: "/production/bom/defaults",
+	actions: [
+		{ action: StandardAction.READ, label: "查看默认配置" },
+		{ action: StandardAction.UPDATE, label: "修改默认配置" },
+	],
 };

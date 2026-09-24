@@ -43,10 +43,12 @@ const mockStoreRecord: StoreListItem = {
 
 test("StoreFormPage [新增模式]: 渲染全屏单据工作台、多区块卡片与保存按钮", () => {
 	const html = renderToString(
-		<StoreFormPage
-			mode="create"
-			customers={mockCustomers}
-		/>,
+		<UiAbilityProvider ability={{ can: () => true }}>
+			<StoreFormPage
+				mode="create"
+				customers={mockCustomers}
+			/>
+		</UiAbilityProvider>,
 	);
 
 	assert.match(html, /新建门店/);
@@ -59,11 +61,13 @@ test("StoreFormPage [新增模式]: 渲染全屏单据工作台、多区块卡�
 
 test("StoreFormPage [编辑模式]: 完整回填门店名称与单据编号，渲染保存更新按钮", () => {
 	const html = renderToString(
-		<StoreFormPage
-			mode="edit"
-			record={mockStoreRecord}
-			customers={mockCustomers}
-		/>,
+		<UiAbilityProvider ability={{ can: () => true }}>
+			<StoreFormPage
+				mode="edit"
+				record={mockStoreRecord}
+				customers={mockCustomers}
+			/>
+		</UiAbilityProvider>,
 	);
 
 	assert.match(html, /编辑: 绿叶餐饮\(西湖文化广场店\)/);

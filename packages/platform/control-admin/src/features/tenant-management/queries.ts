@@ -1,5 +1,6 @@
 import "server-only";
 
+import { toPlainData } from "@base/shared";
 import { requireControlAdminSession } from "../../shared/server/session";
 import { getTenantManagementService } from "./service";
 import type {
@@ -18,7 +19,8 @@ export async function listTenantsPagedQuery(
 ): Promise<PagedTenantsResult> {
  const user = await requireControlAdminSession();
  const service = getTenantManagementService();
- return service.listTenantsPaged(user, params);
+ const result = await service.listTenantsPaged(user, params);
+ return toPlainData(result);
 }
 
 /**
@@ -27,7 +29,8 @@ export async function listTenantsPagedQuery(
 export async function listTenantsQuery(): Promise<ControlTenantItem[]> {
  const user = await requireControlAdminSession();
  const service = getTenantManagementService();
- return service.listTenants(user);
+ const result = await service.listTenants(user);
+ return toPlainData(result);
 }
 
 /**
@@ -39,5 +42,6 @@ export async function getTenantDetailQuery(
 ): Promise<ControlTenantDetail | null> {
  const user = await requireControlAdminSession();
  const service = getTenantManagementService();
- return service.getTenantDetail(orgId, user, query);
+ const result = await service.getTenantDetail(orgId, user, query);
+ return toPlainData(result);
 }

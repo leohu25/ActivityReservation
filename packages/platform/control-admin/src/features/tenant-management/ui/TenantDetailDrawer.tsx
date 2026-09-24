@@ -28,6 +28,7 @@ import {
   Button,
   FormModal,
   toast,
+  z,
 } from "@base/ui";
 import { resetTenantUserPasswordAction } from "../actions";
 
@@ -492,6 +493,7 @@ export function TenantDetailDrawer({
           open
           onClose={() => setResetTargetUser(null)}
           mode="create"
+          schema={z.object({})}
           initialValues={{}}
           title={
             resetSuccessData ? "重置成功 — 请复制新密码" : "重置成员登录密码"

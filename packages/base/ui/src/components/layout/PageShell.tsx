@@ -38,7 +38,7 @@ export function PageShell({
   contentClassName,
 }: PageShellProps) {
   return (
-    <div className={cn("flex flex-col gap-6", className)}>
+    <div className={cn("min-w-0 flex-1 overflow-y-auto p-2 md:p-4 flex flex-col gap-6", className)}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
           <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">

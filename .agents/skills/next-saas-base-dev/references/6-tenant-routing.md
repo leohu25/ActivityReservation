@@ -6,7 +6,7 @@
 
 ## 1. 租户端路由：layout 注入 Ability + page 只取数据
 
-**教科书形态**（与 `references/7-casl-ability-provider.md` 一致）：
+**教科书形态**（严格遵循切片专属 CASL 边界防线）：
 
 1. **切片 layout（RSC）**：拉取本切片全部 Subject 权限快照，挂 `*AbilityBoundary` → `TenantAbilityProvider`
 2. **page（RSC）**：只请求业务数据，**禁止**再 `getTenantSubjectPermissions`、**禁止**向 View 传 `permissions`/`ability`

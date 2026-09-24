@@ -27,6 +27,8 @@
 | DEBT-016 | 2026-09-18 | @implementer | packages/*, apps/* | 历史遗留 package.json 采用混沌的 `@base/feature-*` 和 `@base/biz-shared` 命名，导致业务包被赋予基座前缀，违背物理分层与 DDD 领域语义 | 已全面规范化为 `@domain/*`（垂直业务）、`@platform/*`（平台套件）、`@biz/shared`（中台资产）与 `@base/*`（纯技术基础设施）四维拓扑，全仓对齐并消灭别扭感 | 高 | 已解决 |
 | DEBT-017 | 2026-09-21 | @implementer | packages/domains/*/src/assembly, packages/domains/*/src/shared/server | 各业务切片内重复手写 `getTenantDbContext`（Session/TenantContext/DB连接/员工门禁解析）与 `resolveEmployeeTopology`（部门拓扑解析与 CASL 工厂装配）高度样板代码 | 已在 @base/db-tenant 实现 resolveTenantEmployeeTopology，在 @base/authorization 提供高阶工厂 createTenantSliceContext(catalog)，全仓切片装配代码降至一行，彻底消灭样板代码 | 高 | 已解决 |
 | DEBT-018 | 2026-09-21 | @implementer | apps/tenant/src/kernel/permissions.ts, apps/tenant/src/app/(dashboard)/workbench | 内核权限查询函数入参为宽泛的 `string`，页面层（workbench、settings 等）存在硬编码手写 Subject 魔法字符串风险 | 通过 `scripts/sync-features.mjs` 自动推导并导出 `GlobalTenantSubject`（由全仓 Manifests 自动推导，0 人工维护成本），彻底将 `getTenantSubjectPermissions` 入参收敛为强类型，并替换全仓魔法字符串为常量符号 | 高 | 已解决 |
+| DEBT-019 | 2026-09-22 | @implementer | platform/tenant-admin, platform/control-admin | 历史遗留 UI 组件存在超过 500 行的巨石文件（RolePermissionManager: 1158行、NavigationConfigView: 776行、TenantDetailDrawer: 578行） | 按照三级递进架构 Level 2 规范，将表单状态抽离为 useFormState Hook，并将界面拆分为单一职责的积木组件 | 中 | 待排期 |
+| DEBT-020 | 2026-09-22 | @implementer | customer-center, tenant-admin | 历史子切片（category、tag、department、employee、position、role-definition）存在逆向从父级目录导入 `../actions` 或 `../service` 的耦合问题 | 按照三级递进架构 Level 3 单向依赖规范，将 actions 下沉至子切片自身或通过标准子路径公共出口导出，消除逆向耦合 | 中 | 待排期 |
 
 ---
 

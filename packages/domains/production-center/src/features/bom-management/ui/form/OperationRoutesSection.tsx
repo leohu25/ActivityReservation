@@ -1,5 +1,6 @@
 import { Clock, Plus, Trash2 } from "lucide-react";
 import {
+	AuthGuard,
 	Button,
 	Combobox,
 	Input,
@@ -11,6 +12,8 @@ import {
 	TableRow,
 	TableCell,
 } from "@base/ui";
+import { StandardAction } from "@base/authorization";
+import { BomSubject } from "../../contract";
 import type { BomFormOptions } from "../../types";
 import type { FormOperationRow } from "./types";
 
@@ -134,19 +137,19 @@ function OperationTableRow({
 					className="h-8 text-xs"
 				/>
 			</TableCell>
-			{!isView && (
+			<AuthGuard action={StandardAction.UPDATE} subject={BomSubject}>
 				<TableCell className="py-1.5 px-3 text-center">
 					<Button
 						type="button"
 						variant="ghost"
 						size="icon"
 						onClick={() => onRemove(idx)}
-						className="size-7 text-destructive hover:bg-destructive/10"
+						className="size-7 text-destructive hover:bg-destructive/10 cursor-pointer"
 					>
 						<Trash2 className="size-3.5" />
 					</Button>
 				</TableCell>
-			)}
+			</AuthGuard>
 		</TableRow>
 	);
 }
@@ -168,17 +171,17 @@ export function OperationRoutesSection({
 				<h2 className="text-sm font-bold text-foreground flex items-center gap-2">
 					<Clock className="size-4 text-blue-600" /> 工序工艺路线
 				</h2>
-				{!isView && (
+				<AuthGuard action={StandardAction.UPDATE} subject={BomSubject}>
 					<Button
 						type="button"
 						variant="outline"
 						size="sm"
 						onClick={handleAddOperation}
-						className="h-6.5 px-2 text-xs gap-1"
+						className="h-6.5 px-2 text-xs gap-1 cursor-pointer"
 					>
 						<Plus className="size-3" /> 添加加工工序
 					</Button>
-				)}
+				</AuthGuard>
 			</div>
 
 			<div className="rounded-lg border overflow-hidden">

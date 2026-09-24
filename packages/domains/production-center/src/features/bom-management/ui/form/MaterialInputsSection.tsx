@@ -1,5 +1,6 @@
 import { Box, Plus, RefreshCw, Trash2 } from "lucide-react";
 import {
+	AuthGuard,
 	Badge,
 	Button,
 	Switch,
@@ -12,7 +13,7 @@ import {
 	TableRow,
 	TableCell,
 } from "@base/ui";
-import { useAbility } from "@base/authorization";
+import { StandardAction, useAbility } from "@base/authorization";
 import { BOM_TYPES, MATERIAL_ROLES, BomSubject, BomField, type BomType } from "../../contract";
 import type { BomFormOptions } from "../../types";
 import type { FormInputRow } from "./types";
@@ -186,18 +187,20 @@ function InputTableRow({
 					/>
 				</TableCell>
 			)}
-			{!isView && bomType !== BOM_TYPES.PROCESSING && (
-				<TableCell className="py-1.5 px-3 text-center">
-					<Button
-						type="button"
-						variant="ghost"
-						size="icon"
-						onClick={() => onRemove(idx)}
-						className="size-7 text-destructive hover:bg-destructive/10"
-					>
-						<Trash2 className="size-3.5" />
-					</Button>
-				</TableCell>
+			{bomType !== BOM_TYPES.PROCESSING && (
+				<AuthGuard action={StandardAction.UPDATE} subject={BomSubject}>
+					<TableCell className="py-1.5 px-3 text-center">
+						<Button
+							type="button"
+							variant="ghost"
+							size="icon"
+							onClick={() => onRemove(idx)}
+							className="size-7 text-destructive hover:bg-destructive/10 cursor-pointer"
+						>
+							<Trash2 className="size-3.5" />
+						</Button>
+					</TableCell>
+				</AuthGuard>
 			)}
 		</TableRow>
 	);
@@ -220,8 +223,8 @@ export function MaterialInputsSection({
 	handleUpdateAllChildBomsToLatest,
 }: MaterialInputsSectionProps) {
 	const ability = useAbility();
-	const canReadCookedYield = ability.can("read", BomSubject, BomField.DEFAULT_COOKED_YIELD_RATE);
-	const canWriteCookedYield = ability.can(isView ? "read" : "update", BomSubject, BomField.DEFAULT_COOKED_YIELD_RATE);
+	const canReadCookedYield = ability.can(StandardAction.READ, BomSubject, BomField.DEFAULT_COOKED_YIELD_RATE);
+	const canWriteCookedYield = ability.can(isView ? StandardAction.READ : StandardAction.UPDATE, BomSubject, BomField.DEFAULT_COOKED_YIELD_RATE);
 
 	return (
 		<div className="bg-card rounded-xl border shadow-xs p-4 space-y-3">
@@ -230,25 +233,29 @@ export function MaterialInputsSection({
 					<Box className="size-4 text-blue-600" /> 原料投入与配比清单
 				</h2>
 				<div className="flex items-center gap-2.5">
-					{hasUpdatableChildBoms && !isView && handleUpdateAllChildBomsToLatest && (
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							onClick={handleUpdateAllChildBomsToLatest}
-							className="h-7 px-2.5 text-xs text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 gap-1.5"
-						>
-							<RefreshCw className="size-3.5" /> 一键更新子BOM至最新版
-						</Button>
+					{hasUpdatableChildBoms && handleUpdateAllChildBomsToLatest && (
+						<AuthGuard action={StandardAction.UPDATE} subject={BomSubject}>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={handleUpdateAllChildBomsToLatest}
+								className="h-7 px-2.5 text-xs text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 gap-1.5 cursor-pointer"
+							>
+								<RefreshCw className="size-3.5" /> 一键更新子BOM至最新版
+							</Button>
+						</AuthGuard>
 					)}
-					{bomType !== BOM_TYPES.PROCESSING && !isView && (
-						<div className="flex items-center gap-2.5 text-xs bg-muted/40 px-2.5 py-1 rounded-lg border">
-							<span className="font-semibold">BOM占比模式:</span>
-							<Switch checked={isRatioMode} onCheckedChange={setIsRatioMode} />
-							<span className="text-muted-foreground">
-								{isRatioMode ? "配方占比(%)" : "固定数量"}
-							</span>
-						</div>
+					{bomType !== BOM_TYPES.PROCESSING && (
+						<AuthGuard action={StandardAction.UPDATE} subject={BomSubject}>
+							<div className="flex items-center gap-2.5 text-xs bg-muted/40 px-2.5 py-1 rounded-lg border">
+								<span className="font-semibold">BOM占比模式:</span>
+								<Switch checked={isRatioMode} onCheckedChange={setIsRatioMode} />
+								<span className="text-muted-foreground">
+									{isRatioMode ? "配方占比(%)" : "固定数量"}
+								</span>
+							</div>
+						</AuthGuard>
 					)}
 				</div>
 			</div>
@@ -257,16 +264,18 @@ export function MaterialInputsSection({
 			<div className="rounded-lg border overflow-hidden">
 				<div className="bg-muted/40 px-3.5 py-2 border-b flex items-center justify-between">
 					<span className="text-xs font-bold text-foreground">原料投入行</span>
-					{bomType !== BOM_TYPES.PROCESSING && !isView && (
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							onClick={handleAddInput}
-							className="h-6.5 px-2 text-xs gap-1"
-						>
-							<Plus className="size-3" /> 添加原料行
-						</Button>
+					{bomType !== BOM_TYPES.PROCESSING && (
+						<AuthGuard action={StandardAction.UPDATE} subject={BomSubject}>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={handleAddInput}
+								className="h-6.5 px-2 text-xs gap-1 cursor-pointer"
+							>
+								<Plus className="size-3" /> 添加原料行
+							</Button>
+						</AuthGuard>
 					)}
 				</div>
 				<Table className="w-full text-xs">

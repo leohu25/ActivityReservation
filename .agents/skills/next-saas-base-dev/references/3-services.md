@@ -118,9 +118,10 @@ export class ResourceService {
     // ... 合并其他业务筛选条件
     const where = { AND: andConditions };
 
+// 注：示例中使用具体业务代理 client.resource（已由 TenantPrismaClient 强类型提供）
     const [total, items] = await Promise.all([
-      (client as any).resource.count({ where }),
-      (client as any).resource.findMany({
+      client.resource.count({ where }),
+      client.resource.findMany({
         where,
         orderBy: { createdAt: "desc" },
         skip,
@@ -139,7 +140,7 @@ export class ResourceService {
     id: string,
     auditCtx?: { userId: string },
   ) {
-    const relationCount = await (client as any).subResource.count({
+    const relationCount = await client.subResource.count({
       where: { resourceId: id, isDeleted: false },
     });
     if (relationCount > 0) {
@@ -148,7 +149,7 @@ export class ResourceService {
       );
     }
 
-    return (client as any).resource.update({
+    return client.resource.update({
       where: { id },
       data: {
         isDeleted: true,
@@ -310,7 +311,7 @@ await client.employeeProfile.update({
 ## 查询层约定（已固化通用标准）
 
 1. `queries.ts` 首行 `import "server-only"`。
-2. 租户上下文与 Ability：经 `assembly/context.ts`，并用 **React `cache()`** 无参记忆化（见 `9-crud-resource-paradigm.md`）。
+2. 租户上下文与 Ability：经 `assembly/context.ts`，并用 **React `cache()`** 无参记忆化。
 3. 列表 Query：返回 **DTO 投影**（Decimal→number、Date→ISO），禁止 Prisma 实体直出。
 4. 页面 options 与 list 使用 `Promise.all` 并行。
 5. 发号在 `service.ts`，禁止 `count(*)+1`。

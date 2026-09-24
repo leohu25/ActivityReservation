@@ -45,7 +45,7 @@ export function DetailHeader({
 	);
 
 	const ability = useAbility();
-	const canReadTotalYield = ability.can("read", BomSubject, BomField.TOTAL_YIELD_RATE);
+	const canReadTotalYield = ability.can(StandardAction.READ, BomSubject, BomField.TOTAL_YIELD_RATE);
 
 	return (
 		<SheetHeader className="pb-3 border-b">

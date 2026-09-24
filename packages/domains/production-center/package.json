@@ -10,6 +10,8 @@
 		"./production-resource-management/server": "./src/features/production-resource-management/public.server.ts",
 		"./process-management": "./src/features/process-management/public.ts",
 		"./process-management/server": "./src/features/process-management/public.server.ts",
+		"./process-management/specification": "./src/features/process-management/specification/public.ts",
+		"./process-management/specification/server": "./src/features/process-management/specification/public.server.ts",
 		"./bom-management": "./src/features/bom-management/public.ts",
 		"./bom-management/server": "./src/features/bom-management/public.server.ts",
 		"./shared": "./src/shared/public.ts",

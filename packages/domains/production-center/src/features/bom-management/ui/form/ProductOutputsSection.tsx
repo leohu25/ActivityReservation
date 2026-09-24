@@ -1,6 +1,7 @@
-import { CheckCircle2, Layers, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Layers, Trash2 } from "lucide-react";
 import {
 	AuthField,
+	AuthGuard,
 	Badge,
 	Button,
 	Combobox,
@@ -13,6 +14,7 @@ import {
 	TableRow,
 	TableCell,
 } from "@base/ui";
+import { StandardAction } from "@base/authorization";
 import { BomSubject, BomField } from "../../contract";
 import type { BomFormOptions } from "../../types";
 import type { FormByProductRow } from "./types";
@@ -255,19 +257,22 @@ export function ProductOutputsSection({
 													<span className="text-muted-foreground text-xs">%</span>
 												</div>
 											</TableCell>
-											{!isView && (
+											<AuthGuard
+												action={StandardAction.UPDATE}
+												subject={BomSubject}
+											>
 												<TableCell className="text-center py-1.5 px-2">
 													<Button
 														type="button"
 														variant="ghost"
 														size="icon"
 														onClick={() => handleRemoveByProduct(idx)}
-														className="size-7 text-muted-foreground hover:text-destructive"
+														className="size-7 text-muted-foreground hover:text-destructive cursor-pointer"
 													>
 														<Trash2 className="size-3.5" />
 													</Button>
 												</TableCell>
-											)}
+											</AuthGuard>
 										</TableRow>
 									);
 								})}
@@ -276,7 +281,7 @@ export function ProductOutputsSection({
 					</div>
 				)}
 
-				{!isView && (
+				<AuthGuard action={StandardAction.UPDATE} subject={BomSubject}>
 					<div className="flex items-center gap-2 pt-1">
 						<div className="w-56">
 							<Combobox
@@ -290,14 +295,13 @@ export function ProductOutputsSection({
 							(自动带出该副产品的生产/库存单位，可按需修改数量与单位)
 						</span>
 					</div>
-				)}
+				</AuthGuard>
 			</div>
 
 			{/* 总出成率折算 (使用封装的 AuthField 权限控件) */}
 			<AuthField
 				subject={BomSubject}
 				field={BomField.TOTAL_YIELD_RATE}
-				action={isView ? "read" : "update"}
 			>
 				<div className="flex items-center justify-between bg-muted/25 p-2.5 rounded-lg border border-border/80 text-xs">
 					<div className="flex items-center gap-2.5">

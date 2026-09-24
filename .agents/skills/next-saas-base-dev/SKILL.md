@@ -1,143 +1,97 @@
 ---
 name: next-saas-base-dev
-description: 现代多租户 SaaS 架构全栈工程开发与基建演进标准指南。本规范从企业级真实生产工程中严格提炼派生，是本模板项目及所有基于本基座衍生项目的核心开发宪法与权威事实源。在进行任何代码编写、功能开发、模块扩展、架构重构、组件封装或缺陷修复时必须优先加载并严格遵循本指南。涵盖两大核心领域：1. 业务特性垂直切片开发（packages/domains/* 与 packages/platform/*），严格遵循标准资源 CRUD 最佳范式（细节见 references/9-crud-resource-paradigm.md）；2. 平台基座与基础设施框架演进（@base/* 与 tooling/db-migrate）。触发场景：开发/修改任何业务功能或特性切片、实现 CRUD、编写 Server Action/Query、调整 DataTable/FormModal、迭代 base 基础设施、修改 apps 装配层、修复 Bug。必须加载本技能并按 references 索引执行；禁止过时 API（见下方作废清单）。
+description: 现代多租户 SaaS 架构全栈工程开发与基建演进标准指南。本规范从企业级真实生产工程中严格提炼派生，是本底座衍生项目的核心开发宪法与权威事实源。在进行任何代码编写、功能开发、模块扩展、架构重构、组件封装或缺陷修复时必须优先加载并严格遵循本指南。涵盖两大核心领域：1. 业务特性垂直切片开发（packages/domains/* 与 packages/platform/*）；2. 平台基座与基础设施框架演进（@base/* 与 tooling/db-migrate）。必须加载本技能并按 references 顶层地图索引调度执行；禁止使用作废 API。
 color: blue
 emoji: 🚀
-vibe: 契约即事实源、约定大于配置、少即是多
+vibe: 单一职责、顶层编排、契约即事实源、少即是多
 agent_created: true
 ---
 
-# 现代多租户 SaaS 架构开发规范 (Next SaaS Base Dev)
+# 现代多租户 SaaS 架构开发指南 (Next SaaS Base Dev)
 
-> **本文件定位**：**地图与索引**。只保留分层、红线摘要、流水线索引与阅读导航。  
-> **具体开发细节一律在 `references/`**，禁止把实现示例堆进本文件。  
-> **权威目标规格**：`docs/architecture/refactoring-architecture-and-official-patterns.md`
+> **定位声明**：**本文件仅作为顶层总览调度地图**。严格遵循“单一职责与顶层编排原则”，所有具体的实施规范 100% 收敛在 `references/` 下的独立文档中，同级文档之间零耦合。
 
 ---
 
-## 零、 核心分工原则：Skill 中立解耦 vs Harness 项目耦合
+## 零、 核心分工：Skill 规范中立 vs Harness 项目治理
 
-为保证本工程基座的高度可复用性与跨项目无缝移植能力，团队严格划分 **Skill** 与 **Harness** 的职责边界：
-
-1. **Skill（架构宪法与通用规范 — 100% 业务解耦，高度中立）**：
-   - 本 Skill 仅沉淀**通用的多租户 SaaS 架构模式、技术栈标准、8 阶段流水线、设计系统解耦驱动之 UI 体系与前后端防线**；
-   - **绝对中立原则**：Skill 正文及所有 references 中，**严禁硬编码或深度耦合当前项目的具体业务逻辑、业务字段或专有业务模块**；所有代码示例统一使用通用的抽象占位符（如 `<domain>`、`<resource>`、`XxxSubject`），确保本规范可无损移植到任何基于本底座的全新 SaaS 业务项目（如 CRM、WMS、MES、电商等）；
-   - **风格绝对中立原则**：底座代码库与规范本身必须保持风格中立，严禁主观硬编码绑定任何特定 UI 风格；所有设计语言（色盘、字体、阴影、圆角、密度）均由项目根目录的 Design System 与主题变量正交注入，底座自身保持纯粹与中立。
-2. **Harness（当前项目治理与执行记忆 — 与具体业务强绑定）**：
-   - `.harness/` 目录专门负责记录**当前具体项目的业务特性台账 (`feature_list.json`)、当前迭代范围 (`scope.md`)、开发进度 (`progress.md`) 与真实业务交付证据**；
-   - 具体的业务领域验收标准与业务实体流转，全部收敛在 Harness 中。
+1. **Skill（技术规范与架构模式 — 100% 业务解耦）**：
+   - 沉淀通用的多租户 SaaS 架构模式、技术栈标准、设计系统与前后端防线；
+   - 保持风格与业务绝对中立，代码示例统一使用抽象占位符（如 `<domain>`、`<resource>`、`XxxSubject`），确保 100% 可移植。
+2. **Harness（当前项目执行记忆 — 与具体业务强绑定）**：
+   - `.harness/` 目录专门记录具体项目的业务特性清单 (`feature_list.json`)、迭代范围 (`scope.md`)、开发进度 (`progress.md`) 与真实交付证据。
 
 ---
 
-## 一、 包拓扑地图
+## 一、 Monorepo 包拓扑大纲
 
 ```text
-apps/control | apps/tenant          双端装配
-packages/domains/*                  业务领域垂直切片 (@domain/*)
-packages/platform/*                 平台业务（@platform/control-admin / @platform/tenant-admin）
-packages/base/ui                    UI 契约：DataTable / FormModal / list params
-packages/biz-shared                 业务中台通用资产：单号发号器 / 审批契约 (@biz/shared)
-packages/base/shared                defineServerAction / toPlainData
-packages/base/auth | authorization | db-tenant | db-control
-tooling/db-migrate                  12-Factor 迁移引擎
+apps/control | apps/tenant                  [双端装配层]
+          │
+          ▼
+packages/domains/* | packages/platform/*    [业务垂直切片层]
+          │
+          ▼
+packages/biz-shared                         [业务中台通用资产 (@biz/shared)]
+          │
+          ▼
+packages/base/*                             [平台核心基座 (@base/*)]
+          │
+          ▼
+tooling/db-migrate                          [12-Factor 自愈迁移引擎]
 ```
 
-- 业务切片现行路径：`packages/domains/*`、`packages/platform/*`（勿再写 `packages/features/*` 作为现行目录）。
-- **不单开** `@base/crud` 一类包；缺能力增强 `@base/ui` 或 `@biz/shared`。
+- 业务切片现行路径：`packages/domains/*`、`packages/platform/*`；
+- 平台共享基座：`@base/ui`、`@base/authorization`、`@base/auth`、`@base/db-tenant`、`@base/shared`。
 
 ---
 
-## 二、 红线摘要（细则见对应 reference）
+## 二、 工程绝对红线与行为准则
 
-| #   | 红线                                                                                                           | 细则                                          |
-| :-- | :------------------------------------------------------------------------------------------------------------- | :-------------------------------------------- |
-| 1   | 权限/列表 URL 契约收敛在 `contract.ts`（SSoT），门禁脚本硬拦                                                   | `references/1-contracts.md`                   |
-| 2   | mutation：`defineServerAction` + `toPlainData`；RSC→Client 禁 Promise/函数 props                               | `references/4-server-actions.md`              |
-| 3   | 破坏性操作单次 `ConfirmDialog`；反馈用 Toast；禁 `window.location.reload()`                                    | `references/5-ui-components.md`               |
-| 4   | 数据经 `TenantDbManager` 分库路由，禁拼连接串                                                                  | `docs/ARCHITECTURE.md`、db-tenant 文档        |
-| 5   | 标准列表：`DataTable` 默认 chrome + `useListSearch`；禁业务手绘表壳                                            | `references/5-ui-components.md`               |
-| 6   | 写路径 CASL（Action 内断言 + UI `subject`/门禁）                                                               | `references/4`、`references/7`                |
-| 7   | 列表 URL：`defineListSearchParams`；Client：`useListSearch`                                                    | `references/9-crud-resource-paradigm.md`      |
-| 8   | CRUD 表单分级治理：复杂主单据/多字段档案用全屏多页签（`FormPage`）；极简辅助项（分类、标签、字典 ≤ 5 字段）用轻量弹窗（`FormModal`） | `references/5-ui-components.md`               |
-| 9   | Mutation 使用 `defineServerAction` 直写；RSC 装配遵循 Next.js 标准 async 函数；`use server` 平铺导出           | `references/9`、`references/4`                |
-| 10  | 导出走 `exportContractCsv` + 契约字段                                                                          | `references/1-contracts.md`                   |
-| 11  | 原子层 shadcn 规范（`@base/ui` `components/ui/`）                                                              | `.agents/skills/shadcn/`                      |
-| 12  | 通用能力上浮至 `@base/ui` / `@biz/shared`，禁业务平行第二套                                                    | `references/8-base-infrastructure.md`         |
-| 13  | 测试同级共存；实体审计+软删除基线；提交前人工审阅 + 中文 Conventional Commits；禁 `--no-verify`                | `AGENTS.md`、`references/2-schema-migrate.md` |
-| 14  | 严禁用 `any` 降解，强制 TypeScript 强类型（Prisma/Zod/DTO/Props 端到端可推导；禁 `any` / `(x as any)`）        | `AGENTS.md`、`references/3-services.md`       |
-| 15  | **架构中立性与业务零耦合**：Skill 严禁硬编码当前项目特定业务逻辑与实体，示例一律抽象化，确保跨项目 100% 可移植 | 本规约「零、核心分工原则」                    |
-| 16  | **存量平滑演进与老表加字段铁律**：老表追加字段必须在数据库设为可空（带 `?`），应用层（Zod/表单）卡必填；严禁老表追加无默认值 NOT NULL 字段导致存量库崩溃；严禁手写/篡改迁移 SQL，统一由 `db:migrate:generate` 标准生成 | `references/2-schema-migrate.md` |
-
-**作废 / 禁止用于新代码**（仅存量迁移过渡的标 `@deprecated`）：
-
-`any`、`(x as any)` 类型降解、`useTableUrlState`、`parseTableSearchParams`、`useDataTableState`、`useListUrlNav`、业务层 RHF 手写表单、ListShell/TableRegion、`count(*)+1` 发号、客户端默认 `router.refresh()`、单开 `@base/crud` 包、`createResourcePage`、`createResourceActions`、`createResourceList`（过度封装已彻底废弃）。
+| # | 核心红线 | 权威细节独占文档 |
+| :- | :--- | :--- |
+| **1** | **契约单事实源**：权限项（Subject/Action/Field）与列表 URL 契约必须收敛在 `contract.ts`，门禁硬拦截 | [`references/1-contracts.md`](./references/1-contracts.md) |
+| **2** | **实体审计基线**：业务实体必须强制包含 8 大审计与软删除字段（ADR-009），门禁机械化拦截 | [`references/2-schema-migrate.md`](./references/2-schema-migrate.md) |
+| **3** | **数据库平滑演进**：老表加字段必须设为可空（带 `?`），严禁手写迁移 SQL，统一工具自愈生成 | [`references/2-schema-migrate.md`](./references/2-schema-migrate.md) |
+| **4** | **租户物理隔离**：PostgreSQL 分库隔离，数据经 `TenantDbManager` 路由，严禁跨库直连 | [`references/8-base-infrastructure.md`](./references/8-base-infrastructure.md) |
+| **5** | **安全写网关**：Mutation 必须由 `defineServerAction` 包装，自动进行 `toPlainData` 跨端序列化 | [`references/4-server-actions.md`](./references/4-server-actions.md) |
+| **6** | **标准列表 Chrome**：标准列表统一使用一体化 `DataTable` + `useListSearch`，严禁业务手绘表壳 | [`references/5-ui-components.md`](./references/5-ui-components.md) |
+| **7** | **表单与单据双轨策略**：80% 通用主子表使用 `FormModal` / `FormPage` 纯配置模板；20% 复杂单据使用 `<DocumentShell>` 外壳承载高阶积木拼装（只读态全自动穿透，消灭 `!isView`） | [`references/11-dual-track-form-document-paradigm.md`](./references/11-dual-track-form-document-paradigm.md) |
+| **8** | **切片自治与防巨石**：子切片最大嵌套深度严格限制为 1 层；主向子单向依赖；UI 单文件代码严格控制在 50~180 行 | [`references/0-architecture-topology.md`](./references/0-architecture-topology.md) |
+| **9** | **严禁写操作按钮裸奔**：所有写操作按钮必须受控于 `<AuthGuard>` 或通过 `DataTable` 自动接管，严禁渲染裸写按钮 | [`references/5-ui-components.md`](./references/5-ui-components.md) |
+| **10** | **零全页强刷与单次确认**：破坏性操作统一由 `ConfirmDialog` 提示一次；严禁 `window.location.reload()` 与 `router.refresh()` | [`references/5-ui-components.md`](./references/5-ui-components.md) |
+| **11** | **端到端强类型**：严禁使用 `any`、`(x as any)` 恶性降解类型，所有 I/O 必须通过 Zod Schema 或强类型推导收敛 | [`references/3-services.md`](./references/3-services.md) |
 
 ---
 
-## 三、 赛道一：业务切片流水线（地图）
+## 三、 顶层技术规范地图 (Navigation Matrix)
 
-**标准 CRUD 最佳范式与流程（通用模板，供参考）** → [`references/9-crud-resource-paradigm.md`](./references/9-crud-resource-paradigm.md)（必读）
+开发或重构时，由本表直接精准路由至对应领域的单一事实源文档：
 
-> 注：8 步流程作为全仓通用的基准参考模板，覆盖绝大多数标准 CRUD 场景。面对主子表、多步骤向导、复杂审批流等高复杂度页面时，在坚守底线的前提下支持合规扩展与定制，切忌生搬硬套。
-
-```text
-① contract.ts     权限契约 + defineListSearchParams 扩展字段
-② schema.ts       共享 Zod
-③ assembly/ctx.ts 基座高阶工厂 createTenantSliceContext(catalog) 一行装配
-④ service.ts      领域逻辑（事务 / 发号 / 状态机）
-⑤ queries.ts      server-only + cache + DTO
-⑥ actions.ts      defineServerAction 直写 → 平铺 export
-⑦ ui/*FormModal   FormModal 声明式弹窗 + schema/fields + subject（或主单据 FormPage）
-⑧ ui/*View        useListSearch + DataTable 纯受控视图（带 subject 自动接管权限）
-⑨ layout.tsx      【专属边界防线】必须挂载切片专属路由与本切片专属 *AbilityBoundary（严禁借道寄生到其他模块 Layout）
-⑩ apps page.tsx   标准 RSC 装配（主列表、new、[id] 路由页直通数据）
-→ 单测与 check/test 全绿
-```
-
-| 阶段              | 深入阅读                                                     |
-| :---------------- | :----------------------------------------------------------- |
-| ① 契约            | `references/1-contracts.md`                                  |
-| ②③ 数据与服务     | `references/2-schema-migrate.md`、`references/3-services.md` |
-| ⑤ Actions         | `references/4-server-actions.md`                             |
-| ⑥⑦ UI             | `references/5-ui-components.md`                              |
-| ⑧ 装配 / Manifest | `references/6-tenant-routing.md`                             |
-| CASL Provider     | `references/7-casl-ability-provider.md`                      |
-| 包骨架            | `references/0-architecture-topology.md`                      |
+| 研发工作领域 | 权威独立规范文档 (Single Source of Truth) | 核心职责与关键覆盖 |
+| :--- | :--- | :--- |
+| **通用标准 CRUD 交付** | [`references/9-crud-resource-paradigm.md`](./references/9-crud-resource-paradigm.md) | **标准资源端到端 8 步交付流水线（SOP 流程）** |
+| **单据与复杂表单工作台** | [`references/11-dual-track-form-document-paradigm.md`](./references/11-dual-track-form-document-paradigm.md) | **双轨策略决策树、`<DocumentShell>` 外壳、积木拼装与只读态自动穿透** |
+| **包拓扑与切片目录边界** | [`references/0-architecture-topology.md`](./references/0-architecture-topology.md) | Monorepo 依赖流向、子切片单向依赖与嵌套深度约束（≤1层） |
+| **权限与 URL 参数契约** | [`references/1-contracts.md`](./references/1-contracts.md) | CASL Subject/Action/Field 枚举与 `defineListSearchParams` |
+| **数据建模与自愈迁移** | [`references/2-schema-migrate.md`](./references/2-schema-migrate.md) | Prisma 模型、8大审计基线、老表加字段可空铁律、12-Factor 迁移 |
+| **领域服务与查询读接口** | [`references/3-services.md`](./references/3-services.md) | Service 事务写入、`server-only` Queries、React `cache()` 记忆化、DTO 脱敏 |
+| **写操作 Server Actions** | [`references/4-server-actions.md`](./references/4-server-actions.md) | `defineServerAction` 强类型包装、权限前置断言、`toPlainData` 序列化 |
+| **列表视图与基础 UI 资产** | [`references/5-ui-components.md`](./references/5-ui-components.md) | 一体化 `DataTable` Chrome、`useListSearch`、`TreeFilter`、Toast 反馈 |
+| **路由装配与动态菜单** | [`references/6-tenant-routing.md`](./references/6-tenant-routing.md) | 双端 RSC 页面直通装配、切片专属 `AbilityBoundary` 边界与 Manifest |
+| **CASL 鉴权引擎核心** | [`references/7-casl-ability-provider.md`](./references/7-casl-ability-provider.md) | `TenantAbilityProvider` 运行时挂载、Fail-Closed 防线与 SQL 自动下推 |
+| **平台底座基础设施** | [`references/8-base-infrastructure.md`](./references/8-base-infrastructure.md) | `@base/*` 边界职责、演进三原则与跨项目绝对业务中立性 |
+| **对象存储与多态附件** | [`references/10-storage-and-attachments.md`](./references/10-storage-and-attachments.md) | S3 对象存储、预签名安全上传、图片缩放与通用附件关联模型 |
 
 ---
 
-## 四、 赛道二：基座演进（地图）
+## 四、 维护与扩展准则（Single Point of Modification）
 
-升级 `@base/*`、`tooling/*`、apps 装配时：
+为保持知识库的绝对稳定与 Token 零浪费，后续演进严格遵循以下操作规则：
 
-1. 读 [`references/8-base-infrastructure.md`](./references/8-base-infrastructure.md)（职责、单向依赖、Level1→2→3）；
-2. 架构全景：`docs/ARCHITECTURE.md` 及 `docs/architecture/*`；
-3. **禁止** `@base/*` 依赖 `packages/domains/*` / `packages/platform/*`。
-
----
-
-## 五、 渐进式阅读索引
-
-| 领域                           | 路径                                                                  |
-| :----------------------------- | :-------------------------------------------------------------------- |
-| **标准 CRUD 最佳范式（必读）** | `references/9-crud-resource-paradigm.md`                              |
-| 切片包骨架                     | `references/0-architecture-topology.md`                               |
-| 契约                           | `references/1-contracts.md`                                           |
-| Schema / 迁移                  | `references/2-schema-migrate.md`                                      |
-| Service / Query                | `references/3-services.md`                                            |
-| Server Actions                 | `references/4-server-actions.md`                                      |
-| DataTable / FormModal          | `references/5-ui-components.md`                                       |
-| 路由 / page / Manifest         | `references/6-tenant-routing.md`                                      |
-| CASL Provider                  | `references/7-casl-ability-provider.md`                               |
-| 基座包                         | `references/8-base-infrastructure.md`                                 |
-| **对象存储与多态附件**         | `references/10-storage-and-attachments.md`                            |
-| 目标架构规格                   | `docs/architecture/refactoring-architecture-and-official-patterns.md` |
-| 系统全景                       | `docs/ARCHITECTURE.md`                                                |
-
----
-
-## 六、 使用约定
-
-1. 本 Skill 根文件 **只当地图**；写代码前按阶段打开对应 `references/`。
-2. references 与仓库真实导出冲突时：**以代码真实 API 为准**，并回写文档债。
-3. 与 `AGENTS.md` 冲突时：以 `AGENTS.md` 工程红线为 P0。
+1. **更新/修改某个技术领域**：
+   - 仅修改对应的目标 `references/` 独立文档这一处，严禁在其他文档中重复阐述；
+2. **新增一个技术标准模块**：
+   - 在 `references/` 下新增单一职责的 `12-xxx.md`，并在本文件第三节的地图表格中新增一行索引；
+3. **作废某一过时技术**：
+   - 直接在对应文档中删除该描述，并在 `references/README.md` 作废清单中登记一条拦截项，杜绝历史包袱。

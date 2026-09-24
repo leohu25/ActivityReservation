@@ -43,11 +43,13 @@ const mockCustomerRecord: CustomerListItem = {
 
 test("CustomerFormPage [新增模式]: 渲染全屏单据工作台、多区块卡片与保存按钮", () => {
 	const html = renderToString(
-		<CustomerFormPage
-			mode="create"
-			categoryOptions={mockCategories}
-			tagOptions={mockTags}
-		/>,
+		<UiAbilityProvider ability={{ can: () => true }}>
+			<CustomerFormPage
+				mode="create"
+				categoryOptions={mockCategories}
+				tagOptions={mockTags}
+			/>
+		</UiAbilityProvider>,
 	);
 
 	assert.match(html, /新建客户/);
@@ -60,12 +62,14 @@ test("CustomerFormPage [新增模式]: 渲染全屏单据工作台、多区块�
 
 test("CustomerFormPage [编辑模式]: 完整回填客户名称与单据编号，渲染保存更新按钮", () => {
 	const html = renderToString(
-		<CustomerFormPage
-			mode="edit"
-			record={mockCustomerRecord}
-			categoryOptions={mockCategories}
-			tagOptions={mockTags}
-		/>,
+		<UiAbilityProvider ability={{ can: () => true }}>
+			<CustomerFormPage
+				mode="edit"
+				record={mockCustomerRecord}
+				categoryOptions={mockCategories}
+				tagOptions={mockTags}
+			/>
+		</UiAbilityProvider>,
 	);
 
 	assert.match(html, /编辑: 绿叶连锁餐饮股份有限公司/);

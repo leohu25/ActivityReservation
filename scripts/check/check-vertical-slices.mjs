@@ -42,6 +42,32 @@ const RETIRED_FLAT_ENTRIES = [
 
 const PENDING_MIGRATION_PACKAGES = new Set([]);
 
+/** 存量历史超长 UI 巨石组件白名单 (待后续技术债迭代逐步拆解，新切片严禁增量引入) */
+const LEGACY_MONOLITH_WHITELIST = new Set([
+  "packages/platform/control-admin/src/features/tenant-management/ui/TenantDetailDrawer.tsx",
+  "packages/platform/tenant-admin/src/features/nav-management/ui/NavigationConfigView.tsx",
+  "packages/platform/tenant-admin/src/features/role-management/role-permission/ui/RolePermissionManager.tsx",
+]);
+
+/** 存量历史子切片逆向引用父级实现白名单 (待后续技术债迭代逐步解耦，新切片严禁增量引入) */
+const LEGACY_SUB_SLICE_IMPORT_WHITELIST = new Set([
+  "packages/domains/customer-center/src/features/customer-management/category/ui/CategoryFormModal.tsx",
+  "packages/domains/customer-center/src/features/customer-management/category/ui/CategoryView.tsx",
+  "packages/domains/customer-center/src/features/customer-management/tag/ui/TagFormModal.tsx",
+  "packages/domains/customer-center/src/features/customer-management/tag/ui/TagView.tsx",
+  "packages/platform/tenant-admin/src/features/org-management/department/ui/DepartmentFormModal.tsx",
+  "packages/platform/tenant-admin/src/features/org-management/department/ui/DepartmentView.tsx",
+  "packages/platform/tenant-admin/src/features/org-management/employee/ui/EmployeeFormModal.tsx",
+  "packages/platform/tenant-admin/src/features/org-management/employee/ui/EmployeeView.tsx",
+  "packages/platform/tenant-admin/src/features/org-management/position/ui/PositionFormModal.tsx",
+  "packages/platform/tenant-admin/src/features/org-management/position/ui/PositionView.tsx",
+  "packages/platform/tenant-admin/src/features/role-management/role-definition/actions.ts",
+  "packages/platform/tenant-admin/src/features/role-management/role-definition/queries.ts",
+  "packages/platform/tenant-admin/src/features/role-management/role-definition/ui/RoleFormModal.tsx",
+  "packages/platform/tenant-admin/src/features/role-management/role-definition/ui/RoleListView.tsx",
+  "packages/platform/tenant-admin/src/features/role-management/role-permission/actions.ts",
+]);
+
 /**
  * 收集目录下的所有切片路径（包含 Feature 与嵌套的 Sub-Feature）
  * 排除 ui/, node_modules, __tests__ 等非切片目录
@@ -379,6 +405,17 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
         });
       }
 
+      // 校验子切片嵌套深度（最多允许 1 层子切片，即 features/<feature>/<sub-feature>）
+      const pathSegments = slice.relPath.split("/");
+      if (pathSegments.length > 2) {
+        violations.push({
+          file: `${relSliceDir}`,
+          line: 1,
+          rule: `【架构红线】子切片最大嵌套深度为 1 层（当前为 ${pathSegments.length} 层: [${slice.relPath}]）。严禁无限嵌套子切片形成目录深渊，请提升为一级 Feature`,
+          code: slice.relPath,
+        });
+      }
+
       // package.json#exports 必须包含对应的 Client-Safe 子路径
       if (exportsField && !exportsField[`./${sliceSubpath}`]) {
         violations.push({
@@ -548,6 +585,38 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
             rule: `严禁通过相对路径直接调用兄弟切片私有实现 [${matchSibling[1]}]: 跨切片集成必须通过 public.server 或共享契约`,
             code: matchSibling[0],
           });
+        }
+
+        // 子切片单向依赖铁律：子切片严禁逆向引用父级主切片的私有实现 (../service, ../actions, ../queries)
+        if (pathSegments.length === 2 && !LEGACY_SUB_SLICE_IMPORT_WHITELIST.has(relCodePath)) {
+          const parentPrivateImport =
+            /from\s+["']\.\.\/(service|actions|queries|.*-service)["']/;
+          const matchParent = content.match(parentPrivateImport);
+          if (matchParent) {
+            violations.push({
+              file: relCodePath,
+              line: 1,
+              rule: `【架构红线】子切片 [${sliceSubpath}] 严禁逆向引用父级主切片的私有实现 [${matchParent[1]}]: 子切片必须保持自身独立自治，由主切片单向调用编排`,
+              code: matchParent[0],
+            });
+          }
+        }
+
+        // UI 防巨石单文件行数硬门禁：防止 AI 或开发者产生千行巨石组件
+        if (
+          codeFilePath.includes("/ui/") &&
+          /\.(tsx|jsx)$/.test(codeFilePath) &&
+          !LEGACY_MONOLITH_WHITELIST.has(relCodePath)
+        ) {
+          const lineCount = content.split("\n").length;
+          if (lineCount > 500) {
+            violations.push({
+              file: relCodePath,
+              line: 1,
+              rule: `【架构红线】UI 组件单文件行数不得超过 500 行（当前 ${lineCount} 行），必须拆解为 Level 2 积木组件并抽离 useFormState 纯逻辑 Hook`,
+              code: `Line count: ${lineCount} > 500`,
+            });
+          }
         }
       }
     }

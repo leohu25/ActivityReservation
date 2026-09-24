@@ -4,7 +4,7 @@
 
 ---
 
-> **列表 URL 契约（已固化）**：在 `contract.ts` 使用 `defineListSearchParams({ 扩展默认值 })`（默认 page/pageSize/keyword）；Client 用 `useListSearch`。细节见 `9-crud-resource-paradigm.md`。
+> **列表 URL 契约（已固化）**：在 `contract.ts` 使用 `defineListSearchParams({ 扩展默认值 })`（默认 page/pageSize/keyword）；Client 用 `useListSearch`。具体业务流水线由根地图统一调度。
 
 ## 权限四维命名与 SSoT 铁律
 
@@ -268,7 +268,7 @@ export function ResourceView({ data, total }: Props) {
 }
 ```
 
-完整注入链路与 layout 样板见 **`references/7-casl-ability-provider.md`**。
+完整注入链路与 layout 样板由根地图索引对应的 CASL 规范调度。
 
 ### 自定义扩展动作
 

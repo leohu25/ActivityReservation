@@ -313,6 +313,7 @@ model Bom {
   inputChildren             BomVersionInput[]   @relation("BomInputChildScheme")
 
   @@index([lifecycleStatus, isDeleted])
+  @@index([deptId])
   @@map("bom")
 }
 
@@ -395,6 +396,7 @@ model BomVersion {
   @@unique([bomId, versionNumber])
   @@index([bomId, versionStatus, effectiveFrom])
   @@index([code, versionStatus, isDeleted])
+  @@index([deptId])
   @@map("bom_version")
 }
 
@@ -427,8 +429,10 @@ model ProductDefaultBom {
 
   bom         Bom       @relation(fields: [bomId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
+  @@unique([productId, bomId])
   @@index([productId, isDeleted])
   @@index([bomId, isDeleted])
+  @@index([deptId])
   @@map("product_default_bom")
 }
 

@@ -1,195 +1,122 @@
-# 模块 4：安全 Server Actions 与序列化规范
+# 4. Server Actions 编写规范 (Server Actions Protocol)
 
-在 Next.js App Router 全栈架构中，Server Component 与 Client Component 之间存在严格的数据序列化边界。
-
-> ⚠️ **核心红线**：
->
-> 1. **严禁原始实体直出**：Prisma 查询返回的带有 `Decimal`、`Date`、`BigInt` 的对象，如果直接作为 Server Action 的返回值返回给前端，Next.js 会在控制台抛出 `Only plain objects can be passed to Client Components. Decimal objects are not supported` 错误；
-> 2. **RSC 读取与 mutation 分离**：Server Component 初始读取使用 `server-only` Query；只有客户端触发的 mutation 使用 Server Action；
-> 3. **统一使用 `defineServerAction` 包装 mutation**：由机制确保返回值安全序列化并消灭重复 `try...catch`；
-> 4. **写路径强制 CASL 守卫**：create/update/delete/状态变更必须 `assert*Ability`，与页面按钮同一 `(action, subject)`（ADR-007：业务权限只认 CASL）；
-> 5. **操作人与部门审计落盘 (ADR-009)**：新建数据时，必须从租户上下文提取 `userId` 与 `employeeProfile?.departmentId` 写入实体 `createdById` 与 `deptId`（`createResourceActions` 已自动注入 deptId）。
+> **定位**：本文档专门规范全仓所有业务切片在编写写操作（Mutation）时的服务端网关标准。  
+> 严格遵循正统 Next.js App Router `"use server"` 规范，使用 `@base/shared` 导出的 `defineServerAction` 强类型包装器。
 
 ---
 
-## 1. 推荐直写：`defineServerAction`（首选范式，清晰透明）
+## 一、 核心铁律与红线
 
-业务切片 Mutation 优先使用 `@base/shared` 的 `defineServerAction` 直接书写，每一步清晰可见、便于断点调试与微调：
+1. **统一包装器**：所有对外导出的 Server Action 必须 100% 使用 `defineServerAction(...)` 进行包装，严禁导出裸写 `async function`（防止未捕获异常泄漏敏感堆栈到客户端）；
+2. **平铺直写导出**：Server Action 必须作为独立函数在文件顶层平铺导出（Named Export），禁止使用工厂模式深层嵌套导出；
+3. **输入边界强校验**：所有 Action 入参必须经由共享的 Zod Schema 强类型约束；
+4. **安全与权限断言**：在执行任何业务逻辑前，必须首先从租户上下文提取 Ability 并调用 `assertAbility(ability, action, subject)`；
+5. **审计基线自动落盘 (ADR-009)**：新建数据必须从上下文提取 `userId` 与 `employeeProfile?.departmentId` 注入实体的 `createdById` 与 `deptId`；修改与软删除同理；
+6. **响应式缓存更新**：Mutation 成功后在 Action 内部直接调用 `revalidatePath(...)` 自愈刷新服务端缓存；**客户端严禁调用 `router.refresh()` 或 `window.location.reload()`**。
+
+---
+
+## 二、 业务装配层运行时上下文 (`src/assembly/context.ts`)
+
+业务切片通过基座高阶工厂 `createTenantSliceContext` 获得内置 `React.cache()` 记忆化的租户上下文：
 
 ```ts
-"use server";
+// src/assembly/context.ts
+import { createTenantSliceContext, type TenantSliceContext } from "@base/authorization/server";
+import { domainCatalog } from "../catalog";
+import type { DomainActionType, DomainSubjectType } from "../shared/contract-types";
 
-import { revalidatePath } from "next/cache";
-import { defineServerAction } from "@base/shared";
-import { StandardAction } from "@base/authorization";
-import {
-  assertDomainAbility,
-  getTenantDomainContext,
-} from "../../assembly/context";
-import { ResourceService } from "./service";
-import { ResourceSubject } from "./contract";
-import { parseCreateResourceInput } from "./schema";
-import type { CreateResourceInput } from "./types";
+export type TenantDomainContext = TenantSliceContext<DomainActionType, DomainSubjectType>;
 
-export const createResourceAction = defineServerAction(
-  async (rawInput: CreateResourceInput) => {
-    // 1. 获取租户与权限上下文
-    const { client, ability, userId, employeeProfile } =
-      await getTenantDomainContext();
-
-    // 2. CASL 强类型权限守卫
-    assertDomainAbility(ability, StandardAction.CREATE, ResourceSubject);
-
-    // 3. Zod 校验入参
-    const input = parseCreateResourceInput(rawInput);
-
-    // 4. 执行领域逻辑
-    const created = await ResourceService.createResource(client, input, {
-      userId,
-      deptId: employeeProfile?.departmentId ?? null,
-    });
-
-    // 5. 缓存刷新
-    revalidatePath("/<domain>/<resources>");
-    return created;
-  },
-  "创建记录失败",
-);
+export const {
+  getContext: getTenantDomainContext,
+  assertAbility: assertDomainAbility,
+} = createTenantSliceContext<DomainActionType, DomainSubjectType>(domainCatalog);
 ```
 
-**优势**：
-
-- 零多余抽象与黑盒堆栈，易于单步断点与错误定位；
-- 避免因 Next.js "use server" 规则在文件末尾重复写一遍 async function 包装；
-- 灵活性极高，支持随业务扩展定制 revalidatePath 与复合副作用。
-
 ---
 
-## 1b. 工厂模式：`createResourceActions`（纯同构简单 CRUD 可选）
+## 三、 标准 Server Action 编写范式
 
 ```ts
 "use server";
 
 import { revalidatePath } from "next/cache";
 import { defineServerAction } from "@base/shared";
-import {
-  assertDomainAbility,
-  getTenantDomainContext,
-} from "../../assembly/context";
+import { getTenantDomainContext, assertDomainAbility } from "../../assembly/context";
+import { ResourceSubject, ResourceAction } from "./contract";
+import { createResourceSchema, updateResourceSchema } from "./schema";
 import { ResourceService } from "./service";
-import { ResourceSubject } from "./contract";
-import type { CreateResourceInput } from "./types";
+import type { CreateResourceInput, UpdateResourceInput } from "./types";
 
+/**
+ * 创建业务记录 Action
+ */
 export const createResourceAction = defineServerAction(
   async (input: CreateResourceInput) => {
-    const { client, ability, userId, employeeProfile } =
-      await getTenantDomainContext();
-    assertDomainAbility(ability, "create", ResourceSubject);
+    // 1. 获取当前租户 DB 客户端与当前登录用户身份
+    const { client, ability, userId, employeeProfile } = await getTenantDomainContext();
 
-    const created = await ResourceService.createResource(client, input, {
+    // 2. CASL 强类型权限前置断言
+    assertDomainAbility(ability, ResourceAction.CREATE, ResourceSubject);
+
+    // 3. 执行领域服务事务写入
+    const created = await ResourceService.create(client, input, {
       userId,
       deptId: employeeProfile?.departmentId ?? null,
     });
+
+    // 4. 服务端缓存精准失效与自愈
     revalidatePath("/<domain>/<resources>");
     return created;
   },
-  "创建记录失败",
+  "创建业务记录失败",
+);
+
+/**
+ * 更新业务记录 Action
+ */
+export const updateResourceAction = defineServerAction(
+  async (id: string, input: UpdateResourceInput) => {
+    const { client, ability, userId } = await getTenantDomainContext();
+    assertDomainAbility(ability, ResourceAction.UPDATE, ResourceSubject);
+
+    const updated = await ResourceService.update(client, id, input, {
+      userId,
+    });
+
+    revalidatePath("/<domain>/<resources>");
+    return updated;
+  },
+  "更新业务记录失败",
+);
+
+/**
+ * 软删除业务记录 Action
+ */
+export const deleteResourceAction = defineServerAction(
+  async (id: string) => {
+    const { client, ability, userId } = await getTenantDomainContext();
+    assertDomainAbility(ability, ResourceAction.DELETE, ResourceSubject);
+
+    const deleted = await ResourceService.delete(client, id, {
+      userId,
+    });
+
+    revalidatePath("/<domain>/<resources>");
+    return deleted;
+  },
+  "删除业务记录失败",
 );
 ```
 
-注意：客户端默认不 `router.refresh()`；自愈靠 Action 内 `revalidatePath`。
-
 ---
 
-## 2. 业务区域运行时 Ability 装配 (`src/assembly/context.ts`)
+## 四、 跨端序列化与纯数据契约防线
 
-为了彻底解除底层 `shared/server` 基础设施对具体 Feature 业务契约的反向依赖，权限编译、部门拓扑解析与装配统一置于 Business Area 的装配层：
+Next.js Server Action 跨越端边界向客户端返回数据时，若包含原生 `Date` 或 Prisma `Decimal` 对象，会导致 React 运行时序列化崩溃。
 
-```ts
-// src/assembly/context.ts（业务切片标准装配层示例）
-import { getServerAuthRuntime } from "@base/auth";
-import { CaslAbilityFactory, type AppPrismaAbility } from "@base/authorization";
-import { resolveEmployeeTopology } from "@base/db-tenant";
-import { ForbiddenError } from "@casl/ability";
-import {
-  getTenantDbContext,
-  type TenantDbContext,
-} from "../shared/server/tenant-context";
-import { domainCatalog } from "../catalog";
-
-export interface TenantDomainContext extends TenantDbContext {
-  readonly ability: AppPrismaAbility<string, string>;
-}
-
-export async function getTenantDomainContext(): Promise<TenantDomainContext> {
-  const dbCtx = await getTenantDbContext();
-  const runtime = getServerAuthRuntime();
-
-  // 1. 动态自驱解析当前用户在租户内的部门拓扑 (Fail-Closed)
-  const topology = await resolveEmployeeTopology(
-    {
-      findEmployeeProfile: async (memberId: string) =>
-        dbCtx.client.employeeProfile.findUnique({
-          where: { memberId },
-          select: {
-            id: true,
-            memberId: true,
-            departmentId: true,
-            employeeNo: true,
-            jobTitle: true,
-            status: true,
-          },
-        }),
-      findAllDepartments: async () =>
-        dbCtx.client.department.findMany({
-          select: { id: true, parentId: true },
-        }),
-    },
-    { userId: dbCtx.userId, memberId: dbCtx.memberId },
-  );
-
-  // 2. 编译具备完整 CASL 规则与行级数据范围（Prisma 条件）的 Ability 实例
-  const factory = new CaslAbilityFactory(
-    runtime.tenantContextRepository,
-    domainCatalog,
-  );
-  const ability = (await factory.createPrismaAbilityForTenant(
-    dbCtx.tenantCtx,
-    topology,
-  )) as AppPrismaAbility<string, string>;
-
-  return { ...dbCtx, ability };
-}
-
-export function assertDomainAbility(
-  ability: AppPrismaAbility<string, string>,
-  action: string,
-  subject: string,
-): void {
-  ForbiddenError.from(ability).throwUnlessCan(action, subject);
-}
-```
-
----
-
-## 3. 前端消费契约
-
-所有由 `defineServerAction` 包装的 Action，返回类型自动推导为标准的：
-
-```ts
-type ServerActionResult<T> =
-  | { readonly success: true; readonly data: T }
-  | { readonly success: false; readonly error: string };
-```
-
-前端消费极其清爽直观：
-
-```tsx
-const res = await updateResourceStatusAction(id, "DISABLED");
-if (res.success) {
-  toast.success("记录已成功停用");
-  // 响应式更新前端 State...
-} else {
-  toast.error(res.error); // 无权限时这里是 ForbiddenError 文案
-}
-```
+`defineServerAction` 内部已**全自动集成 `toPlainData(...)` 深度转换**：
+- 所有 `Date` 实例自动安全转为 ISO8601 字符串；
+- 所有 Prisma `Decimal` 自动转为高精度 `number` 或安全数值；
+- 业务开发者直接返回对象即可，无需手动调用深拷贝。

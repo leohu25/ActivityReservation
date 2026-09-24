@@ -39,7 +39,7 @@ export const productionCenterManifest: TenantFeatureManifest = {
 		},
 		{
 			pageKey: "process-operations",
-			defaultLabel: "工序主数据",
+			defaultLabel: "工艺与规格档案",
 			group: "生产中心",
 			href: "/production/operations",
 			defaultIcon: "GitFork",

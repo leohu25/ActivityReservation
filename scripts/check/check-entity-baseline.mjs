@@ -54,8 +54,6 @@ export const EXEMPT_MODELS = new Set([
   // 纯多对多中间关联表 / 只读配置字典表
   "TenantDictItem", // 租户业务基础档案数据字典表
   "CustomerTagAssignment",
-  "CustomerTag",
-  "CustomerCategory",
   "CustomerQuoteItem", // 作为明细从表，归属于主表生命周期
   "SalesOrderItem", // 销售订单明细从表，归属于主表生命周期
   "SalesOrderFee", // 销售订单费用从表，具有独立复核流与审计字段

@@ -309,3 +309,35 @@ test("FormModal [必填与隐藏动态协调]: 被 HIDDEN 隐藏的必填字段�
   assert.match(html, /客户全称/);
   assert.doesNotMatch(html, /联系电话/);
 });
+
+test("FormModal [明细表校验闭环]: 渲染明细表格与支持最低行数及单元格校验", () => {
+  const itemSchema = z.object({
+    code: z.string().min(1, "商品编码不能为空"),
+  });
+
+  const html = renderToString(
+    <FormModal
+      open={true}
+      inline={true}
+      mode="create"
+      title="录入明细单"
+      schema={customerFormSchema}
+      fields={formFields}
+      initialValues={{ customerName: "好味", contactPhone: "13800000000", creditLimit: 0 }}
+      detailConfig={{
+        title: "商品明细",
+        columns: [
+          { id: "code", header: "编码", renderCell: (row) => <span>{row.code}</span> },
+        ],
+        schema: itemSchema,
+        minRows: 1,
+      }}
+      initialItems={[{ code: "ITEM-001" }]}
+      onClose={() => {}}
+      onSubmit={async () => {}}
+    />,
+  );
+
+  assert.match(html, /商品明细/);
+  assert.match(html, /ITEM-001/);
+});

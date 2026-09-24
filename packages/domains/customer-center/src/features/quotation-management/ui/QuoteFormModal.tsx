@@ -10,7 +10,7 @@ import {
 } from "@base/ui";
 import { createQuoteAction, updateQuoteAction } from "../actions";
 import { CustomerQuoteSubject } from "../contract";
-import { createQuoteSchema } from "../schema";
+import { createQuoteSchema, createQuoteItemSchema } from "../schema";
 import type { CreateQuoteItemInput, QuoteListItem } from "../types";
 
 export interface QuoteFormModalProps {
@@ -392,31 +392,17 @@ export function QuoteFormModal({
 				title: "报价明细条目",
 				description: "含税单价 = 不含税单价 × (1 + 税率/100)，自动计算",
 				columns: itemColumns,
+				schema: createQuoteItemSchema,
 				onAddRow: () => createEmptyItem(),
 				addText: "添加商品",
 				emptyText: "暂无报价商品，请点击右上角【添加商品】进行录入",
-				minRows: 0,
+				minRows: 1,
 			}}
 			initialItems={items}
 			onSubmit={async (
 				formValues: Record<string, unknown>,
 				{ items: detailItems }: { items: CreateQuoteItemInput[] },
 			) => {
-				if (!detailItems || detailItems.length === 0) {
-					toast.error("报价单明细至少需要添加一行商品");
-					throw new Error("报价单明细至少需要添加一行商品");
-				}
-				for (let i = 0; i < detailItems.length; i++) {
-					const it = detailItems[i];
-					if (!it?.itemCode?.trim() || !it?.itemName?.trim()) {
-						toast.error(`第 ${i + 1} 行商品编码和名称不能为空`);
-						throw new Error(`第 ${i + 1} 行商品编码和名称不能为空`);
-					}
-					if (!it?.salesUnit?.trim()) {
-						toast.error(`第 ${i + 1} 行商品单位不能为空`);
-						throw new Error(`第 ${i + 1} 行商品单位不能为空`);
-					}
-				}
 				const payload = {
 					customerId:
 						formValues.scopeType === "CUSTOMER" ||
@@ -441,7 +427,7 @@ export function QuoteFormModal({
 					const res = await updateQuoteAction(record.id, payload);
 					if (!res.success) {
 						toast.error(res.error || "修改报价单失败");
-						throw new Error(res.error || "修改报价单失败");
+						return false;
 					}
 					toast.success("报价单修改成功");
 				} else {
@@ -452,11 +438,12 @@ export function QuoteFormModal({
 					});
 					if (!res.success) {
 						toast.error(res.error || "创建报价单失败");
-						throw new Error(res.error || "创建报价单失败");
+						return false;
 					}
 					toast.success("报价单创建成功（草稿）");
 				}
 				onSuccess?.();
+				return true;
 			}}
 		/>
 	);

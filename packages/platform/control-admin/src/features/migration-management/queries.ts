@@ -1,5 +1,6 @@
 import "server-only";
 
+import { toPlainData } from "@base/shared";
 import { requireControlAdminSession } from "../../shared/server/session";
 import { getMigrationManagementService } from "./service";
 import type { MigrationDashboardData } from "./types";
@@ -10,5 +11,6 @@ import type { MigrationDashboardData } from "./types";
 export async function getMigrationDashboardQuery(): Promise<MigrationDashboardData> {
  const user = await requireControlAdminSession();
  const service = getMigrationManagementService();
- return service.getMigrationDashboard(user);
+ const result = await service.getMigrationDashboard(user);
+ return toPlainData(result);
 }

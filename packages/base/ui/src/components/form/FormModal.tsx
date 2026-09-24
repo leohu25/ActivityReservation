@@ -8,7 +8,7 @@ import React, {
 	useRef,
 	type ReactNode,
 } from "react";
-import type { z } from "zod";
+import { z } from "zod";
 import {
 	Dialog,
 	DialogContent,
@@ -22,6 +22,7 @@ import { FormBanner } from "../form/FormLayout";
 import { DetailTable, type DetailTableColumn } from "../data-table/DetailTable";
 import { toast } from "../feedback/Toast";
 import { useUiAbility, type UiAbilityLike } from "../auth";
+import { formatErrorMessage } from "@base/shared";
 import { cn } from "../../lib/utils";
 
 export type FormModalMode = "create" | "edit" | "view";
@@ -86,8 +87,8 @@ export interface FormModalProps<
 		prevValues: TValues,
 	) => Partial<TValues> | void;
 
-	// Zod 运行时强类型校验
-	readonly schema?: z.ZodType<TValues> | z.ZodType<any>;
+	// Zod 运行时强类型校验 (强制单一事实源，驱动表单合法性校验与字段标红)
+	readonly schema: z.ZodType<TValues> | z.ZodType<any>;
 
 	// 内置明细表集成 (DetailTable)
 	readonly detailConfig?: FormModalDetailConfig<TItem>;
@@ -102,7 +103,7 @@ export interface FormModalProps<
 	readonly onSubmit?: (
 		values: TValues,
 		context: { items: TItem[] },
-	) => Promise<void> | void;
+	) => Promise<boolean | void> | boolean | void;
 	readonly submitText?: string;
 	readonly cancelText?: string;
 	readonly auditHint?: string | null;
@@ -220,6 +221,7 @@ export function FormModal<
 	const [errors, setErrors] = useState<
 		Partial<Record<keyof TValues & string, string>>
 	>({});
+	const [itemCellErrors, setItemCellErrors] = useState<Record<string, string>>({});
 	const [submitting, setSubmitting] = useState(false);
 
 	const prevOpenRef = useRef(open);
@@ -389,42 +391,102 @@ export function FormModal<
 		if (e) e.preventDefault();
 		if (isView) return;
 
+		// 1. 如果配置了 detailConfig.minRows，先校验明细最低行数
+		if (
+			activeDetailConfig &&
+			typeof activeDetailConfig.minRows === "number" &&
+			activeDetailConfig.minRows > 0 &&
+			items.length < activeDetailConfig.minRows
+		) {
+			toast.error(
+				activeDetailConfig.minRows === 1
+					? "明细条目至少需要添加一行数据"
+					: `明细条目至少需要添加 ${activeDetailConfig.minRows} 行数据`,
+			);
+			return;
+		}
+
+		const newErrors: Partial<Record<keyof TValues & string, string>> = {};
+		const nextItemErrors: Record<string, string> = {};
+		let detailArrayErrorMessage: string | null = null;
+
+		// 2. 主表 schema 校验（支持包含 items 数组或仅有主表字段）
 		if (effectiveSchema) {
-			const parseResult = effectiveSchema.safeParse(values);
+			const fullPayload = activeDetailConfig ? { ...values, items } : values;
+			const parseResult = effectiveSchema.safeParse(fullPayload);
 			if (!parseResult.success) {
-				const newErrors: Partial<Record<keyof TValues & string, string>> = {};
 				for (const issue of parseResult.error.issues) {
-					const fieldName = String(issue.path[0] ?? "");
+					const rootKey = String(issue.path[0] ?? "");
+					// 处理 items 数组字段的错误
+					if (rootKey === "items") {
+						if (issue.path.length >= 3 && typeof issue.path[1] === "number") {
+							const rowIdx = issue.path[1];
+							const fieldId = String(issue.path[2]);
+							const key = `${rowIdx}.${fieldId}`;
+							if (!nextItemErrors[key]) {
+								nextItemErrors[key] = issue.message;
+							}
+						} else if (!detailArrayErrorMessage) {
+							detailArrayErrorMessage = issue.message;
+						}
+						continue;
+					}
+
 					// 豁免逻辑：若当前启用了受控主体权限 (subject)，且该字段被 HIDDEN 彻底隐藏（不在可见字段集合），自动豁免该字段的校验错误
 					if (
 						subject &&
 						effectiveAbility &&
-						!visibleFieldNames.has(fieldName)
+						!visibleFieldNames.has(rootKey)
 					) {
 						continue;
 					}
-					if (fieldName && !newErrors[fieldName as keyof TValues & string]) {
-						newErrors[fieldName as keyof TValues & string] = issue.message;
+					if (rootKey && !newErrors[rootKey as keyof TValues & string]) {
+						newErrors[rootKey as keyof TValues & string] = issue.message;
 					}
-				}
-				if (Object.keys(newErrors).length > 0) {
-					setErrors(newErrors);
-					toast.error("表单数据校验未通过，请检查红字提示");
-					return;
 				}
 			}
 		}
 
-		if (effectiveItemsSchema) {
-			const itemsResult = effectiveItemsSchema.safeParse(items);
+		// 3. 独立明细行 schema 校验
+		if (activeDetailConfig && effectiveItemsSchema) {
+			const arraySchema =
+				effectiveItemsSchema instanceof z.ZodArray
+					? effectiveItemsSchema
+					: z.array(effectiveItemsSchema);
+			const itemsResult = arraySchema.safeParse(items);
 			if (!itemsResult.success) {
-				const firstIssue = itemsResult.error.issues[0];
-				toast.error(firstIssue?.message || "明细行数据校验未通过");
-				return;
+				for (const issue of itemsResult.error.issues) {
+					const rowIdx = issue.path[0];
+					const fieldId = issue.path[1];
+					if (typeof rowIdx === "number" && fieldId !== undefined) {
+						const key = `${rowIdx}.${String(fieldId)}`;
+						if (!nextItemErrors[key]) {
+							nextItemErrors[key] = issue.message;
+						}
+					} else if (!detailArrayErrorMessage) {
+						detailArrayErrorMessage = issue.message;
+					}
+				}
 			}
+		}
+
+		if (
+			Object.keys(newErrors).length > 0 ||
+			Object.keys(nextItemErrors).length > 0 ||
+			detailArrayErrorMessage
+		) {
+			setErrors(newErrors);
+			setItemCellErrors(nextItemErrors);
+			if (detailArrayErrorMessage && Object.keys(nextItemErrors).length === 0) {
+				toast.error(detailArrayErrorMessage);
+			} else {
+				toast.error("表单数据校验未通过，请检查红字提示");
+			}
+			return;
 		}
 
 		setErrors({});
+		setItemCellErrors({});
 		if (!onSubmit) {
 			handleClose();
 			return;
@@ -432,12 +494,14 @@ export function FormModal<
 
 		try {
 			setSubmitting(true);
-			await onSubmit(values, { items: [...items] });
+			const result = await onSubmit(values, { items: [...items] });
+			if (result === false) {
+				return;
+			}
 			handleClose();
 		} catch (err: unknown) {
-			const msg = err instanceof Error ? err.message : "提交表单失败";
+			const msg = formatErrorMessage(err, "提交表单失败");
 			toast.error(msg);
-			throw err;
 		} finally {
 			setSubmitting(false);
 		}
@@ -583,7 +647,10 @@ export function FormModal<
 					description={activeDetailConfig.description}
 					columns={activeDetailConfig.columns}
 					data={items}
-					onChange={isView ? undefined : handleItemsChange}
+					onChange={isView ? undefined : (next) => {
+						setItemCellErrors({});
+						handleItemsChange(next);
+					}}
 					onAddRow={activeDetailConfig.onAddRow}
 					addText={activeDetailConfig.addText}
 					minRows={activeDetailConfig.minRows}
@@ -591,6 +658,7 @@ export function FormModal<
 					readOnly={isView || Boolean(activeDetailConfig.readOnly)}
 					emptyText={activeDetailConfig.emptyText}
 					summary={activeDetailConfig.summary}
+					cellErrors={itemCellErrors}
 				/>
 			) : null}
 		</div>
