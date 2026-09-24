@@ -1,7 +1,11 @@
 import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
 import { getServerAuthRuntime } from "@base/auth";
-import { CompanySettingsView } from "@platform/tenant-admin/tenant-settings";
+import {
+  CompanyProfileSubject,
+  CompanySettingsView,
+} from "@platform/tenant-admin/tenant-settings";
+import { StandardAction } from "@base/authorization";
 import { getCompanyProfileQuery } from "@platform/tenant-admin/tenant-settings/server";
 import { Card } from "@base/ui";
 import { getTenantSubjectPermissions } from "@/kernel";
@@ -45,8 +49,8 @@ export default async function SettingsCompanyPage() {
     );
   }
 
-  const companyPerms = await getTenantSubjectPermissions("CompanyProfile");
-  const canReadCompany = companyPerms.actions.includes("read");
+  const companyPerms = await getTenantSubjectPermissions(CompanyProfileSubject);
+  const canReadCompany = companyPerms.actions.includes(StandardAction.READ);
 
   if (!canReadCompany) {
     return (

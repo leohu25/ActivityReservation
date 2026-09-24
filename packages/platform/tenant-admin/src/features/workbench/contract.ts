@@ -3,7 +3,7 @@ import {
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
 
-export const WorkbenchResource = "system:workbench";
+export const WorkbenchResource = "system.workbench";
 export const WorkbenchSubject = "Workbench";
 export type WorkbenchSubject = typeof WorkbenchSubject;
 

@@ -7,7 +7,7 @@ import {
 	TableCell,
 	Badge,
 } from "@base/ui";
-import { useAbility } from "@base/authorization";
+import { useAbility, StandardAction } from "@base/authorization";
 import { BomSubject, BomField } from "../../contract";
 import type { BomInputItemDto } from "../../types";
 
@@ -20,7 +20,7 @@ export interface InputsTableTabProps {
  */
 export function InputsTableTab({ inputs }: InputsTableTabProps) {
 	const ability = useAbility();
-	const canReadCookedYield = ability.can("read", BomSubject, BomField.DEFAULT_COOKED_YIELD_RATE);
+	const canReadCookedYield = ability.can(StandardAction.READ, BomSubject, BomField.DEFAULT_COOKED_YIELD_RATE);
 
 	return (
 		<div className="rounded-lg border overflow-hidden">

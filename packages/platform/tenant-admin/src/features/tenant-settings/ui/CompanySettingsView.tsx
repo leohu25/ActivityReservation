@@ -12,9 +12,11 @@ import {
   Button,
   Badge,
   AuthorizedField,
+  AuthGuard,
   toast,
 } from "@base/ui";
 import { Settings, Save, CheckCircle2, AlertCircle, Image as ImageIcon } from "lucide-react";
+import { CompanyProfileSubject } from "../company-settings.contract";
 import type { CompanyProfileData } from "../types";
 import type { UpdateCompanyProfileSchemaInput } from "../schema";
 import { updateCompanyProfileAction } from "../actions";
@@ -323,14 +325,16 @@ export function CompanySettingsView({
 
         {!isReadOnly && (
           <div className="flex justify-end pt-2">
-            <Button
-              type="submit"
-              disabled={isPending}
-              className="flex items-center gap-2 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs cursor-pointer"
-            >
-              <Save className="size-4" />
-              <span>{isPending ? "正在保存..." : "保存配置"}</span>
-            </Button>
+            <AuthGuard action={StandardAction.UPDATE} subject={CompanyProfileSubject}>
+              <Button
+                type="submit"
+                disabled={isPending}
+                className="flex items-center gap-2 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs cursor-pointer"
+              >
+                <Save className="size-4" />
+                <span>{isPending ? "正在保存..." : "保存配置"}</span>
+              </Button>
+            </AuthGuard>
           </div>
         )}
       </form>

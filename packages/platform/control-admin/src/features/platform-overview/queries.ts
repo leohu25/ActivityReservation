@@ -1,5 +1,6 @@
 import "server-only";
 
+import { toPlainData } from "@base/shared";
 import { getControlAuthRuntime } from "../../shared/server/auth-runtime";
 import { requireControlAdminSession } from "../../shared/server/session";
 import { PlatformOverviewService } from "./service";
@@ -24,5 +25,6 @@ export function getPlatformOverviewService(): PlatformOverviewService {
 export async function getControlStatsQuery(): Promise<ControlStats> {
  const user = await requireControlAdminSession();
  const service = getPlatformOverviewService();
- return service.getStats(user);
+ const result = await service.getStats(user);
+ return toPlainData(result);
 }

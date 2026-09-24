@@ -13,9 +13,12 @@ import {
   Label,
   PageShell,
   Combobox,
+  AuthGuard,
   toast,
 } from "@base/ui";
 import { ShieldCheck, Save, Lock, Clock } from "lucide-react";
+import { StandardAction } from "@base/authorization";
+import { SecuritySettingsSubject } from "../security-settings.contract";
 import type { SecuritySettingsData } from "../types";
 import type { UpdateSecuritySettingsSchemaInput } from "../schema";
 import { updateSecuritySettingsAction } from "../actions";
@@ -213,14 +216,16 @@ export function SecuritySettingsView({
 
         {!isReadOnly && (
           <div className="flex justify-end pt-2">
-            <Button
-              type="submit"
-              disabled={isPending}
-              className="flex items-center gap-2 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs"
-            >
-              <Save className="size-4" />
-              <span>{isPending ? "正在保存..." : "保存安全策略"}</span>
-            </Button>
+            <AuthGuard action={StandardAction.UPDATE} subject={SecuritySettingsSubject}>
+              <Button
+                type="submit"
+                disabled={isPending}
+                className="flex items-center gap-2 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs"
+              >
+                <Save className="size-4" />
+                <span>{isPending ? "正在保存..." : "保存安全策略"}</span>
+              </Button>
+            </AuthGuard>
           </div>
         )}
       </form>

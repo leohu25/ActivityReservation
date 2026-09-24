@@ -1,7 +1,10 @@
 import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
 import { getServerAuthRuntime } from "@base/auth";
-import { RolePermissionManager } from "@platform/tenant-admin/role-management";
+import {
+  RolePermissionManager,
+  RoleManagementSubject,
+} from "@platform/tenant-admin/role-management";
 import { listTenantRolesQuery } from "@platform/tenant-admin/role-management/server";
 import { Card } from "@base/ui";
 import {
@@ -10,7 +13,10 @@ import {
   getTenantSubjectPermissions,
   getTenantCustomMenuTree,
 } from "@/kernel";
-import { deriveMenuAlignedPermissionTree } from "@base/authorization";
+import {
+  StandardAction,
+  deriveMenuAlignedPermissionTree,
+} from "@base/authorization";
 
 /**
  * 租户角色与权限管理页面 (Server Component - 极薄装配线)
@@ -53,8 +59,8 @@ export default async function SettingsRolesPage() {
   }
 
   // 官方 CASL：layout 已注入 AbilityProvider；这里用同一套快照做 RSC 门禁
-  const rolePerms = await getTenantSubjectPermissions("RoleManagement");
-  const canReadRoles = rolePerms.actions.includes("read");
+  const rolePerms = await getTenantSubjectPermissions(RoleManagementSubject);
+  const canReadRoles = rolePerms.actions.includes(StandardAction.READ);
 
   if (!canReadRoles) {
     return (

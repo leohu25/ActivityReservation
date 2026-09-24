@@ -12,9 +12,12 @@ import {
   Label,
   PageShell,
   Combobox,
+  AuthGuard,
   toast,
 } from "@base/ui";
 import { Sliders, Save } from "lucide-react";
+import { StandardAction } from "@base/authorization";
+import { GeneralSettingsSubject } from "../general-settings.contract";
 import type { GeneralSettingsData } from "../types";
 import type { UpdateGeneralSettingsSchemaInput } from "../schema";
 import { updateGeneralSettingsAction } from "../actions";
@@ -214,14 +217,16 @@ export function GeneralSettingsView({
 
         {!isReadOnly && (
           <div className="flex justify-end pt-2">
-            <Button
-              type="submit"
-              disabled={isPending}
-              className="flex items-center gap-2 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs"
-            >
-              <Save className="size-4" />
-              <span>{isPending ? "正在保存..." : "保存基础设置"}</span>
-            </Button>
+            <AuthGuard action={StandardAction.UPDATE} subject={GeneralSettingsSubject}>
+              <Button
+                type="submit"
+                disabled={isPending}
+                className="flex items-center gap-2 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs"
+              >
+                <Save className="size-4" />
+                <span>{isPending ? "正在保存..." : "保存基础设置"}</span>
+              </Button>
+            </AuthGuard>
           </div>
         )}
       </form>

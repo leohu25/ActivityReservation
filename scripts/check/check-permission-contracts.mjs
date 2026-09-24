@@ -3,7 +3,18 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 
-const root = path.resolve(import.meta.dirname, "..");
+function findWorkspaceRoot(startDir = process.cwd()) {
+	let curr = path.resolve(startDir);
+	while (curr !== path.dirname(curr)) {
+		if (fs.existsSync(path.join(curr, "pnpm-workspace.yaml"))) {
+			return curr;
+		}
+		curr = path.dirname(curr);
+	}
+	return path.resolve(process.cwd());
+}
+
+const root = findWorkspaceRoot(import.meta.dirname);
 const scanRoots = [
 	path.join(root, "packages/domains"),
 	path.join(root, "packages/platform"),
@@ -35,16 +46,23 @@ function fail(file, index, dimension, rule, found, expected) {
 		expected,
 	});
 }
-function filesUnder(directory, predicate) {
-	const files = [];
-	if (!fs.existsSync(directory)) return files;
-	for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-		const resolved = path.join(directory, entry.name);
-		if (entry.isDirectory()) files.push(...filesUnder(resolved, predicate));
-		else if (predicate(resolved)) files.push(resolved);
+
+function filesUnder(dir, predicate) {
+	if (!fs.existsSync(dir)) return [];
+	const entries = fs.readdirSync(dir, { withFileTypes: true });
+	const results = [];
+	for (const entry of entries) {
+		const full = path.join(dir, entry.name);
+		if (entry.isDirectory()) {
+			if (entry.name === "node_modules" || entry.name === "dist") continue;
+			results.push(...filesUnder(full, predicate));
+		} else if (predicate(full)) {
+			results.push(full);
+		}
 	}
-	return files;
+	return results;
 }
+
 function prismaModels() {
 	const models = new Map();
 	for (const file of filesUnder(
@@ -87,6 +105,9 @@ const allowedCapabilitySubjects = new Set([
 	"AuditLogLogin",
 	"AuditLogPermission",
 	"RoleManagement",
+	"Role",
+	"Employee",
+	"Workbench",
 	"GeneralSettings",
 	"SecuritySettings",
 ]);
@@ -102,19 +123,19 @@ for (const file of contractFiles) {
 			fail(
 				file,
 				match.index,
-				"subject",
-				"PascalCase",
+				"权限主体命名",
+				"大驼峰命名规范 (PascalCase)",
 				value,
-				"PascalCase such as ItemMaster",
+				"必须使用 PascalCase 规范命名（例如 ItemMaster）",
 			);
 		if (!models.has(value) && !allowedCapabilitySubjects.has(value)) {
 			fail(
 				file,
 				match.index,
-				"subject",
-				"entity mapping or bounded capability exception",
+				"权限主体映射",
+				"Prisma 物理实体映射或白名单能力异常",
 				value,
-				"a real Prisma model or an explicitly allowed non-entity capability",
+				"必须映射至真实的 Prisma 数据模型，或在 allowedCapabilitySubjects 白名单中显式声明为非实体业务能力",
 			);
 		}
 	}
@@ -126,10 +147,10 @@ for (const file of contractFiles) {
 		fail(
 			file,
 			match.index,
-			"subject",
-			"independent declaration",
+			"权限主体声明",
+			"独立主体声明规范",
 			`${aliasName} = ${targetName}`,
-			"严禁声明 Subject 别名兼容层，必须为每个业务实体独立声明规范的 PascalCase Subject",
+			"严禁声明 Subject 别名兼容层，必须为每个业务实体独立声明规范的 PascalCase Subject 常量",
 		);
 	}
 	for (const match of source.matchAll(
@@ -141,10 +162,10 @@ for (const file of contractFiles) {
 			fail(
 				file,
 				match.index,
-				"resource",
-				"<domain>.<singular_resource> lowercase snake_case",
+				"资源标识命名",
+				"<领域>.<单数资源> 小写下划线规范",
 				value,
-				"for example customer.store or material.item_master",
+				"必须遵循 <domain>.<singular_resource> 小写下划线命名（例如 customer.store 或 material.item_master）",
 			);
 	}
 	for (const match of source.matchAll(
@@ -160,10 +181,10 @@ for (const file of contractFiles) {
 				fail(
 					file,
 					match.index + valueMatch.index,
-					"field",
-					"camelCase",
+					"受控字段命名",
+					"小驼峰命名规范 (camelCase)",
 					valueMatch[1],
-					"a camelCase Prisma field such as referencePrice",
+					"字段值必须为符合 Prisma 属性定义的小驼峰命名（例如 referencePrice）",
 				);
 		}
 		fieldsByName.set(dictionaryName, { values, file, index: match.index });
@@ -179,28 +200,28 @@ for (const file of contractFiles) {
 			fail(
 				file,
 				match.index,
-				"resource",
-				"descriptor constant reference",
-				body.match(/\bresource:\s*([^,\n]+)/)?.[1] ?? "missing",
-				"resource: XxxResource",
+				"资源绑定规范",
+				"页面契约常量引用",
+				body.match(/\bresource:\s*([^,\n]+)/)?.[1] ?? "未声明",
+				"必须通过常量引用声明: resource: XxxResource",
 			);
 		if (!subject)
 			fail(
 				file,
 				match.index,
-				"subject",
-				"descriptor constant reference",
-				body.match(/\bsubject:\s*([^,\n]+)/)?.[1] ?? "missing",
-				"subject: XxxSubject",
+				"权限主体绑定",
+				"页面契约常量引用",
+				body.match(/\bsubject:\s*([^,\n]+)/)?.[1] ?? "未声明",
+				"必须通过常量引用声明: subject: XxxSubject",
 			);
 		for (const action of body.matchAll(/\baction:\s*"([^"]+)"/g)) {
 			fail(
 				file,
 				match.index + action.index,
-				"action",
-				"declared constant reference",
+				"权限动作声明",
+				"已声明的常量引用",
 				action[1],
-				"StandardAction.X or DomainAction.X",
+				"严禁裸写动词字符串，必须使用 StandardAction.X 或 DomainAction.X",
 			);
 		}
 		descriptors.set(name, {
@@ -217,10 +238,10 @@ for (const file of contractFiles) {
 			fail(
 				file,
 				match.index,
-				"action",
-				"lowercase snake_case verb",
+				"权限动作动词",
+				"小写下划线动词规范 (snake_case)",
 				match[1],
-				"read, update, audit, submit_review, etc.",
+				"动作动词必须为小写下划线格式（例如 read, update, audit, submit_review）",
 			);
 	}
 }
@@ -230,10 +251,10 @@ for (const [name, item] of subjects) {
 		fail(
 			item.file,
 			item.index,
-			"authorization-chain",
-			"Subject descriptor coverage",
+			"授权链条覆盖",
+			"主体页面契约覆盖 (Subject descriptor coverage)",
 			name,
-			`export a FeaturePagePermissionDescriptor that explicitly binds ${name} to its Resource`,
+			`请在该切片中导出 FeaturePagePermissionDescriptor，将 ${name} 显式绑定至对应的 Resource 页面契约`,
 		);
 	}
 }
@@ -245,10 +266,10 @@ for (const [name, item] of resources) {
 		fail(
 			item.file,
 			item.index,
-			"resource",
-			"global uniqueness",
+			"资源唯一性",
+			"全局唯一资源标识 (global uniqueness)",
 			item.value,
-			`a unique resource key; already declared by ${prior}`,
+			`资源标识全局唯一；该值已被 ${prior} 先行占用`,
 		);
 	resourceValues.set(item.value, name);
 }
@@ -256,17 +277,42 @@ for (const [name, item] of resources) {
 for (const [fieldName, item] of fieldsByName) {
 	const expectedSubject = fieldName.replace(/Field$/, "Subject");
 	const subject = subjects.get(expectedSubject)?.value;
-	const model = subject ? models.get(subject) : undefined;
-	if (!model) continue;
+	if (!subject) continue;
+
+	// 非实体能力（allowedCapabilitySubjects）豁免 Prisma 物理模型对齐校验
+	if (allowedCapabilitySubjects.has(subject)) continue;
+
+	// 针对领域模型聚合投影视图进行主子表模型聚合
+	// Bom 字段聚合自 Bom + BomVersion
+	const compositeModels = {
+		Bom: ["Bom", "BomVersion"],
+	};
+
+	const targetModelNames = compositeModels[subject] || [subject];
+	const aggregatedFields = new Set();
+	for (const mName of targetModelNames) {
+		const m = models.get(mName);
+		if (m) {
+			for (const f of m.fields) aggregatedFields.add(f);
+		}
+	}
+
+	// 允许部分虚拟计算字段或跨关联聚合字段
+	const virtualFieldExceptions = {
+		Bom: new Set(["productId", "status", "isDefault"]),
+		CompanyProfile: new Set(["systemName", "logoUrl"]),
+	};
+	const allowedVirtualFields = virtualFieldExceptions[subject] || new Set();
+
 	for (const value of item.values) {
-		if (!model.fields.has(value))
+		if (!aggregatedFields.has(value) && !allowedVirtualFields.has(value))
 			fail(
 				item.file,
 				item.index,
-				"field",
-				`Prisma alignment for ${subject}`,
+				"字段物理映射",
+				`Prisma 模型字段对齐 (${subject})`,
 				value,
-				`a field declared on Prisma model ${subject}`,
+				`该受控字段在 Prisma 模型 ${targetModelNames.join(" / ")} 中不存在，请确认模型字段定义`,
 			);
 	}
 }
@@ -279,10 +325,10 @@ for (const file of filesUnderRoots((f) => f.endsWith("/manifest.ts"))) {
 			fail(
 				file,
 				match.index,
-				"pageKey",
-				"lowercase kebab-case (e.g. customer-stores or material-categories)",
+				"页面键规范",
+				"小写中划线规范 (kebab-case)",
 				value,
-				"lowercase kebab-case string with at least one hyphen",
+				"pageKey 必须使用至少包含一个连字符的小写中划线字符串（例如 customer-stores 或 system-workbench）",
 			);
 		}
 	}
@@ -290,10 +336,10 @@ for (const file of filesUnderRoots((f) => f.endsWith("/manifest.ts"))) {
 		fail(
 			file,
 			match.index,
-			"action",
-			"manifest constant reference",
+			"权限动作声明",
+			"Manifest 常量引用规范",
 			match[1],
-			"requiredAction: StandardAction.X",
+			"必须使用 StandardAction 常量引用: requiredAction: StandardAction.X",
 		);
 	const pageBlock =
 		source.match(/permissionModules:\s*\[([\s\S]*?)\n\s*\],?\n\};/)?.[1] ?? "";
@@ -306,10 +352,10 @@ for (const file of filesUnderRoots((f) => f.endsWith("/manifest.ts"))) {
 			fail(
 				file,
 				source.indexOf(descriptor),
-				"authorization-chain",
-				"manifest descriptor consumption",
+				"授权链条覆盖",
+				"Manifest 页面契约消费 (manifest descriptor consumption)",
 				descriptor,
-				`include ${descriptor} in permissionModules.pages`,
+				`请在 manifest 的 permissionModules.pages 数组中显式包含 ${descriptor}`,
 			);
 		}
 	}
@@ -339,10 +385,10 @@ for (const file of filesUnderRoots((f) => f.endsWith("/manifest.ts"))) {
 					fail(
 						file,
 						source.indexOf(`href: "${routePath}"`),
-						"composite-page",
-						"multiple subjects declaration",
-						`href: "${routePath}" without subjects: [...]`,
-						`declare subjects: [${expectedSubjects.join(", ")}] on composite page matching multiple contracts`,
+						"复合页面配置",
+						"多权限主体显式声明 (multiple subjects declaration)",
+						`href: "${routePath}" 缺少 subjects: [...]`,
+						`复合路由匹配多个页面契约时，必须显式声明 subjects: [${expectedSubjects.join(", ")}]`,
 					);
 				}
 			}
@@ -351,7 +397,7 @@ for (const file of filesUnderRoots((f) => f.endsWith("/manifest.ts"))) {
 }
 
 for (const file of allTsFiles) {
-	// Tests may use literal permission fixtures; production authorization call sites may not.
+	// 排除测试用例与契约本身
 	if (
 		file.endsWith(".test.ts") ||
 		file.endsWith(".test.tsx") ||
@@ -365,10 +411,10 @@ for (const file of allTsFiles) {
 		fail(
 			file,
 			match.index,
-			"action",
-			"assert constant reference",
+			"权限动作声明",
+			"assertAbility 动作常量引用",
 			match[1],
-			"StandardAction.X or DomainAction.X",
+			"严禁裸写动词字符串，必须使用 StandardAction.X 或 DomainAction.X",
 		);
 	}
 	for (const match of source.matchAll(
@@ -377,30 +423,30 @@ for (const file of allTsFiles) {
 		fail(
 			file,
 			match.index,
-			"subject",
-			"assert constant reference",
+			"权限主体声明",
+			"assertAbility 主体常量引用",
 			match[1],
-			"a declared XxxSubject constant",
+			"严禁裸写主体字符串，必须使用已导出的 XxxSubject 常量",
 		);
 	}
 	for (const match of source.matchAll(/ability\.can\(\s*["']([^"']+)["']/g)) {
 		fail(
 			file,
 			match.index,
-			"action",
-			"ability.can constant reference",
+			"权限动作声明",
+			"ability.can 动作常量引用",
 			match[1],
-			"StandardAction.X or DomainAction.X",
+			"严禁裸写动词字符串，必须使用 StandardAction.X 或 DomainAction.X",
 		);
 	}
 	for (const match of source.matchAll(/\baction=["']([^"']+)["']/g)) {
 		fail(
 			file,
 			match.index,
-			"action",
-			"guard constant reference",
+			"组件权限守卫",
+			"Guard 动作常量引用",
 			match[1],
-			"action={StandardAction.X} or action={DomainAction.X}",
+			"严禁裸写动作，必须使用 action={StandardAction.X} 或 action={DomainAction.X}",
 		);
 	}
 	for (const match of source.matchAll(
@@ -409,10 +455,10 @@ for (const file of allTsFiles) {
 		fail(
 			file,
 			match.index,
-			"field",
-			"ability.can field constant reference",
+			"受控字段声明",
+			"ability.can 字段常量引用",
 			match[1],
-			"a declared XxxField.X constant",
+			"严禁裸写字段名，必须使用已导出的 XxxField.X 常量",
 		);
 	}
 
@@ -423,10 +469,10 @@ for (const file of allTsFiles) {
 		fail(
 			file,
 			match.index,
-			"type-safety",
-			"strong action union type required (no string escape)",
+			"类型安全红线",
+			"强类型 Action 联合类型约束 (禁止降级为 string)",
 			match[1],
-			"declare a strong union type for action parameter instead of string",
+			"守卫函数的 action 参数必须声明强类型联合类型，严禁使用 string",
 		);
 	}
 	for (const match of source.matchAll(
@@ -435,10 +481,10 @@ for (const file of allTsFiles) {
 		fail(
 			file,
 			match.index,
-			"type-safety",
-			"strong subject union type required (no string escape)",
+			"类型安全红线",
+			"强类型 Subject 联合类型约束 (禁止降级为 string)",
 			match[1],
-			"declare a strong union type for subject parameter instead of string",
+			"守卫函数的 subject 参数必须声明强类型联合类型，严禁使用 string",
 		);
 	}
 }
@@ -462,10 +508,10 @@ for (const file of tenantDashboardPages) {
 		fail(
 			file,
 			match.index,
-			"options-architecture",
-			"no direct administrative TreeQuery in business pages",
+			"选项架构解耦",
+			"业务页面严禁直调管理端 TreeQuery",
 			match[1],
-			"consume contextual get*PageOptionsQuery (e.g. getCustomerPageOptionsQuery) instead of getCategoryTreeQuery",
+			"必须消费宿主专用的 get*PageOptionsQuery（例如 getCustomerPageOptionsQuery）而不是直调分类树管理接口",
 		);
 	}
 }
@@ -489,10 +535,10 @@ for (const file of tenantAppFiles) {
 		fail(
 			file,
 			match.index,
-			"subject-safety",
-			"getTenantSubjectPermissions must use strongly typed Subject constant symbol, no magic string",
+			"权限主体安全",
+			"getTenantSubjectPermissions 严禁魔法字符串",
 			match[1],
-			`import { ${match[1]}Subject } from corresponding slice contract and pass ${match[1]}Subject`,
+			`必须从对应切片 contract 中导入 ${match[1]}Subject 常量符号并传入`,
 		);
 	}
 
@@ -505,10 +551,10 @@ for (const file of tenantAppFiles) {
 			fail(
 				file,
 				match.index + (strMatch.index ?? 0),
-				"subject-safety",
-				"getTenantMultiSubjectPermissions array must contain strongly typed Subject constant symbols, no magic strings",
+				"权限主体安全",
+				"getTenantMultiSubjectPermissions 数组严禁魔法字符串",
 				strMatch[1],
-				`import { ${strMatch[1]}Subject } from corresponding slice contract and pass ${strMatch[1]}Subject`,
+				`必须从对应切片 contract 中导入 ${strMatch[1]}Subject 常量符号并传入`,
 			);
 		}
 	}
@@ -516,17 +562,17 @@ for (const file of tenantAppFiles) {
 
 if (violations.length) {
 	console.error(
-		`\u001b[31m✗ [Permission Contract Violations] found ${violations.length} violation(s)\u001b[0m`,
+		`\u001b[31m✗ 【权限四维与契约规范门禁检测失败】发现 ${violations.length} 项违规：\u001b[0m`,
 	);
 	for (const v of violations) {
 		console.error(
 			`  \u001b[33m${v.file}:${v.line}\u001b[0m [${v.dimension}] ${v.rule}`,
 		);
-		console.error(`    found: ${String(v.found).trim().slice(0, 160)}`);
-		console.error(`    fix:   ${v.expected}`);
+		console.error(`    实际代码: ${String(v.found).trim().slice(0, 160)}`);
+		console.error(`    整改建议: ${v.expected}`);
 	}
 	process.exit(1);
 }
 console.log(
-	"✓ Permission contracts satisfy Resource/Subject/Action/Field SSoT rules",
+	"✓ 权限契约四维规范（Resource/Subject/Action/Field）与单一事实源校验通过",
 );

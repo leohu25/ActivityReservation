@@ -65,6 +65,7 @@ import {
   TenantAbilityProvider,
   type AbilitySnapshot,
 } from "@base/authorization";
+import { UiAbilityProvider } from "@base/ui";
 
 export function buildSliceAbilitySnapshots(permissions: {
   /* 各 Subject 的 { actions, fieldPolicies } */
@@ -91,7 +92,11 @@ export function SliceAbilityBoundary({
     [permissions],
   );
   return (
-    <TenantAbilityProvider snapshots={snapshots}>{children}</TenantAbilityProvider>
+    <TenantAbilityProvider snapshots={snapshots}>
+      <UiAbilityProvider>
+        {children}
+      </UiAbilityProvider>
+    </TenantAbilityProvider>
   );
 }
 ```
@@ -147,7 +152,7 @@ import { XxxSubject } from "../contract";
 export function XxxView({ data, total }: Props) {
   const ability = useAbility(); // 仅导出等需要命令式 can() 时使用
 
-  const list = useListSearch(xxxSearchParams); // 见 references/9
+  const list = useListSearch(xxxSearchParams); // 列表搜索状态管理 Hook
 
   return (
     <DataTable

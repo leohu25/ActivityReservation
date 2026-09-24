@@ -1,6 +1,8 @@
+"use client";
+
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { toast, updateTabTitle, useSafeRouter, type FormPageMode } from "@base/ui";
-import { useAbility } from "@base/authorization";
+import { useAbility, StandardAction } from "@base/authorization";
 import {
 	BOM_TYPES,
 	QUANTITY_MODES,
@@ -389,8 +391,8 @@ export function useBomFormState({
 
 	// 权限判定
 	const ability = useAbility();
-	const canReadName = ability.can("read", BomSubject, BomField.NAME);
-	const canReadCode = ability.can("read", BomSubject, BomField.CODE);
+	const canReadName = ability.can(StandardAction.READ, BomSubject, BomField.NAME);
+	const canReadCode = ability.can(StandardAction.READ, BomSubject, BomField.CODE);
 
 	// 统一提交校验与请求
 	const handleSave = async (isDraftAction: boolean = false) => {

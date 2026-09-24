@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowLeft, Loader2, Save } from "lucide-react";
+import { Loader2, Save } from "lucide-react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { DocumentHeader } from "./DocumentHeader";
@@ -9,39 +9,14 @@ import { AuthGuard } from "../auth";
 import { updateTabTitle } from "./TabBar";
 import { useSafeRouter } from "../../lib/use-safe-router";
 import { cn } from "../../lib/utils";
+import {
+	DocumentContext,
+	type DocumentContextValue,
+	type DocumentMode,
+} from "./DocumentContext";
 
-export type DocumentMode = "create" | "edit" | "view";
-
-export interface DocumentContextValue {
-	/** 当前单据模式 */
-	readonly mode: DocumentMode;
-	/** 当前单据是否处于只读/冻结状态 (view 模式或业务已锁定) */
-	readonly isReadonly: boolean;
-	/** 关联的 CASL 权限主体 (Subject) */
-	readonly subject?: string;
-	/** 业务单据唯一标识 */
-	readonly documentId?: string;
-	/** 业务单据编号 (如 BOM-2025-001) */
-	readonly documentNumber?: string;
-	/** 当前是否正在提交保存 */
-	readonly isSubmitting: boolean;
-}
-
-const DocumentContext = React.createContext<DocumentContextValue | null>(null);
-
-/**
- * 获取当前单据工作台上下文
- * 用于在深层积木组件中无感知获取单据三态、只读判定与权限主体，避免 Prop Drilling
- */
-export function useDocumentContext(): DocumentContextValue {
-	const context = React.useContext(DocumentContext);
-	if (!context) {
-		throw new Error(
-			"useDocumentContext must be used within a <DocumentShell /> container.",
-		);
-	}
-	return context;
-}
+export type { DocumentMode, DocumentContextValue };
+export { useDocumentContext, useOptionalDocumentContext } from "./DocumentContext";
 
 export interface DocumentShellProps {
 	/** 单据模式，默认 'create' */

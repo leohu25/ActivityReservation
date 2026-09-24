@@ -7,6 +7,7 @@ import { useUiAbility, type UiAbilityLike } from "./ui-ability-context";
 import { Field, FieldLabel } from "../ui/field";
 import { Badge } from "../ui/badge";
 import { DataTableContext } from "../data-table/DataTableContext";
+import { useOptionalDocumentContext } from "../layout/DocumentContext";
 
 export type { FieldAccessMode } from "@base/shared";
 export type AbilityLike = UiAbilityLike;
@@ -86,13 +87,25 @@ export function AuthField({
 	className,
 }: AuthFieldProps) {
 	const tableContext = useContext(DataTableContext);
+	const docContext = useOptionalDocumentContext();
 	const contextAbility = useUiAbility();
 
 	const ability =
 		explicitAbility === undefined ? contextAbility : explicitAbility;
-	const subject = explicitSubject || tableContext?.subject || "";
+	const subject =
+		explicitSubject || docContext?.subject || tableContext?.subject || "";
 
-	const resolvedMode = deriveFieldMode(ability, subject, field, action, mode);
+	// 自动感知单据只读态：若单据本身处于只读/view模式，字段强制进入 READONLY
+	const effectiveOverrideMode =
+		mode ?? (docContext?.isReadonly ? FieldPolicy.READONLY : undefined);
+
+	const resolvedMode = deriveFieldMode(
+		ability,
+		subject,
+		field,
+		action,
+		effectiveOverrideMode,
+	);
 
 	if (resolvedMode === FieldPolicy.HIDDEN) {
 		return fallback ? <>{fallback}</> : null;

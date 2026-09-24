@@ -45,7 +45,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
   order: 30,
   pages: [
     {
-      pageKey: "workbench",
+      pageKey: "system-workbench",
       defaultLabel: "工作台",
       href: "/workbench",
       defaultIcon: "LayoutDashboard",
@@ -205,6 +205,7 @@ export const tenantAdminManifest: TenantFeatureManifest = {
       order: 30,
       pages: [
         companyProfilePageContract,
+        generalSettingsPageContract,
         securitySettingsPageContract,
         tenantMenuItemPageContract,
       ],

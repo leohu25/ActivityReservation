@@ -1,6 +1,7 @@
 import "server-only";
 
 import { toPlainData } from "@base/shared";
+import { StandardAction } from "@base/authorization";
 import {
   getTenantAdminContext,
   assertTenantAdminAbility,
@@ -16,7 +17,7 @@ export async function listAuditOperationLogsQuery(
   filter: ListAuditLogsFilter = {},
 ): Promise<{ items: readonly AuditOperationLogItem[]; total: number }> {
   const { client, ability } = await getTenantAdminContext();
-  assertTenantAdminAbility(ability, "read", AuditLogOperationSubject);
+  assertTenantAdminAbility(ability, StandardAction.READ, AuditLogOperationSubject);
 
   const result = await AuditLogService.listOperationLogs(client, filter);
   return toPlainData(result);
