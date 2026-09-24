@@ -240,40 +240,39 @@ export function BomListView({ data, total, formOptions }: BomListViewProps) {
 		onPublish: handlePublish,
 	});
 
-	return (
-		<div className="space-y-4">
-			{/* 1. 顶部类型切换标签栏 (观麦高保真交互: 全部 | 单品 | 组合 | 包装) */}
-			<div className="flex items-center border-b border-border bg-background px-2 pt-2 gap-6">
-				{BOM_TYPE_OPTIONS.map((tab) => {
-					const isActive = activeTypeTab === tab.value;
-					return (
-						<button
-							key={tab.value}
-							type="button"
-							onClick={() => handleTabChange(tab.value)}
-							className={`relative pb-2.5 text-sm font-semibold transition-colors cursor-pointer ${
-								isActive
-									? "text-blue-600 font-bold"
-									: "text-muted-foreground hover:text-foreground"
-							}`}
-						>
-							{tab.label}
-							{isActive && (
-								<span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
-							)}
-						</button>
-					);
-				})}
-			</div>
+	// 1. 标题右侧分类 Tab 栏插槽：高对比度主色胶囊，选中态醒目突出
+	const typeTabsSlot = (
+		<div className="flex items-center gap-1 bg-muted/80 p-0.5 rounded-lg border border-border/80">
+			{BOM_TYPE_OPTIONS.map((tab) => {
+				const isActive = activeTypeTab === tab.value;
+				return (
+					<button
+						key={tab.value}
+						type="button"
+						onClick={() => handleTabChange(tab.value)}
+						className={`px-3 py-1 text-xs rounded-md font-semibold transition-all cursor-pointer ${
+							isActive
+								? "bg-primary text-primary-foreground shadow-xs"
+								: "text-muted-foreground hover:text-foreground hover:bg-background/60"
+						}`}
+					>
+						{tab.label}
+					</button>
+				);
+			})}
+		</div>
+	);
 
-			{/* 2. 主列表 DataTable */}
+	return (
+		<>
+			{/* 主列表 DataTable：左侧[标题 + 分类Tab]，右侧[刷新/列设置/新建BOM]，彻底消灭冗余空白与副标题 */}
 			<DataTable<BomListItemDto>
 				data={data as BomListItemDto[]}
 				columns={columns}
 				rowKey={(r) => r.id}
 				subject={BomSubject}
 				title="生产BOM管理"
-				description="维护单品加工、组合配方与包装装配三大类生产 BOM 方案、原料投入与工艺工序路线。"
+				headerExtra={typeTabsSlot}
 				total={total}
 				{...list.dataTableProps}
 				onExport={handleExport}
@@ -323,6 +322,6 @@ export function BomListView({ data, total, formOptions }: BomListViewProps) {
 					}
 				}}
 			/>
-		</div>
+		</>
 	);
 }

@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { Download, Plus, RefreshCw, RotateCcw, Search } from "lucide-react";
+import { Download, Plus, RefreshCw } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Combobox, type ComboboxOption } from "../form/Combobox";
+import { PageContainer } from "../layout/PageContainer";
 import { DataTableRoot, type DataTableRootProps } from "./DataTableRoot";
 import { DataTableHeader } from "./DataTableHeader";
 import { DataTableToolbar } from "./DataTableToolbar";
@@ -39,6 +40,11 @@ export interface DataTableProps<TData>
 	/** 标题；`showHeader={false}` 时可省略（壳层自绘 Header） */
 	title?: string;
 	description?: string;
+	/**
+	 * 标题右侧扩展插槽 (headerExtra / tabsSlot)
+	 * 紧跟在左侧主标题之后，例如大类切换 Tab、分段筛选器等，与右侧新增/刷新按钮自然两端对齐。
+	 */
+	headerExtra?: React.ReactNode;
 	/** 默认 true。false 时不渲染 Header（筛选/表体由外层壳或积木拼装） */
 	showHeader?: boolean;
 	/**
@@ -110,6 +116,7 @@ export interface DataTableProps<TData>
 export function DataTable<TData>({
 	title,
 	description,
+	headerExtra,
 	showHeader = true,
 	data,
 	columns,
@@ -253,55 +260,58 @@ export function DataTable<TData>({
 	);
 
 	return (
-		<DataTableRoot<TData>
-			data={data}
-			columns={columns as readonly ColumnDef<TData>[]}
-			rowKey={rowKey}
-			isLoading={isLoading}
-			page={page}
-			pageSize={pageSize}
-			total={total}
-			onPageChange={onPageChange}
-			subject={subject}
-			ability={ability}
-			integratedCard={integratedCard}
-			clientSidePagination={clientSidePagination}
-			className={className}
-		>
-			{showHeader !== false ? (
-				<DataTableHeader
-					title={title ?? ""}
-					description={description}
-					actions={toolbar}
-				/>
-			) : toolbarVisible ? (
-				<div className="flex flex-wrap items-center justify-end gap-2 px-4 pt-3">
-					{toolbar}
-				</div>
-			) : null}
+		<PageContainer scrollable={true} padded={true}>
+			<DataTableRoot<TData>
+				data={data}
+				columns={columns as readonly ColumnDef<TData>[]}
+				rowKey={rowKey}
+				isLoading={isLoading}
+				page={page}
+				pageSize={pageSize}
+				total={total}
+				onPageChange={onPageChange}
+				subject={subject}
+				ability={ability}
+				integratedCard={integratedCard}
+				clientSidePagination={clientSidePagination}
+				className={className}
+			>
+				{showHeader !== false ? (
+					<DataTableHeader
+						title={title ?? ""}
+						description={description}
+						slotExtra={headerExtra}
+						actions={toolbar}
+					/>
+				) : toolbarVisible ? (
+					<div className="flex flex-wrap items-center justify-end gap-2 px-4 pt-3">
+						{toolbar}
+					</div>
+				) : null}
 
-			{showFilterBar ? (
-				<DataTableFilterBar
-					onSearch={onSearch}
-					onReset={onReset}
-					onAdvancedFilter={onAdvancedFilter}
-				>
-					{filterChildren ?? (
-						<>
-							{keywordField}
-							{statusField}
-							{filterExtra}
-						</>
-					)}
-				</DataTableFilterBar>
-			) : null}
+				{showFilterBar ? (
+					<DataTableFilterBar
+						onSearch={onSearch}
+						onReset={onReset}
+						onAdvancedFilter={onAdvancedFilter}
+					>
+						{filterChildren ?? (
+							<>
+								{keywordField}
+								{statusField}
+								{filterExtra}
+							</>
+						)}
+					</DataTableFilterBar>
+				) : null}
 
-			<DataTableContent showIndex {...contentProps} />
+				<DataTableContent showIndex {...contentProps} />
 
-			{showPagination ? <DataTablePagination /> : null}
+				{showPagination ? <DataTablePagination /> : null}
 
-			{children}
-		</DataTableRoot>
+				{children}
+			</DataTableRoot>
+		</PageContainer>
 	);
 }
 

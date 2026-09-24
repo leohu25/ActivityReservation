@@ -59,13 +59,13 @@ export function DashboardShell({
 				<div className="flex min-h-0 flex-1 overflow-hidden">
 					{sidebar}
 					<SidebarInset key="sidebar-inset" className="min-w-0 flex-1 flex flex-col overflow-hidden bg-background">
-						<div className="min-w-0 flex-1 overflow-y-auto p-2 md:p-2.5 flex flex-col gap-2">
-							{!hideBreadcrumbs ? (
-								<div key="breadcrumb-bar" className="pb-1">
-									<BreadcrumbBar sections={navSections} />
-								</div>
-							) : null}
-							<div key="page-content" className="min-w-0 flex-1">{children}</div>
+						{!hideBreadcrumbs ? (
+							<div key="breadcrumb-bar" className="px-3 pt-2 pb-1 shrink-0">
+								<BreadcrumbBar sections={navSections} />
+							</div>
+						) : null}
+						<div key="page-viewport" className="min-w-0 flex-1 flex flex-col overflow-hidden">
+							{children}
 						</div>
 					</SidebarInset>
 				</div>

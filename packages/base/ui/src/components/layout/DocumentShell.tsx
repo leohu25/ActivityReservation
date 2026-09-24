@@ -228,11 +228,11 @@ export function DocumentShell({
 		<DocumentContext.Provider value={contextValue}>
 			<div
 				className={cn(
-					"flex flex-col min-h-full w-full bg-background text-foreground",
+					"flex flex-col h-full w-full bg-background text-foreground overflow-hidden",
 					className,
 				)}
 			>
-				{/* 1. 顶栏 DocumentHeader 吸顶 */}
+				{/* 1. 顶栏 DocumentHeader 自然顶格贴边吸附 */}
 				<DocumentHeader
 					onBack={handleBack}
 					backText={backText}
@@ -251,13 +251,13 @@ export function DocumentShell({
 					badges={headerBadges}
 					slotMiddle={slotMiddle}
 					slotActions={actions}
-					className="sticky top-0 z-20"
+					className="sticky top-0 z-20 shrink-0"
 				/>
 
-				{/* 2. 下方内容区：容器内自然排版与滚动 */}
+				{/* 2. 下方内容独立滚动视口：滚动完全收敛在标题栏下方 */}
 				<div
 					className={cn(
-						"flex-1 p-6 space-y-6 max-w-6xl w-full mx-auto",
+						"flex-1 overflow-y-auto p-4 md:p-6 pb-20 space-y-6 max-w-6xl w-full mx-auto",
 						contentClassName,
 					)}
 				>

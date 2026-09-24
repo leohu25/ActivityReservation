@@ -557,11 +557,11 @@ export function FormPage<
 	return (
 		<div
 			className={cn(
-				"flex flex-col min-h-full w-full bg-background text-foreground",
+				"flex flex-col h-full w-full bg-background text-foreground overflow-hidden",
 				className,
 			)}
 		>
-			{/* 1. 单据顶部工具栏：自然吸顶 */}
+			{/* 1. 单据顶部工具栏：自然顶格贴边吸附 */}
 			<DocumentHeader
 				onBack={handleBack}
 				backText={backText}
@@ -580,11 +580,11 @@ export function FormPage<
 				badges={headerBadges}
 				slotMiddle={slotMiddle}
 				slotActions={topActions}
-				className={cn(stickyHeader && "sticky top-0 z-20")}
+				className={cn(stickyHeader && "sticky top-0 z-20 shrink-0")}
 			/>
 
 			{/* 2. 单据内容独立滚动视口：滚动完全收敛在操作栏下方，彻底杜绝向上穿透与透光缝隙 */}
-			<div className="flex-1 overflow-y-auto p-6 pb-20">
+			<div className="flex-1 overflow-y-auto p-4 md:p-6 pb-20">
 				<div className="max-w-6xl w-full mx-auto space-y-6">
 				{/* 提示横幅 */}
 				{banner || bannerTitle ? (
