@@ -7,6 +7,7 @@
     "init": "node scripts/init.mjs",
     "status": "node scripts/tools/status.mjs",
     "verify": "node scripts/verify.mjs",
+    "verify:fast": "node -e \"process.env.HARNESS_FAST_TRACK='true'; import('./scripts/verify.mjs')\"",
     "session:end": "node .harness/lifecycle/session-end.mjs",
     "starter:reset": "node scripts/tools/reset-to-starter.mjs",
     "ui:add": "npx shadcn@latest add -y --overwrite -c packages/base/ui",

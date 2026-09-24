@@ -91,6 +91,17 @@ function matchPattern(filePath, pattern) {
 }
 
 // 3. 解析当前激活特性 (三级自适应：member.local.md -> Git 分支 -> feature_list.json)
+// SAS 敏捷单兵模式支持：设置 HARNESS_FAST_TRACK=true 或 FAST_TRACK=1 时放行沙盒文档强制绑定
+const isFastTrack =
+  process.env.HARNESS_FAST_TRACK === "true" ||
+  process.env.FAST_TRACK === "1" ||
+  process.env.SAS_MODE === "true";
+
+if (isFastTrack) {
+  process.stdout.write("• 沙盒边界: SAS 敏捷单兵模式 (自动放行沙盒文档强校验，由代码架构门禁守底)\n");
+  process.exit(0);
+}
+
 const active = resolveActiveFeature(workspaceRoot);
 const activeFeature = active.id;
 

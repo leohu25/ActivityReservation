@@ -285,7 +285,7 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
             if (fs.existsSync(tenantAppDir)) {
               const appFiles = walkCodeFiles(tenantAppDir);
               const layoutFiles = appFiles.filter((f) =>
-                /\/layout\.(tsx|jsx)$/.test(f),
+                /[\\/]layout\.(tsx|jsx)$/.test(f),
               );
 
               for (const lf of layoutFiles) {
@@ -550,7 +550,7 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
         // Client-Safe 出口 (public.ts) 与 UI 组件严禁直接导入服务端敏感库
         const isClientCode =
           codeFilePath.endsWith("public.ts") ||
-          codeFilePath.includes("/ui/") ||
+          /[\\/]ui[\\/]/.test(codeFilePath) ||
           /^\s*["']use client["'];/m.test(content);
 
         if (isClientCode) {
@@ -604,7 +604,7 @@ export function checkVerticalSlices(workspaceRoot = findWorkspaceRoot()) {
 
         // UI 防巨石单文件行数硬门禁：防止 AI 或开发者产生千行巨石组件
         if (
-          codeFilePath.includes("/ui/") &&
+          /[\\/]ui[\\/]/.test(codeFilePath) &&
           /\.(tsx|jsx)$/.test(codeFilePath) &&
           !LEGACY_MONOLITH_WHITELIST.has(relCodePath)
         ) {

@@ -15,23 +15,23 @@
 
 ## 启动工作流 (Startup Workflow)
 
-开工写代码前，按顺序执行以下 4 步：
+本项目支持 **SAS 单兵端到端闭环（默认 95% 场景，遵循 SWE-bench Verified 论文实证科学范式）** 与 **MAS 集中编排（仅用于超大规模跨多包重构）** 双轨模式。
+
+开工写代码前，按顺序执行以下 3 步敏捷闭环：
 
 1. **确认工作区**：执行 `pwd` 确认处于仓库根目录；
-2. **运行自检基线**：执行 `pnpm init`（或 `node scripts/init.mjs`）确保环境就绪并挂载 Git pre-commit 物理门禁；
-3. **锁定目标范围**：查阅 `feature_list.json` 确认目标特性状态与前置依赖（或遵循用户明确指定的任务边界）；
-4. **加载开发规范**：涉及业务切片开发或基座改造时，加载 `.agents/skills/next-saas-base-dev/` 规范执行。
+2. **运行基线自检**：执行 `pnpm init`（或 `node scripts/init.mjs`）确保环境就绪并挂载物理门禁；
+3. **确定修改目标**：与人类直接对齐目标切片与边界，优先以单一 Agent 在当前会话内端到端完成“理解 -> 编码 -> 机器测试闭环”，消灭多智能体自然语言转述导致的协调损耗。
 
 ---
 
 ## 核心工作规则 (Working Rules)
 
-- **单任务聚焦 (One feature/task at a time)**：每次仅处理一个明确目标，严禁跨范围随意修改无关文件；
+- **单任务聚焦与单兵闭环 (SAS End-to-End Delivery)**：优先在单一上下文内独立完成“需求理解、切片代码编写、单元测试与机器门禁检验”，杜绝盲目派生角色与文本文档击鼓传花；
 - **提交前必须审阅确认 (Human Review Before Commit)**：在执行 `git commit` 前，智能体必须主动向用户呈现本次修改清单与核心变更说明，**获得用户明确确认审阅通过后方可执行提交**，严禁擅自静默提交；
-- **提交信息必须使用中文 (Chinese Commit Message)**：Git 提交信息必须严格遵循 Conventional Commits 规范，且 Header 说明与 Body 详细要点**必须使用中文书写**（例如 `feat(material): 实现物料与工艺BOM中心及全仓权限四维契约标准化`），严禁使用全英文提交信息；
-- **门禁由钩子兜底 (No manual gate runs)**：日常开发**不要**手动全量运行 `pnpm verify`（耗时且由 Git `pre-commit` 自动兜底）；即时反馈仅对改动文件执行同级单测或类型检查；
-- **单源状态收敛**：特性开发进度与真实交付证据严格记录至 `feature_list.json` 与沙盒 `progress.md`；
-- **插件条件路由 (Optional Plugin Routing)**：运行时按需探测宿主能力（若当前环境存在 `typesafe_evaluate` 则动态路由至 `.harness/plugins/typesafe-evaluator.md` 启用辅助判断，不存在则直接跳过路由，平滑保持原生工作流）；
+- **提交信息必须使用中文 (Chinese Commit Message)**：Git 提交信息必须严格遵循 Conventional Commits 规范，且 Header 说明与 Body 详细要点**必须使用中文书写**（例如 `feat(booking): 实现活动预约切片及权限契约标准化`），严禁使用全英文提交信息；
+- **机器客观验证把关 (Deterministic Mechanical Verification)**：以真实编译器与测试套件（`pnpm check`、同级单元测试、`pnpm verify:fast`）的 Exit Code（0 或 1）作为唯一硬核合流依据，杜绝依赖 LLM 主观脑补审查；
+- **单源状态收敛**：业务契约 100% 收敛在切片 `contract.ts`，数据模型 100% 收敛在 `packages/runtime/db/prisma/` 与各领域切片模型定义，不随意在业务代码外堆砌冗余流程文档；
 - **保持整洁可重启**：结束时工作区随时可重新无损运行 `pnpm init`（或 `node scripts/init.mjs`）。
 
 ---

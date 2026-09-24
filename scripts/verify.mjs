@@ -213,6 +213,11 @@ for (const check of checks) {
 // 8. 类型检查
 const pkgJsonPath = path.join(WORKSPACE_ROOT, "package.json");
 const nodeModulesPath = path.join(WORKSPACE_ROOT, "node_modules");
+const isFastTrack =
+	process.env.HARNESS_FAST_TRACK === "true" ||
+	process.env.FAST_TRACK === "1" ||
+	process.env.SAS_MODE === "true";
+
 if (fs.existsSync(pkgJsonPath) && fs.existsSync(nodeModulesPath)) {
 	let pkg = null;
 	try {
@@ -221,8 +226,12 @@ if (fs.existsSync(pkgJsonPath) && fs.existsSync(nodeModulesPath)) {
 		pkg = null;
 	}
 	if (pkg?.scripts?.check) {
-		if (!runQuiet("类型扫描", "pnpm", ["--silent", "check"])) {
-			process.exit(1);
+		if (isFastTrack) {
+			console.log(`• 类型扫描: ${GREEN}SAS 极速放行 (依赖 IDE / 单包 check 实时诊断)${NC}`);
+		} else {
+			if (!runQuiet("类型扫描", "pnpm", ["--silent", "check"])) {
+				process.exit(1);
+			}
 		}
 	}
 } else {

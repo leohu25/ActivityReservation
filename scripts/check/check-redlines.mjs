@@ -169,8 +169,8 @@ for (const filePath of allFiles) {
 
   const isTestFile =
     /\.(test|spec)\.(ts|tsx|js|jsx)$/.test(relPath) ||
-    relPath.includes("/test/") ||
-    relPath.includes("/tests/");
+    /[\\/]test[\\/]/.test(relPath) ||
+    /[\\/]tests[\\/]/.test(relPath);
 
   // 4.1 检查原生 confirm / window.confirm 弹窗调用
   // 规则红线 8 / 20：交互单次确认，破坏性操作统一由 ConfirmDialog 提示一次，严禁原生 confirm(...)
