@@ -31,6 +31,7 @@ export const bomInputItemSchema = z.object({
 		])
 		.default(SUPPLY_POLICIES.EXTERNAL),
 	childBomId: z.string().nullish(),
+	childBomVersionId: z.string().nullish(),
 	sortOrder: z.coerce.number().int().default(0),
 	remark: z.string().max(255).nullish(),
 });

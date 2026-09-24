@@ -170,9 +170,6 @@ export function BomDetailDrawer({
 	if (!open || !activeDetail) return null;
 
 	const { currentVersion, versionHistory } = activeDetail;
-	const byProducts = currentVersion.outputs.filter(
-		(o) => o.outputRole === "BYPRODUCT",
-	);
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
@@ -191,57 +188,79 @@ export function BomDetailDrawer({
 					onPublishVersion={onPublishVersion}
 				/>
 
-				{/* 2. 版本切换栏积木 */}
-				<VersionSwitcherBar
-					currentVersionNumber={currentVersion.versionNumber}
-					description={currentVersion.description}
-					versionHistory={versionHistory}
-					onSelectVersion={handleSelectVersionInternal}
-				/>
-
-				{/* 3. 多选项卡内容区域 */}
+				{/* 2. 仅保留两大核心视图：Tab 1 流程图谱，Tab 2 配方与工艺全貌，并与版本切换在同一行 */}
 				<Tabs
 					value={activeTab}
 					onValueChange={setActiveTab}
-					className="flex-1 flex flex-col"
+					className="flex-1 flex flex-col mt-2"
 				>
-					<TabsList className="grid grid-cols-4 w-full">
-						<TabsTrigger value="graph" className="text-xs">
-							版本流程图谱
-						</TabsTrigger>
-						<TabsTrigger value="inputs" className="text-xs">
-							投入清单 ({currentVersion.inputs.length})
-						</TabsTrigger>
-						<TabsTrigger value="outputs" className="text-xs">
-							产出清单 ({currentVersion.outputs.length}
-							{byProducts.length > 0 ? ` · 含${byProducts.length}副产品` : ""})
-						</TabsTrigger>
-						<TabsTrigger value="operations" className="text-xs">
-							工艺路线 ({currentVersion.operations.length})
-						</TabsTrigger>
-					</TabsList>
+					{/* 同一行并排：左侧为核心两个 Tab，右侧为当前版本切换器 */}
+					<div className="flex items-center justify-between gap-4 py-1.5 border-b mb-3">
+						<TabsList className="grid grid-cols-2 w-72 h-8">
+							<TabsTrigger value="graph" className="text-xs">
+								版本流程图谱
+							</TabsTrigger>
+							<TabsTrigger value="overview" className="text-xs">
+								配方与工艺全貌
+							</TabsTrigger>
+						</TabsList>
 
-					{/* 3.1 版本流程图谱 (积木化图谱组件，下钻时递归使用内部导航栈) */}
-					<TabsContent value="graph" className="mt-2.5 flex-1 flex flex-col">
+						<VersionSwitcherBar
+							currentVersionNumber={currentVersion.versionNumber}
+							description={currentVersion.description}
+							versionHistory={versionHistory}
+							onSelectVersion={handleSelectVersionInternal}
+						/>
+					</div>
+
+					{/* 2.1 Tab 1：版本流程图谱 */}
+					<TabsContent value="graph" className="mt-0 flex-1 flex flex-col">
 						<BomFlowGraph
 							detail={activeDetail}
 							onNavigateBom={handleNavigateBomInternal}
 						/>
 					</TabsContent>
 
-					{/* 3.2 投入清单明细表格 */}
-					<TabsContent value="inputs" className="mt-4">
-						<InputsTableTab inputs={currentVersion.inputs} />
-					</TabsContent>
+					{/* 2.2 Tab 2：配方与工艺全貌 (合屏一览：产出、投入与工艺路线) */}
+					<TabsContent value="overview" className="mt-2 space-y-4">
+						{/* 产出清单 */}
+						<div className="space-y-2">
+							<div className="flex items-center justify-between border-b pb-1">
+								<h3 className="text-xs font-bold text-foreground">
+									一、产出清单 (成品主产出与副产品)
+								</h3>
+								<span className="text-[11px] text-muted-foreground">
+									共 {currentVersion.outputs.length} 项产出
+								</span>
+							</div>
+							<OutputsTableTab outputs={currentVersion.outputs} />
+						</div>
 
-					{/* 3.3 产出清单明细表格 */}
-					<TabsContent value="outputs" className="mt-4">
-						<OutputsTableTab outputs={currentVersion.outputs} />
-					</TabsContent>
+						{/* 原料投入清单 */}
+						<div className="space-y-2">
+							<div className="flex items-center justify-between border-b pb-1">
+								<h3 className="text-xs font-bold text-foreground">
+									二、原料投入清单
+								</h3>
+								<span className="text-[11px] text-muted-foreground">
+									共 {currentVersion.inputs.length} 项物料
+								</span>
+							</div>
+							<InputsTableTab inputs={currentVersion.inputs} />
+						</div>
 
-					{/* 3.4 工艺工序路线明细表格 */}
-					<TabsContent value="operations" className="mt-4">
-						<OperationsTableTab operations={currentVersion.operations} />
+						{/* 工艺路线 */}
+						<div className="space-y-2">
+							<div className="flex items-center justify-between border-b pb-1">
+								<h3 className="text-xs font-bold text-foreground">
+									三、工序工艺路线
+								</h3>
+								<span className="text-[11px] text-muted-foreground">
+									共 {currentVersion.operations.length} 道工序
+								</span>
+							</div>
+							<OperationsTableTab operations={currentVersion.operations} />
+						</div>
 					</TabsContent>
 				</Tabs>
 			</SheetContent>

@@ -33,6 +33,9 @@ export function InputsTableTab({ inputs }: InputsTableTabProps) {
 						<TableHead className="py-2 px-3 text-left font-semibold">
 							投入物料名称
 						</TableHead>
+						<TableHead className="py-2 px-3 text-left font-semibold">
+							关联子BOM
+						</TableHead>
 						<TableHead className="py-2 px-3 text-right font-semibold">
 							标准毛投入
 						</TableHead>
@@ -60,6 +63,22 @@ export function InputsTableTab({ inputs }: InputsTableTabProps) {
 							</TableCell>
 							<TableCell className="py-2 px-3 font-medium text-foreground">
 								{inp.productName}
+							</TableCell>
+							<TableCell className="py-2 px-3">
+								{inp.childBomName ? (
+									<div className="flex items-center gap-1.5">
+										<span className="font-semibold text-blue-600 dark:text-blue-400">
+											{inp.childBomName}
+										</span>
+										{inp.childBomVersionNumber && (
+											<Badge variant="secondary" className="text-[10px] h-4.5 px-1 font-mono">
+												v{inp.childBomVersionNumber} 快照
+											</Badge>
+										)}
+									</div>
+								) : (
+									<span className="text-muted-foreground font-mono">-</span>
+								)}
 							</TableCell>
 							<TableCell className="py-2 px-3 text-right font-mono font-semibold">
 								{inp.quantity ??

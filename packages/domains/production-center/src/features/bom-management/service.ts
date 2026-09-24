@@ -249,6 +249,9 @@ export class BomService {
 		const allUnitIds = new Set<string>();
 		const allOperationIds = new Set<string>();
 		const allLineIds = new Set<string>();
+		const childBomIds = new Set<string>();
+		const childVersionIds = new Set<string>();
+		const specIds = new Set<string>();
 
 		if (selectedVersion.productionLineId) {
 			allLineIds.add(selectedVersion.productionLineId);
@@ -256,6 +259,8 @@ export class BomService {
 		for (const i of selectedVersion.inputs) {
 			allProductIds.add(i.productId);
 			allUnitIds.add(i.unitId);
+			if (i.childBomId) childBomIds.add(i.childBomId);
+			if (i.childBomVersionId) childVersionIds.add(i.childBomVersionId);
 		}
 		for (const o of selectedVersion.outputs) {
 			allProductIds.add(o.productId);
@@ -263,9 +268,10 @@ export class BomService {
 		}
 		for (const op of selectedVersion.operations) {
 			allOperationIds.add(op.operationId);
+			if (op.processingSpecificationId) specIds.add(op.processingSpecificationId);
 		}
 
-		const [products, units, lines, operations] = await Promise.all([
+		const [products, units, lines, operations, childBoms, childVersions, specifications] = await Promise.all([
 			client.product.findMany({
 				where: { id: { in: Array.from(allProductIds) } },
 				include: { category: true, inventoryUnit: true },
@@ -279,12 +285,33 @@ export class BomService {
 			client.operation.findMany({
 				where: { id: { in: Array.from(allOperationIds) } },
 			}),
+			childBomIds.size > 0
+				? client.bom.findMany({
+						where: { id: { in: Array.from(childBomIds) } },
+						include: { currentPublishedVersion: true },
+					})
+				: [],
+			childVersionIds.size > 0
+				? client.bomVersion.findMany({
+						where: { id: { in: Array.from(childVersionIds) } },
+						select: { id: true, versionNumber: true, name: true, code: true },
+					})
+				: [],
+			specIds.size > 0
+				? client.processingSpecification.findMany({
+						where: { id: { in: Array.from(specIds) } },
+						select: { id: true, code: true, name: true, description: true },
+					})
+				: [],
 		]);
 
 		const productMap = new Map(products.map((p) => [p.id, p]));
 		const unitMap = new Map(units.map((u) => [u.id, u]));
 		const lineMap = new Map(lines.map((l) => [l.id, l]));
 		const opMap = new Map(operations.map((o) => [o.id, o]));
+		const childBomMap = new Map(childBoms.map((b) => [b.id, b]));
+		const childVersionMap = new Map(childVersions.map((v) => [v.id, v]));
+		const specMap = new Map(specifications.map((s) => [s.id, s]));
 
 		const primaryOutput = selectedVersion.outputs.find(
 			(o) => o.outputRole === OUTPUT_ROLES.PRIMARY,
@@ -294,6 +321,10 @@ export class BomService {
 		const inputs: BomInputItemDto[] = selectedVersion.inputs.map((inp) => {
 			const p = productMap.get(inp.productId);
 			const u = unitMap.get(inp.unitId);
+			const childBom = inp.childBomId ? childBomMap.get(inp.childBomId) : null;
+			const lockedVersion = inp.childBomVersionId
+				? childVersionMap.get(inp.childBomVersionId)
+				: null;
 			return {
 				id: inp.id,
 				productId: inp.productId,
@@ -308,6 +339,12 @@ export class BomService {
 				normalLossRate: inp.normalLossRate ? Number(inp.normalLossRate) : null,
 				supplyPolicy: inp.supplyPolicy as SupplyPolicy,
 				childBomId: inp.childBomId,
+				childBomName: childBom?.currentPublishedVersion?.name,
+				childBomVersionId: inp.childBomVersionId,
+				childBomVersionNumber: lockedVersion?.versionNumber ?? null,
+				latestChildBomVersionId: childBom?.currentPublishedVersionId ?? null,
+				latestChildBomVersionNumber:
+					childBom?.currentPublishedVersion?.versionNumber ?? null,
 				sortOrder: inp.sortOrder,
 				remark: inp.remark,
 			};
@@ -335,12 +372,16 @@ export class BomService {
 
 		const ops: BomOperationItemDto[] = selectedVersion.operations.map((op) => {
 			const o = opMap.get(op.operationId);
+			const spec = op.processingSpecificationId
+				? specMap.get(op.processingSpecificationId)
+				: null;
 			return {
 				id: op.id,
 				operationId: op.operationId,
 				operationName: o?.name,
 				operationCode: o?.code,
 				processingSpecificationId: op.processingSpecificationId,
+				processingSpecificationName: spec?.name ?? null,
 				sequenceNumber: op.sequenceNumber,
 				setupMinutes: op.setupMinutes,
 				cleanupMinutes: op.cleanupMinutes,
@@ -508,6 +549,15 @@ export class BomService {
 			// 5. 写入投入清单
 			for (let idx = 0; idx < (input.inputs || []).length; idx++) {
 				const inp = input.inputs[idx];
+				let finalChildBomVersionId = inp.childBomVersionId || null;
+				if (inp.childBomId && !finalChildBomVersionId) {
+					const childBom = await tx.bom.findUnique({
+						where: { id: inp.childBomId },
+						select: { currentPublishedVersionId: true },
+					});
+					finalChildBomVersionId = childBom?.currentPublishedVersionId || null;
+				}
+
 				await tx.bomVersionInput.create({
 					data: {
 						bomVersionId: version.id,
@@ -520,6 +570,7 @@ export class BomService {
 						normalLossRate: inp.normalLossRate ?? null,
 						supplyPolicy: inp.supplyPolicy ?? SUPPLY_POLICIES.EXTERNAL,
 						childBomId: inp.childBomId || null,
+						childBomVersionId: finalChildBomVersionId,
 						sortOrder: inp.sortOrder ?? idx,
 						remark: inp.remark ?? null,
 						createdById: audit.userId,
@@ -756,6 +807,15 @@ export class BomService {
 			const inputs = input.inputs && input.inputs.length > 0 ? input.inputs : [];
 			for (let idx = 0; idx < inputs.length; idx++) {
 				const inp = inputs[idx];
+				let finalChildBomVersionId = inp.childBomVersionId || null;
+				if (inp.childBomId && !finalChildBomVersionId) {
+					const childBom = await tx.bom.findUnique({
+						where: { id: inp.childBomId },
+						select: { currentPublishedVersionId: true },
+					});
+					finalChildBomVersionId = childBom?.currentPublishedVersionId || null;
+				}
+
 				await tx.bomVersionInput.create({
 					data: {
 						bomVersionId: versionId,
@@ -768,6 +828,7 @@ export class BomService {
 						normalLossRate: inp.normalLossRate ?? null,
 						supplyPolicy: inp.supplyPolicy ?? SUPPLY_POLICIES.EXTERNAL,
 						childBomId: inp.childBomId || null,
+						childBomVersionId: finalChildBomVersionId,
 						sortOrder: inp.sortOrder ?? idx,
 						remark: inp.remark ?? null,
 						createdById: audit.userId,
@@ -940,48 +1001,164 @@ export class BomService {
 	}
 
 	/**
-	 * 获取表单所需的辅助下拉选项数据 (商品、单位、品类、产线、工序)
+	 * 获取表单所需的辅助下拉选项数据 (商品、单位、品类、产线、工序与规格、商品多单位库与默认BOM)
 	 */
 	static async getFormOptions(client: TenantPrismaClient): Promise<BomFormOptions> {
-		const [products, units, categories, productionLines, operations] = await Promise.all([
-			client.product.findMany({
-				where: { isDeleted: false },
-				include: { category: true, inventoryUnit: true },
-				orderBy: { name: "asc" },
-			}),
-			client.unitOfMeasure.findMany({
-				where: { isDeleted: false, status: "ACTIVE" },
-				select: { id: true, code: true, name: true },
-				orderBy: { code: "asc" },
-			}),
-			client.productCategory.findMany({
-				where: { isDeleted: false, status: "ACTIVE" },
-				select: { id: true, code: true, name: true },
-				orderBy: { sortOrder: "asc" },
-			}),
-			client.productionLine.findMany({
-				where: { isDeleted: false, status: "ACTIVE" },
-				select: { id: true, code: true, name: true },
-				orderBy: { code: "asc" },
-			}),
-			client.operation.findMany({
-				where: { isDeleted: false, status: "ACTIVE" },
-				select: { id: true, code: true, name: true, defaultYieldRate: true },
-				orderBy: { code: "asc" },
-			}),
-		]);
+		const [products, units, categories, productionLines, operations, defaultBoms] =
+			await Promise.all([
+				client.product.findMany({
+					where: { isDeleted: false },
+					include: {
+						category: true,
+						inventoryUnit: true,
+						defaultProductionUnit: true,
+						defaultPurchaseUnit: true,
+						unitConversions: {
+							where: { isDeleted: false, status: "ACTIVE" },
+							include: { fromUnit: true, toUnit: true },
+						},
+					},
+					orderBy: { name: "asc" },
+				}),
+				client.unitOfMeasure.findMany({
+					where: { isDeleted: false, status: "ACTIVE" },
+					select: { id: true, code: true, name: true },
+					orderBy: { code: "asc" },
+				}),
+				client.productCategory.findMany({
+					where: { isDeleted: false, status: "ACTIVE" },
+					select: { id: true, code: true, name: true },
+					orderBy: { sortOrder: "asc" },
+				}),
+				client.productionLine.findMany({
+					where: { isDeleted: false, status: "ACTIVE" },
+					select: { id: true, code: true, name: true },
+					orderBy: { code: "asc" },
+				}),
+				client.operation.findMany({
+					where: { isDeleted: false, status: "ACTIVE" },
+					include: {
+						specifications: {
+							where: { isDeleted: false, status: "ACTIVE" },
+							orderBy: { code: "asc" },
+						},
+					},
+					orderBy: { code: "asc" },
+				}),
+				client.productDefaultBom.findMany({
+					where: { isDeleted: false },
+					include: {
+						bom: {
+							include: {
+								currentPublishedVersion: true,
+							},
+						},
+					},
+				}),
+			]);
+
+		const productDefaultBomMap = new Map<
+			string,
+			{
+				readonly bomId: string;
+				readonly bomVersionId: string;
+				readonly name: string;
+				readonly versionNumber: number;
+			}
+		>();
+
+		for (const db of defaultBoms) {
+			if (db.bom?.currentPublishedVersion) {
+				productDefaultBomMap.set(db.productId, {
+					bomId: db.bomId,
+					bomVersionId: db.bom.currentPublishedVersion.id,
+					name: db.bom.currentPublishedVersion.name,
+					versionNumber: db.bom.currentPublishedVersion.versionNumber,
+				});
+			}
+		}
 
 		return {
-			products: products.map((p) => ({
-				id: p.id,
-				code: p.code,
-				name: p.name,
-				productKind: p.productKind,
-				inventoryUnitId: p.inventoryUnitId,
-				inventoryUnitName: p.inventoryUnit?.name,
-				categoryId: p.productCategoryId,
-				categoryName: p.category?.name,
-			})),
+			products: products.map((p) => {
+				const availableUnitsMap = new Map<
+					string,
+					{
+						readonly id: string;
+						readonly code: string;
+						readonly name: string;
+						readonly isDefaultProduction?: boolean;
+						readonly isDefaultPurchase?: boolean;
+						readonly isInventory?: boolean;
+					}
+				>();
+
+				// 1. 基础库存核算单位
+				if (p.inventoryUnit) {
+					availableUnitsMap.set(p.inventoryUnit.id, {
+						id: p.inventoryUnit.id,
+						code: p.inventoryUnit.code,
+						name: p.inventoryUnit.name,
+						isInventory: true,
+					});
+				}
+
+				// 2. 默认生产单位
+				if (p.defaultProductionUnit) {
+					const existing = availableUnitsMap.get(p.defaultProductionUnit.id);
+					availableUnitsMap.set(p.defaultProductionUnit.id, {
+						id: p.defaultProductionUnit.id,
+						code: p.defaultProductionUnit.code,
+						name: p.defaultProductionUnit.name,
+						...existing,
+						isDefaultProduction: true,
+					});
+				}
+
+				// 3. 默认采购单位
+				if (p.defaultPurchaseUnit) {
+					const existing = availableUnitsMap.get(p.defaultPurchaseUnit.id);
+					availableUnitsMap.set(p.defaultPurchaseUnit.id, {
+						id: p.defaultPurchaseUnit.id,
+						code: p.defaultPurchaseUnit.code,
+						name: p.defaultPurchaseUnit.name,
+						...existing,
+						isDefaultPurchase: true,
+					});
+				}
+
+				// 4. 多单位换算库涉及的单位
+				for (const uc of p.unitConversions) {
+					if (uc.fromUnit && !availableUnitsMap.has(uc.fromUnit.id)) {
+						availableUnitsMap.set(uc.fromUnit.id, {
+							id: uc.fromUnit.id,
+							code: uc.fromUnit.code,
+							name: uc.fromUnit.name,
+						});
+					}
+					if (uc.toUnit && !availableUnitsMap.has(uc.toUnit.id)) {
+						availableUnitsMap.set(uc.toUnit.id, {
+							id: uc.toUnit.id,
+							code: uc.toUnit.code,
+							name: uc.toUnit.name,
+						});
+					}
+				}
+
+				return {
+					id: p.id,
+					code: p.code,
+					name: p.name,
+					productKind: p.productKind,
+					inventoryUnitId: p.inventoryUnitId,
+					inventoryUnitName: p.inventoryUnit?.name,
+					defaultProductionUnitId: p.defaultProductionUnitId,
+					defaultPurchaseUnitId: p.defaultPurchaseUnitId,
+					categoryId: p.productCategoryId,
+					categoryName: p.category?.name,
+					availableUnits: Array.from(availableUnitsMap.values()),
+					defaultBom: productDefaultBomMap.get(p.id) ?? null,
+				};
+			}),
 			units: units.map((u) => ({ id: u.id, code: u.code, name: u.name })),
 			categories: categories.map((c) => ({ id: c.id, code: c.code, name: c.name })),
 			productionLines: productionLines.map((l) => ({ id: l.id, code: l.code, name: l.name })),
@@ -990,6 +1167,13 @@ export class BomService {
 				code: op.code,
 				name: op.name,
 				defaultYieldRate: op.defaultYieldRate ? Number(op.defaultYieldRate) : null,
+				specifications: op.specifications.map((s) => ({
+					id: s.id,
+					code: s.code,
+					name: s.name,
+					description: s.description,
+					defaultYieldRate: s.defaultYieldRate ? Number(s.defaultYieldRate) : null,
+				})),
 			})),
 		};
 	}

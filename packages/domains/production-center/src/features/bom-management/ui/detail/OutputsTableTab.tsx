@@ -37,6 +37,9 @@ export function OutputsTableTab({ outputs }: OutputsTableTabProps) {
 						<TableHead className="py-2 px-3 text-center font-semibold">
 							产出角色
 						</TableHead>
+						<TableHead className="py-2 px-3 text-right font-semibold">
+							成本分摊比
+						</TableHead>
 						<TableHead className="py-2 px-3 text-left font-semibold">
 							备注说明
 						</TableHead>
@@ -71,6 +74,11 @@ export function OutputsTableTab({ outputs }: OutputsTableTabProps) {
 								>
 									{out.outputRole === "PRIMARY" ? "主产物" : "联副产品"}
 								</Badge>
+							</TableCell>
+							<TableCell className="py-2 px-3 text-right font-mono text-muted-foreground">
+								{out.costAllocationRatio
+									? `${Number(out.costAllocationRatio) * 100}%`
+									: "-"}
 							</TableCell>
 							<TableCell className="py-2 px-3 text-muted-foreground">
 								{out.remark || "-"}
