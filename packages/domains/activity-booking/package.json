@@ -1,0 +1,48 @@
+{
+  "name": "@domain/activity-booking",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./manifest": "./src/manifest.ts",
+    "./catalog": "./src/catalog.ts",
+    "./shared": "./src/shared/public.ts",
+    "./shared/server": "./src/shared/server/index.ts",
+    "./venue-management": "./src/features/venue-management/public.ts",
+    "./venue-management/server": "./src/features/venue-management/server/index.ts",
+    "./activity-management": "./src/features/activity-management/public.ts",
+    "./activity-management/server": "./src/features/activity-management/server/index.ts",
+    "./appointment-management": "./src/features/appointment-management/public.ts",
+    "./appointment-management/server": "./src/features/appointment-management/server/index.ts",
+    "./volunteer-management": "./src/features/volunteer-management/public.ts",
+    "./volunteer-management/server": "./src/features/volunteer-management/server/index.ts",
+    "./campus-sync": "./src/features/campus-sync/public.ts",
+    "./campus-sync/server": "./src/features/campus-sync/server/index.ts"
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "node --test 'src/**/*.test.ts'"
+  },
+  "dependencies": {
+    "@base/auth": "workspace:*",
+    "@base/authorization": "workspace:*",
+    "@base/db-tenant": "workspace:*",
+    "@base/shared": "workspace:*",
+    "@base/ui": "workspace:*",
+    "@biz/shared": "workspace:*",
+    "lucide-react": "^1.41.0",
+    "next": "16.3.4",
+    "nuqs": "^2.10.1",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "0.0.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.8",
+    "typescript": "^5.8.2"
+  }
+}

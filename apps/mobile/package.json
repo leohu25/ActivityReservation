@@ -1,0 +1,35 @@
+{
+  "name": "mobile",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3003",
+    "build": "next build",
+    "start": "next start -p 3003",
+    "lint": "eslint",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@base/auth": "workspace:*",
+    "@base/authorization": "workspace:*",
+    "@base/db-control": "workspace:*",
+    "@base/db-tenant": "workspace:*",
+    "@base/shared": "workspace:*",
+    "@base/ui": "workspace:*",
+    "@biz/shared": "workspace:*",
+    "@domain/activity-booking": "workspace:*",
+    "lucide-react": "^1.41.0",
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "0.0.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

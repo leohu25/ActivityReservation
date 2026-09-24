@@ -12,21 +12,11 @@ import {
   derivePageCatalog,
 } from "@base/authorization";
 import { tenantAdminManifest } from "@platform/tenant-admin/manifest";
-import { baseArchivesManifest } from "@domain/base-archives/manifest";
-import { customerManifest } from "@domain/customer-center/manifest";
-import { productCenterManifest } from "@domain/product-center/manifest";
-import { productionCenterManifest } from "@domain/production-center/manifest";
-import { supplierCenterManifest } from "@domain/supplier-center/manifest";
-import { warehouseCenterManifest } from "@domain/warehouse-center/manifest";
+import { activityBookingManifest } from "@domain/activity-booking/manifest";
 
 export const ALL_TENANT_MANIFESTS = [
   tenantAdminManifest,
-  baseArchivesManifest,
-  customerManifest,
-  productCenterManifest,
-  productionCenterManifest,
-  supplierCenterManifest,
-  warehouseCenterManifest,
+  activityBookingManifest,
 ] as const;
 
 /**
@@ -39,12 +29,7 @@ export type GlobalTenantSubject = NonNullable<
 
 /** 纯业务切片清单 (排除系统管理，供业务自定义菜单选用) */
 export const BUSINESS_TENANT_MANIFESTS: readonly TenantFeatureManifest[] = [
-  baseArchivesManifest,
-  customerManifest,
-  productCenterManifest,
-  productionCenterManifest,
-  supplierCenterManifest,
-  warehouseCenterManifest,
+  activityBookingManifest,
 ] as const;
 
 /** 全局租户权限清单定义数组 (无伪模块，纯业务实体) */
