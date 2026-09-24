@@ -44,9 +44,19 @@ function OperationTableRow({
 	onUpdate,
 	onRemove,
 }: OperationTableRowProps) {
-	const operationName =
-		formOptions.operations.find((o) => o.id === op.operationId)?.name ||
-		op.operationId;
+	const currentOp = formOptions.operations.find((o) => o.id === op.operationId);
+	const operationName = currentOp?.name || op.operationId;
+
+	// 根据当前选定工序，过滤出属于该工序的加工规格候选 (1对多明细)
+	const specOptions =
+		currentOp?.specifications.map((s) => ({
+			value: s.id,
+			label: s.name ? `${s.name} (${s.code})` : s.code,
+		})) || [];
+
+	const selectedSpec = currentOp?.specifications.find(
+		(s) => s.id === op.processingSpecificationId,
+	);
 
 	return (
 		<TableRow>
@@ -76,6 +86,26 @@ function OperationTableRow({
 					/>
 				)}
 			</TableCell>
+			{/* 工序工艺规格 (1对多下拉选择，由工序维护) */}
+			<TableCell className="py-1.5 px-3">
+				{isView ? (
+					<span className="font-medium text-xs">
+						{selectedSpec?.name || "-"}
+					</span>
+				) : (
+					<Combobox
+						value={op.processingSpecificationId || ""}
+						placeholder={
+							specOptions.length > 0 ? "选择工序规格..." : "无可用规格"
+						}
+						disabled={!op.operationId || specOptions.length === 0}
+						options={specOptions}
+						onChange={(val) =>
+							onUpdate(idx, "processingSpecificationId", val || null)
+						}
+					/>
+				)}
+			</TableCell>
 			<TableCell className="py-1.5 px-3">
 				<Input
 					type="number"
@@ -100,7 +130,7 @@ function OperationTableRow({
 					value={op.instructionText}
 					disabled={isView}
 					onChange={(e) => onUpdate(idx, "instructionText", e.target.value)}
-					placeholder="输入具体工序指导与规范说明..."
+					placeholder="选择规格后自动带入加工说明，可在此修改..."
 					className="h-8 text-xs"
 				/>
 			</TableCell>
@@ -122,7 +152,7 @@ function OperationTableRow({
 }
 
 /**
- * 工艺路线清单区块积木：工序增删改、工序顺序号、标准工时、质检控制点与操作指引
+ * 工艺路线清单区块积木：工序增删改、工序规格联动、标准工时、质检控制点与操作指引
  */
 export function OperationRoutesSection({
 	isView,
@@ -155,19 +185,22 @@ export function OperationRoutesSection({
 				<Table className="w-full text-xs">
 					<TableHeader className="bg-muted/20">
 						<TableRow>
-							<TableHead className="py-2 px-3 w-20 font-semibold text-center">
+							<TableHead className="py-2 px-3 w-16 font-semibold text-center">
 								顺序
 							</TableHead>
-							<TableHead className="py-2 px-3 w-64 font-semibold">
+							<TableHead className="py-2 px-3 w-52 font-semibold">
 								工序名称
 							</TableHead>
-							<TableHead className="py-2 px-3 w-32 font-semibold">
+							<TableHead className="py-2 px-3 w-44 font-semibold">
+								工艺规格
+							</TableHead>
+							<TableHead className="py-2 px-3 w-28 font-semibold">
 								标准工时(h)
 							</TableHead>
-							<TableHead className="py-2 px-3 w-28 text-center font-semibold">
-								质检控制点
+							<TableHead className="py-2 px-3 w-24 text-center font-semibold">
+								质检点
 							</TableHead>
-							<TableHead className="py-2 px-3 font-semibold">
+							<TableHead className="py-2 px-3 font-semibold min-w-[200px]">
 								操作指引说明
 							</TableHead>
 							{!isView && (
@@ -193,10 +226,10 @@ export function OperationRoutesSection({
 						) : (
 							<TableRow>
 								<TableCell
-									colSpan={isView ? 5 : 6}
-									className="text-center py-8 text-muted-foreground text-xs"
+									colSpan={isView ? 6 : 7}
+									className="text-center py-6 text-muted-foreground text-xs"
 								>
-									暂无工序配置，点击上方按钮添加第一道加工工序
+									暂无工序配置，点击上方“添加加工工序”添加工序与工序规格
 								</TableCell>
 							</TableRow>
 						)}

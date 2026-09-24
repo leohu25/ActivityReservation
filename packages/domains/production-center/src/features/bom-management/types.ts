@@ -45,6 +45,10 @@ export interface BomInputItemDto {
 	readonly supplyPolicy: SupplyPolicy;
 	readonly childBomId?: string | null;
 	readonly childBomName?: string | null;
+	readonly childBomVersionId?: string | null;
+	readonly childBomVersionNumber?: number | null;
+	readonly latestChildBomVersionId?: string | null;
+	readonly latestChildBomVersionNumber?: number | null;
 	readonly sortOrder: number;
 	readonly remark?: string | null;
 }
@@ -154,6 +158,7 @@ export interface CreateBomInput {
 		readonly normalLossRate?: number | null;
 		readonly supplyPolicy?: SupplyPolicy;
 		readonly childBomId?: string | null;
+		readonly childBomVersionId?: string | null;
 		readonly sortOrder?: number;
 		readonly remark?: string | null;
 	}[];
@@ -205,6 +210,33 @@ export interface ListBomsResult {
 	readonly pageSize: number;
 }
 
+/** 商品可用单位定义 */
+export interface ProductAvailableUnit {
+	readonly id: string;
+	readonly code: string;
+	readonly name: string;
+	readonly isDefaultProduction?: boolean;
+	readonly isDefaultPurchase?: boolean;
+	readonly isInventory?: boolean;
+}
+
+/** 商品默认 BOM 摘要 */
+export interface ProductDefaultBomInfo {
+	readonly bomId: string;
+	readonly bomVersionId: string;
+	readonly name: string;
+	readonly versionNumber: number;
+}
+
+/** 工序规格简要项 */
+export interface OperationSpecificationItem {
+	readonly id: string;
+	readonly code: string;
+	readonly name: string;
+	readonly description?: string | null;
+	readonly defaultYieldRate?: number | null;
+}
+
 /** 页面辅助下拉数据项 */
 export interface BomFormOptions {
 	readonly products: readonly {
@@ -214,8 +246,12 @@ export interface BomFormOptions {
 		readonly productKind: string;
 		readonly inventoryUnitId: string;
 		readonly inventoryUnitName?: string;
+		readonly defaultProductionUnitId?: string | null;
+		readonly defaultPurchaseUnitId?: string | null;
 		readonly categoryId: string;
 		readonly categoryName?: string;
+		readonly availableUnits: readonly ProductAvailableUnit[];
+		readonly defaultBom?: ProductDefaultBomInfo | null;
 	}[];
 	readonly units: readonly {
 		readonly id: string;
@@ -237,5 +273,6 @@ export interface BomFormOptions {
 		readonly code: string;
 		readonly name: string;
 		readonly defaultYieldRate?: number | null;
+		readonly specifications: readonly OperationSpecificationItem[];
 	}[];
 }

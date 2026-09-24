@@ -465,7 +465,7 @@
       "dependencies": ["central-kitchen-phase1-entities-and-domains"],
       "status": "completed",
       "owner": "implementer",
-      "evidence": "1. 深入研读观麦 8 张原型截图，在 @domain/production-center 落地完整 BOM 管理切片；2. 实现 BomService 与 Server Actions (createBomAction, updateBomAction, deleteBomAction, setDefaultBomAction) 并通过事务闭环 bom, bom_version, product_default_bom 及投入产出工序子表；3. 构建高保真 BomListView，支持类型切签(全部/单品/组合/包装)、商品分类筛选、关键字搜索、默认方案标记与 CSV 导出；4. 落地 BomEditorModal，支持单品/组合/包装三大类型表单、配比投入清单与工序工艺路线增删；5. 落地 BomDetailDrawer，高保真还原观麦可视化版本流程图谱与版本切换；6. 补齐契约与 Schema 单元测试，全 Monorepo 24 包 check、21 套件 390+ 单测与 15 项门禁全部 100% 绿灯通过。"
+      "evidence": "1. 深入研读观麦 8 张原型截图，在 @domain/production-center 落地完整 BOM 管理切片；2. 实现 BomService 与 Server Actions (createBomAction, updateBomAction, deleteBomAction, setDefaultBomAction) 并通过事务闭环 bom, bom_version, product_default_bom 及投入产出工序子表；3. 构建高保真 BomListView，支持类型切签、商品分类筛选、搜索与导出；4. 落地 BomFormPage 与 useBomFormState，支持单屏一览配置投入、产出、工艺，商品生产单位与单位库强联动，选商品自动带出默认BOM方案与快照版本，工序与加工规格从属联动及说明带入，副产品明细表支持数量单位；5. 投入清单锁定 child_bom_version_id 不可变快照，支持‘一键更新子BOM至最新版’；6. 落地 BomDetailDrawer，顶部 Tab 与版本下拉同行排布，精简为‘版本流程图谱’与‘配方与工艺全貌’双核心视图；7. 实现以 BOM 投入为实际基准折算采购包装与起订量的独立 MRP 算力引擎 (mrp-calculator.ts)；8. 单测全绿通过，类型检查 0 错误。"
     }
   ]
 }

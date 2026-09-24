@@ -31,6 +31,9 @@ export function OperationsTableTab({ operations }: OperationsTableTabProps) {
 						<TableHead className="py-2 px-3 text-left font-semibold">
 							工序名称
 						</TableHead>
+						<TableHead className="py-2 px-3 text-left font-semibold">
+							工序工艺规格
+						</TableHead>
 						<TableHead className="py-2 px-3 text-right font-semibold">
 							准备工时(分)
 						</TableHead>
@@ -59,6 +62,15 @@ export function OperationsTableTab({ operations }: OperationsTableTabProps) {
 							</TableCell>
 							<TableCell className="py-2 px-3 font-medium text-foreground">
 								{op.operationName}
+							</TableCell>
+							<TableCell className="py-2 px-3 font-medium text-xs">
+								{op.processingSpecificationName ? (
+									<Badge variant="outline" className="font-normal text-xs">
+										{op.processingSpecificationName}
+									</Badge>
+								) : (
+									<span className="text-muted-foreground font-mono">-</span>
+								)}
 							</TableCell>
 							<TableCell className="py-2 px-3 text-right font-mono text-muted-foreground">
 								{op.setupMinutes ?? "-"}

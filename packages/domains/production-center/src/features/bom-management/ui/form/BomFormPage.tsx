@@ -74,7 +74,27 @@ export function BomFormPage({
 						formOptions={formOptions}
 					/>
 
-					{/* 区块 2：原料投入明细与配比清单 */}
+					{/* 区块 2：成品主产出、联副产品明细与总出成率折算 */}
+					<ProductOutputsSection
+						isView={isView}
+						productId={state.productId}
+						primaryQuantity={state.primaryQuantity}
+						setPrimaryQuantity={state.setPrimaryQuantity}
+						primaryUnitId={state.primaryUnitId}
+						setPrimaryUnitId={state.setPrimaryUnitId}
+						byProducts={state.byProducts}
+						byProductCandidateOptions={state.byProductCandidateOptions}
+						handleAddByProduct={state.handleAddByProduct}
+						handleRemoveByProduct={state.handleRemoveByProduct}
+						handleUpdateByProduct={state.handleUpdateByProduct}
+						totalYieldEnabled={state.totalYieldEnabled}
+						setTotalYieldEnabled={state.setTotalYieldEnabled}
+						totalYieldRate={state.totalYieldRate}
+						setTotalYieldRate={state.setTotalYieldRate}
+						formOptions={formOptions}
+					/>
+
+					{/* 区块 3：原料投入明细与配比清单 (含子 BOM 版本快照与一键更新) */}
 					<MaterialInputsSection
 						isView={isView}
 						bomType={state.bomType}
@@ -85,28 +105,13 @@ export function BomFormPage({
 						handleAddInput={state.handleAddInput}
 						handleRemoveInput={state.handleRemoveInput}
 						handleUpdateInput={state.handleUpdateInput}
+						hasUpdatableChildBoms={state.hasUpdatableChildBoms}
+						handleUpdateAllChildBomsToLatest={
+							state.handleUpdateAllChildBomsToLatest
+						}
 					/>
 
-					{/* 区块 3：成品主产出、联副产品多选与总出成率折算 */}
-					<ProductOutputsSection
-						isView={isView}
-						productId={state.productId}
-						primaryQuantity={state.primaryQuantity}
-						setPrimaryQuantity={state.setPrimaryQuantity}
-						primaryUnitId={state.primaryUnitId}
-						setPrimaryUnitId={state.setPrimaryUnitId}
-						byProductIds={state.byProductIds}
-						byProductCandidateOptions={state.byProductCandidateOptions}
-						handleAddByProduct={state.handleAddByProduct}
-						handleRemoveByProduct={state.handleRemoveByProduct}
-						totalYieldEnabled={state.totalYieldEnabled}
-						setTotalYieldEnabled={state.setTotalYieldEnabled}
-						totalYieldRate={state.totalYieldRate}
-						setTotalYieldRate={state.setTotalYieldRate}
-						formOptions={formOptions}
-					/>
-
-					{/* 区块 4：工艺路线工序清单 */}
+					{/* 区块 4：工艺路线工序清单 (含工序规格与说明联动) */}
 					<OperationRoutesSection
 						isView={isView}
 						operations={state.operations}

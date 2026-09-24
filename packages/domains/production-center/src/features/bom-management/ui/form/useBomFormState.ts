@@ -6,10 +6,12 @@ import {
 	QUANTITY_MODES,
 	MATERIAL_ROLES,
 	OUTPUT_ROLES,
+	SUPPLY_POLICIES,
 	BomSubject,
 	BomField,
 	type BomType,
 	type MaterialRole,
+	type SupplyPolicy,
 } from "../../contract";
 import type {
 	BomDetailDto,
@@ -18,7 +20,7 @@ import type {
 	UpdateBomInput,
 } from "../../types";
 import { createBomAction, updateBomAction } from "../../actions";
-import type { FormInputRow, FormOperationRow } from "./types";
+import type { FormInputRow, FormByProductRow, FormOperationRow } from "./types";
 
 export interface UseBomFormStateParams {
 	readonly mode: FormPageMode;
@@ -88,12 +90,19 @@ export function useBomFormState({
 		)?.unitId || "",
 	);
 
-	// 联副产品产出
-	const [byProductIds, setByProductIds] = useState<string[]>(() => {
+	// 联副产品产出明细列表 (支持数量、单位与分摊比例)
+	const [byProducts, setByProducts] = useState<FormByProductRow[]>(() => {
 		if (initialDetail?.currentVersion.outputs) {
 			return initialDetail.currentVersion.outputs
 				.filter((o) => o.outputRole === OUTPUT_ROLES.BYPRODUCT)
-				.map((o) => o.productId);
+				.map((o) => ({
+					productId: o.productId,
+					quantity: Number(o.quantity ?? 1),
+					unitId: o.unitId,
+					costAllocationRatio: o.costAllocationRatio
+						? Number(o.costAllocationRatio) * 100
+						: undefined,
+				}));
 		}
 		return [];
 	});
@@ -123,6 +132,13 @@ export function useBomFormState({
 				materialRole: inp.materialRole,
 				cookedYieldRate: Number(inp.cookedYieldRate ?? 1) * 100,
 				normalLossRate: Number(inp.normalLossRate ?? 0) * 100,
+				supplyPolicy: inp.supplyPolicy,
+				childBomId: inp.childBomId,
+				childBomName: inp.childBomName,
+				childBomVersionId: inp.childBomVersionId,
+				childBomVersionNumber: inp.childBomVersionNumber,
+				latestChildBomVersionId: inp.latestChildBomVersionId,
+				latestChildBomVersionNumber: inp.latestChildBomVersionNumber,
 			}));
 		}
 		return [
@@ -134,6 +150,13 @@ export function useBomFormState({
 				materialRole: MATERIAL_ROLES.MAIN,
 				cookedYieldRate: 100,
 				normalLossRate: 0,
+				supplyPolicy: SUPPLY_POLICIES.EXTERNAL,
+				childBomId: null,
+				childBomName: null,
+				childBomVersionId: null,
+				childBomVersionNumber: null,
+				latestChildBomVersionId: null,
+				latestChildBomVersionNumber: null,
 			},
 		];
 	});
@@ -146,6 +169,7 @@ export function useBomFormState({
 		) {
 			return initialDetail.currentVersion.operations.map((op) => ({
 				operationId: op.operationId,
+				processingSpecificationId: op.processingSpecificationId || null,
 				sequenceNumber: op.sequenceNumber,
 				standardLaborHours: Number(op.standardLaborHours ?? 0),
 				qualityCheckpoint: op.qualityCheckpoint,
@@ -155,41 +179,70 @@ export function useBomFormState({
 		return [];
 	});
 
-	// 选择主产出商品时自动联动
+	// 选择主产出商品时自动联动生产单位与默认名称
 	const handleSelectProduct = useCallback(
 		(pId: string) => {
 			setProductId(pId);
-			setByProductIds((prev) => prev.filter((id) => id !== pId));
+			setByProducts((prev) => prev.filter((item) => item.productId !== pId));
 			const prod = formOptions.products.find((p) => p.id === pId);
 			if (prod) {
 				if (!name) setName(`${prod.name} 生产BOM`);
-				setPrimaryUnitId(prod.inventoryUnitId);
+				// 优先由商品的生产单位带出，若未设置则带出库存基础单位
+				setPrimaryUnitId(prod.defaultProductionUnitId || prod.inventoryUnitId);
 			}
 		},
 		[formOptions.products, name],
 	);
 
-	// 副产品候选列表（排除主产品与已添加的副产品）
+	// 副产品候选商品列表（排除主产品与已添加的副产品）
 	const byProductCandidateOptions = useMemo(() => {
+		const existingIds = new Set(byProducts.map((bp) => bp.productId));
 		return formOptions.products
-			.filter((p) => p.id !== productId && !byProductIds.includes(p.id))
+			.filter((p) => p.id !== productId && !existingIds.has(p.id))
 			.map((p) => ({
 				value: p.id,
 				label: `${p.name} (${p.code})`,
 			}));
-	}, [formOptions.products, productId, byProductIds]);
+	}, [formOptions.products, productId, byProducts]);
 
-	const handleAddByProduct = useCallback((pId: string | null) => {
-		if (pId && !byProductIds.includes(pId)) {
-			setByProductIds((prev) => [...prev, pId]);
-		}
-	}, [byProductIds]);
+	const handleAddByProduct = useCallback(
+		(pId: string | null) => {
+			if (!pId) return;
+			const prod = formOptions.products.find((p) => p.id === pId);
+			if (!prod) return;
 
-	const handleRemoveByProduct = useCallback((pId: string) => {
-		setByProductIds((prev) => prev.filter((id) => id !== pId));
+			setByProducts((prev) => {
+				if (prev.some((item) => item.productId === pId)) return prev;
+				return [
+					...prev,
+					{
+						productId: pId,
+						quantity: 1,
+						unitId: prod.defaultProductionUnitId || prod.inventoryUnitId,
+						costAllocationRatio: undefined,
+					},
+				];
+			});
+		},
+		[formOptions.products],
+	);
+
+	const handleRemoveByProduct = useCallback((idx: number) => {
+		setByProducts((prev) => prev.filter((_, i) => i !== idx));
 	}, []);
 
-	// 投入行增删改
+	const handleUpdateByProduct = useCallback(
+		(idx: number, field: keyof FormByProductRow, value: unknown) => {
+			setByProducts((prev) => {
+				const next = [...prev];
+				next[idx] = { ...next[idx], [field]: value };
+				return next;
+			});
+		},
+		[],
+	);
+
+	// 投入行增删改与商品单位、默认 BOM 级联带出
 	const handleAddInput = useCallback(() => {
 		setInputs((prev) => [
 			...prev,
@@ -201,6 +254,13 @@ export function useBomFormState({
 				materialRole: MATERIAL_ROLES.MAIN,
 				cookedYieldRate: 100,
 				normalLossRate: 0,
+				supplyPolicy: SUPPLY_POLICIES.EXTERNAL,
+				childBomId: null,
+				childBomName: null,
+				childBomVersionId: null,
+				childBomVersionNumber: null,
+				latestChildBomVersionId: null,
+				latestChildBomVersionNumber: null,
 			},
 		]);
 	}, [formOptions.units]);
@@ -217,7 +277,27 @@ export function useBomFormState({
 				if (field === "productId") {
 					const found = formOptions.products.find((p) => p.id === value);
 					if (found) {
+						// 投入单位由商品带出
 						next[idx].unitId = found.inventoryUnitId;
+						// 如果该商品关联有默认 BOM，自动带出子 BOM 及其当前发布版本快照
+						if (found.defaultBom) {
+							next[idx].supplyPolicy = SUPPLY_POLICIES.MAKE;
+							next[idx].childBomId = found.defaultBom.bomId;
+							next[idx].childBomName = found.defaultBom.name;
+							next[idx].childBomVersionId = found.defaultBom.bomVersionId;
+							next[idx].childBomVersionNumber = found.defaultBom.versionNumber;
+							next[idx].latestChildBomVersionId = found.defaultBom.bomVersionId;
+							next[idx].latestChildBomVersionNumber =
+								found.defaultBom.versionNumber;
+						} else {
+							next[idx].supplyPolicy = SUPPLY_POLICIES.EXTERNAL;
+							next[idx].childBomId = null;
+							next[idx].childBomName = null;
+							next[idx].childBomVersionId = null;
+							next[idx].childBomVersionNumber = null;
+							next[idx].latestChildBomVersionId = null;
+							next[idx].latestChildBomVersionNumber = null;
+						}
 					}
 				}
 				return next;
@@ -226,12 +306,50 @@ export function useBomFormState({
 		[formOptions.products],
 	);
 
-	// 工序行增删改
+	// 一键更新所有引用的子 BOM 到最新发布版本快照
+	const hasUpdatableChildBoms = useMemo(() => {
+		return inputs.some(
+			(i) =>
+				i.childBomId &&
+				i.latestChildBomVersionId &&
+				i.childBomVersionId !== i.latestChildBomVersionId,
+		);
+	}, [inputs]);
+
+	const handleUpdateAllChildBomsToLatest = useCallback(() => {
+		let updatedCount = 0;
+		setInputs((prev) =>
+			prev.map((inp) => {
+				if (
+					inp.childBomId &&
+					inp.latestChildBomVersionId &&
+					inp.childBomVersionId !== inp.latestChildBomVersionId
+				) {
+					updatedCount++;
+					return {
+						...inp,
+						childBomVersionId: inp.latestChildBomVersionId,
+						childBomVersionNumber: inp.latestChildBomVersionNumber,
+					};
+				}
+				return inp;
+			}),
+		);
+		if (updatedCount > 0) {
+			toast.success(`已将 ${updatedCount} 处子 BOM 引用一键更新至最新版本快照`);
+		} else {
+			toast.info("所有引用的子 BOM 均已是最新版本");
+		}
+	}, []);
+
+	// 工序行增删改、工序规格与加工说明带入
 	const handleAddOperation = useCallback(() => {
+		const firstOp = formOptions.operations[0];
 		setOperations((prev) => [
 			...prev,
 			{
-				operationId: formOptions.operations[0]?.id || "",
+				operationId: firstOp?.id || "",
+				processingSpecificationId: null,
 				sequenceNumber: (prev.length + 1) * 10,
 				standardLaborHours: 0.5,
 				qualityCheckpoint: false,
@@ -249,10 +367,24 @@ export function useBomFormState({
 			setOperations((prev) => {
 				const next = [...prev];
 				next[idx] = { ...next[idx], [field]: value };
+				if (field === "operationId") {
+					// 切换工序时重置规格
+					next[idx].processingSpecificationId = null;
+				} else if (field === "processingSpecificationId") {
+					// 切换工序规格时，将加工说明默认带到工艺操作指引说明中，允许后续手动微调修改
+					const currentOp = next[idx];
+					const opDef = formOptions.operations.find(
+						(o) => o.id === currentOp.operationId,
+					);
+					const specDef = opDef?.specifications.find((s) => s.id === value);
+					if (specDef?.description) {
+						next[idx].instructionText = specDef.description;
+					}
+				}
 				return next;
 			});
 		},
-		[],
+		[formOptions.operations],
 	);
 
 	// 权限判定
@@ -317,17 +449,17 @@ export function useBomFormState({
 						sortOrder: 0,
 						remark: "主产品",
 					},
-					...byProductIds.map((bpId, idx) => {
-						const bpProd = formOptions.products.find((p) => p.id === bpId);
-						return {
-							productId: bpId,
-							quantity: 1,
-							unitId: bpProd?.inventoryUnitId || formOptions.units[0]?.id || "",
-							outputRole: OUTPUT_ROLES.BYPRODUCT,
-							sortOrder: idx + 1,
-							remark: "联副产品",
-						};
-					}),
+					...byProducts.map((bp, idx) => ({
+						productId: bp.productId,
+						quantity: Number(bp.quantity || 1),
+						unitId: bp.unitId,
+						outputRole: OUTPUT_ROLES.BYPRODUCT,
+						costAllocationRatio: bp.costAllocationRatio
+							? bp.costAllocationRatio / 100
+							: null,
+						sortOrder: idx + 1,
+						remark: "联副产品",
+					})),
 				],
 				inputs: inputs.map((inp, idx) => ({
 					productId: inp.productId,
@@ -337,10 +469,14 @@ export function useBomFormState({
 					materialRole: inp.materialRole as MaterialRole,
 					cookedYieldRate: Number(inp.cookedYieldRate) / 100,
 					normalLossRate: Number(inp.normalLossRate) / 100,
+					supplyPolicy: (inp.supplyPolicy as SupplyPolicy) || SUPPLY_POLICIES.EXTERNAL,
+					childBomId: inp.childBomId || null,
+					childBomVersionId: inp.childBomVersionId || null,
 					sortOrder: idx,
 				})),
 				operations: operations.map((op, idx) => ({
 					operationId: op.operationId,
+					processingSpecificationId: op.processingSpecificationId || null,
 					sequenceNumber: Number(op.sequenceNumber),
 					standardLaborHours: Number(op.standardLaborHours),
 					qualityCheckpoint: op.qualityCheckpoint,
@@ -400,14 +536,17 @@ export function useBomFormState({
 		setPrimaryQuantity,
 		primaryUnitId,
 		setPrimaryUnitId,
-		byProductIds,
+		byProducts,
 		byProductCandidateOptions,
 		handleAddByProduct,
 		handleRemoveByProduct,
+		handleUpdateByProduct,
 		inputs,
 		handleAddInput,
 		handleRemoveInput,
 		handleUpdateInput,
+		hasUpdatableChildBoms,
+		handleUpdateAllChildBomsToLatest,
 		operations,
 		handleAddOperation,
 		handleRemoveOperation,

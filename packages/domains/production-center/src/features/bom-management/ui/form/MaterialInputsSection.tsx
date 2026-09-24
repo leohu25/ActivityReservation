@@ -1,5 +1,6 @@
-import { Box, Plus, Trash2 } from "lucide-react";
+import { Box, Plus, RefreshCw, Trash2 } from "lucide-react";
 import {
+	Badge,
 	Button,
 	Switch,
 	Combobox,
@@ -26,6 +27,8 @@ export interface MaterialInputsSectionProps {
 	readonly handleAddInput: () => void;
 	readonly handleRemoveInput: (idx: number) => void;
 	readonly handleUpdateInput: (idx: number, field: string, value: unknown) => void;
+	readonly hasUpdatableChildBoms?: boolean;
+	readonly handleUpdateAllChildBomsToLatest?: () => void;
 }
 
 interface InputTableRowProps {
@@ -53,10 +56,25 @@ function InputTableRow({
 	onUpdate,
 	onRemove,
 }: InputTableRowProps) {
-	const productName =
-		formOptions.products.find((p) => p.id === inp.productId)?.name || inp.productId;
+	const currentProduct = formOptions.products.find((p) => p.id === inp.productId);
+	const productName = currentProduct?.name || inp.productId;
+
+	// 投入单位严格来自该物料商品的单位库
+	const unitOptions =
+		currentProduct && currentProduct.availableUnits.length > 0
+			? currentProduct.availableUnits.map((u) => ({
+					value: u.id,
+					label: `${u.name || u.code}${u.isDefaultProduction ? " (生产)" : u.isInventory ? " (库存)" : ""}`,
+				}))
+			: formOptions.units.map((u) => ({
+					value: u.id,
+					label: u.name || u.code,
+				}));
+
 	const unitName =
-		formOptions.units.find((u) => u.id === inp.unitId)?.name || inp.unitId;
+		unitOptions.find((u) => u.value === inp.unitId)?.label ||
+		formOptions.units.find((u) => u.id === inp.unitId)?.name ||
+		inp.unitId;
 
 	const roleLabel =
 		inp.materialRole === MATERIAL_ROLES.MAIN
@@ -64,6 +82,15 @@ function InputTableRow({
 			: inp.materialRole === MATERIAL_ROLES.AUXILIARY
 				? "辅料"
 				: "包材";
+
+	const hasChildBom = Boolean(inp.childBomId);
+	const isOutdated =
+		Boolean(
+			inp.childBomId &&
+				inp.latestChildBomVersionId &&
+				inp.childBomVersionId &&
+				inp.childBomVersionId !== inp.latestChildBomVersionId,
+		);
 
 	return (
 		<TableRow>
@@ -73,7 +100,7 @@ function InputTableRow({
 				) : (
 					<Combobox
 						value={inp.productId}
-						placeholder="选择物料..."
+						placeholder="选择物料商品..."
 						options={formOptions.products.map((p) => ({
 							value: p.id,
 							label: `${p.name} (${p.code})`,
@@ -100,13 +127,34 @@ function InputTableRow({
 				) : (
 					<Combobox
 						value={inp.unitId}
-						placeholder="单位"
-						options={formOptions.units.map((u) => ({
-							value: u.id,
-							label: u.name || u.code,
-						}))}
+						placeholder="从单位库选择..."
+						options={unitOptions}
 						onChange={(val) => onUpdate(idx, "unitId", val || "")}
 					/>
+				)}
+			</TableCell>
+			<TableCell className="py-1.5 px-3">
+				{/* 截图关键特性：带出关联的子 BOM 与版本快照 */}
+				{hasChildBom ? (
+					<div className="flex flex-col gap-0.5">
+						<div className="flex items-center gap-1.5">
+							<span className="font-medium text-blue-600 dark:text-blue-400 text-xs">
+								{inp.childBomName || "自制子BOM"}
+							</span>
+							{inp.childBomVersionNumber && (
+								<Badge variant="secondary" className="text-[10px] h-4.5 px-1 font-mono">
+									v{inp.childBomVersionNumber} 快照
+								</Badge>
+							)}
+						</div>
+						{isOutdated && (
+							<span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+								可更新至 v{inp.latestChildBomVersionNumber} 最新版
+							</span>
+						)}
+					</div>
+				) : (
+					<span className="text-muted-foreground text-xs font-mono">-</span>
 				)}
 			</TableCell>
 			<TableCell className="py-1.5 px-3">
@@ -156,7 +204,7 @@ function InputTableRow({
 }
 
 /**
- * 原料投入与配比清单区块积木：支持固定数量与占比模式、添加/删除物料行、设置物料角色与出成率
+ * 原料投入与配比清单区块积木：支持固定数量与占比模式、添加/删除物料行、设置物料角色、快照子BOM与一键更新
  */
 export function MaterialInputsSection({
 	isView,
@@ -168,6 +216,8 @@ export function MaterialInputsSection({
 	handleAddInput,
 	handleRemoveInput,
 	handleUpdateInput,
+	hasUpdatableChildBoms,
+	handleUpdateAllChildBomsToLatest,
 }: MaterialInputsSectionProps) {
 	const ability = useAbility();
 	const canReadCookedYield = ability.can("read", BomSubject, BomField.DEFAULT_COOKED_YIELD_RATE);
@@ -179,15 +229,28 @@ export function MaterialInputsSection({
 				<h2 className="text-sm font-bold text-foreground flex items-center gap-2">
 					<Box className="size-4 text-blue-600" /> 原料投入与配比清单
 				</h2>
-				{bomType !== BOM_TYPES.PROCESSING && !isView && (
-					<div className="flex items-center gap-2.5 text-xs bg-muted/40 px-2.5 py-1 rounded-lg border">
-						<span className="font-semibold">BOM占比模式:</span>
-						<Switch checked={isRatioMode} onCheckedChange={setIsRatioMode} />
-						<span className="text-muted-foreground">
-							{isRatioMode ? "配方占比(%)" : "固定数量"}
-						</span>
-					</div>
-				)}
+				<div className="flex items-center gap-2.5">
+					{hasUpdatableChildBoms && !isView && handleUpdateAllChildBomsToLatest && (
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={handleUpdateAllChildBomsToLatest}
+							className="h-7 px-2.5 text-xs text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 gap-1.5"
+						>
+							<RefreshCw className="size-3.5" /> 一键更新子BOM至最新版
+						</Button>
+					)}
+					{bomType !== BOM_TYPES.PROCESSING && !isView && (
+						<div className="flex items-center gap-2.5 text-xs bg-muted/40 px-2.5 py-1 rounded-lg border">
+							<span className="font-semibold">BOM占比模式:</span>
+							<Switch checked={isRatioMode} onCheckedChange={setIsRatioMode} />
+							<span className="text-muted-foreground">
+								{isRatioMode ? "配方占比(%)" : "固定数量"}
+							</span>
+						</div>
+					)}
+				</div>
 			</div>
 
 			{/* 原料投入明细表 */}
@@ -209,20 +272,23 @@ export function MaterialInputsSection({
 				<Table className="w-full text-xs">
 					<TableHeader className="bg-muted/20">
 						<TableRow>
-							<TableHead className="py-2 px-3 font-semibold w-72">
+							<TableHead className="py-2 px-3 font-semibold min-w-[200px]">
 								投入物料商品
 							</TableHead>
-							<TableHead className="py-2 px-3 font-semibold w-36">
+							<TableHead className="py-2 px-3 font-semibold w-28">
 								{isRatioMode ? "配方占比(%)" : "标准毛投入"}
 							</TableHead>
-							<TableHead className="py-2 px-3 font-semibold w-36">
+							<TableHead className="py-2 px-3 font-semibold w-40">
 								投入单位
 							</TableHead>
-							<TableHead className="py-2 px-3 font-semibold w-32">
+							<TableHead className="py-2 px-3 font-semibold min-w-[160px]">
+								商品子BOM
+							</TableHead>
+							<TableHead className="py-2 px-3 font-semibold w-28">
 								物料角色
 							</TableHead>
 							{canReadCookedYield && (
-								<TableHead className="py-2 px-3 font-semibold w-32">
+								<TableHead className="py-2 px-3 font-semibold w-28">
 									熟出成率(%)
 								</TableHead>
 							)}
