@@ -1,2 +1,2 @@
-export const VolunteerSubject = "VolunteerApplication" as const;
-export type VolunteerSubjectType = typeof VolunteerSubject;
+export * from "../../contract";
+export const VOLUNTEER_PUBLIC = true;

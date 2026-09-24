@@ -6,7 +6,7 @@ import {
   VenueSubject,
   VolunteerSubject,
   CampusSyncSubject,
-} from "@domain/activity-booking";
+} from "@domain/activity-booking/shared";
 import { ActivityBookingAbilityBoundary } from "@domain/activity-booking/shared";
 import { getTenantSubjectPermissions } from "@/kernel";
 
@@ -31,12 +31,14 @@ export default async function BookingLayout({
   return (
     <ActivityBookingAbilityBoundary
       permissions={{
-        activity,
-        session,
-        appointment,
-        venue,
-        volunteer,
-        sync,
+        subjects: {
+          [ActivitySubject]: activity,
+          [ActivitySessionSubject]: session,
+          [AppointmentSubject]: appointment,
+          [VenueSubject]: venue,
+          [VolunteerSubject]: volunteer,
+          [CampusSyncSubject]: sync,
+        },
       }}
     >
       {children}

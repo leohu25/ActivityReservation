@@ -42,8 +42,7 @@ export async function batchSyncCampusDataService(
   for (const item of records) {
     try {
       await prisma.$transaction(async (tx) => {
-        // 1. 记录同步明细
-        const record = await tx.campusSyncRecord.upsert({
+        await tx.campusSyncRecord.upsert({
           where: {
             type_userCode: {
               type: item.type,
@@ -74,32 +73,6 @@ export async function batchSyncCampusDataService(
             createdById: userId,
           },
         });
-
-        // 2. 若为教职工，则自动在后台 User 体系中自愈创建系统用户
-        if (item.type === "TEACHER" && item.phone) {
-          // 查找是否已存在同手机号/工号用户
-          const existingUser = await tx.user.findFirst({
-            where: {
-              OR: [{ email: item.email || `${item.userCode}@campus.local` }],
-              isDeleted: false,
-            },
-          });
-
-          if (!existingUser) {
-            const newUser = await tx.user.create({
-              data: {
-                name: item.name,
-                email: item.email || `${item.userCode}@campus.local`,
-                role: "STAFF",
-                createdById: userId,
-              },
-            });
-            await tx.campusSyncRecord.update({
-              where: { id: record.id },
-              data: { boundUserId: newUser.id },
-            });
-          }
-        }
       });
       successCount++;
     } catch (e: any) {

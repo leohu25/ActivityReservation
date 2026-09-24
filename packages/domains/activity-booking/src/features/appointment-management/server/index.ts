@@ -75,7 +75,7 @@ export async function submitAppointmentService(organizationId: string, input: Su
         status: "PENDING",
         createdById: userId,
         visitors: {
-          create: input.visitors.map((v) => ({
+          create: input.visitors.map((v: { name: string; phone?: string; idCard?: string }) => ({
             name: v.name,
             phone: v.phone,
             idCard: v.idCard,

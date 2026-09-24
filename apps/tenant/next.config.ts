@@ -17,6 +17,17 @@ const commonAllowedOrigins = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  transpilePackages: [
+    "@base/auth",
+    "@base/authorization",
+    "@base/db-control",
+    "@base/db-tenant",
+    "@base/shared",
+    "@base/ui",
+    "@biz/shared",
+    "@domain/activity-booking",
+    "@platform/tenant-admin",
+  ],
   // 开发模式下允许跨网络、局域网 IP 或穿透域名加载静态资源与 HMR
   allowedDevOrigins: commonAllowedOrigins,
   experimental: {

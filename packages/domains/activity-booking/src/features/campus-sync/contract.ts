@@ -1,2 +1,2 @@
-export const CampusSyncSubject = "CampusSyncRecord" as const;
-export type CampusSyncSubjectType = typeof CampusSyncSubject;
+export * from "../../contract";
+export const CAMPUS_SYNC_PUBLIC = true;

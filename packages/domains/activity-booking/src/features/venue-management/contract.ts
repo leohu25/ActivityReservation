@@ -1,2 +1,2 @@
-export const VenueSubject = "Venue" as const;
-export type VenueSubjectType = typeof VenueSubject;
+export * from "../../contract";
+export const VENUE_PUBLIC = true;

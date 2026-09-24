@@ -6,6 +6,7 @@
   "exports": {
     "./manifest": "./src/manifest.ts",
     "./catalog": "./src/catalog.ts",
+    "./contract": "./src/contract.ts",
     "./shared": "./src/shared/public.ts",
     "./shared/server": "./src/shared/server/index.ts",
     "./venue-management": "./src/features/venue-management/public.ts",
