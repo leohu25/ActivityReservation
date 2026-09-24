@@ -24,6 +24,7 @@ export interface DetailTableColumn<T> {
 		row: T,
 		index: number,
 		onChange?: (updater: Partial<T> | ((prev: T) => T)) => void,
+		error?: string,
 	) => ReactNode;
 }
 
@@ -42,6 +43,8 @@ export interface DetailTableProps<T> {
 	readonly title?: string;
 	readonly description?: string;
 	readonly summary?: ReactNode;
+	/** 针对单元格的校验错误字典，结构为：{ [`${rowIndex}.${fieldId}`]: "错误原因" } */
+	readonly cellErrors?: Record<string, string>;
 	readonly className?: string;
 }
 
@@ -64,6 +67,7 @@ export function DetailTable<T>({
 	title,
 	description,
 	summary,
+	cellErrors = {},
 	className,
 }: DetailTableProps<T>) {
 	const isView = readOnly || mode === "view";
@@ -173,24 +177,36 @@ export function DetailTable<T>({
 										key={idx}
 										className="hover:bg-muted/30 transition-colors"
 									>
-										{columns.map((col) => (
-											<TableCell
-												key={col.id}
-												className={cn(
-													"px-2.5 py-1.5 align-middle text-xs",
-													col.align === "center" && "text-center",
-													col.align === "right" && "text-right",
-												)}
-											>
-												{col.renderCell(
-													row,
-													idx,
-													isView
-														? undefined
-														: (updater) => handleRowChange(idx, updater),
-												)}
-											</TableCell>
-										))}
+										{columns.map((col) => {
+											const error = cellErrors[`${idx}.${col.id}`];
+											return (
+												<TableCell
+													key={col.id}
+													className={cn(
+														"px-2.5 py-1.5 align-middle text-xs transition-colors",
+														col.align === "center" && "text-center",
+														col.align === "right" && "text-right",
+														error && "bg-destructive/5 text-destructive",
+													)}
+												>
+													<div className="flex flex-col gap-0.5">
+														{col.renderCell(
+															row,
+															idx,
+															isView
+																? undefined
+																: (updater) => handleRowChange(idx, updater),
+															error,
+														)}
+														{error ? (
+															<span className="text-[10px] text-destructive font-medium tracking-tight">
+																{error}
+															</span>
+														) : null}
+													</div>
+												</TableCell>
+											);
+										})}
 										{!isView && onChange && (
 											<TableCell className="px-2 py-2 text-center align-middle">
 												<Button

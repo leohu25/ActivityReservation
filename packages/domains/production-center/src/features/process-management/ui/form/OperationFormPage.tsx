@@ -10,6 +10,7 @@ import {
 import { MasterDataStatus } from "@base/shared";
 import { OperationSubject } from "../../contract";
 import { createOperationSchema } from "../../schema";
+import { processingSpecificationSchema } from "../../specification/schema";
 import {
 	createOperationAction,
 	updateOperationAction,
@@ -229,7 +230,7 @@ export function OperationFormPage({
 
 			if (!res.success) {
 				toast.error(res.error || "保存失败");
-				throw new Error(res.error || "保存失败");
+				return;
 			}
 
 			toast.success(isEdit ? "工艺档案更新成功" : "工艺档案创建成功");
@@ -261,6 +262,7 @@ export function OperationFormPage({
 					"维护本工序可适用的具体加工规格（如切片厚度、切块大小等）。选定规格后其说明将自动带入BOM工艺指引",
 				addText: "添加规格",
 				columns: specificationColumns,
+				schema: processingSpecificationSchema,
 				onAddRow: () => ({
 					code: `SPEC_${String(Date.now()).slice(-4)}`,
 					name: "",

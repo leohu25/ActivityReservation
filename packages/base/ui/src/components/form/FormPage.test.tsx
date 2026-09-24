@@ -1,9 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import React from "react";
 import { renderToString } from "react-dom/server";
 import { z } from "zod";
-import { FormPage, type FormFieldSchema } from "../../index";
+import { FormPage, UiAbilityProvider, type FormFieldSchema } from "../../index";
 
 const sampleSchema = z.object({
 	code: z.string().min(1, "编码必填"),
@@ -75,6 +74,7 @@ test("FormPage [view 模式]: 自动进入只读态，不渲染保存与重置�
 			mode="view"
 			title="查看销售出库单"
 			badge="OUT-BOUND"
+			schema={sampleSchema}
 			fields={sampleFields}
 			initialValues={{
 				code: "OUT-001",
@@ -93,7 +93,7 @@ test("FormPage [view 模式]: 自动进入只读态，不渲染保存与重置�
 
 test("FormPage [CASL 权限闭环]: 严格受控于 UiAbility", () => {
 	const mockAbility = {
-		can: (action: string, subject: string, field?: string) => {
+		can: (action: string, _subject: string, field?: string) => {
 			// 模拟 code 字段不可读 (HIDDEN)
 			if (field === "code") return false;
 			// 模拟 name 字段可读不可写 (READONLY)
@@ -108,6 +108,7 @@ test("FormPage [CASL 权限闭环]: 严格受控于 UiAbility", () => {
 			title="权限受控单据"
 			subject="Outbound"
 			ability={mockAbility}
+			schema={sampleSchema}
 			fields={sampleFields}
 			initialValues={{
 				code: "HIDDEN_VALUE",
@@ -124,3 +125,35 @@ test("FormPage [CASL 权限闭环]: 严格受控于 UiAbility", () => {
 	assert.ok(html.includes("单据名称"));
 	assert.ok(html.includes("受字段权限控制，当前角色不可修改"));
 });
+
+test("FormPage [必填与隐藏动态协调]: 被 HIDDEN 隐藏的必填字段在渲染与表单结构中彻底剥离", () => {
+	const hiddenRequiredAbility = {
+		can: (_action: string, subject?: string, field?: string) => {
+			if (subject === "Outbound" && field === "code") {
+				return false;
+			}
+			return true;
+		},
+	};
+
+	const html = renderToString(
+		<UiAbilityProvider ability={hiddenRequiredAbility}>
+			<FormPage
+				mode="create"
+				title="新建销售单据"
+				subject="Outbound"
+				ability={hiddenRequiredAbility}
+				schema={sampleSchema}
+				fields={sampleFields}
+				initialValues={{
+					code: "", // 虽为空且必填，但由于被权限隐藏，不应在界面中渲染
+					name: "测试商品",
+				}}
+			/>
+		</UiAbilityProvider>,
+	);
+
+	assert.ok(html.includes("单据名称"));
+	assert.ok(!html.includes("单据编码"));
+});
+
