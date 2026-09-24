@@ -85,6 +85,7 @@ model Bom {
   inputChildren             BomVersionInput[]   @relation("BomInputChildScheme")
 
   @@index([lifecycleStatus, isDeleted])
+  @@index([deptId])
   @@map("bom")
 }
 
@@ -166,6 +167,7 @@ model BomVersion {
   @@unique([bomId, versionNumber])
   @@index([bomId, versionStatus, effectiveFrom])
   @@index([code, versionStatus, isDeleted])
+  @@index([deptId])
   @@map("bom_version")
 }
 
@@ -415,6 +417,7 @@ model Customer {
 
   @@index([categoryId])
   @@index([status])
+  @@index([deptId])
   @@index([isDeleted])
   @@map("customer")
 }
@@ -430,6 +433,20 @@ model CustomerCategory {
   description String?  @db.VarChar(200)
   /// 状态：ACTIVE(启用) / DISABLED(停用)
   status      String   @default("ACTIVE") @db.VarChar(10)
+
+  // ===== 框架强制基础审计与数据范围基线字段 (ADR-009) =====
+  /// 创建人用户ID (UUIDv7)
+  createdById String   @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
+  /// 归属部门ID (UUIDv7)
+  deptId      String?  @map("dept_id") @db.Uuid
+  /// 最后更新人用户ID (UUIDv7)
+  updatedById String?  @map("updated_by_id") @db.Uuid
+  /// 软删除标记 (默认 false)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt   DateTime? @map("deleted_at")
+  /// 软删除操作人用户ID (UUIDv7)
+  deletedById String?  @map("deleted_by_id") @db.Uuid
   /// 创建时间
   createdAt   DateTime @default(now()) @map("created_at")
   /// 更新时间
@@ -444,6 +461,8 @@ model CustomerCategory {
 
   @@index([parentId])
   @@index([status])
+  @@index([deptId])
+  @@index([isDeleted])
   @@map("customer_category")
 }
 
@@ -609,6 +628,20 @@ model CustomerTag {
   description String?  @db.VarChar(200)
   /// 状态：ACTIVE(启用) / DISABLED(停用)
   status      String   @default("ACTIVE") @db.VarChar(10)
+
+  // ===== 框架强制基础审计与数据范围基线字段 (ADR-009) =====
+  /// 创建人用户ID (UUIDv7)
+  createdById String   @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
+  /// 归属部门ID (UUIDv7)
+  deptId      String?  @map("dept_id") @db.Uuid
+  /// 最后更新人用户ID (UUIDv7)
+  updatedById String?  @map("updated_by_id") @db.Uuid
+  /// 软删除标记 (默认 false)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+  /// 软删除时间
+  deletedAt   DateTime? @map("deleted_at")
+  /// 软删除操作人用户ID (UUIDv7)
+  deletedById String?  @map("deleted_by_id") @db.Uuid
   /// 创建时间
   createdAt   DateTime @default(now()) @map("created_at")
   /// 更新时间
@@ -619,6 +652,8 @@ model CustomerTag {
 
   @@index([tagTypeId])
   @@index([status])
+  @@index([deptId])
+  @@index([isDeleted])
   @@map("customer_tag")
 }
 
@@ -920,6 +955,7 @@ model Product {
   @@index([productKind, isDeleted, status])
   @@index([inventoryUnitId])
   @@index([status])
+  @@index([deptId])
   @@map("product")
 }
 
@@ -964,6 +1000,7 @@ model ProductCategory {
 
   @@index([parentProductCategoryId])
   @@index([status])
+  @@index([deptId])
   @@map("product_category")
 }
 
@@ -995,8 +1032,10 @@ model ProductDefaultBom {
 
   bom         Bom       @relation(fields: [bomId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
+  @@unique([productId, bomId])
   @@index([productId, isDeleted])
   @@index([bomId, isDeleted])
+  @@index([deptId])
   @@map("product_default_bom")
 }
 

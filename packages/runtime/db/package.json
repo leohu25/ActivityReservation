@@ -14,7 +14,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@base/shared": "workspace:*"
+    "@base/shared": "workspace:*",
+    "@prisma/client": "7.10.0"
   },
   "devDependencies": {
     "@types/node": "^20.19.43",
