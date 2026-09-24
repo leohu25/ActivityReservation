@@ -330,6 +330,15 @@ export function XxxFormModal({
 - **Ability 上下文自动感知（严禁测试属性入侵）**：`FormModal` 自动从上下文 `useUiAbility()` 感知权限并驱动字段三态闭环，**严禁**在业务组件 props 中声明 `ability?: ...` 作为测试后门。单测统一在测试层使用 `<UiAbilityProvider ability={...}>` 注入；
 - **禁止**业务手写 Dialog+Input 树或直接 RHF。
 
+#### ⑦-B. 复杂全屏单据/档案页面 (FormPage) 顶栏规范：强制使用 DocumentHeader
+
+当采用独立路由打开新页面（如 `new/page.tsx`, `[id]/page.tsx`）构建全屏表单工作台时：
+- **必须 100% 统一使用 `@base/ui` 的通用单据顶栏组件 `<DocumentHeader />`，严禁业务切片自行手绘返回按钮、标题或操作栏**；
+- **操作按钮一律通过 `slotActions` 插槽注入**：取消、保存草稿、保存/发布、编辑等自定义按钮全部在 `slotActions` 内聚合，且写操作按钮必须使用 `<AuthGuard action={...} subject={...}>` 声明式守卫；
+- 紧随标题使用 `badges` 插槽回显状态徽章（如“正常启用/已停用”、“草稿/已发布”）；
+- 中间预留 `slotMiddle` 插槽可注入类型切换分段控制器（Tabs）；
+- 详见 `references/5-ui-components.md` 第 2.5 节标准范式。
+
 ### ⑧ ui/*View.tsx
 
 ```tsx
@@ -568,29 +577,82 @@ export default async function XxxPage({ searchParams }: PageProps) {
 | URL 查询状态               | `defineListSearchParams` + `useListSearch`   |
 | 资源 CRUD 管道             | 正统 Next.js RSC 装配 + `defineServerAction` |
 
+- **表单与单据双轨策略 (Dual-Track Form & Document Strategy)**：
+  - **标准模式 (80% 通用主数据与主子表)**：采用**配置化驱动 (Schema-Driven)**。轻量弹窗使用 `<FormModal>`，独立全屏路由使用 `<FormPage>`，直接声明 `sections: FormPageSection[]` 与 `schema`，由框架自动接管 `<AuthField>` 字段权限三态、`<AuthGuard>` 按钮权限与 `<DetailTable>` 明细表；
+  - **自由模式 (20% 复杂联动/个性化单据)**：采用**积木拼装 (Blocks Assembly)**。如制造 BOM、复杂工单工作台等。**积木拼装严禁裸写外壳**，必须跑在通用外壳 **`<DocumentShell>`** 之中，由外壳统一接管顶栏吸顶、单据三态广播 (`create/edit/view`)、CASL 权限分发、只读穿透与未保存离开守卫，内部业务各积木自由自治拼装。
+
 ---
 
-## 4. 资源 CRUD 场景分流准则：分支 A (标准简易资源) vs 分支 B (复杂装配非标资源)
+## 4. 资源 CRUD 复杂度三级递进演进模型 (Progressive Slice Architecture)
 
-本底座在界面与交互构建上坚持**“有意为之的场景分流标准”**，严禁搞一刀切：
+> **核心心智**：这三个层级**绝不是互斥的“分支选择”，而是随着业务复杂度与实体关系纵深发展的“三级递进包容关系”**。  
+> **终极形态是 Level 3**：Level 3 完整包容并复用了 Level 1 与 Level 2 的能力，在内部通过 Level 2 拆解积木组件、在需要时复用 Level 1 的标准弹窗，同时实现了跨实体的领域边界彻底隔离。
 
-### 分支 A：标准简易资源范式 (Standard Resource Paradigm)
-- **适用场景**：字段明确、单表或标准主从表（如客户档案、客户分类、供应商主档、计量单位、系统字典等）；
-- **核心模式**：**直接使用封装好的标准化大组件**（`DataTable` 列表 + `FormModal` 弹窗 / `FormPage` 全屏单据工作台）；
+```text
+Level 1 (基础：标准简易资源层) ──▶ Level 2 (进阶：组件积木化与状态解耦层) ──▶ Level 3 (终极：子切片领域自治层)
+   [单表/轻量增删改]                    [复杂单切片UI与流程拆解]                     [主子实体/复合聚合根]
+  (FormModal / FormPage 模板)         (<DocumentShell> 外壳 + 积木拼装)               (内部全量复用 L1 与 L2)
+```
+
+---
+
+### Level 1：标准简易资源层 (Base Standard Resource — 单表与轻量辅助主数据)
+- **适用场景**：字段明确单一、业务流程扁平、无复杂子表与附属实体的标准主数据或辅助配置（如计量单位、基础字典、单表分类等 ≤ 5 字段）；
+- **核心形态**：**直接使用开箱即用的标准化大组件**（`DataTable` 默认 chrome 列表 + `FormModal` 声明式轻量弹窗）；
 - **权限闭环心智**：
-  - **列表端 (`DataTable`)**：传入 `subject={XxxSubject}`，受控列声明 `field: XxxField.YYY`（因为复合列无法自动推导，必须显式指派受控归属）；
-  - **表单端 (`FormModal` / `FormPage`)**：只需在容器外层传入 `subject={XxxSubject}`，内部输入控件直接根据 DTO 属性 `name` 全自动完成 `HIDDEN` 剥离与 `READONLY` 置灰，**严禁在每个输入框上手写重复的 `field` 样板代码**。
+  - **列表端 (`DataTable`)**：传入 `subject={XxxSubject}`，受控列声明 `field: XxxField.YYY` 即可自动托管导出与列可见性；
+  - **表单端 (`FormModal`)**：外层声明 `subject={XxxSubject}`，内部控件由 DTO 属性映射全自动实现 `HIDDEN` 剥离与 `READONLY` 置灰；
+- **定位**：零过度设计，最快速闭环单点基础能力。
 
-### 分支 B：复杂装配非标切片范式 (Complex Assembly & Non-Standard Paradigm)
-- **适用场景**：制造 BOM、工艺路线、多级配方、批次装配、多层流程图谱、动态增删行等非标高度定制界面；
-- **核心模式**：**严禁将复杂业务强行削足适履塞入通用 FormPage**！采用**积木化物理拆解架构**，并结合使用封装好的原子权限控件；
-- **实施标准与架构铁律**：
-  1. **物理目录积木化约定 (Modular Lego Decomposition)**：强制建立 `form/`、`graph/`、`detail/`、`list/` 四大积木子目录，单文件严格控制在 50~180 行以内，彻底杜绝近千行单文件巨石（Monolith）；
-  2. **纯状态逻辑抽离 (State Hook Decoupling)**：强制抽取 `useXxxFormState.ts` 纯逻辑 Hook，状态响应式联动与提交组装与 UI 彻底解耦；
-  3. **操作权限使用封装控件 (`<AuthGuard>`)**：动作按钮必须使用封装好的 `<AuthGuard action={...} subject={...}>` 声明式包裹，严禁在页面侧手写 `can("create", ...) && <Button>` 或层层透传 `canCreate/canUpdate` 布尔值 props；
-  4. **字段权限使用封装控件 (`<AuthField>`)**：输入控件必须使用封装好的 `<AuthField field={XxxField.YYY} subject={...}>` 声明式包裹，底层自动处理 `HIDDEN`（彻底不入 DOM）与 `READONLY`（自动禁用并挂载只读徽章）；
-  5. **动态可见性与必填协同原则**：表单校验时被 `HIDDEN` 的字段自动豁免必填，绝不阻塞用户提交其他合法字段；
-  6. **服务端写防线物理闭环 (`assertEditableFields`)**：在对应的 `createXxxAction` 与 `updateXxxAction` 中首行调用 `assertEditableFields(ability, Subject, extractControlledPayload(input))`，阻断网络层越权篡改。
+---
+
+### Level 2：组件积木化与状态解耦层 (Modular Lego Decomposition — 单切片内部防巨石)
+- **适用场景**：当单个切片内的业务逻辑增多、字段庞大、包含多块技术参数、多步骤交互或非标排版（如全屏单据、主档技术参数分块、SOP 与复杂工艺要求等）；
+- **核心形态**：**严禁将复杂业务无脑写成千行单文件巨石 (Monolith)**！强制执行**积木化物理拆解**，且**必须优先编排现有公共资产**：
+  1. **纯状态逻辑抽离 (`useXxxFormState.ts`)**：将表单数据、联动计算、前置校验与提交网络调用完全从 UI 中剥离，UI 仅做响应式绑定；
+  2. **单一职责积木组件拆解**：在 `ui/form/`（或 `ui/detail/`）下拆分为各个高内聚积木（如 `XxxBasicSection.tsx`、`XxxTechnicalSection.tsx`、`XxxDetailSection.tsx`），单文件代码严格控制在 50~180 行以内；
+  3. **公共资产优先编排铁律 (Public Assets Composition First)**：
+     - **积木拼装不是从零手绘**，必须最大限度复用现有的基础设施与受控组件：
+     - **表单区块**：优先使用 `<FormFields />` 或在卡片内使用 `<AuthField>` 包装受控原子控件（`<Combobox>`、`<Input>`），自动继承三态控制与必填红星；
+     - **操作按钮**：必须受控于 `<AuthGuard>`，严禁在积木内部裸写写操作按钮；
+     - **明细表格**：优先复用 `<DetailTable />`（内置增删行、只读态、合计统计栏）；
+     - **逃生舱原则**：**只有当公共资产确实无法覆盖业务特性时**（如复杂树形图谱、联动公式计算器），才允许自主封装特定业务积木，但外层仍需受控。
+  4. **受控外壳统一接管**：所有积木装配在 `<DocumentShell>` 之中，由外壳统一广播单据三态与权限上下文。
+
+---
+
+### Level 3：子切片领域自治层 (Sub-Feature / Sub-Slice Domain Autonomy — 复合特性的终极形态)
+- **适用场景**：当一个业务特性包含**从属子实体、明细子表或附属主数据**（如工序主档下挂**工艺规格明细**；客户主档下挂**客户分类与标签**；制造 BOM 下挂**版本与投入产出工艺清单**）；
+- **核心形态与全仓标杆（参考 `packages/domains/customer-center`）**：
+  - **彻底告别大杂烩**：严禁 AI 或开发者把所有主子实体、明细表格和辅助业务无脑混在一个目录或同一个 `service.ts` 中！
+  - **按领域聚合根物理划清边界**：在主 Feature 目录下为从属子实体建立**独立的子切片目录（Sub-Slice）**：
+  ```text
+  features/customer-management/          # 主切片：客户管理聚合根
+  ├── contract.ts                        # 主客户权限契约
+  ├── schema.ts                          # 主客户 Zod 校验
+  ├── types.ts                           # 主客户 ViewModel 与 DTO
+  ├── service.ts                         # 主客户领域服务
+  ├── queries.ts / actions.ts            # 主客户读写网关
+  ├── category/                          # 【独立子切片】：客户分类（自包含完整闭环）
+  │   ├── contract.ts / schema.ts / types.ts
+  │   ├── service.ts / queries.ts / actions.ts
+  │   └── ui/ (CategoryView, CategoryFormModal)
+  ├── tag/                               # 【独立子切片】：客户标签（自包含完整闭环）
+  │   ├── contract.ts / schema.ts / types.ts
+  │   ├── service.ts / queries.ts / actions.ts
+  │   └── ui/ (TagView, TagFormModal)
+  └── ui/                                # 主切片积木视图（使用 Level 2 积木拆分）
+      ├── CustomerView.tsx
+      └── form/ (CustomerFormPage, CustomerBasicSection, etc.)
+  ```
+- **Level 3 对 Level 1 与 Level 2 的全面包容与复用法则**：
+  1. **实体与契约自治**：子切片自包含其自身的 `contract.ts`（独立的 Subject、Field、权限项），受控列与权限边界清晰；
+  2. **在 Level 3 内部复用 Level 2**：
+     - 子切片自身的明细表格（如 `SpecificationTable.tsx`）采用 **Level 2** 单一职责积木化开发；
+     - 主-子复合页面（如上半部分工序技术信息，下半部分工艺规格明细表）通过 **Level 2** 的积木组合方式拼装，由主切片的 `useXxxFormState.ts` 集中管理；
+  3. **在 Level 3 内部复用 Level 1**：
+     - 若子切片拥有独立维护的入口（如客户分类/标签），直接复用 **Level 1** 的标准 `DataTable` + `FormModal`，心智极度统一；
+  4. **服务层单向协作**：子切片 Service（如 `ProcessingSpecificationService`）负责自身的增量比对同步（Sync）、校验与业务计算；主切片 Service 在事务内单向调用子切片 Service，严禁反向双向循环依赖。
 
 ---
 

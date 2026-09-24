@@ -9,6 +9,7 @@ import { Label } from "../ui/label";
 import { FormFieldGrid } from "./FormLayout";
 import { Combobox, type ComboboxOption } from "./Combobox";
 import { ImageUpload } from "../upload/ImageUpload";
+import { AuthField } from "../auth/AuthField";
 import { cn } from "../../lib/utils";
 
 export interface FormFieldOption {
@@ -97,6 +98,10 @@ export interface FormFieldsProps<TValues extends object> {
 	readonly columns?: 2 | 3 | 4;
 	readonly className?: string;
 	readonly errors?: Partial<Record<keyof TValues & string, string>>;
+	/** 可选 CASL 权限 Subject，透传给 AuthField 实现字段三态受控 */
+	readonly subject?: string;
+	/** 权限动作，默认为 'update' 或 'create' */
+	readonly action?: string;
 }
 
 export function FormFields<TValues extends object>({
@@ -106,6 +111,8 @@ export function FormFields<TValues extends object>({
 	columns = 2,
 	className,
 	errors,
+	subject,
+	action = "update",
 }: FormFieldsProps<TValues>) {
 	return (
 		<FormFieldGrid columns={columns} className={className}>
@@ -124,6 +131,56 @@ export function FormFields<TValues extends object>({
 								: undefined;
 
 				if (field.type === "checkbox" || field.type === "switch") {
+					const control = (
+						<div className="flex items-center gap-2 pt-1.5">
+							{field.type === "checkbox" ? (
+								<Checkbox
+									checked={Boolean(value)}
+									disabled={field.disabled}
+									onCheckedChange={(checked) => setValue(checked === true)}
+									aria-invalid={Boolean(fieldError)}
+								/>
+							) : (
+								<Switch
+									checked={Boolean(value)}
+									disabled={field.disabled}
+									onCheckedChange={(checked) => setValue(checked === true)}
+									aria-invalid={Boolean(fieldError)}
+								/>
+							)}
+							{field.hint ? (
+								<span className="text-[11px] text-muted-foreground">
+									{field.hint}
+								</span>
+							) : null}
+						</div>
+					);
+
+					if (subject) {
+						return (
+							<div key={field.name} className={cn("min-w-0", spanClass)}>
+								<AuthField
+									subject={subject}
+									field={field.field || field.name}
+									action={action}
+									mode={field.disabled ? "READONLY" : undefined}
+									label={field.label}
+									required={field.required}
+								>
+									{control}
+								</AuthField>
+								{fieldError ? (
+									<p
+										data-slot="form-message"
+										className="text-xs font-medium text-destructive mt-1"
+									>
+										{fieldError}
+									</p>
+								) : null}
+							</div>
+						);
+					}
+
 					return (
 						<div
 							key={field.name}
@@ -173,6 +230,36 @@ export function FormFields<TValues extends object>({
 					);
 				}
 
+				if (subject) {
+					return (
+						<div
+							key={field.name}
+							className={cn("min-w-0 flex flex-col gap-1", spanClass)}
+						>
+							<AuthField
+								subject={subject}
+								field={field.field || field.name}
+								action={action}
+								mode={field.disabled ? "READONLY" : undefined}
+								label={field.label}
+								required={field.required}
+							>
+								{renderFieldControl(field, value, setValue, fieldError)}
+							</AuthField>
+							{fieldError ? (
+								<p
+									data-slot="form-message"
+									className="text-xs font-medium text-destructive mt-0.5"
+								>
+									{fieldError}
+								</p>
+							) : field.hint ? (
+								<p className="text-[11px] text-muted-foreground mt-0.5">{field.hint}</p>
+							) : null}
+						</div>
+					);
+				}
+
 				return (
 					<div
 						key={field.name}
@@ -208,7 +295,11 @@ function renderFieldControl(
 	value: unknown,
 	setValue: (v: unknown) => void,
 	fieldError?: string,
-) {
+): React.ReactElement<{
+	readOnly?: boolean;
+	disabled?: boolean;
+	className?: string;
+}> {
 	const isInvalid = Boolean(fieldError);
 
 	if (field.type === "select" || field.type === "combobox") {
@@ -302,7 +393,7 @@ function renderFieldControl(
 	}
 
 	if (field.type === "custom") {
-		return field.render({ value, onChange: setValue });
+		return <>{field.render({ value, onChange: setValue })}</>;
 	}
 
 	return (

@@ -300,6 +300,113 @@ Base UI 的 `<Select>` 解除了对 DOM 的侵入式反查。**如果使用官�
 
 **禁止**手写 `canExport && <Button>` 再包一层——用 `ActionButton` 即可。
 
+### 2.5 全屏单据与档案工作台顶栏标准规范：必须统一使用 `DocumentHeader` (严禁手绘顶栏)
+
+在复杂多字段实体、业务单据（BOM、工艺路线、工单、采购单、报价单等）采用独立新页面/新路由（如 `new/page.tsx`、`[id]/page.tsx`）构建工作台时，**必须 100% 统一使用 `@base/ui` 的通用单据顶栏组件 `<DocumentHeader />`，严禁业务切片自行手绘返回按钮、标题或操作栏**！
+
+#### 核心插槽与 Props 契约
+
+| 属性 | 类型 | 职责说明与最佳实践 |
+| :--- | :--- | :--- |
+| `onBack` | `() => void` | **[必选]** 返回上一级列表或工作台的回调函数，如 `() => router.push(backUrl)` |
+| `backText` | `string` | 返回按钮文案，默认为 `'返回'` 或 `'返回列表'` |
+| `title` | `React.ReactNode` | **[必选]** 单据主标题，如 `新建工艺档案`、`编辑生产 BOM: 鱼香肉丝` |
+| `badges` | `React.ReactNode` | 紧随标题后的状态徽章插槽，如 `<Badge>默认BOM</Badge>`、`<Badge>正常启用</Badge>` |
+| `slotMiddle` | `React.ReactNode` | 标题后方的中间扩展插槽：新增时用于注入单据类型分段切换器（Tabs），编辑时回显属性 |
+| `slotActions` | `React.ReactNode` | **[核心必选] 右侧操作动作插槽**：所有取消、保存草稿、保存/发布、编辑等自定义按钮**必须通过此插槽注入**！ |
+
+#### 标准代码示范 (Standard DocumentHeader Pattern)
+
+```tsx
+import { useRouter } from "next/navigation";
+import { Save, Check, Edit, Loader2 } from "lucide-react";
+import { Button, Badge, AuthGuard, DocumentHeader } from "@base/ui";
+import { StandardAction } from "@base/authorization";
+import { XxxSubject, XxxAction } from "../../contract";
+
+export function XxxFormPage({ initialDetail, isView = false }: Props) {
+  const router = useRouter();
+  const { formData, isEdit, isSubmitting, handleSave } = useXxxFormState({ initialDetail });
+
+  const titleText = isView
+    ? `单据详情: ${formData.name || formData.code}`
+    : isEdit
+      ? `编辑单据: ${formData.name || formData.code}`
+      : "新建业务单据";
+
+  return (
+    <div className="flex flex-col min-h-full bg-muted/10">
+      {/* 100% 统一使用 DocumentHeader 作为顶栏导航 */}
+      <DocumentHeader
+        onBack={() => router.push("/business/path")}
+        backText="返回列表"
+        title={titleText}
+        badges={
+          <Badge
+            variant="outline"
+            className={formData.status === "ACTIVE" ? "text-emerald-600 bg-emerald-50" : "text-muted-foreground"}
+          >
+            {formData.status === "ACTIVE" ? "正常启用" : "已停用"}
+          </Badge>
+        }
+        /* 操作按钮统一通过 slotActions 插槽注入，严禁在页面其他地方手绘裸按钮 */
+        slotActions={
+          isView ? (
+            <AuthGuard action={StandardAction.UPDATE} subject={XxxSubject}>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => router.push(`/business/path/${initialDetail?.id}`)}
+                className="h-8 text-xs gap-1.5"
+              >
+                <Edit className="size-3.5" /> 编辑单据
+              </Button>
+            </AuthGuard>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isSubmitting}
+                onClick={() => router.push("/business/path")}
+                className="h-8 text-xs"
+              >
+                取消
+              </Button>
+              <AuthGuard action={isEdit ? StandardAction.UPDATE : StandardAction.CREATE} subject={XxxSubject}>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={isSubmitting}
+                  onClick={handleSave}
+                  className="h-8 text-xs gap-1.5 min-w-[84px]"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="size-3.5 animate-spin" /> 保存中...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="size-3.5" /> 保存单据
+                    </>
+                  )}
+                </Button>
+              </AuthGuard>
+            </>
+          )
+        }
+      />
+
+      {/* 页面内容主体 */}
+      <div className="p-6 max-w-6xl mx-auto w-full space-y-6">
+        {/* 各积木 Sections */}
+      </div>
+    </div>
+  );
+}
+```
+
 ### 2.4 行级操作：统一强制使用 DataTableRowActions（架构铁律与门禁校验）
 
 > 🚨 **全仓架构铁律与门禁硬拦截 (Zero-Tolerance Gate)**：

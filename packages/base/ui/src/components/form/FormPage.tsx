@@ -9,12 +9,14 @@ import React, {
 	type ReactNode,
 } from "react";
 import type { z } from "zod";
-import { ArrowLeft, Save, RotateCcw, Loader2 } from "lucide-react";
+import { Save, RotateCcw, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { FormFields, type FormFieldSchema } from "./FormFields";
 import { FormBanner } from "./FormLayout";
 import { DetailTable, type DetailTableColumn } from "../data-table/DetailTable";
+import { DocumentHeader } from "../layout/DocumentHeader";
+import { AuthGuard } from "../auth/AuthGuard";
 import { toast } from "../feedback/Toast";
 import { useUiAbility, type UiAbilityLike } from "../auth";
 import { updateTabTitle, closeCurrentTab } from "../layout/TabBar";
@@ -119,6 +121,12 @@ export interface FormPageProps<
 	readonly columns?: 2 | 3 | 4;
 	readonly stickyHeader?: boolean;
 	readonly stickyFooter?: boolean;
+	/** 操作动作栏位置：默认 'top' 整合至 DocumentHeader 顶栏，亦支持 'bottom' 或 'both' */
+	readonly actionsPlacement?: "top" | "bottom" | "both";
+	/** DocumentHeader 中部扩展插槽 (如类型分段 Tabs) */
+	readonly slotMiddle?: ReactNode;
+	/** DocumentHeader 右侧操作区插槽 (完全自定义替换默认按钮组) */
+	readonly slotActions?: ReactNode;
 	readonly updateTabTitle?: boolean;
 	readonly tabTitle?: string;
 	readonly className?: string;
@@ -193,7 +201,10 @@ export function FormPage<
 	extraActions = EMPTY_ACTIONS,
 	columns = 3,
 	stickyHeader = true,
-	stickyFooter = true,
+	stickyFooter = false,
+	actionsPlacement = "top",
+	slotMiddle,
+	slotActions: customSlotActions,
 	updateTabTitle: enableUpdateTabTitle = true,
 	tabTitle,
 	className,
@@ -432,78 +443,149 @@ export function FormPage<
 		submitText ||
 		(mode === "create" ? "立即保存" : mode === "edit" ? "保存更改" : "确认");
 
+	const renderActionButtons = (size: "sm" | "default" = "sm") => (
+		<div className="flex items-center gap-2 shrink-0">
+			{headerExtra}
+
+			{extraActions.map((act) => (
+				<Button
+					key={act.key}
+					type="button"
+					size={size}
+					variant={act.variant || "outline"}
+					onClick={() => act.onClick(values)}
+					disabled={submitting}
+					className="h-8 text-xs cursor-pointer"
+				>
+					{act.label}
+				</Button>
+			))}
+
+			{!isView ? (
+				<Button
+					type="button"
+					size={size}
+					variant="ghost"
+					onClick={handleReset}
+					disabled={submitting}
+					className="h-8 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+					title="重置修改"
+				>
+					<RotateCcw className="size-3.5 mr-1" />
+					重置
+				</Button>
+			) : null}
+
+			<Button
+				type="button"
+				size={size}
+				variant="outline"
+				onClick={handleBack}
+				disabled={submitting}
+				className="h-8 text-xs cursor-pointer"
+			>
+				{cancelText}
+			</Button>
+
+			{!isView && onSubmit ? (
+				subject ? (
+					<AuthGuard action={mode === "edit" ? "update" : "create"} subject={subject}>
+						<Button
+							type="button"
+							size={size}
+							variant="default"
+							onClick={() => handleSubmit()}
+							disabled={submitting}
+							className="h-8 text-xs min-w-[5.5rem] cursor-pointer shadow-xs"
+						>
+							{submitting ? (
+								<Loader2 className="size-3.5 mr-1.5 animate-spin" />
+							) : (
+								<Save className="size-3.5 mr-1.5" />
+							)}
+							{defaultSubmitText}
+						</Button>
+					</AuthGuard>
+				) : (
+					<Button
+						type="button"
+						size={size}
+						variant="default"
+						onClick={() => handleSubmit()}
+						disabled={submitting}
+						className="h-8 text-xs min-w-[5.5rem] cursor-pointer shadow-xs"
+					>
+						{submitting ? (
+							<Loader2 className="size-3.5 mr-1.5 animate-spin" />
+						) : (
+							<Save className="size-3.5 mr-1.5" />
+						)}
+						{defaultSubmitText}
+					</Button>
+				)
+			) : null}
+		</div>
+	);
+
+	const topActions =
+		customSlotActions ||
+		(actionsPlacement === "top" || actionsPlacement === "both"
+			? renderActionButtons("sm")
+			: headerExtra);
+
+	const headerBadges = (
+		<div className="flex items-center gap-1.5 shrink-0">
+			{badge ? (
+				<Badge
+					variant="secondary"
+					className="font-mono text-[10px] px-1.5 py-0 h-4 uppercase tracking-wider shrink-0"
+				>
+					{badge}
+				</Badge>
+			) : null}
+
+			{documentNumber ? (
+				<span className="font-mono text-[11px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/60">
+					{documentNumber}
+				</span>
+			) : null}
+
+			{statusBadge}
+		</div>
+	);
+
 	return (
 		<div
 			className={cn(
-				"flex flex-col min-h-[calc(100vh-8rem)] w-full bg-background text-foreground animate-in fade-in-50 duration-150",
+				"flex flex-col min-h-full w-full bg-background text-foreground",
 				className,
 			)}
 		>
-			{/* 1. 单据顶部工具栏 (Header - 紧凑结构) */}
-			<div
-				className={cn(
-					"border-b border-border/70 bg-background/95 backdrop-blur-xs px-5 py-2 z-10 transition-all",
-					stickyHeader && "sticky top-0 shadow-2xs",
-				)}
-			>
-				<div className="flex items-center justify-between gap-2.5 min-h-7">
-					{/* 标题、返回与徽章信息 */}
-					<div className="flex items-center gap-2.5 min-w-0">
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							onClick={handleBack}
-							className="size-7 p-0 text-muted-foreground hover:text-foreground shrink-0"
-							title={backText}
-						>
-							<ArrowLeft className="size-3.5" />
-							<span className="sr-only">{backText}</span>
-						</Button>
-
+			{/* 1. 单据顶部工具栏：自然吸顶 */}
+			<DocumentHeader
+				onBack={handleBack}
+				backText={backText}
+				title={
+					resolvedDescription ? (
 						<div className="flex flex-col min-w-0 justify-center">
-							<div className="flex items-center gap-2 flex-wrap">
-								{badge ? (
-									<Badge
-										variant="secondary"
-										className="font-mono text-[10px] px-1.5 py-0 h-4 uppercase tracking-wider shrink-0"
-									>
-										{badge}
-									</Badge>
-								) : null}
-
-								<h1 className="text-sm sm:text-base font-semibold tracking-tight text-foreground truncate">
-									{resolvedTitle}
-								</h1>
-
-								{documentNumber ? (
-									<span className="font-mono text-[11px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/60">
-										{documentNumber}
-									</span>
-								) : null}
-
-								{statusBadge}
-							</div>
-
-							{resolvedDescription ? (
-								<p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-									{resolvedDescription}
-								</p>
-							) : null}
+							<span className="truncate">{resolvedTitle}</span>
+							<span className="text-[11px] font-normal text-muted-foreground truncate">
+								{resolvedDescription}
+							</span>
 						</div>
-					</div>
+					) : (
+						resolvedTitle
+					)
+				}
+				badges={headerBadges}
+				slotMiddle={slotMiddle}
+				slotActions={topActions}
+				className={cn(stickyHeader && "sticky top-0 z-20")}
+			/>
 
-					{/* 顶部右侧扩展插槽（主操作按钮收敛于底部操作栏） */}
-					{headerExtra ? (
-						<div className="flex items-center gap-2 shrink-0">
-							{headerExtra}
-						</div>
-					) : null}
-				</div>
-			</div>
-
-			{/* 2. 单据内容工作区 (Body) */}
-			<div className="flex-1 p-6 space-y-6 max-w-7xl w-full mx-auto">
+			{/* 2. 单据内容独立滚动视口：滚动完全收敛在操作栏下方，彻底杜绝向上穿透与透光缝隙 */}
+			<div className="flex-1 overflow-y-auto p-6 pb-20">
+				<div className="max-w-6xl w-full mx-auto space-y-6">
 				{/* 提示横幅 */}
 				{banner || bannerTitle ? (
 					<FormBanner
@@ -541,6 +623,8 @@ export function FormPage<
 									errors={errors}
 									onChange={handleFieldChange}
 									columns={section.columns || columns}
+									subject={subject}
+									action={mode === "edit" ? "update" : "create"}
 								/>
 							</div>
 						))}
@@ -556,6 +640,8 @@ export function FormPage<
 							errors={errors}
 							onChange={handleFieldChange}
 							columns={columns}
+							subject={subject}
+							action={mode === "edit" ? "update" : "create"}
 						/>
 					</div>
 				) : null}
@@ -598,73 +684,18 @@ export function FormPage<
 				{typeof children === "function"
 					? children({ values, back: handleBack, loading: submitting })
 					: children}
+				</div>
 			</div>
 
-			{/* 3. 单据底部操作栏 (Sticky Footer) */}
-			{stickyFooter ? (
+			{/* 3. 单据底部操作栏 (可选，当 actionsPlacement 包含 bottom 时渲染) */}
+			{(stickyFooter || actionsPlacement === "bottom" || actionsPlacement === "both") ? (
 				<div className="sticky bottom-0 border-t border-border/70 bg-background/95 backdrop-blur-xs px-6 py-3 mt-auto shadow-xs z-10">
 					<div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
 						<div className="text-xs text-muted-foreground font-mono truncate">
 							{auditHint || null}
 						</div>
 
-						<div className="flex items-center gap-2 shrink-0">
-							{extraActions.map((act) => (
-								<Button
-									key={act.key}
-									type="button"
-									size="sm"
-									variant={act.variant || "outline"}
-									onClick={() => act.onClick(values)}
-									disabled={submitting}
-								>
-									{act.label}
-								</Button>
-							))}
-
-							{!isView ? (
-								<Button
-									type="button"
-									size="sm"
-									variant="ghost"
-									onClick={handleReset}
-									disabled={submitting}
-									className="text-muted-foreground hover:text-foreground mr-1"
-									title="重置修改"
-								>
-									<RotateCcw className="size-3.5 mr-1" />
-									重置
-								</Button>
-							) : null}
-
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={handleBack}
-								disabled={submitting}
-							>
-								{cancelText}
-							</Button>
-
-							{!isView && onSubmit ? (
-								<Button
-									type="button"
-									size="sm"
-									variant="default"
-									onClick={() => handleSubmit()}
-									disabled={submitting}
-									className="min-w-[5.5rem]"
-								>
-									{submitting ? (
-										<Loader2 className="size-3.5 mr-1.5 animate-spin" />
-									) : (
-										<Save className="size-3.5 mr-1.5" />
-									)}
-									{defaultSubmitText}
-								</Button>
-							) : null}
-						</div>
+						{renderActionButtons("sm")}
 					</div>
 				</div>
 			) : null}

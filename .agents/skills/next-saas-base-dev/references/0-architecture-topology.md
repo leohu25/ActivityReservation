@@ -32,28 +32,39 @@ packages/domains/<business-area>/
 ├── package.json                        # 语义化子路径声明 (严格 exports，无根 barrel)
 └── src/
     ├── features/                       # 纵向业务特性切片集群 (各 Feature 物理独立)
-    │   └── <feature>/
-    │       ├── <sub-feature>/          # [可选] 仅存在稳定子能力时嵌套 (如 classification)
-    │       │   ├── contract.ts
-    │       │   ├── types.ts
-    │       │   ├── service.ts
-    │       │   ├── queries.ts
-    │       │   ├── actions.ts
-    │       │   ├── public.ts
-    │       │   └── public.server.ts
-    │       ├── contract.ts             # [Phase 2] 权限契约 + defineListSearchParams
+    │   └── <feature>/                  # 【主切片】：业务特性聚合根
+    │       │
+    │       ├── <sub-feature>/          # 【Level 3 终极形态：从属子切片】(如工艺规格 specification, 分类 category, 标签 tag)
+    │       │   ├── contract.ts         # 子切片独立契约 (Subject, Field, ConfigurableFields)
+    │       │   ├── schema.ts           # 子切片独立 Zod 校验
+    │       │   ├── types.ts            # 子切片独立 ViewModel 与 DTO
+    │       │   ├── service.ts          # 子切片独立领域逻辑 (增量同步比对、防重、运算)
+    │       │   ├── queries.ts          # [可选] 子切片独立服务端读取
+    │       │   ├── actions.ts          # [可选] 子切片独立 Server Actions (独立维护时)
+    │       │   ├── ui/                 # 子切片积木化 UI 组件 (如 SpecificationTable, CategoryFormModal)
+    │       │   ├── public.ts           # 子切片 Client-Safe 统一出口
+    │       │   └── index.ts            # 子切片内部导出桶 (供主切片引用)
+    │       │
+    │       ├── contract.ts             # [Phase 2] 主切片权限契约 + defineListSearchParams 列表参数
     │       ├── types.ts                # [Phase 2] 入参、筛选条件与 ViewModel 强类型
-    │       ├── schema.ts               # 共享 Zod（create/update）
-    │       ├── service.ts              # [Phase 3] 领域业务逻辑、事务与数据持久化
+    │       ├── schema.ts               # 共享 Zod（create/update 主表单校验）
+    │       ├── service.ts              # [Phase 3] 领域业务逻辑 (事务内协调并单向调用子切片 Service)
     │       ├── service.test.ts         # [Phase 3/7] 同级单测 (Colocation 测试就近共存)
     │       ├── queries.ts              # [Phase 3] RSC 纯服务端读取 (供 page.tsx 直调)
-    │       ├── actions.ts              # [Phase 4] createResourceActions + 平铺 export
-    │       ├── public.ts               # [Package Entry] Client-Safe 导出入口 (View/Types)
+    │       ├── actions.ts              # [Phase 4] Server Actions (defineServerAction 包装并平铺 export)
+    │       ├── public.ts               # [Package Entry] Client-Safe 导出入口 (View/FormPage/Types)
     │       ├── public.server.ts        # [Package Entry] Server-Only 导出入口 (import "server-only")
-    │       └── ui/                     # [Phase 5] Feature 专属私有组件与视图
-    │           ├── <Feature>View.tsx   # useListSearch + DataTable 默认 chrome
-    │           ├── <Feature>View.test.tsx # 页面与契约 100% 对齐单测
-    │           └── <Feature>FormModal.tsx  # FormModal + schema/fields + subject
+    │       │
+    │       └── ui/                     # [Phase 5] 【Level 2 积木化防巨石防线】：严格拆分单一职责切片组件
+    │           ├── columns.tsx         # [必备] DataTable 独立受控列定义与操作列
+    │           ├── <Feature>ListView.tsx # 外层列表视图 (useListSearch + DataTable 默认 chrome)
+    │           ├── <Feature>FormModal.tsx # [Level 1] 轻量弹窗 (仅用于 ≤ 5 字段的辅助配置)
+    │           └── form/               # [Level 2] 复杂单据/主从表单积木子目录 (单文件 50~150 行，彻底消除巨石)
+    │               ├── <Feature>FormPage.tsx         # 表单主骨架 (Header、面包屑、保存按钮、布局拼装)
+    │               ├── use<Feature>FormState.ts      # 纯状态与提交逻辑 Hook (状态、联动校验与 Action 彻底解耦)
+    │               ├── <Feature>BasicSection.tsx     # 积木A：基础主档信息
+    │               ├── <Feature>TechnicalSection.tsx # 积木B：技术参数与工艺指标
+    │               └── <Feature>SubSliceSection.tsx  # 积木C：下半部分明细装配 (挂载子切片的 Table 组件)
     │
     ├── shared/                         # Business Area 内多个 Feature 的真实复用
     │   ├── server/tenant-context.ts    # 底层租户数据库上下文与员工门禁 (平台端为 control-guard/session)
@@ -186,3 +197,19 @@ contract.ts (契约)       ui/ (组件)                            queries.ts (�
   - 是 ➔ **Level 2**：必须收敛至本 Package 的 `src/shared/`，严禁深层穿透到对方 Feature 的私有 service 或内部组件。
 - **问题 3：我要调用的东西在同一个 Feature（二级切片）内部的兄弟 Sub-Feature 目录吗？**
   - 是 ➔ **Level 3**：直接相对引用，不建 micro-shared，拥抱聚合根内部的必要高内聚。
+
+---
+
+## 七、 UI 架构防巨石设计铁律 (UI Anti-Monolith & Modular Slicing)
+
+在实际业务开发中，开发者与 AI 最容易犯的错误是**把所有 UI、表单控件与状态逻辑塞进一个单一的 `<View>.tsx` 或 `<FormPage>.tsx` 中，导致代码膨胀为上千行的‘巨石文件’**。为此，团队树立以下绝对红线：
+
+1. **单文件行数硬限制**：
+   - 任何 UI 切片组件代码行数严格控制在 **50~180 行** 以内；超过 200 行必须无条件进行物理拆解；
+2. **三级递进 UI 拆分规范**：
+   - **Level 1（极简标准层）**：直接使用 `DataTable` + `FormModal`，快速闭环轻量配置；
+   - **Level 2（组件积木化层）**：单切片复杂化时，强制抽取 `use<Feature>FormState.ts` 纯逻辑 Hook，并将界面拆分为 `<Feature>BasicSection.tsx`、`<Feature>TechnicalSection.tsx` 等单一职责小积木；
+   - **Level 3（子切片领域自治层 — 终极形态）**：存在从属子实体或明细子表时，由子切片独立提供原子级 UI（如 `specification/ui/SpecificationTable.tsx`），主表单仅负责组装子切片组件，主子切片边界清晰、各司其职；
+3. **列表列必须独立文件**：`DataTable` 的 columns 必须独立抽离至 `columns.tsx`，与 View 视图完全解耦；
+4. **子切片最大嵌套深度硬约束（防目录深渊）**：子切片只允许存在于 `src/features/<feature>/<sub-feature>/` 恰好 1 层深度，**严禁递归嵌套（如 `features/a/b/c/`）**；若某个子切片复杂度进一步扩大，必须将其平级提升重构为独立的一级 Feature；
+5. **主向子严格单向依赖铁律（防循环死锁）**：主切片可在事务与页面中单向引用子切片的契约、类型与 Service；**子切片绝对禁止反向引用主切片的私有实现**（Service / Actions / UI），确保子切片自治、纯粹且具备完全独立的单测覆盖。

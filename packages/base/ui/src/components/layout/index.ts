@@ -4,5 +4,6 @@ export * from "./BreadcrumbBar";
 export * from "./Sidebar";
 export * from "./DashboardShell";
 export * from "./DocumentHeader";
+export * from "./DocumentShell";
 export * from "./PageShell";
 export * from "./MasterDetailShell";

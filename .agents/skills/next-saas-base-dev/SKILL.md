@@ -58,7 +58,7 @@ tooling/db-migrate                  12-Factor 迁移引擎
 | 5   | 标准列表：`DataTable` 默认 chrome + `useListSearch`；禁业务手绘表壳                                            | `references/5-ui-components.md`               |
 | 6   | 写路径 CASL（Action 内断言 + UI `subject`/门禁）                                                               | `references/4`、`references/7`                |
 | 7   | 列表 URL：`defineListSearchParams`；Client：`useListSearch`                                                    | `references/9-crud-resource-paradigm.md`      |
-| 8   | CRUD 表单分级治理：复杂主单据/多字段档案用全屏多页签（`FormPage`）；极简辅助项（分类、标签、字典 ≤ 5 字段）用轻量弹窗（`FormModal`） | `references/5-ui-components.md`               |
+| 8   | CRUD 表单分级治理：复杂主单据/多字段档案用全屏多页签（`FormPage`，**顶栏强制 100% 使用 `@base/ui` 的 `DocumentHeader`，操作按钮统一由 `slotActions` 插槽注入，严禁手绘**）；极简辅助项（分类、标签、字典 ≤ 5 字段）用轻量弹窗（`FormModal`） | `references/5-ui-components.md`               |
 | 9   | Mutation 使用 `defineServerAction` 直写；RSC 装配遵循 Next.js 标准 async 函数；`use server` 平铺导出           | `references/9`、`references/4`                |
 | 10  | 导出走 `exportContractCsv` + 契约字段                                                                          | `references/1-contracts.md`                   |
 | 11  | 原子层 shadcn 规范（`@base/ui` `components/ui/`）                                                              | `.agents/skills/shadcn/`                      |
@@ -67,6 +67,7 @@ tooling/db-migrate                  12-Factor 迁移引擎
 | 14  | 严禁用 `any` 降解，强制 TypeScript 强类型（Prisma/Zod/DTO/Props 端到端可推导；禁 `any` / `(x as any)`）        | `AGENTS.md`、`references/3-services.md`       |
 | 15  | **架构中立性与业务零耦合**：Skill 严禁硬编码当前项目特定业务逻辑与实体，示例一律抽象化，确保跨项目 100% 可移植 | 本规约「零、核心分工原则」                    |
 | 16  | **存量平滑演进与老表加字段铁律**：老表追加字段必须在数据库设为可空（带 `?`），应用层（Zod/表单）卡必填；严禁老表追加无默认值 NOT NULL 字段导致存量库崩溃；严禁手写/篡改迁移 SQL，统一由 `db:migrate:generate` 标准生成 | `references/2-schema-migrate.md` |
+| 17  | **切片架构三级递进与双轨开发宪法**：资源 CRUD 按复杂度呈三级递进（Level 1 简易标准 ──▶ Level 2 积木化 ──▶ Level 3 子切片自治）；**前端落地严格执行双轨策略**：80% 通用主子表使用纯配置模板（`FormModal`/`FormPage`），20% 复杂联动单据使用 `<DocumentShell>` 外壳承载积木式拼装（严禁积木裸写外壳，由外壳统一管理顶栏吸顶、三态与权限广播）；终极形态 Level 3 必须拆分子切片自包含闭环，内部全量复用 L2 积木与 L1 模板 | `references/9-crud-resource-paradigm.md`、`references/0-architecture-topology.md` |
 
 **作废 / 禁止用于新代码**（仅存量迁移过渡的标 `@deprecated`）：
 
