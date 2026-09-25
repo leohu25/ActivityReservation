@@ -68,6 +68,30 @@ model Space {
   @@map("space")
 }
 
+/// 首页轮播图表 (Banner)
+model Banner {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  title       String   @db.VarChar(100)
+  imageUrl    String   @map("image_url") @db.VarChar(500)
+  linkUrl     String?  @map("link_url") @db.VarChar(500)
+  sortOrder   Int      @default(0) @map("sort_order")
+  status      String   @default("ACTIVE") @db.VarChar(20)
+
+  createdById String   @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
+  deptId      String?  @map("dept_id") @db.Uuid
+  updatedById String?  @map("updated_by_id") @db.Uuid
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+  deletedAt   DateTime? @map("deleted_at")
+  deletedById String?  @map("deleted_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([deptId])
+  @@index([isDeleted])
+  @@map("banner")
+}
+
 /// 场馆动态与新闻发布表 (News)
 model News {
   id          String   @id @default(uuid(7)) @db.Uuid
@@ -178,14 +202,12 @@ model Appointment {
   code          String   @unique @db.VarChar(50)
   activityId    String   @map("activity_id") @db.Uuid
   sessionId     String   @map("session_id") @db.Uuid
-  /// 预约模式: INDIVIDUAL(个人预约), TEAM(团队拼团预约), INTERNAL(校内内部免审预约)
   type          String   @default("INDIVIDUAL") @db.VarChar(20)
   applicantName String   @map("applicant_name") @db.VarChar(100)
   phone         String   @db.VarChar(50)
   idCard        String?  @map("id_card") @db.VarChar(50)
   organization  String?  @db.VarChar(150)
   peopleCount   Int      @default(1) @map("people_count")
-  /// 审批状态: PENDING(待审核), APPROVED(已通过), REJECTED(已驳回), CANCELLED(已取消), CHECKED_IN(已核销入场)
   status        String   @default("PENDING") @db.VarChar(20)
   auditRemark   String?  @map("audit_remark") @db.VarChar(255)
   auditedById   String?  @map("audited_by_id") @db.Uuid
@@ -280,7 +302,6 @@ model VolunteerApplication {
   studentNo   String?  @map("student_no") @db.VarChar(50)
   major       String?  @db.VarChar(100)
   serviceRole String?  @map("service_role") @db.VarChar(50)
-  /// 状态: PENDING(待审核), APPROVED(已录用), REJECTED(未录取)
   status      String   @default("PENDING") @db.VarChar(20)
   auditRemark String?  @map("audit_remark") @db.VarChar(255)
 

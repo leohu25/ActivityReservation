@@ -241,16 +241,26 @@ export function ActivityDetailClient({ activity }: ActivityDetailClientProps) {
           </div>
 
           {/* 提交按钮 */}
-          <div className="pt-2">
+          <div className="pt-2 space-y-2.5">
             <button
               type="submit"
               disabled={!selectedSessionId}
-              className="w-full py-3.5 bg-primary text-white font-semibold text-sm rounded-2xl shadow-lg shadow-primary/25 hover:bg-primary/90 active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-primary text-white font-semibold text-sm rounded-2xl shadow-lg shadow-primary/25 hover:bg-primary/90 active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Send className="size-4" />
               立即确认预约
             </button>
-            <p className="text-center text-[11px] text-slate-400 mt-2">
+
+            {activity.type === "VOLUNTEER" && (
+              <Link
+                href={`/volunteer/${activity.id}`}
+                className="w-full py-3 bg-rose-50 text-rose-700 font-semibold text-xs rounded-2xl border border-rose-200/80 hover:bg-rose-100/70 transition-all flex items-center justify-center gap-1.5"
+              >
+                <span>报名成为本场活动志愿者 / 讲解员</span>
+              </Link>
+            )}
+
+            <p className="text-center text-[11px] text-slate-400">
               提交后可在「我的预约」随时查看状态与入场通行凭证
             </p>
           </div>

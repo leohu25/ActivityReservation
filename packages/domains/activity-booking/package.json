@@ -20,7 +20,9 @@
     "./campus-sync": "./src/features/campus-sync/public.ts",
     "./campus-sync/server": "./src/features/campus-sync/server/index.ts",
     "./news-management": "./src/features/news-management/public.ts",
-    "./news-management/server": "./src/features/news-management/server/index.ts"
+    "./news-management/server": "./src/features/news-management/server/index.ts",
+    "./banner-management": "./src/features/banner-management/public.ts",
+    "./banner-management/server": "./src/features/banner-management/server/index.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",
