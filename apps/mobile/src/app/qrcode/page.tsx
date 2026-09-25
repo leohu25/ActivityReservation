@@ -1,7 +1,14 @@
 import React from "react";
-import { QrCode, ShieldCheck, AlertCircle } from "lucide-react";
+import { QrCode, ShieldCheck } from "lucide-react";
 
-export default function MobileQrCodePage() {
+interface QrCodePageProps {
+  searchParams: Promise<{ code?: string }>;
+}
+
+export default async function MobileQrCodePage({ searchParams }: QrCodePageProps) {
+  const { code } = await searchParams;
+  const displayCode = code || "APPT202609250001";
+
   return (
     <div className="flex-1 flex flex-col p-5">
       <header className="pt-4 pb-6 text-center">
@@ -23,8 +30,8 @@ export default function MobileQrCodePage() {
         </div>
 
         <div className="mt-4 text-center space-y-1 text-xs text-muted-foreground">
-          <p>单号: APPT202609240001</p>
-          <p>适用场次: 2026-09-25 09:30-11:00</p>
+          <p className="font-mono font-medium text-slate-700">预约单号: {displayCode}</p>
+          <p>适用场次: 2026-09-26 09:30-11:00</p>
         </div>
       </div>
     </div>

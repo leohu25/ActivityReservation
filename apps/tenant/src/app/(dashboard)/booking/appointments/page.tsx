@@ -1,7 +1,11 @@
 import React from "react";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { getCurrentTenantContext } from "@base/auth";
-import { listAppointmentsQuery } from "@domain/activity-booking/appointment-management/server";
+import {
+  listAppointmentsQuery,
+  auditAppointmentService,
+} from "@domain/activity-booking/appointment-management/server";
 import { Card, CardHeader, CardTitle, CardContent, Badge } from "@base/ui";
 import { CheckCircle2, XCircle, Clock, Users, Phone } from "lucide-react";
 
@@ -9,6 +13,25 @@ export default async function AppointmentsPage() {
   const reqHeaders = await headers();
   const ctx = await getCurrentTenantContext(reqHeaders);
   const appointments = await listAppointmentsQuery(ctx.organizationId);
+
+  // Server Action 审批操作
+  async function handleAuditAction(formData: FormData) {
+    "use server";
+    const appointmentId = formData.get("appointmentId") as string;
+    const action = formData.get("action") as "APPROVE" | "REJECT";
+    const remark = (formData.get("remark") as string) || undefined;
+
+    const innerHeaders = await headers();
+    const innerCtx = await getCurrentTenantContext(innerHeaders);
+
+    await auditAppointmentService(
+      innerCtx.organizationId,
+      { appointmentId, action, remark },
+      "00000000-0000-7000-8000-000000000000",
+    );
+
+    revalidatePath("/booking/appointments");
+  }
 
   return (
     <div className="space-y-6 p-6">
@@ -21,8 +44,8 @@ export default async function AppointmentsPage() {
 
       <div className="space-y-3">
         {appointments.map((appt) => (
-          <Card key={appt.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1.5">
+          <Card key={appt.id} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-base">{appt.activity.title}</span>
                 <Badge variant={appt.type === "TEAM" ? "secondary" : "outline"}>
@@ -45,10 +68,10 @@ export default async function AppointmentsPage() {
                 </Badge>
               </div>
               <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                <span>单号: {appt.code}</span>
+                <span className="font-mono">单号: {appt.code}</span>
                 <span className="flex items-center gap-1">
                   <Clock className="size-3.5" />
-                  {appt.session.date} {appt.session.startTime}-{appt.session.endTime}
+                  {appt.session.date} {appt.session.startTime} ~ {appt.session.endTime}
                 </span>
                 <span className="flex items-center gap-1">
                   <Users className="size-3.5" />
@@ -64,19 +87,23 @@ export default async function AppointmentsPage() {
             <div className="flex items-center gap-2">
               {appt.status === "PENDING" && (
                 <>
-                  <form action={`/api/appointments/${appt.id}/approve`} method="POST">
+                  <form action={handleAuditAction}>
+                    <input type="hidden" name="appointmentId" value={appt.id} />
+                    <input type="hidden" name="action" value="APPROVE" />
                     <button
-                      type="button"
-                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                      type="submit"
+                      className="inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors shadow-sm cursor-pointer"
                     >
                       <CheckCircle2 className="size-3.5" />
                       审核通过
                     </button>
                   </form>
-                  <form action={`/api/appointments/${appt.id}/reject`} method="POST">
+                  <form action={handleAuditAction}>
+                    <input type="hidden" name="appointmentId" value={appt.id} />
+                    <input type="hidden" name="action" value="REJECT" />
                     <button
-                      type="button"
-                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md border border-input bg-background hover:bg-muted text-destructive transition-colors"
+                      type="submit"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 transition-colors cursor-pointer"
                     >
                       <XCircle className="size-3.5" />
                       驳回
