@@ -4,7 +4,7 @@ import { getCurrentTenantContext } from "@base/auth";
 import { listActivitiesQuery } from "@domain/activity-booking/activity-management/server";
 import { Card, CardHeader, CardTitle, CardContent, Badge, buttonVariants } from "@base/ui";
 import Link from "next/link";
-import { Calendar, Users, MapPin, Plus } from "lucide-react";
+import { Calendar, Users, MapPin, Plus, Clock } from "lucide-react";
 
 export default async function ActivitiesPage() {
   const reqHeaders = await headers();
@@ -31,34 +31,49 @@ export default async function ActivitiesPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {activities.map((act) => (
-          <Card key={act.id} className="overflow-hidden hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-2">
-                <CardTitle className="text-base line-clamp-1">{act.title}</CardTitle>
-                <Badge variant={act.status === "PUBLISHED" ? "default" : "secondary"}>
-                  {act.status === "PUBLISHED" ? "已发布" : act.status}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2.5 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <MapPin className="size-4 shrink-0 text-primary" />
-                <span className="truncate">{act.venue.name}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="size-4 shrink-0 text-primary" />
-                <span>
-                  {new Date(act.startDate).toLocaleDateString()} ~ {new Date(act.endDate).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Users className="size-4 shrink-0 text-primary" />
-                <span>
-                  共 {act.sessions.length} 个场次 · 总容纳{" "}
-                  {act.sessions.reduce((acc, s) => acc + s.totalCapacity, 0)} 人
-                </span>
-              </div>
-            </CardContent>
+          <Card key={act.id} className="overflow-hidden hover:shadow-md transition-shadow flex flex-col justify-between">
+            <div>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="text-base line-clamp-1">{act.title}</CardTitle>
+                  <Badge variant={act.status === "PUBLISHED" ? "default" : "secondary"}>
+                    {act.status === "PUBLISHED" ? "已发布" : act.status}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2.5 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <MapPin className="size-4 shrink-0 text-primary" />
+                  <span className="truncate">{act.venue.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="size-4 shrink-0 text-primary" />
+                  <span>
+                    {new Date(act.startDate).toLocaleDateString()} ~ {new Date(act.endDate).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="size-4 shrink-0 text-primary" />
+                  <span>
+                    共 {act.sessions.length} 个场次 · 总容纳{" "}
+                    {act.sessions.reduce((acc, s) => acc + s.totalCapacity, 0)} 人
+                  </span>
+                </div>
+              </CardContent>
+            </div>
+
+            <div className="p-4 pt-0 border-t border-slate-100 flex items-center justify-between mt-3">
+              <span className="text-xs text-slate-400">
+                {act.allowTeam ? "支持团队/个人" : "仅个人"}
+              </span>
+              <Link
+                href={`/booking/activities/${act.id}/sessions`}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+              >
+                <Clock className="size-3.5" />
+                排班管理 ({act.sessions.length})
+              </Link>
+            </div>
           </Card>
         ))}
 

@@ -2,7 +2,8 @@ import React from "react";
 import { headers } from "next/headers";
 import { getCurrentTenantContext } from "@base/auth";
 import { listCampusSyncRecordsQuery } from "@domain/activity-booking/campus-sync/server";
-import { Card, CardHeader, CardTitle, CardContent, Badge } from "@base/ui";
+import { triggerManualSyncAction } from "../actions";
+import { Badge } from "@base/ui";
 import { RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 
 export default async function CampusSyncPage() {
@@ -19,63 +20,69 @@ export default async function CampusSyncPage() {
             查看教职工工号、学生学号主数据同步状态及后台用户自动自愈创建结果
           </p>
         </div>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-        >
-          <RefreshCw className="size-3.5" />
-          立即触发增量同步
-        </button>
+        <form action={triggerManualSyncAction}>
+          <button
+            type="submit"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors shadow-sm cursor-pointer"
+          >
+            <RefreshCw className="size-3.5" />
+            立即触发增量同步
+          </button>
+        </form>
       </div>
 
-      <div className="rounded-md border bg-card">
+      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-muted/40 text-left text-xs font-medium text-muted-foreground">
-              <th className="p-3">类型</th>
-              <th className="p-3">工号/学号</th>
-              <th className="p-3">姓名</th>
-              <th className="p-3">院系/部门</th>
-              <th className="p-3">手机号</th>
-              <th className="p-3">同步状态</th>
-              <th className="p-3">关联用户</th>
+            <tr className="border-b bg-slate-50/80 text-left text-xs font-semibold text-slate-500">
+              <th className="p-3.5">类型</th>
+              <th className="p-3.5">工号/学号</th>
+              <th className="p-3.5">姓名</th>
+              <th className="p-3.5">院系/部门</th>
+              <th className="p-3.5">手机号</th>
+              <th className="p-3.5">同步状态</th>
+              <th className="p-3.5">关联账号状态</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100">
             {records.map((r) => (
-              <tr key={r.id} className="border-b transition-colors hover:bg-muted/50">
-                <td className="p-3">
+              <tr key={r.id} className="transition-colors hover:bg-slate-50/60">
+                <td className="p-3.5">
                   <Badge variant={r.type === "TEACHER" ? "default" : "secondary"}>
                     {r.type === "TEACHER" ? "教职工" : "学生"}
                   </Badge>
                 </td>
-                <td className="p-3 font-mono text-xs">{r.userCode}</td>
-                <td className="p-3 font-medium">{r.name}</td>
-                <td className="p-3 text-muted-foreground">{r.department || r.className || "-"}</td>
-                <td className="p-3 text-muted-foreground">{r.phone || "-"}</td>
-                <td className="p-3">
+                <td className="p-3.5 font-mono text-xs">{r.userCode}</td>
+                <td className="p-3.5 font-medium">{r.name}</td>
+                <td className="p-3.5 text-muted-foreground">{r.department || r.className || "-"}</td>
+                <td className="p-3.5 text-muted-foreground">{r.phone || "-"}</td>
+                <td className="p-3.5">
                   {r.syncStatus === "SYNCED" ? (
-                    <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                    <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
                       <CheckCircle2 className="size-3.5" />
                       已同步
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-xs text-destructive">
+                    <span className="inline-flex items-center gap-1 text-xs text-destructive font-medium">
                       <AlertCircle className="size-3.5" />
                       {r.syncStatus}
                     </span>
                   )}
                 </td>
-                <td className="p-3 text-xs text-muted-foreground">
-                  {r.boundUserId ? "已自动生成账号" : "无需绑定"}
+                <td className="p-3.5 text-xs text-slate-500">
+                  {r.boundUserId ? (
+                    <span className="text-primary font-medium">已自动自愈生成账号</span>
+                  ) : (
+                    "无需绑定"
+                  )}
                 </td>
               </tr>
             ))}
 
             {records.length === 0 && (
               <tr>
-                <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                  暂无同步记录，外部系统调用预留 Webhook 后将自动在此展示
+                <td colSpan={7} className="p-12 text-center text-muted-foreground">
+                  暂无同步记录，点击右上角按钮可立即模拟执行一次增量同步
                 </td>
               </tr>
             )}
