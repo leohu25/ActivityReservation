@@ -6,8 +6,21 @@ import { Calendar, Users, MapPin, ChevronRight, Sparkles } from "lucide-react";
 
 export default async function MobileHomePage() {
   const runtime = getServerAuthRuntime();
+  // 动态解析或使用当前宁卫租户组织
+  let orgId = "01a0d2ea-1691-7508-8ad3-bbd232a45b72";
+  try {
+    const org = await runtime.prisma.organization.findFirst({
+      select: { id: true },
+    });
+    if (org?.id) {
+      orgId = org.id;
+    }
+  } catch {
+    // 降级使用兜底
+  }
+
   const manager = getTenantDbManager({ repository: runtime.tenantContextRepository });
-  const prisma = await manager.getClient("0195d000-0000-7000-8000-000000000001");
+  const prisma = await manager.getClient(orgId);
 
   const activities = await prisma.activity.findMany({
     where: { isDeleted: false, status: "PUBLISHED" },
