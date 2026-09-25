@@ -3,12 +3,14 @@ import {
   StandardAction,
   type FeaturePagePermissionDescriptor,
 } from "@base/authorization";
-import {
-  VenueSubject,
-  ActivitySubject,
-  AppointmentSubject,
-  CampusSyncSubject,
-} from "../contract";
+
+export const VenueSubject = "Venue" as const;
+export const ActivitySubject = "Activity" as const;
+export const ActivitySessionSubject = "ActivitySession" as const;
+export const AppointmentSubject = "Appointment" as const;
+export const VolunteerSubject = "VolunteerApplication" as const;
+export const CampusSyncSubject = "CampusSyncRecord" as const;
+export const NewsSubject = "News" as const;
 
 export const venuePageContract: FeaturePagePermissionDescriptor = {
   resource: "booking.venue",
@@ -41,12 +43,39 @@ export const activityPageContract: FeaturePagePermissionDescriptor = {
 export const appointmentPageContract: FeaturePagePermissionDescriptor = {
   resource: "booking.appointment",
   subject: AppointmentSubject,
-  label: "预约审核",
+  label: "预约审核与内部预约",
   path: "/booking/appointments",
   actions: [
     { action: StandardAction.READ, label: "查看预约", supportedScopes: STANDARD_DATA_SCOPES },
+    { action: StandardAction.CREATE, label: "发起内部免审预约" },
     { action: StandardAction.UPDATE, label: "审批/驳回" },
     { action: StandardAction.DELETE, label: "取消预约" },
+  ],
+  configurableFields: [],
+};
+
+export const volunteerPageContract: FeaturePagePermissionDescriptor = {
+  resource: "booking.volunteer",
+  subject: VolunteerSubject,
+  label: "志愿者审核",
+  path: "/booking/volunteers",
+  actions: [
+    { action: StandardAction.READ, label: "查看申请", supportedScopes: STANDARD_DATA_SCOPES },
+    { action: StandardAction.UPDATE, label: "审核录用/驳回" },
+  ],
+  configurableFields: [],
+};
+
+export const newsPageContract: FeaturePagePermissionDescriptor = {
+  resource: "booking.news",
+  subject: NewsSubject,
+  label: "新闻资讯管理",
+  path: "/booking/news",
+  actions: [
+    { action: StandardAction.READ, label: "查看新闻", supportedScopes: STANDARD_DATA_SCOPES },
+    { action: StandardAction.CREATE, label: "发布新闻" },
+    { action: StandardAction.UPDATE, label: "编辑新闻" },
+    { action: StandardAction.DELETE, label: "删除新闻" },
   ],
   configurableFields: [],
 };

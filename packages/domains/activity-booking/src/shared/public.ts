@@ -1,3 +1,10 @@
 export * from "../contract";
 export * from "./ui/ActivityBookingAbilityBoundary";
-export * from "./page-contracts";
+export {
+  venuePageContract,
+  activityPageContract,
+  appointmentPageContract,
+  volunteerPageContract,
+  newsPageContract,
+  syncPageContract,
+} from "./page-contracts";

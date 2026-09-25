@@ -5,6 +5,9 @@ import { redirect } from "next/navigation";
 import { getCurrentTenantContext } from "@base/auth";
 import { createActivityService } from "@domain/activity-booking/activity-management/server";
 import { createVenueService } from "@domain/activity-booking/venue-management/server";
+import { submitAppointmentService } from "@domain/activity-booking/appointment-management/server";
+import { auditVolunteerService } from "@domain/activity-booking/volunteer-management/server";
+import { createNewsService } from "@domain/activity-booking/news-management/server";
 import { batchSyncCampusDataService } from "@domain/activity-booking/campus-sync/server";
 
 export async function createActivityAction(formData: FormData) {
@@ -80,6 +83,99 @@ export async function createVenueAction(formData: FormData) {
 
   revalidatePath("/booking/venues");
   redirect("/booking/venues");
+}
+
+/**
+ * 后台发起“内部免审预约” Action
+ */
+export async function createInternalAppointmentAction(formData: FormData) {
+  "use server";
+  const reqHeaders = await headers();
+  const ctx = await getCurrentTenantContext(reqHeaders);
+
+  const sessionSelect = formData.get("sessionSelect") as string;
+  const [activityId, sessionId] = (sessionSelect || "").split("|");
+  const applicantName = (formData.get("applicantName") as string)?.trim();
+  const phone = (formData.get("phone") as string)?.trim();
+  const organization = (formData.get("organization") as string)?.trim() || "校内教职工专线";
+  const peopleCount = Number(formData.get("peopleCount")) || 1;
+
+  if (!activityId || !sessionId || !applicantName || !phone) {
+    throw new Error("请完整填写内部预约必填项");
+  }
+
+  await submitAppointmentService(
+    ctx.organizationId,
+    {
+      activityId,
+      sessionId,
+      type: "INTERNAL",
+      applicantName,
+      phone,
+      organization,
+      peopleCount,
+      visitors: [],
+    },
+    "00000000-0000-7000-8000-000000000000",
+  );
+
+  revalidatePath("/booking/appointments");
+  redirect("/booking/appointments");
+}
+
+/**
+ * 志愿者申请审核 Action
+ */
+export async function auditVolunteerAction(formData: FormData) {
+  "use server";
+  const reqHeaders = await headers();
+  const ctx = await getCurrentTenantContext(reqHeaders);
+
+  const applicationId = formData.get("applicationId") as string;
+  const action = formData.get("action") as "APPROVE" | "REJECT";
+  const remark = (formData.get("remark") as string) || undefined;
+
+  await auditVolunteerService(
+    ctx.organizationId,
+    { applicationId, action, remark },
+    "00000000-0000-7000-8000-000000000000",
+  );
+
+  revalidatePath("/booking/volunteers");
+}
+
+/**
+ * 发布场馆新闻 Action
+ */
+export async function createNewsAction(formData: FormData) {
+  "use server";
+  const reqHeaders = await headers();
+  const ctx = await getCurrentTenantContext(reqHeaders);
+
+  const title = (formData.get("title") as string)?.trim();
+  const summary = (formData.get("summary") as string)?.trim() || undefined;
+  const content = (formData.get("content") as string)?.trim();
+  const author = (formData.get("author") as string)?.trim() || "校史馆办公室";
+  const isTop = formData.get("isTop") === "on";
+
+  if (!title || !content) {
+    throw new Error("新闻标题与正文必填");
+  }
+
+  await createNewsService(
+    ctx.organizationId,
+    {
+      title,
+      summary,
+      content,
+      author,
+      isTop,
+    },
+    "00000000-0000-7000-8000-000000000000",
+  );
+
+  revalidatePath("/booking/news");
+  redirect("/booking/news");
 }
 
 export async function triggerManualSyncAction() {

@@ -233,6 +233,30 @@ CREATE TABLE "employee_profile" (
 );
 
 -- CreateTable
+CREATE TABLE "news" (
+    "id" UUID NOT NULL,
+    "venue_id" UUID,
+    "title" VARCHAR(200) NOT NULL,
+    "cover_url" VARCHAR(500),
+    "summary" VARCHAR(300),
+    "content" TEXT NOT NULL,
+    "author" VARCHAR(100),
+    "views_count" INTEGER NOT NULL DEFAULT 0,
+    "is_top" BOOLEAN NOT NULL DEFAULT false,
+    "status" VARCHAR(20) NOT NULL DEFAULT 'PUBLISHED',
+    "created_by_id" UUID NOT NULL DEFAULT '00000000-0000-7000-8000-000000000000',
+    "dept_id" UUID,
+    "updated_by_id" UUID,
+    "is_deleted" BOOLEAN NOT NULL DEFAULT false,
+    "deleted_at" TIMESTAMP(3),
+    "deleted_by_id" UUID,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "news_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "position" (
     "id" UUID NOT NULL,
     "name" TEXT NOT NULL,
@@ -462,6 +486,18 @@ CREATE INDEX "employee_profile_member_id_idx" ON "employee_profile"("member_id")
 CREATE INDEX "employee_profile_status_idx" ON "employee_profile"("status");
 
 -- CreateIndex
+CREATE INDEX "news_venue_id_idx" ON "news"("venue_id");
+
+-- CreateIndex
+CREATE INDEX "news_status_idx" ON "news"("status");
+
+-- CreateIndex
+CREATE INDEX "news_dept_id_idx" ON "news"("dept_id");
+
+-- CreateIndex
+CREATE INDEX "news_is_deleted_idx" ON "news"("is_deleted");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "position_code_key" ON "position"("code");
 
 -- CreateIndex
@@ -514,37 +550,10 @@ CREATE INDEX "volunteer_application_is_deleted_idx" ON "volunteer_application"("
 
 -- Database Comments
 COMMENT ON TABLE "activity" IS '活动表 (Activity)';
-COMMENT ON COLUMN "activity"."type" IS '活动类型: GENERAL(普通活动), LECTURE(讲座讲解), VOLUNTEER(志愿服务), INTERNAL(校内专属)';
-COMMENT ON COLUMN "activity"."audit_mode" IS '预约审核模式: MANUAL(需人工审批), AUTO(自动免审通过)';
-COMMENT ON COLUMN "activity"."allow_team" IS '是否允许团队预约';
-COMMENT ON COLUMN "activity"."min_team_size" IS '团队最小人数';
-COMMENT ON COLUMN "activity"."max_team_size" IS '团队最大人数';
-COMMENT ON COLUMN "activity"."start_date" IS '预约开始日期';
-COMMENT ON COLUMN "activity"."end_date" IS '预约截止日期';
-COMMENT ON COLUMN "activity"."status" IS '活动状态: DRAFT(草稿), PUBLISHED(已发布), FINISHED(已结束), CANCELLED(已取消)';
-COMMENT ON COLUMN "activity"."sort_order" IS '排序权重';
 COMMENT ON TABLE "activity_session" IS '活动排班场次表 (ActivitySession)';
-COMMENT ON COLUMN "activity_session"."date" IS '场次日期 (如 2026-09-25)';
-COMMENT ON COLUMN "activity_session"."start_time" IS '开始时间 (如 09:30)';
-COMMENT ON COLUMN "activity_session"."end_time" IS '结束时间 (如 11:00)';
-COMMENT ON COLUMN "activity_session"."total_capacity" IS '总容纳名额';
-COMMENT ON COLUMN "activity_session"."booked_count" IS '已预约名额 (用于并发原子扣减)';
-COMMENT ON COLUMN "activity_session"."lecturer_id" IS '指定主讲解员ID (Staff)';
-COMMENT ON COLUMN "activity_session"."status" IS '场次状态: ACTIVE(可预约), FULL(已满额), CANCELLED(已停用)';
 COMMENT ON TABLE "appointment" IS '预约申请单主表 (Appointment)';
-COMMENT ON COLUMN "appointment"."code" IS '预约申请单编号 (如 APPT202609240001)';
-COMMENT ON COLUMN "appointment"."type" IS '预约模式: INDIVIDUAL(个人预约), TEAM(团队拼团预约), INTERNAL(校内免审预约)';
-COMMENT ON COLUMN "appointment"."applicant_name" IS '申请人姓名';
-COMMENT ON COLUMN "appointment"."phone" IS '申请人手机号';
-COMMENT ON COLUMN "appointment"."id_card" IS '申请人证件号 / 学号 / 工号';
-COMMENT ON COLUMN "appointment"."organization" IS '所属单位或组织机构';
-COMMENT ON COLUMN "appointment"."people_count" IS '预约总人数 (本人 + 同行人 或 团队实到人数)';
+COMMENT ON COLUMN "appointment"."type" IS '预约模式: INDIVIDUAL(个人预约), TEAM(团队拼团预约), INTERNAL(校内内部免审预约)';
 COMMENT ON COLUMN "appointment"."status" IS '审批状态: PENDING(待审核), APPROVED(已通过), REJECTED(已驳回), CANCELLED(已取消), CHECKED_IN(已核销入场)';
-COMMENT ON COLUMN "appointment"."audit_remark" IS '审批备注 / 驳回理由';
-COMMENT ON COLUMN "appointment"."audited_by_id" IS '审批人ID';
-COMMENT ON COLUMN "appointment"."audited_at" IS '审批时间';
-COMMENT ON COLUMN "appointment"."qr_code_sign" IS '进场通行凭证签名字串 (用于移动端生成防伪 QR Code)';
-COMMENT ON COLUMN "appointment"."checked_in_at" IS '实际现场核销时间';
 COMMENT ON TABLE "appointment_team" IS '团队预约扩展信息表 (AppointmentTeam)';
 COMMENT ON TABLE "appointment_visitor" IS '预约同行人/访客明细表 (AppointmentVisitor)';
 COMMENT ON TABLE "attachment" IS '通用业务附件元数据模型 (Tenant DB 物理隔离，严格对齐 ADR-009 实体审计基线)';
@@ -566,9 +575,6 @@ COMMENT ON COLUMN "attachment"."is_deleted" IS '软删除标记 (必填)';
 COMMENT ON COLUMN "attachment"."deleted_at" IS '软删除时间 (选填)';
 COMMENT ON COLUMN "attachment"."deleted_by_id" IS '软删除人 ID (选填，UUIDv7)';
 COMMENT ON TABLE "campus_sync_record" IS '教职工与学生组织主数据同步表 (CampusSyncRecord)';
-COMMENT ON COLUMN "campus_sync_record"."type" IS '同步类型: TEACHER(教职工), STUDENT(学生组织/班级)';
-COMMENT ON COLUMN "campus_sync_record"."sync_status" IS '同步状态: PENDING(未同步), SYNCED(已同步), FAILED(失败)';
-COMMENT ON COLUMN "campus_sync_record"."bound_user_id" IS '关联自动创建的租户系统用户ID';
 COMMENT ON TABLE "company_profile" IS '租户企业扩展资料模型 (与平台 Organization 动静分离)';
 COMMENT ON COLUMN "company_profile"."id" IS '企业扩展资料主键ID';
 COMMENT ON COLUMN "company_profile"."company_name" IS '企业主体注册全称';
@@ -611,6 +617,7 @@ COMMENT ON COLUMN "employee_profile"."joined_at" IS '入职报到时间';
 COMMENT ON COLUMN "employee_profile"."terminated_at" IS '离职归档时间';
 COMMENT ON COLUMN "employee_profile"."created_at" IS '档案创建时间';
 COMMENT ON COLUMN "employee_profile"."updated_at" IS '档案最后更新时间';
+COMMENT ON TABLE "news" IS '场馆动态与新闻发布表 (News)';
 COMMENT ON TABLE "position" IS '岗位模型 (实现 Position != Role 物理正交解耦)';
 COMMENT ON COLUMN "position"."id" IS '岗位主键ID';
 COMMENT ON COLUMN "position"."name" IS '岗位名称';
@@ -641,14 +648,5 @@ COMMENT ON COLUMN "tenant_menu_item"."is_deleted" IS '软删除标记';
 COMMENT ON COLUMN "tenant_menu_item"."deleted_at" IS '软删除时间';
 COMMENT ON COLUMN "tenant_menu_item"."deleted_by_id" IS '软删除人 ID (UUIDv7)';
 COMMENT ON TABLE "venue" IS '场馆档案表 (Venues)';
-COMMENT ON COLUMN "venue"."id" IS '主键ID (UUIDv7)';
-COMMENT ON COLUMN "venue"."code" IS '场馆编码';
-COMMENT ON COLUMN "venue"."name" IS '场馆名称 (如: 宁卫校史馆, 护理实训中心)';
-COMMENT ON COLUMN "venue"."cover_url" IS '场馆封面图片 URL';
-COMMENT ON COLUMN "venue"."address" IS '详细地址';
-COMMENT ON COLUMN "venue"."open_time" IS '开放时间描述 (如: 周二至周日 09:00-16:30)';
-COMMENT ON COLUMN "venue"."contact_phone" IS '联系电话';
-COMMENT ON COLUMN "venue"."description" IS '场馆介绍说明';
-COMMENT ON COLUMN "venue"."status" IS '状态：ACTIVE(启用) / DISABLED(停用)';
-COMMENT ON COLUMN "venue"."is_default" IS '是否默认主场馆';
 COMMENT ON TABLE "volunteer_application" IS '志愿者申请表 (VolunteerApplication)';
+COMMENT ON COLUMN "volunteer_application"."status" IS '状态: PENDING(待审核), APPROVED(已录用), REJECTED(未录取)';

@@ -18,7 +18,9 @@
     "./volunteer-management": "./src/features/volunteer-management/public.ts",
     "./volunteer-management/server": "./src/features/volunteer-management/server/index.ts",
     "./campus-sync": "./src/features/campus-sync/public.ts",
-    "./campus-sync/server": "./src/features/campus-sync/server/index.ts"
+    "./campus-sync/server": "./src/features/campus-sync/server/index.ts",
+    "./news-management": "./src/features/news-management/public.ts",
+    "./news-management/server": "./src/features/news-management/server/index.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",

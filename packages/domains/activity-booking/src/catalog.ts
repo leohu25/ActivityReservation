@@ -6,12 +6,13 @@ import {
   AppointmentSubject,
   VolunteerSubject,
   CampusSyncSubject,
+  NewsSubject,
 } from "./contract";
 
 export const activityBookingCatalog: FeatureCatalog = {
   id: "activity-booking",
   title: "活动预约中心",
-  description: "宁卫场馆预约、活动发布、排班场次、预约审批与校园组织同步",
+  description: "宁卫场馆预约、活动发布、排班场次、预约审批、新闻发布与校园组织同步",
   subjects: [
     {
       name: VenueSubject,
@@ -42,6 +43,11 @@ export const activityBookingCatalog: FeatureCatalog = {
       name: CampusSyncSubject,
       label: "校园组织同步",
       actions: ["create", "read", "update", "delete", "sync"],
+    },
+    {
+      name: NewsSubject,
+      label: "新闻资讯管理",
+      actions: ["create", "read", "update", "delete"],
     },
   ],
 };

@@ -9,6 +9,7 @@ export const ActivitySessionSubject = "ActivitySession" as const;
 export const AppointmentSubject = "Appointment" as const;
 export const VolunteerSubject = "VolunteerApplication" as const;
 export const CampusSyncSubject = "CampusSyncRecord" as const;
+export const NewsSubject = "News" as const;
 
 export type ActivityBookingSubjects =
   | typeof VenueSubject
@@ -16,7 +17,8 @@ export type ActivityBookingSubjects =
   | typeof ActivitySessionSubject
   | typeof AppointmentSubject
   | typeof VolunteerSubject
-  | typeof CampusSyncSubject;
+  | typeof CampusSyncSubject
+  | typeof NewsSubject;
 
 // =============================================================================
 // Zod 验证契约与 DTO
@@ -87,3 +89,21 @@ export const AuditAppointmentSchema = z.object({
   remark: z.string().max(255).optional(),
 });
 export type AuditAppointmentInput = z.infer<typeof AuditAppointmentSchema>;
+
+export const CreateNewsSchema = z.object({
+  venueId: z.string().uuid().optional().nullable(),
+  title: z.string().min(1, "新闻标题必填").max(200),
+  coverUrl: z.string().optional(),
+  summary: z.string().max(300).optional(),
+  content: z.string().min(1, "正文内容必填"),
+  author: z.string().max(100).optional(),
+  isTop: z.boolean().default(false),
+});
+export type CreateNewsInput = z.infer<typeof CreateNewsSchema>;
+
+export const AuditVolunteerSchema = z.object({
+  applicationId: z.string().uuid(),
+  action: z.enum(["APPROVE", "REJECT"]),
+  remark: z.string().max(255).optional(),
+});
+export type AuditVolunteerInput = z.infer<typeof AuditVolunteerSchema>;

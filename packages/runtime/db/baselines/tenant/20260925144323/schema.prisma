@@ -16,23 +16,14 @@ model Activity {
   title       String   @db.VarChar(150)
   coverUrl    String?  @map("cover_url") @db.VarChar(500)
   description String?  @db.Text
-  /// 活动类型: GENERAL(普通活动), LECTURE(讲座讲解), VOLUNTEER(志愿服务), INTERNAL(校内专属)
   type        String   @default("GENERAL") @db.VarChar(30)
-  /// 预约审核模式: MANUAL(需人工审批), AUTO(自动免审通过)
   auditMode   String   @default("MANUAL") @map("audit_mode") @db.VarChar(20)
-  /// 是否允许团队预约
   allowTeam   Boolean  @default(true) @map("allow_team")
-  /// 团队最小人数
   minTeamSize Int      @default(5) @map("min_team_size")
-  /// 团队最大人数
   maxTeamSize Int      @default(50) @map("max_team_size")
-  /// 预约开始日期
   startDate   DateTime @map("start_date")
-  /// 预约截止日期
   endDate     DateTime @map("end_date")
-  /// 活动状态: DRAFT(草稿), PUBLISHED(已发布), FINISHED(已结束), CANCELLED(已取消)
   status      String   @default("PUBLISHED") @db.VarChar(20)
-  /// 排序权重
   sortOrder   Int      @default(0) @map("sort_order")
 
   createdById String   @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
@@ -62,19 +53,12 @@ model ActivitySession {
   id          String   @id @default(uuid(7)) @db.Uuid
   activityId  String   @map("activity_id") @db.Uuid
   spaceId     String?  @map("space_id") @db.Uuid
-  /// 场次日期 (如 2026-09-25)
   date        String   @db.VarChar(20)
-  /// 开始时间 (如 09:30)
   startTime   String   @map("start_time") @db.VarChar(10)
-  /// 结束时间 (如 11:00)
   endTime     String   @map("end_time") @db.VarChar(10)
-  /// 总容纳名额
   totalCapacity Int    @default(50) @map("total_capacity")
-  /// 已预约名额 (用于并发原子扣减)
   bookedCount Int      @default(0) @map("booked_count")
-  /// 指定主讲解员ID (Staff)
   lecturerId  String?  @map("lecturer_id") @db.Uuid
-  /// 场次状态: ACTIVE(可预约), FULL(已满额), CANCELLED(已停用)
   status      String   @default("ACTIVE") @db.VarChar(20)
 
   createdById String   @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
@@ -101,33 +85,22 @@ model ActivitySession {
 /// 预约申请单主表 (Appointment)
 model Appointment {
   id            String   @id @default(uuid(7)) @db.Uuid
-  /// 预约申请单编号 (如 APPT202609240001)
   code          String   @unique @db.VarChar(50)
   activityId    String   @map("activity_id") @db.Uuid
   sessionId     String   @map("session_id") @db.Uuid
-  /// 预约模式: INDIVIDUAL(个人预约), TEAM(团队拼团预约), INTERNAL(校内免审预约)
+  /// 预约模式: INDIVIDUAL(个人预约), TEAM(团队拼团预约), INTERNAL(校内内部免审预约)
   type          String   @default("INDIVIDUAL") @db.VarChar(20)
-  /// 申请人姓名
   applicantName String   @map("applicant_name") @db.VarChar(100)
-  /// 申请人手机号
   phone         String   @db.VarChar(50)
-  /// 申请人证件号 / 学号 / 工号
   idCard        String?  @map("id_card") @db.VarChar(50)
-  /// 所属单位或组织机构
   organization  String?  @db.VarChar(150)
-  /// 预约总人数 (本人 + 同行人 或 团队实到人数)
   peopleCount   Int      @default(1) @map("people_count")
   /// 审批状态: PENDING(待审核), APPROVED(已通过), REJECTED(已驳回), CANCELLED(已取消), CHECKED_IN(已核销入场)
   status        String   @default("PENDING") @db.VarChar(20)
-  /// 审批备注 / 驳回理由
   auditRemark   String?  @map("audit_remark") @db.VarChar(255)
-  /// 审批人ID
   auditedById   String?  @map("audited_by_id") @db.Uuid
-  /// 审批时间
   auditedAt     DateTime? @map("audited_at")
-  /// 进场通行凭证签名字串 (用于移动端生成防伪 QR Code)
   qrCodeSign    String?  @map("qr_code_sign") @db.VarChar(255)
-  /// 实际现场核销时间
   checkedInAt   DateTime? @map("checked_in_at")
 
   createdById String   @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
@@ -254,7 +227,6 @@ model Attachment {
 /// 教职工与学生组织主数据同步表 (CampusSyncRecord)
 model CampusSyncRecord {
   id          String   @id @default(uuid(7)) @db.Uuid
-  /// 同步类型: TEACHER(教职工), STUDENT(学生组织/班级)
   type        String   @db.VarChar(20)
   userCode    String   @map("user_code") @db.VarChar(50)
   name        String   @db.VarChar(100)
@@ -263,10 +235,8 @@ model CampusSyncRecord {
   idCard      String?  @map("id_card") @db.VarChar(50)
   phone       String?  @db.VarChar(50)
   email       String?  @db.VarChar(100)
-  /// 同步状态: PENDING(未同步), SYNCED(已同步), FAILED(失败)
   syncStatus  String   @default("PENDING") @map("sync_status") @db.VarChar(20)
   errorMsg    String?  @map("error_msg") @db.VarChar(500)
-  /// 关联自动创建的租户系统用户ID
   boundUserId String?  @map("bound_user_id") @db.Uuid
 
   createdById String   @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
@@ -395,6 +365,37 @@ model EmployeeProfile {
   @@map("employee_profile")
 }
 
+/// 场馆动态与新闻发布表 (News)
+model News {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  venueId     String?  @map("venue_id") @db.Uuid
+  title       String   @db.VarChar(200)
+  coverUrl    String?  @map("cover_url") @db.VarChar(500)
+  summary     String?  @db.VarChar(300)
+  content     String   @db.Text
+  author      String?  @db.VarChar(100)
+  viewsCount  Int      @default(0) @map("views_count")
+  isTop       Boolean  @default(false) @map("is_top")
+  status      String   @default("PUBLISHED") @db.VarChar(20)
+
+  createdById String   @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
+  deptId      String?  @map("dept_id") @db.Uuid
+  updatedById String?  @map("updated_by_id") @db.Uuid
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+  deletedAt   DateTime? @map("deleted_at")
+  deletedById String?  @map("deleted_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  venue       Venue?   @relation(fields: [venueId], references: [id])
+
+  @@index([venueId])
+  @@index([status])
+  @@index([deptId])
+  @@index([isDeleted])
+  @@map("news")
+}
+
 /// 岗位模型 (实现 Position != Role 物理正交解耦)
 model Position {
   /// 岗位主键ID
@@ -496,28 +497,17 @@ model TenantMenuItem {
 
 /// 场馆档案表 (Venues)
 model Venue {
-  /// 主键ID (UUIDv7)
   id          String   @id @default(uuid(7)) @db.Uuid
-  /// 场馆编码
   code        String   @unique @db.VarChar(50)
-  /// 场馆名称 (如: 宁卫校史馆, 护理实训中心)
   name        String   @db.VarChar(100)
-  /// 场馆封面图片 URL
   coverUrl    String?  @map("cover_url") @db.VarChar(500)
-  /// 详细地址
   address     String?  @db.VarChar(255)
-  /// 开放时间描述 (如: 周二至周日 09:00-16:30)
   openTime    String?  @map("open_time") @db.VarChar(100)
-  /// 联系电话
   contactPhone String? @map("contact_phone") @db.VarChar(50)
-  /// 场馆介绍说明
   description String?  @db.Text
-  /// 状态：ACTIVE(启用) / DISABLED(停用)
   status      String   @default("ACTIVE") @db.VarChar(20)
-  /// 是否默认主场馆
   isDefault   Boolean  @default(false) @map("is_default")
 
-  // ===== 框架强制基础审计与数据范围基线字段 (ADR-009) =====
   createdById String   @default("00000000-0000-7000-8000-000000000000") @map("created_by_id") @db.Uuid
   deptId      String?  @map("dept_id") @db.Uuid
   updatedById String?  @map("updated_by_id") @db.Uuid
@@ -529,6 +519,7 @@ model Venue {
 
   spaces      Space[]
   activities  Activity[]
+  news        News[]
 
   @@index([status])
   @@index([deptId])
@@ -545,6 +536,7 @@ model VolunteerApplication {
   studentNo   String?  @map("student_no") @db.VarChar(50)
   major       String?  @db.VarChar(100)
   serviceRole String?  @map("service_role") @db.VarChar(50)
+  /// 状态: PENDING(待审核), APPROVED(已录用), REJECTED(未录取)
   status      String   @default("PENDING") @db.VarChar(20)
   auditRemark String?  @map("audit_remark") @db.VarChar(255)
 
