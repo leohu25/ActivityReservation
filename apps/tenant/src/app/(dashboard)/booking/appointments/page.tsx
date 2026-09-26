@@ -6,9 +6,10 @@ import {
   listAppointmentsQuery,
   auditAppointmentService,
 } from "@domain/activity-booking/appointment-management/server";
-import { Card, Badge } from "@base/ui";
-import { CheckCircle2, XCircle, Clock, Users, Phone, Search, Users2, User } from "lucide-react";
+import { Card } from "@base/ui";
+import { Search, Users2 } from "lucide-react";
 import Link from "next/link";
+import { AppointmentListView } from "./_components/appointment-list-view";
 
 interface AppointmentsPageProps {
   searchParams: Promise<{ tab?: string; keyword?: string; status?: string }>;
@@ -21,7 +22,7 @@ export default async function AppointmentsPage({ searchParams }: AppointmentsPag
 
   let appointments = await listAppointmentsQuery(ctx.organizationId);
 
-  // 1. Tab 分流过滤 (业务需求 2)
+  // 1. Tab 分流过滤
   if (tab === "INDIVIDUAL") {
     appointments = appointments.filter((a) => a.type === "INDIVIDUAL");
   } else if (tab === "TEAM") {
@@ -78,7 +79,7 @@ export default async function AppointmentsPage({ searchParams }: AppointmentsPag
         <div>
           <h1 className="text-2xl font-bold tracking-tight">预约审核工作台</h1>
           <p className="text-xs text-muted-foreground mt-1">
-            审核处理社会公众、在校师生及团队预约申请，区分个人与团队名册并签发入场码
+            审核处理社会公众、在校师生及团队预约申请，区分个人与团队名册并签发入场码（支持点击卡片查看完整详情）
           </p>
         </div>
         <Link
@@ -154,153 +155,11 @@ export default async function AppointmentsPage({ searchParams }: AppointmentsPag
         </form>
       </Card>
 
-      {/* 预约单据列表与详情卡片 */}
-      <div className="space-y-3.5">
-        {appointments.map((appt) => {
-          const isTeam = appt.type === "TEAM";
-          const isInternal = appt.type === "INTERNAL";
-
-          return (
-            <Card key={appt.id} className="p-5 border-slate-200 hover:shadow-xs transition-shadow">
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                <div className="space-y-2.5 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-bold text-base text-slate-900">{appt.activity.title}</span>
-
-                    {/* 三级用户身份徽章 (业务需求 7) */}
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        appt.userType === "TEACHER"
-                          ? "bg-blue-100 text-blue-700"
-                          : appt.userType === "STUDENT"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      {appt.userType === "TEACHER"
-                        ? "教师预约"
-                        : appt.userType === "STUDENT"
-                        ? "学生预约"
-                        : "社会公众"}
-                    </span>
-
-                    <Badge variant={isTeam ? "secondary" : isInternal ? "default" : "outline"}>
-                      {isTeam ? "团队拼团" : isInternal ? "内部免审" : "个人自发"}
-                    </Badge>
-
-                    <Badge
-                      variant={
-                        appt.status === "APPROVED"
-                          ? "default"
-                          : appt.status === "REJECTED"
-                          ? "destructive"
-                          : appt.status === "CHECKED_IN"
-                          ? "secondary"
-                          : "outline"
-                      }
-                    >
-                      {appt.status === "APPROVED"
-                        ? "已通过"
-                        : appt.status === "REJECTED"
-                        ? "已驳回"
-                        : appt.status === "CHECKED_IN"
-                        ? "已核销入场"
-                        : "待审核"}
-                    </Badge>
-                  </div>
-
-                  <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs text-muted-foreground">
-                    <span className="font-mono">单号: {appt.code}</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="size-3.5 text-slate-400" />
-                      {appt.session.date} ({appt.session.startTime} ~ {appt.session.endTime})
-                    </span>
-                    <span className="flex items-center gap-1 font-medium text-slate-700">
-                      <User className="size-3.5 text-primary" />
-                      申请人/领队: {appt.applicantName} ({appt.phone})
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="size-3.5 text-slate-400" />
-                      实到人数: {appt.peopleCount} 人
-                    </span>
-                    {appt.organization && <span>所属: {appt.organization}</span>}
-                  </div>
-
-                  {/* 团队专属信息展示区 (业务需求 2) */}
-                  {isTeam && appt.team && (
-                    <div className="mt-2 p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-slate-800">
-                          团队名: {appt.team.teamName} (邀请码:{" "}
-                          <span className="font-mono text-primary">{appt.team.inviteCode}</span>)
-                        </span>
-                        <span className="text-[11px] text-slate-500">
-                          拼团进度: {appt.team.joinedCount} / {appt.team.targetCount} 人
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 同行人名册展示 */}
-                  {appt.visitors.length > 0 && (
-                    <div className="text-xs text-slate-500 pt-1">
-                      <span className="font-medium text-slate-700">同行随行人员 ({appt.visitors.length}人): </span>
-                      {appt.visitors.map((v, idx) => (
-                        <span key={v.id} className="inline-block mr-3">
-                          {idx + 1}. {v.name} {v.phone ? `(${v.phone})` : ""}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* 操作栏 */}
-                <div className="flex sm:flex-col items-end gap-2 shrink-0">
-                  {appt.status === "PENDING" && (
-                    <div className="flex items-center gap-2">
-                      <form action={handleAuditAction}>
-                        <input type="hidden" name="appointmentId" value={appt.id} />
-                        <input type="hidden" name="action" value="APPROVE" />
-                        <button
-                          type="submit"
-                          className="inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors shadow-xs cursor-pointer"
-                        >
-                          <CheckCircle2 className="size-3.5" />
-                          通过并签发
-                        </button>
-                      </form>
-                      <form action={handleAuditAction}>
-                        <input type="hidden" name="appointmentId" value={appt.id} />
-                        <input type="hidden" name="action" value="REJECT" />
-                        <button
-                          type="submit"
-                          className="inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-semibold rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 transition-colors cursor-pointer"
-                        >
-                          <XCircle className="size-3.5" />
-                          驳回
-                        </button>
-                      </form>
-                    </div>
-                  )}
-
-                  {appt.status === "APPROVED" && (
-                    <span className="text-xs text-green-600 font-medium flex items-center gap-1">
-                      <CheckCircle2 className="size-3.5" />
-                      已签发通行凭证
-                    </span>
-                  )}
-                </div>
-              </div>
-            </Card>
-          );
-        })}
-
-        {appointments.length === 0 && (
-          <div className="rounded-2xl border border-dashed p-16 text-center text-muted-foreground bg-slate-50/50">
-            当前分类下暂无预约记录
-          </div>
-        )}
-      </div>
+      {/* 预约单据列表与详情模态抽屉 */}
+      <AppointmentListView
+        appointments={appointments as any}
+        auditAction={handleAuditAction}
+      />
     </div>
   );
 }
