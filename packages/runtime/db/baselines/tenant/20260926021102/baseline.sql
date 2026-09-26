@@ -17,6 +17,8 @@ CREATE TABLE "activity" (
     "end_date" TIMESTAMP(3) NOT NULL,
     "status" VARCHAR(20) NOT NULL DEFAULT 'PUBLISHED',
     "sort_order" INTEGER NOT NULL DEFAULT 0,
+    "need_volunteer" BOOLEAN NOT NULL DEFAULT false,
+    "volunteer_roles" VARCHAR(500),
     "created_by_id" UUID NOT NULL DEFAULT '00000000-0000-7000-8000-000000000000',
     "dept_id" UUID,
     "updated_by_id" UUID,
@@ -41,6 +43,7 @@ CREATE TABLE "activity_session" (
     "booked_count" INTEGER NOT NULL DEFAULT 0,
     "lecturer_id" UUID,
     "status" VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    "is_temporary" BOOLEAN NOT NULL DEFAULT false,
     "created_by_id" UUID NOT NULL DEFAULT '00000000-0000-7000-8000-000000000000',
     "dept_id" UUID,
     "updated_by_id" UUID,
@@ -60,6 +63,7 @@ CREATE TABLE "appointment" (
     "activity_id" UUID NOT NULL,
     "session_id" UUID NOT NULL,
     "type" VARCHAR(20) NOT NULL DEFAULT 'INDIVIDUAL',
+    "user_type" VARCHAR(20) NOT NULL DEFAULT 'GENERAL',
     "applicant_name" VARCHAR(100) NOT NULL,
     "phone" VARCHAR(50) NOT NULL,
     "id_card" VARCHAR(50),
@@ -113,6 +117,7 @@ CREATE TABLE "appointment_visitor" (
     "name" VARCHAR(100) NOT NULL,
     "phone" VARCHAR(50),
     "id_card" VARCHAR(50),
+    "user_type" VARCHAR(20) NOT NULL DEFAULT 'GENERAL',
     "is_leader" BOOLEAN NOT NULL DEFAULT false,
     "created_by_id" UUID NOT NULL DEFAULT '00000000-0000-7000-8000-000000000000',
     "dept_id" UUID,
@@ -147,6 +152,26 @@ CREATE TABLE "attachment" (
     "deleted_by_id" UUID,
 
     CONSTRAINT "attachment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "banner" (
+    "id" UUID NOT NULL,
+    "title" VARCHAR(100) NOT NULL,
+    "image_url" VARCHAR(500) NOT NULL,
+    "link_url" VARCHAR(500),
+    "sort_order" INTEGER NOT NULL DEFAULT 0,
+    "status" VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    "created_by_id" UUID NOT NULL DEFAULT '00000000-0000-7000-8000-000000000000',
+    "dept_id" UUID,
+    "updated_by_id" UUID,
+    "is_deleted" BOOLEAN NOT NULL DEFAULT false,
+    "deleted_at" TIMESTAMP(3),
+    "deleted_by_id" UUID,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "banner_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -408,6 +433,9 @@ CREATE INDEX "appointment_phone_idx" ON "appointment"("phone");
 CREATE INDEX "appointment_status_idx" ON "appointment"("status");
 
 -- CreateIndex
+CREATE INDEX "appointment_user_type_idx" ON "appointment"("user_type");
+
+-- CreateIndex
 CREATE INDEX "appointment_dept_id_idx" ON "appointment"("dept_id");
 
 -- CreateIndex
@@ -442,6 +470,15 @@ CREATE INDEX "attachment_target_id_module_idx" ON "attachment"("target_id", "mod
 
 -- CreateIndex
 CREATE INDEX "attachment_created_by_id_idx" ON "attachment"("created_by_id");
+
+-- CreateIndex
+CREATE INDEX "banner_status_idx" ON "banner"("status");
+
+-- CreateIndex
+CREATE INDEX "banner_dept_id_idx" ON "banner"("dept_id");
+
+-- CreateIndex
+CREATE INDEX "banner_is_deleted_idx" ON "banner"("is_deleted");
 
 -- CreateIndex
 CREATE INDEX "campus_sync_record_type_sync_status_idx" ON "campus_sync_record"("type", "sync_status");
@@ -550,9 +587,13 @@ CREATE INDEX "volunteer_application_is_deleted_idx" ON "volunteer_application"("
 
 -- Database Comments
 COMMENT ON TABLE "activity" IS '活动表 (Activity)';
+COMMENT ON COLUMN "activity"."need_volunteer" IS '是否需要招募志愿者 (业务需求 1)';
+COMMENT ON COLUMN "activity"."volunteer_roles" IS '志愿者服务项目清单 (逗号分隔，如: 展厅义务讲解员,动线引导员,实操助理)';
 COMMENT ON TABLE "activity_session" IS '活动排班场次表 (ActivitySession)';
+COMMENT ON COLUMN "activity_session"."is_temporary" IS '是否为内部专线临时加开场次 (业务需求 3)';
 COMMENT ON TABLE "appointment" IS '预约申请单主表 (Appointment)';
 COMMENT ON COLUMN "appointment"."type" IS '预约模式: INDIVIDUAL(个人预约), TEAM(团队拼团预约), INTERNAL(校内内部免审预约)';
+COMMENT ON COLUMN "appointment"."user_type" IS '用户三级身份: TEACHER(教师), STUDENT(学生), GENERAL(社会公众) (业务需求 7)';
 COMMENT ON COLUMN "appointment"."status" IS '审批状态: PENDING(待审核), APPROVED(已通过), REJECTED(已驳回), CANCELLED(已取消), CHECKED_IN(已核销入场)';
 COMMENT ON TABLE "appointment_team" IS '团队预约扩展信息表 (AppointmentTeam)';
 COMMENT ON TABLE "appointment_visitor" IS '预约同行人/访客明细表 (AppointmentVisitor)';
@@ -574,6 +615,7 @@ COMMENT ON COLUMN "attachment"."updated_at" IS '更新时间 (必填)';
 COMMENT ON COLUMN "attachment"."is_deleted" IS '软删除标记 (必填)';
 COMMENT ON COLUMN "attachment"."deleted_at" IS '软删除时间 (选填)';
 COMMENT ON COLUMN "attachment"."deleted_by_id" IS '软删除人 ID (选填，UUIDv7)';
+COMMENT ON TABLE "banner" IS '首页轮播图表 (Banner)';
 COMMENT ON TABLE "campus_sync_record" IS '教职工与学生组织主数据同步表 (CampusSyncRecord)';
 COMMENT ON TABLE "company_profile" IS '租户企业扩展资料模型 (与平台 Organization 动静分离)';
 COMMENT ON COLUMN "company_profile"."id" IS '企业扩展资料主键ID';
@@ -649,4 +691,3 @@ COMMENT ON COLUMN "tenant_menu_item"."deleted_at" IS '软删除时间';
 COMMENT ON COLUMN "tenant_menu_item"."deleted_by_id" IS '软删除人 ID (UUIDv7)';
 COMMENT ON TABLE "venue" IS '场馆档案表 (Venues)';
 COMMENT ON TABLE "volunteer_application" IS '志愿者申请表 (VolunteerApplication)';
-COMMENT ON COLUMN "volunteer_application"."status" IS '状态: PENDING(待审核), APPROVED(已录用), REJECTED(未录取)';

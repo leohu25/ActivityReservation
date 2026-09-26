@@ -7,19 +7,20 @@ import {
   VolunteerSubject,
   CampusSyncSubject,
   NewsSubject,
+  QrcodeManagementSubject,
 } from "@domain/activity-booking/shared";
 import { ActivityBookingAbilityBoundary } from "@domain/activity-booking/shared";
 import { getTenantSubjectPermissions } from "@/kernel";
 
 /**
- * 活动预约业务切片的统一 CASL Provider 装配边界 (包含志愿者与新闻)
+ * 活动预约业务切片的统一 CASL Provider 装配边界 (包含二维码管理独立授权)
  */
 export default async function BookingLayout({
   children,
 }: {
   readonly children: React.ReactNode;
 }) {
-  const [activity, session, appointment, venue, volunteer, sync, news] =
+  const [activity, session, appointment, venue, volunteer, sync, news, qrcode] =
     await Promise.all([
       getTenantSubjectPermissions(ActivitySubject),
       getTenantSubjectPermissions(ActivitySessionSubject),
@@ -28,6 +29,7 @@ export default async function BookingLayout({
       getTenantSubjectPermissions(VolunteerSubject),
       getTenantSubjectPermissions(CampusSyncSubject),
       getTenantSubjectPermissions(NewsSubject),
+      getTenantSubjectPermissions(QrcodeManagementSubject),
     ]);
 
   return (
@@ -41,6 +43,7 @@ export default async function BookingLayout({
           [VolunteerSubject]: volunteer,
           [CampusSyncSubject]: sync,
           [NewsSubject]: news,
+          [QrcodeManagementSubject]: qrcode,
         },
       }}
     >

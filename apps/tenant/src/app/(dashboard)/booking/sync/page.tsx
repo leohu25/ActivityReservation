@@ -15,12 +15,15 @@ export default async function CampusSyncPage() {
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">校园组织与主数据同步</h1>
+          <h1 className="text-2xl font-bold tracking-tight">校园组织与主数据同步 (总览)</h1>
           <p className="text-sm text-muted-foreground">
-            查看教职工工号、学生学号主数据同步状态及后台用户自动自愈创建结果
+            查看全校教职工工号、学生学号主数据同步状态及后台用户自动自愈创建结果
           </p>
         </div>
-        <form action={triggerManualSyncAction}>
+        <form action={async () => {
+          "use server";
+          await triggerManualSyncAction("TEACHER");
+        }}>
           <button
             type="submit"
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors shadow-sm cursor-pointer"

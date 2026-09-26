@@ -7,12 +7,13 @@ import {
   VolunteerSubject,
   CampusSyncSubject,
   NewsSubject,
+  QrcodeManagementSubject,
 } from "./contract";
 
 export const activityBookingCatalog: FeatureCatalog = {
   id: "activity-booking",
   title: "活动预约中心",
-  description: "宁卫场馆预约、活动发布、排班场次、预约审批、新闻发布与校园组织同步",
+  description: "宁卫场馆预约、活动发布、排班场次、预约审批、通行码核销、新闻发布与校园组织同步",
   subjects: [
     {
       name: VenueSubject,
@@ -31,7 +32,7 @@ export const activityBookingCatalog: FeatureCatalog = {
     },
     {
       name: AppointmentSubject,
-      label: "预约审批与核销",
+      label: "预约审批与内部预约",
       actions: ["create", "read", "update", "delete", "approve", "reject", "checkin"],
     },
     {
@@ -48,6 +49,11 @@ export const activityBookingCatalog: FeatureCatalog = {
       name: NewsSubject,
       label: "新闻资讯管理",
       actions: ["create", "read", "update", "delete"],
+    },
+    {
+      name: QrcodeManagementSubject,
+      label: "通行码与现场核销 (运维专属)",
+      actions: ["read", "update", "checkin", "export"],
     },
   ],
 };

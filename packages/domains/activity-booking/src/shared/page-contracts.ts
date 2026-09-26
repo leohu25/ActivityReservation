@@ -11,6 +11,7 @@ export const AppointmentSubject = "Appointment" as const;
 export const VolunteerSubject = "VolunteerApplication" as const;
 export const CampusSyncSubject = "CampusSyncRecord" as const;
 export const NewsSubject = "News" as const;
+export const QrcodeManagementSubject = "QrcodeManagement" as const;
 
 export const venuePageContract: FeaturePagePermissionDescriptor = {
   resource: "booking.venue",
@@ -83,11 +84,35 @@ export const newsPageContract: FeaturePagePermissionDescriptor = {
 export const syncPageContract: FeaturePagePermissionDescriptor = {
   resource: "booking.sync",
   subject: CampusSyncSubject,
-  label: "校园组织同步",
-  path: "/booking/sync",
+  label: "教职工管理与同步",
+  path: "/booking/sync/teachers",
   actions: [
-    { action: StandardAction.READ, label: "查看同步记录", supportedScopes: STANDARD_DATA_SCOPES },
-    { action: StandardAction.CREATE, label: "触发同步" },
+    { action: StandardAction.READ, label: "查看教职工档案", supportedScopes: STANDARD_DATA_SCOPES },
+    { action: StandardAction.CREATE, label: "同步教职工数据" },
+  ],
+  configurableFields: [],
+};
+
+export const studentSyncPageContract: FeaturePagePermissionDescriptor = {
+  resource: "booking.student-sync",
+  subject: CampusSyncSubject,
+  label: "学生档案与同步",
+  path: "/booking/sync/students",
+  actions: [
+    { action: StandardAction.READ, label: "查看学生档案", supportedScopes: STANDARD_DATA_SCOPES },
+    { action: StandardAction.CREATE, label: "同步学生数据" },
+  ],
+  configurableFields: [],
+};
+
+export const qrcodePageContract: FeaturePagePermissionDescriptor = {
+  resource: "booking.qrcode",
+  subject: QrcodeManagementSubject,
+  label: "通行码与现场核销",
+  path: "/booking/qrcodes",
+  actions: [
+    { action: StandardAction.READ, label: "查看通行码记录", supportedScopes: STANDARD_DATA_SCOPES },
+    { action: StandardAction.UPDATE, label: "现场扫码核销" },
   ],
   configurableFields: [],
 };

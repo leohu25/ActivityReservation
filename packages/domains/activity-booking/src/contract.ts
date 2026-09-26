@@ -10,6 +10,7 @@ export const AppointmentSubject = "Appointment" as const;
 export const VolunteerSubject = "VolunteerApplication" as const;
 export const CampusSyncSubject = "CampusSyncRecord" as const;
 export const NewsSubject = "News" as const;
+export const QrcodeManagementSubject = "QrcodeManagement" as const;
 
 export type ActivityBookingSubjects =
   | typeof VenueSubject
@@ -18,7 +19,8 @@ export type ActivityBookingSubjects =
   | typeof AppointmentSubject
   | typeof VolunteerSubject
   | typeof CampusSyncSubject
-  | typeof NewsSubject;
+  | typeof NewsSubject
+  | typeof QrcodeManagementSubject;
 
 // =============================================================================
 // Zod 验证契约与 DTO
@@ -49,6 +51,8 @@ export const CreateActivitySchema = z.object({
   startDate: z.string().datetime(),
   endDate: z.string().datetime(),
   sortOrder: z.number().int().default(0),
+  needVolunteer: z.boolean().default(false),
+  volunteerRoles: z.string().optional(),
 });
 export type CreateActivityInput = z.infer<typeof CreateActivitySchema>;
 
@@ -60,6 +64,7 @@ export const CreateSessionSchema = z.object({
   endTime: z.string().regex(/^\d{2}:\d{2}$/, "时间格式如 11:00"),
   totalCapacity: z.number().int().min(1, "容纳名额至少1人").default(50),
   lecturerId: z.string().uuid().optional().nullable(),
+  isTemporary: z.boolean().default(false),
 });
 export type CreateSessionInput = z.infer<typeof CreateSessionSchema>;
 
@@ -67,6 +72,7 @@ export const SubmitAppointmentSchema = z.object({
   activityId: z.string().uuid(),
   sessionId: z.string().uuid(),
   type: z.enum(["INDIVIDUAL", "TEAM", "INTERNAL"]).default("INDIVIDUAL"),
+  userType: z.enum(["TEACHER", "STUDENT", "GENERAL"]).default("GENERAL"),
   applicantName: z.string().min(1, "申请人姓名不能为空").max(100),
   phone: z.string().regex(/^1[3-9]\d{9}$/, "请输入合法的11位手机号"),
   idCard: z.string().optional(),
@@ -78,6 +84,7 @@ export const SubmitAppointmentSchema = z.object({
       name: z.string().min(1, "同行人姓名必填"),
       phone: z.string().optional(),
       idCard: z.string().optional(),
+      userType: z.enum(["TEACHER", "STUDENT", "GENERAL"]).default("GENERAL"),
     }),
   ).default([]),
 });
@@ -104,6 +111,7 @@ export type CreateNewsInput = z.infer<typeof CreateNewsSchema>;
 export const AuditVolunteerSchema = z.object({
   applicationId: z.string().uuid(),
   action: z.enum(["APPROVE", "REJECT"]),
+  serviceRole: z.string().optional(),
   remark: z.string().max(255).optional(),
 });
 export type AuditVolunteerInput = z.infer<typeof AuditVolunteerSchema>;

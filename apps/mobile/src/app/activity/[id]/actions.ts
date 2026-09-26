@@ -20,7 +20,7 @@ export async function submitAppointmentAction(formData: FormData) {
   }
 
   const visitors = visitorName
-    ? [{ name: visitorName, phone: visitorPhone || undefined }]
+    ? [{ name: visitorName, phone: visitorPhone || undefined, userType: "GENERAL" as const }]
     : [];
 
   const peopleCount = 1 + visitors.length;
@@ -34,6 +34,7 @@ export async function submitAppointmentAction(formData: FormData) {
       activityId,
       sessionId,
       type,
+      userType: "GENERAL",
       applicantName,
       phone,
       idCard,

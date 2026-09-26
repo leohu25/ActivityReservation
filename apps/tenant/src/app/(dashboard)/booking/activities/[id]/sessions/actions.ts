@@ -30,6 +30,7 @@ export async function createSessionAction(formData: FormData) {
       startTime,
       endTime,
       totalCapacity,
+      isTemporary: false,
     },
     "00000000-0000-7000-8000-000000000000",
   );

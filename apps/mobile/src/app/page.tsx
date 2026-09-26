@@ -2,7 +2,7 @@ import React from "react";
 import { getTenantDbManager } from "@base/db-tenant";
 import { getServerAuthRuntime } from "@base/auth";
 import Link from "next/link";
-import { Calendar, Users, MapPin, ChevronRight, Sparkles, Building, Newspaper, ArrowRight } from "lucide-react";
+import { Calendar, Users, MapPin, ChevronRight, Sparkles, Newspaper, HeartHandshake } from "lucide-react";
 
 export default async function MobileHomePage() {
   const runtime = getServerAuthRuntime();
@@ -32,7 +32,7 @@ export default async function MobileHomePage() {
     prisma.news.findMany({
       where: { isDeleted: false, status: "PUBLISHED" },
       orderBy: [{ isTop: "desc" }, { createdAt: "desc" }],
-      take: 2,
+      take: 3,
     }),
   ]);
 
@@ -55,11 +55,11 @@ export default async function MobileHomePage() {
         </p>
       </header>
 
-      {/* 顶部精美轮播/展位 Banner 卡片 */}
+      {/* 业务需求 5: 顶部精美轮播/展位 Banner 卡片 */}
       {banners.length > 0 && (
-        <div className="px-4 mb-4">
-          <div className="relative overflow-hidden rounded-2xl aspect-[21/9] bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4 flex flex-col justify-end shadow-md">
-            <span className="text-[10px] font-semibold bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full w-fit mb-1">
+        <div className="px-4 mb-3.5">
+          <div className="relative overflow-hidden rounded-2xl aspect-[21/9] bg-gradient-to-r from-blue-600 via-indigo-600 to-primary text-white p-4 flex flex-col justify-end shadow-md">
+            <span className="text-[10px] font-semibold bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full w-fit mb-1 border border-white/20">
               场馆聚焦
             </span>
             <h2 className="text-base font-bold line-clamp-1">{banners[0].title}</h2>
@@ -67,12 +67,15 @@ export default async function MobileHomePage() {
         </div>
       )}
 
-      {/* 场馆动态资讯速递 */}
+      {/* 业务需求 5: 场馆快报 / 公告动态（支持点击阅读正文） */}
       {newsList.length > 0 && (
-        <div className="px-4 mb-5">
-          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100/80 flex items-center justify-between">
+        <div className="px-4 mb-4">
+          <Link
+            href={`/news/${newsList[0].id}`}
+            className="bg-slate-50 p-3 rounded-2xl border border-slate-100/80 flex items-center justify-between hover:bg-slate-100/70 transition-colors"
+          >
             <div className="flex items-center gap-2 overflow-hidden pr-2">
-              <span className="text-[10px] font-bold bg-amber-500/10 text-amber-600 px-1.5 py-0.5 rounded shrink-0">
+              <span className="text-[10px] font-bold bg-amber-500/15 text-amber-700 px-1.5 py-0.5 rounded shrink-0">
                 公告
               </span>
               <span className="text-xs text-slate-700 font-medium truncate">
@@ -80,7 +83,7 @@ export default async function MobileHomePage() {
               </span>
             </div>
             <Newspaper className="size-4 shrink-0 text-slate-400" />
-          </div>
+          </Link>
         </div>
       )}
 
@@ -121,6 +124,12 @@ export default async function MobileHomePage() {
                   可选场次: {act.sessions.length} 场 · {act.allowTeam ? "支持个人/团体拼团" : "仅限个人预约"}
                 </span>
               </div>
+              {act.needVolunteer && (
+                <div className="flex items-center gap-1.5 text-rose-600 font-medium text-[11px] pt-1">
+                  <HeartHandshake className="size-3.5 shrink-0" />
+                  <span>招募志愿者: {act.volunteerRoles || "讲解/引导"}</span>
+                </div>
+              )}
             </div>
           </Link>
         ))}
